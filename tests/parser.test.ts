@@ -35,4 +35,10 @@ describe("deterministic parser", () => {
     expect(parseCommand("please inspect the old wooden door", snapshot, state).reason).toBe("phrase-rule");
     expect(parseCommand("sing", snapshot, state)).toMatchObject({ interaction: null, reason: "fallback" });
   });
+
+  it("keeps typing-only choices available to the deterministic parser", () => {
+    const typed = { ...interaction("secret", "a", null, ["whisper"]), choiceVisibility: "typed" as const };
+    const snapshot = project({ interactions: [typed] });
+    expect(parseCommand("whisper", snapshot, createEmptyPlayState(snapshot)).interaction?.id).toBe("secret");
+  });
 });

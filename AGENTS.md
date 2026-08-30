@@ -20,6 +20,9 @@ These rules are architectural constraints, not suggestions.
 16. **Hosting ownership stays split.** GitHub Pages serves the player/author client. `pre-programmed.natanai.workers.dev` is an API endpoint, not a second public client host. Do not create two competing frontend deployments.
 17. **Backups read canonical D1.** Author backup/export must be generated from D1 itself and include enough schema + table data to be portable. Do not call an IndexedDB/cache export a database backup.
 18. **Keep automation sparse.** Prefer the existing CI workflow for GitHub-side build/deploy duties. Do not add scheduled or high-frequency workflows without a concrete need.
+19. **Author terminology is causal.** The player's authored command/choice text is `user-input-text`; the program's resulting prose is `response-text`. Keep those fields visually adjacent. Generate the primary parser alias from `user-input-text` and keep alternate aliases progressively disclosed.
+20. **Choice reveal is authored data.** An interaction may be shown immediately, revealed by tapping/clicking the prompt, or remain typing-only. Public choice surfaces must honor that setting without changing deterministic parser access.
+21. **Complexity reveals progressively.** Keep node text and the `user-input-text` → `response-text` pair primary. Conditions, effects, aliases, metadata, and global tools remain directly reachable but collapsed until requested.
 
 ## Opening invariant
 

@@ -14,10 +14,10 @@ describe("local author destination search", () => {
         { id: "character", key: "guide", type: "character", name: "Ada", description: "helpful speaker", tags: ["mentor"] },
         { id: "location", key: "archive", type: "location", name: "Archive", description: "dusty shelves", tags: ["library"] },
       ],
-      items: [{ id: "item", key: "lens", name: "Lens", description: "polished glass", assetPath: "", width: 1, height: 1, stackable: false, maxStack: 1, removable: true, tags: ["optical"], initialState: {}, hooks: [] }],
+      items: [{ id: "item", key: "lens", name: "Lens", description: "polished glass", assetPath: "", width: 1, height: 1, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, tags: ["optical"], initialState: {}, hooks: [] }],
       interactions: [{
-        id: "interaction", sourceNodeId: "b", wording: "Look around", aliases: ["look"], tags: ["observation"], notes: "author clue",
-        outcomes: [{ id: "outcome", order: 0, label: "default", condition: { type: "always" }, responseText: "a hidden inscription", effects: [{ id: "give", type: "give_item", itemId: "item", quantity: 1 }], disposition: "stay", destinationNodeId: null }],
+        id: "interaction", sourceNodeId: "b", wording: "Look around", choiceVisibility: "prompt", aliases: ["look"], tags: ["observation"], notes: "author clue",
+        outcomes: [{ id: "outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "a hidden inscription", effects: [{ id: "give", type: "give_item", itemId: "item", quantity: 1 }], disposition: "stay", destinationNodeId: null }],
       }],
     });
     const state = createEmptyPlayState(snapshot);
