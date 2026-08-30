@@ -1,25 +1,28 @@
 # Pre-Programmed
 
-A local-first text RPG whose authenticated authoring tools live inside the game itself.
+A local-first text RPG whose authenticated author mode edits the exact game being played.
 
-## Canonical opening
+## Hosting
 
-The first player-visible words are exactly:
+- Public client: `https://natanai.github.io/pre-programmed/`
+- API: `https://pre-programmed.natanai.workers.dev/api/*`
+- Mutable world state: Cloudflare D1
+- Source and binary/static assets: this GitHub repository
 
-```text
-you are born
+See [`docs/HOSTING.md`](docs/HOSTING.md) and [`docs/PROJECT-SPEC.md`](docs/PROJECT-SPEC.md) for the ownership model and foundational constraints.
+
+## Development
+
+```sh
+npm install
+npm run dev
 ```
 
-After the line finishes typing, the input prompt appears on the Universe drive:
+Validation:
 
-```text
-U:\>_
+```sh
+npm run typecheck
+npm run build:pages
 ```
 
-The underscore is the blinking input cursor. Nothing—no logo, boot copy, loading indicator, title card, or drive prompt—appears before `you are born`.
-
-## Product rule
-
-Playing is the primary interface. Author mode augments the same live game with editing, structural notation, search/linking, diagnostics, history, and bookmarks. It is not a separate CMS.
-
-See `AGENTS.md` and `docs/FOUNDATION.md` before changing architecture or author/player behavior.
+Cloudflare deployment remains automatic from `main` through the connected Workers Build. GitHub Pages is published from the existing CI workflow on pushes to `main`.
