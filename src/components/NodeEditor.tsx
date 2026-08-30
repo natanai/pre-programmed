@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "../game/model";
 import { ASSET_MANIFEST } from "../generated/assetManifest";
-import { ValueTokenBar } from "./AuthorFields";
+import { ValueMentionField } from "./AuthorFields";
 
 export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   node: GameNode;
@@ -12,12 +12,6 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   const [draft, setDraft] = useState(() => structuredClone(node));
   const [saving, setSaving] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
-
-  const insertToken = (token: string) => {
-    const start = textarea.current?.selectionStart ?? draft.text.length;
-    const end = textarea.current?.selectionEnd ?? start;
-    setDraft({ ...draft, text: `${draft.text.slice(0, start)}${token}${draft.text.slice(end)}` });
-  };
 
   const addCue = (type: TextCueType) => {
     const start = textarea.current?.selectionStart ?? 0;
@@ -42,10 +36,9 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   };
 
   return <section className="author-panel author-panel-frame node-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>NODE #{draft.nodeNumber}</span><button type="button" onClick={onCancel}>[X]</button></header>
+    <header><span>NODE #{draft.nodeNumber}</span></header>
     <div className="author-panel-body">
-      <label>NODE-TEXT <textarea ref={textarea} rows={5} value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} autoFocus /></label>
-      <ValueTokenBar snapshot={snapshot} onInsert={insertToken} />
+      <label>NODE-TEXT <ValueMentionField snapshot={snapshot} multiline rows={5} textareaRef={textarea} value={draft.text} onValueChange={(text) => setDraft({ ...draft, text })} autoFocus /></label>
       <details className="text-speed-setting">
         <summary>[TEXT SPEED: {draft.performance.charactersPerSecond} CHARACTERS/SECOND]</summary>
         <label className="text-speed-input">CHARACTERS/SECOND <input type="number" min={1} max={120} value={draft.performance.charactersPerSecond} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, charactersPerSecond: Number(event.target.value) } })} /></label>

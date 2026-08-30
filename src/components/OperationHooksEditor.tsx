@@ -3,7 +3,7 @@ import type {
   OperationHook,
   ProjectSnapshot,
 } from "../game/model";
-import { ConditionEditor, EffectsEditor, ValueTokenBar } from "./AuthorFields";
+import { ConditionEditor, EffectsEditor, ValueMentionField } from "./AuthorFields";
 
 export type OperationCapabilityDraft = {
   interactable: boolean;
@@ -93,10 +93,8 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
         </div>
         <ConditionEditor condition={hook.condition} snapshot={snapshot}
           onChange={(condition) => replaceHook(hook.id, { ...hook, condition })} />
-        <label>RESPONSE-TEXT <textarea rows={2} value={hook.responseText}
-          onChange={(event) => replaceHook(hook.id, { ...hook, responseText: event.target.value })} /></label>
-        <ValueTokenBar snapshot={snapshot}
-          onInsert={(token) => replaceHook(hook.id, { ...hook, responseText: hook.responseText + token })} />
+        <label>RESPONSE-TEXT <ValueMentionField snapshot={snapshot} multiline rows={2} value={hook.responseText}
+          onValueChange={(responseText) => replaceHook(hook.id, { ...hook, responseText })} /></label>
         <EffectsEditor effects={hook.effects} snapshot={snapshot}
           onChange={(effects) => replaceHook(hook.id, { ...hook, effects })} />
       </fieldset>)}

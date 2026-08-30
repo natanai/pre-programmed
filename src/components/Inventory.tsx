@@ -29,7 +29,7 @@ export function Inventory({
   onEditItem,
   onCreateItem,
   onSave,
-  onClose,
+  onClose: _onClose,
 }: {
   snapshot: ProjectSnapshot;
   state: PlayState;
@@ -73,7 +73,7 @@ export function Inventory({
   </div>;
 
   return <section className="inventory-surface" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>INVENTORY / STATUS</span><button type="button" onClick={onClose}>[X]</button></header>
+    <header><span>INVENTORY / STATUS</span></header>
     <div className="status-readout">
       {snapshot.variables.filter((item) => item.showInStatus).map((definition) => {
         const content = <><span>{definition.label}</span><strong>{String(state.values[definition.key] ?? "")}</strong></>;
@@ -174,7 +174,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
     finally { setSaving(false); }
   };
   return <section className="author-panel author-panel-frame item-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>ITEM DEFINITION</span><button type="button" onClick={onCancel}>[X]</button></header>
+    <header><span>ITEM DEFINITION</span></header>
     <div className="author-panel-body">
       <div className="form-grid">
         <label>KEY <input value={draft.key} onChange={(event) => setDraft({ ...draft, key: event.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") })} /></label>

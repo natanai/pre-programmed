@@ -1,4 +1,4 @@
-import type { ChangeEvent } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { makeValueToken } from "../game/interpolation";
 import type { Condition, Effect, ProjectSnapshot, Value } from "../game/model";
 
@@ -257,7 +257,7 @@ function EffectFields({ effect, onChange, snapshot }: { effect: Effect; onChange
   if (effect.type === "give_item" || effect.type === "remove_item") return <><DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} /><input type="number" min={1} value={effect.quantity} onChange={(event) => onChange({ ...effect, quantity: Number(event.target.value) })} /></>;
   if (effect.type === "set_item_state") return <><DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} /><input placeholder="state key" value={effect.key} onChange={(event) => onChange({ ...effect, key: event.target.value })} /><input placeholder="value" value={String(effect.value ?? "")} onChange={(event) => onChange({ ...effect, value: event.target.value })} /></>;
   if (effect.type === "set_interaction_visibility") return <><DefinitionSelect value={effect.interactionId} definitions={snapshot.interactions} onChange={(interactionId) => onChange({ ...effect, interactionId })} /><select value={String(effect.visible)} onChange={(event) => onChange({ ...effect, visible: event.target.value === "true" })}><option value="true">show</option><option value="false">hide</option></select></>;
-  if (effect.type === "notification") return <div className="effect-notification"><input placeholder="notification text" value={effect.text} onChange={(event) => onChange({ ...effect, text: event.target.value })} /><ValueTokenBar snapshot={snapshot} onInsert={(token) => onChange({ ...effect, text: effect.text + token })} /></div>;
+  if (effect.type === "notification") return <div className="effect-notification"><ValueMentionField snapshot={snapshot} value={effect.text} onValueChange={(text) => onChange({ ...effect, text })} placeholder="notification text" /></div>;
   if (effect.type === "synth") return <DefinitionSelect value={effect.synthId} definitions={snapshot.synthSounds} valueMode="id" onChange={(synthId) => onChange({ ...effect, synthId })} />;
   if (effect.type === "audio" || effect.type === "art") return <input placeholder="manifest asset path" value={effect.assetPath} onChange={(event) => onChange({ ...effect, assetPath: event.target.value })} />;
   if (effect.type === "transition") return <select value={effect.nodeId} onChange={(event) => onChange({ ...effect, nodeId: event.target.value })}><option value="">choose node</option>{snapshot.nodes.map((node) => <option value={node.id} key={node.id}>#{node.nodeNumber} {node.text.slice(0, 40)}</option>)}</select>;
@@ -268,11 +268,129 @@ function DefinitionSelect({ value, definitions, valueMode = "key", onChange }: {
   return <select value={value} onChange={(event) => onChange(event.target.value)}><option value="">choose</option>{definitions.map((item) => <option key={item.id} value={valueMode === "id" ? item.id : (item.key ?? item.id)}>{item.label ?? item.name ?? item.wording ?? item.key ?? item.id}</option>)}</select>;
 }
 
-export function ValueTokenBar({ snapshot, onInsert }: { snapshot: ProjectSnapshot; onInsert: (token: string) => void }) {
-  if (!snapshot.variables.length && !snapshot.computedValues.length) return null;
-  return <div className="token-bar" aria-label="Insert dynamic value">
-    <span>INSERT:</span>
-    {snapshot.variables.map((item) => <button type="button" key={item.id} onClick={() => onInsert(makeValueToken("variable", item.key))}>[{item.label}]</button>)}
-    {snapshot.computedValues.map((item) => <button type="button" key={item.id} onClick={() => onInsert(makeValueToken("computed", item.key, item.format))}>[{item.label}]</button>)}
+type Mention = { start: number; end: number; query: string };
+
+function mentionAt(value: string, cursor: number): Mention | null {
+  const beforeCursor = value.slice(0, cursor);
+  const match = beforeCursor.match(/(?:^|[\s([{])@([a-z0-9_-]*)$/i);
+  if (!match) return null;
+  const query = match[1];
+  return { start: cursor - query.length - 1, end: cursor, query };
+}
+
+export function ValueMentionField({
+  snapshot,
+  value,
+  onValueChange,
+  multiline = false,
+  rows = 2,
+  placeholder,
+  ariaLabel,
+  autoFocus,
+  textareaRef,
+  onKeyDown,
+}: {
+  snapshot: ProjectSnapshot;
+  value: string;
+  onValueChange: (value: string) => void;
+  multiline?: boolean;
+  rows?: number;
+  placeholder?: string;
+  ariaLabel?: string;
+  autoFocus?: boolean;
+  textareaRef?: RefObject<HTMLTextAreaElement | null>;
+  onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+}) {
+  const control = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const [mention, setMention] = useState<Mention | null>(null);
+  const [selection, setSelection] = useState(0);
+  const candidates = useMemo(() => [
+    ...snapshot.variables.map((item) => ({
+      id: item.id,
+      key: item.key,
+      label: item.label,
+      kind: "variable" as const,
+      token: makeValueToken("variable", item.key),
+    })),
+    ...snapshot.computedValues.map((item) => ({
+      id: item.id,
+      key: item.key,
+      label: item.label,
+      kind: "computed" as const,
+      token: makeValueToken("computed", item.key, item.format),
+    })),
+  ], [snapshot.variables, snapshot.computedValues]);
+  const matches = useMemo(() => {
+    if (!mention) return [];
+    const query = mention.query.toLowerCase();
+    return candidates
+      .filter((item) => !query || `${item.key} ${item.label}`.toLowerCase().includes(query))
+      .slice(0, 6);
+  }, [candidates, mention]);
+
+  const syncMention = (next: string, cursor: number | null) => {
+    setMention(mentionAt(next, cursor ?? next.length));
+    setSelection(0);
+  };
+  const selectMatch = (match: (typeof matches)[number]) => {
+    if (!mention) return;
+    const next = `${value.slice(0, mention.start)}${match.token}${value.slice(mention.end)}`;
+    const cursor = mention.start + match.token.length;
+    onValueChange(next);
+    setMention(null);
+    window.requestAnimationFrame(() => {
+      control.current?.focus();
+      control.current?.setSelectionRange(cursor, cursor);
+    });
+  };
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    if (mention && matches.length) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelection((current) => (current + (event.key === "ArrowDown" ? 1 : matches.length - 1)) % matches.length);
+        return;
+      }
+      if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        selectMatch(matches[selection % matches.length]);
+        return;
+      }
+    }
+    if (mention && event.key === "Escape") {
+      event.preventDefault();
+      setMention(null);
+      return;
+    }
+    onKeyDown?.(event);
+  };
+  const common = {
+    value,
+    placeholder,
+    "aria-label": ariaLabel,
+    autoFocus,
+    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      onValueChange(event.target.value);
+      syncMention(event.target.value, event.target.selectionStart);
+    },
+    onClick: (event: MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => syncMention(value, event.currentTarget.selectionStart),
+    onKeyUp: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      if (!["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(event.key)) syncMention(event.currentTarget.value, event.currentTarget.selectionStart);
+    },
+    onKeyDown: handleKeyDown,
+  };
+
+  return <div className="value-mention-field">
+    {multiline
+      ? <textarea {...common} rows={rows} ref={(element) => { control.current = element; if (textareaRef) textareaRef.current = element; }} />
+      : <input {...common} ref={(element) => { control.current = element; }} />}
+    {mention ? <div className="value-mention-menu" role="listbox" aria-label="Matching values">
+      {matches.length ? matches.map((match, index) => <button
+        type="button"
+        role="option"
+        aria-selected={index === selection % matches.length}
+        key={`${match.kind}:${match.id}`}
+        onPointerDown={(event) => { event.preventDefault(); selectMatch(match); }}
+      ><span>{match.label}</span><span>@{match.key}</span></button>) : <span>NO MATCH</span>}
+    </div> : null}
   </div>;
 }

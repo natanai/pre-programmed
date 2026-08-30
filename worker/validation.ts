@@ -87,6 +87,12 @@ export function validateMutationBody(value: unknown) {
       if (operation.type === "item.upsert" && nested.startingQuantity !== undefined && (!Number.isInteger(nested.startingQuantity) || (nested.startingQuantity as number) < 0)) {
         return "Item starting quantity must be a non-negative integer.";
       }
+      if (operation.type === "variable.upsert" && nested.timeRate !== undefined && (typeof nested.timeRate !== "number" || !Number.isFinite(nested.timeRate))) {
+        return "Variable time change must be a finite number.";
+      }
+      if (operation.type === "variable.upsert" && nested.timeUnit !== undefined && !["second", "minute", "hour"].includes(String(nested.timeUnit))) {
+        return "Variable time unit is invalid.";
+      }
       if (nested.interactable !== undefined && typeof nested.interactable !== "boolean") {
         return "Operation interactivity must be true or false.";
       }
@@ -101,6 +107,9 @@ export function validateMutationBody(value: unknown) {
         }
         if (outcomes.includes(candidate) && candidate.authorStatus !== undefined && !["draft", "configured"].includes(String(candidate.authorStatus))) {
           return "Interaction outcome author status is invalid.";
+        }
+        if (outcomes.includes(candidate) && candidate.responseCharactersPerSecond !== undefined && (!Number.isInteger(candidate.responseCharactersPerSecond) || (candidate.responseCharactersPerSecond as number) < 1 || (candidate.responseCharactersPerSecond as number) > 120)) {
+          return "Response text speed must be an integer from 1 to 120.";
         }
         if (hooks.includes(candidate) && (!ATTEMPTED_OPERATIONS.has(String(candidate.operation)) || typeof candidate.success !== "boolean")) {
           return "An operation hook is invalid.";

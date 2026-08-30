@@ -13,7 +13,7 @@ import {
   type ProjectSnapshot,
 } from "../game/model";
 import { buildSearchIndex, searchProject } from "../game/search";
-import { ConditionEditor, EffectsEditor, ValueTokenBar } from "./AuthorFields";
+import { ConditionEditor, EffectsEditor, ValueMentionField } from "./AuthorFields";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
   { value: "immediate", label: "VISIBLE", help: "Visible immediately." },
@@ -29,6 +29,7 @@ function emptyOutcome(order = 0, responseText = ""): InteractionOutcome {
     authorStatus: "draft",
     condition: ALWAYS,
     responseText,
+    responseCharactersPerSecond: 18,
     effects: [],
     disposition: "stay",
     destinationNodeId: null,
@@ -62,7 +63,11 @@ export function aliasesForUserInput(userInputText: string, aliases: string[]) {
 function normalizedInteraction(initial: Interaction | undefined, sourceNodeId: string, command: string) {
   const value = structuredClone(initial ?? emptyInteraction(sourceNodeId, command));
   value.choiceVisibility ??= "prompt";
-  value.outcomes = value.outcomes.map((outcome) => ({ ...outcome, authorStatus: outcome.authorStatus ?? "configured" }));
+  value.outcomes = value.outcomes.map((outcome) => ({
+    ...outcome,
+    authorStatus: outcome.authorStatus ?? "configured",
+    responseCharactersPerSecond: outcome.responseCharactersPerSecond ?? 18,
+  }));
   return value;
 }
 
@@ -102,7 +107,7 @@ export function InteractionEditor({
 }) {
   const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand));
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
-  const [quickResponse, setQuickResponse] = useState("");
+  const [focusOutcomeId, setFocusOutcomeId] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
@@ -112,11 +117,12 @@ export function InteractionEditor({
     setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
 
   const addResponseDraft = () => {
+    const outcome = emptyOutcome(draft.outcomes.length);
+    setFocusOutcomeId(outcome.id);
     setDraft((current) => ({
       ...current,
-      outcomes: [...current.outcomes, emptyOutcome(current.outcomes.length, quickResponse.trim())],
+      outcomes: [...current.outcomes, outcome],
     }));
-    setQuickResponse("");
   };
 
   const save = async () => {
@@ -173,7 +179,7 @@ export function InteractionEditor({
   };
 
   return <section className="author-panel author-panel-frame interaction-editor-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>USER INPUT FROM #{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</span><button type="button" onClick={onCancel}>[X]</button></header>
+    <header><span>USER INPUT FROM #{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</span></header>
 
     <div className="author-panel-body">
       <div className="causal-author-flow">
@@ -193,6 +199,7 @@ export function InteractionEditor({
           snapshot={snapshot}
           playState={playState}
           responseRef={index === 0 ? firstResponse : undefined}
+          autoFocus={focusOutcomeId === outcome.id}
           newNodeText={newNodeText[outcome.id] ?? ""}
           onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [outcome.id]: text }))}
           onChange={(next) => updateOutcome(outcome.id, next)}
@@ -207,20 +214,7 @@ export function InteractionEditor({
           index={index}
         />)}
 
-        <div className="quick-response-add">
-          <input
-            aria-label="New response-text draft"
-            value={quickResponse}
-            placeholder="another possible response-text"
-            onChange={(event) => setQuickResponse(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter") return;
-              event.preventDefault();
-              addResponseDraft();
-            }}
-          />
-          <button type="button" onClick={addResponseDraft}>[+ DRAFT RESPONSE [D]]</button>
-        </div>
+        <button className="add-response" type="button" aria-label="Add response" title="Add response" onClick={addResponseDraft}>+</button>
 
         <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} />
       </div>
@@ -239,11 +233,12 @@ export function InteractionEditor({
   </section>;
 }
 
-function OutcomeEditor({ outcome, snapshot, playState, responseRef, newNodeText, onNewNodeText, onChange, onMove, onRemove, index }: {
+function OutcomeEditor({ outcome, snapshot, playState, responseRef, autoFocus, newNodeText, onNewNodeText, onChange, onMove, onRemove, index }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
   responseRef?: RefObject<HTMLTextAreaElement | null>;
+  autoFocus?: boolean;
   newNodeText: string;
   onNewNodeText: (text: string) => void;
   onChange: (outcome: InteractionOutcome) => void;
@@ -261,20 +256,23 @@ function OutcomeEditor({ outcome, snapshot, playState, responseRef, newNodeText,
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destinationNodeId).join("") || "[A1]"
     : "[D]";
   const behaviorBadge = outcome.authorStatus === "draft" ? "[D]" : outcome.disposition === "stay" ? "[H]" : destinationNotation;
-  const insertResponse = (token: string) => onChange({ ...outcome, responseText: `${outcome.responseText}${token}` });
   const configure = (next: InteractionOutcome) => onChange({ ...next, authorStatus: "configured" });
 
-  return <fieldset className={`outcome-editor${outcome.authorStatus === "draft" ? " draft-outcome" : ""}`}>
-    <legend><span className={outcome.authorStatus === "draft" ? "notation-dead" : "notation-ready"}>{behaviorBadge}</span> RESPONSE {index + 1}</legend>
-    <label className="response-text-field">RESPONSE-TEXT
-      <textarea ref={responseRef} rows={3} value={outcome.responseText} onChange={(event) => onChange({ ...outcome, responseText: event.target.value })} />
-    </label>
-    <ValueTokenBar snapshot={snapshot} onInsert={insertResponse} />
+  return <div className="outcome-editor">
+    <ValueMentionField snapshot={snapshot} multiline rows={3} textareaRef={responseRef} autoFocus={autoFocus}
+      ariaLabel={`Response text ${index + 1}`} value={outcome.responseText}
+      onValueChange={(responseText) => onChange({ ...outcome, responseText })} />
+    <details className="text-speed-setting response-speed-setting">
+      <summary>[TEXT SPEED: {outcome.responseCharactersPerSecond ?? 18} CHARACTERS/SECOND]</summary>
+      <label className="text-speed-input">CHARACTERS/SECOND <input type="number" min={1} max={120}
+        value={outcome.responseCharactersPerSecond ?? 18}
+        onChange={(event) => onChange({ ...outcome, responseCharactersPerSecond: Number(event.target.value) })} /></label>
+    </details>
 
     <details className="behavior-details" onToggle={(event) => {
       if (event.currentTarget.open && outcome.authorStatus === "draft") configure(outcome);
     }}>
-      <summary>{behaviorBadge} {outcome.authorStatus === "draft" ? "ASSIGN BEHAVIOR" : "BEHAVIOR"}</summary>
+      <summary aria-label="Response settings"><span className={outcome.authorStatus === "draft" ? "notation-dead" : "notation-ready"}>{behaviorBadge}</span></summary>
       <div className="outcome-head"><label>RESPONSE LABEL <input aria-label="Response label" value={outcome.label} onChange={(event) => onChange({ ...outcome, label: event.target.value })} /></label><button type="button" onClick={() => onMove(-1)}>[↑]</button><button type="button" onClick={() => onMove(1)}>[↓]</button>{onRemove ? <button type="button" onClick={onRemove}>[REMOVE]</button> : null}</div>
       <div className="attempt-presets"><span>USE THIS RESPONSE:</span><button type="button" onClick={() => configure({ ...outcome, condition: { type: "attempt", operator: "eq", value: 1 } })}>[FIRST TIME]</button><button type="button" onClick={() => configure({ ...outcome, condition: { type: "attempt", operator: "eq", value: 2 } })}>[SECOND TIME]</button><button type="button" onClick={() => configure({ ...outcome, condition: { type: "attempt", operator: "gte", value: 2 } })}>[SECOND+]</button></div>
       <ConditionEditor condition={outcome.condition} onChange={(condition) => configure({ ...outcome, condition })} snapshot={snapshot} />
@@ -291,5 +289,5 @@ function OutcomeEditor({ outcome, snapshot, playState, responseRef, newNodeText,
       <label>EFFECTS — RUN TOP TO BOTTOM</label>
       <EffectsEditor effects={outcome.effects} onChange={(effects) => configure({ ...outcome, effects })} snapshot={snapshot} />
     </details>
-  </fieldset>;
+  </div>;
 }

@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../game/graph";
 import type { Interaction, PlayState, ProjectSnapshot } from "../game/model";
 
-export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInteraction, onClose }: {
+export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInteraction, onClose: _onClose }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   onOpenNode: (nodeId: string) => void;
@@ -13,8 +13,9 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
   const [legend, setLegend] = useState(false);
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const visiblePath = path;
-  return <section className="author-panel structure-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>STRUCTURE FROM HERE</span><div><button type="button" onClick={() => setLegend((value) => !value)}>[?]</button><button type="button" onClick={onClose}>[X]</button></div></header>
+  return <section className="author-panel author-panel-frame structure-panel" onPointerDown={(event) => event.stopPropagation()}>
+    <header><span>STRUCTURE FROM HERE</span><button type="button" onClick={() => setLegend((value) => !value)}>[?]</button></header>
+    <div className="author-panel-body">
     {legend ? <dl className="notation-legend">{GRAPH_NOTATION_DEFINITIONS.map((item) => <div key={item.token}><dt>{item.token}</dt><dd>{item.meaning}</dd></div>)}</dl> : null}
     <div className="structure-mobile-nav">{path.length > 1 ? <button type="button" onClick={() => setPath(path.slice(0, -1))}>[← BACK]</button> : null}<span>LEVEL {path.length}</span></div>
     <div className="structure-columns">
@@ -41,6 +42,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
           </div>
         </section>;
       })}
+    </div>
     </div>
   </section>;
 }

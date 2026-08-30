@@ -43,6 +43,7 @@ import {
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
+import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { isSoftwareKeyboardOpen } from "./ui/viewport";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 
@@ -106,6 +107,7 @@ export default function App() {
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
+  const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [unhandledCommand, setUnhandledCommand] = useState("");
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
@@ -116,6 +118,7 @@ export default function App() {
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
   const firedCueIds = useRef(new Set<string>());
+  const completedPendingDestination = useRef("");
   const flushingQueue = useRef(false);
   const typewriter = useTypewriter(activeText, activePerformance);
 
@@ -183,6 +186,18 @@ export default function App() {
     : [];
   const immediateChoices = playerChoiceInputs.filter((interaction) => interaction.choiceVisibility === "immediate");
   const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
+  const timedVariables = snapshot ? timedVariableKey(snapshot) : "[]";
+
+  useEffect(() => {
+    if (!snapshot) return;
+    const now = Date.now();
+    setPlayState((state) => state ? { ...state, variableTimeUpdatedAt: now } : state);
+    if (timedVariables === "[]") return;
+    const timer = window.setInterval(() => {
+      setPlayState((state) => state ? advanceTimedVariables(snapshot, state, Date.now()) : state);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [timedVariables]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -219,6 +234,18 @@ export default function App() {
     setActiveNodeId(node.id);
     setActivePerformance(node.performance);
   };
+
+  useEffect(() => {
+    if (!typewriter.complete || !pendingDestinationNodeId || !snapshot || !playState || !activeText) return;
+    const completionKey = `${pendingDestinationNodeId}:${activeText}`;
+    if (completedPendingDestination.current === completionKey) return;
+    completedPendingDestination.current = completionKey;
+    const destination = snapshot.nodes.find((node) => node.id === pendingDestinationNodeId);
+    setPendingDestinationNodeId(null);
+    if (!destination) return;
+    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText }]);
+    showNode(snapshot, destination, playState);
+  }, [typewriter.complete, pendingDestinationNodeId, snapshot, playState, activeText]);
 
   useEffect(() => {
     let cancelled = false;
@@ -428,7 +455,8 @@ export default function App() {
     if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
     if (authorMode && authorView && ["/history", "/locations", "/bookmark", "history", "locations"].includes(normalized)) { setPanel({ type: "workspace" }); return; }
 
-    const commandState = { ...playState, commandsEntered: playState.commandsEntered + 1, lastCommand: value };
+    const currentState = advanceTimedVariables(snapshot, playState, Date.now());
+    const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
     appendActive();
@@ -443,10 +471,25 @@ export default function App() {
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
     setPlayState(execution.state);
     handleEffectEvents(execution.events, commandLineId);
-    const destination = snapshot.nodes.find((node) => node.id === execution.state.currentNodeId);
-    if (execution.responseText) setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: execution.responseText }]);
-    if (execution.state.traversal.length > commandState.traversal.length && destination) showNode(snapshot, destination, execution.state);
-    else { setActiveText(""); setActiveNodeId(undefined); }
+    const transitioned = execution.state.traversal.length > commandState.traversal.length;
+    const destination = transitioned
+      ? snapshot.nodes.find((node) => node.id === execution.state.currentNodeId)
+      : undefined;
+    if (execution.responseText) {
+      firedCueIds.current = new Set();
+      completedPendingDestination.current = "";
+      setActiveText(execution.responseText);
+      setActiveNodeId(undefined);
+      setActivePerformance({ charactersPerSecond: execution.outcome?.responseCharactersPerSecond ?? 18, cues: [] });
+      setPendingDestinationNodeId(destination?.id ?? null);
+    } else if (destination) {
+      setPendingDestinationNodeId(null);
+      showNode(snapshot, destination, execution.state);
+    } else {
+      setPendingDestinationNodeId(null);
+      setActiveText("");
+      setActiveNodeId(undefined);
+    }
   };
 
   const handleTerminalSubmit = (event: FormEvent) => {
@@ -501,7 +544,9 @@ export default function App() {
   const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
   const dialogueAuthoring = panel?.type === "interaction";
   const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
+  const editorOpen = Boolean(panel || inventoryOpen);
   const authorExperience = authorMode && authorView;
+  const closeEditor = () => { setPanel(null); setInventoryOpen(false); };
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) { typewriter.completeImmediately(); return; }
@@ -529,7 +574,7 @@ export default function App() {
       </div>
 
       {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
-      {typewriter.complete && !panel && !inventoryOpen ? <form
+      {typewriter.complete && !pendingDestinationNodeId && !panel && !inventoryOpen ? <form
         ref={promptFormRef}
         className="prompt-line"
         onSubmit={handleTerminalSubmit}
@@ -541,7 +586,7 @@ export default function App() {
       ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {!requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <div className="player-choice-surface" aria-label="Available choices">
+        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <div className="player-choice-surface" aria-label="Available choices">
           {immediateChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
           {choiceMenuOpen ? promptChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>) : null}
         </div> : null}
@@ -550,7 +595,7 @@ export default function App() {
           {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         </div> : null}
 
-        {authorExperience && typewriter.complete && !dialogueAuthoring ? <div className="author-context">
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring ? <div className="author-context">
           <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
           <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button></div>
           <div className="current-inputs">
@@ -573,13 +618,11 @@ export default function App() {
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={async (operations, description) => {
-          await persist(operations, description);
-          setInventoryOpen(true);
-        }} onCancel={() => { setPanel(null); setInventoryOpen(true); }} /> : null}
+        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       </div>
     </div>
-    {authorMode ? <AuthorSettings authorView={authorView} onToggleAuthorView={() => {
+    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close editor" onPointerDown={(event) => event.stopPropagation()} onClick={closeEditor}>[X]</button> : null}
+    {authorMode && !editorOpen ? <AuthorSettings authorView={authorView} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       setPanel(null);
       setUnhandledCommand("");

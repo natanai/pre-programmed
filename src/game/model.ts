@@ -88,6 +88,7 @@ export type InteractionOutcome = {
   authorStatus: "draft" | "configured";
   condition: Condition;
   responseText: string;
+  responseCharactersPerSecond?: number;
   effects: Effect[];
   disposition: InteractionDisposition;
   destinationNodeId: string | null;
@@ -114,6 +115,8 @@ export type VariableDefinition = {
   interactable: boolean;
   operations: InventoryOperation[];
   hooks: OperationHook[];
+  timeRate?: number;
+  timeUnit?: "second" | "minute" | "hour";
 };
 
 export type ComputedSource =
@@ -226,6 +229,7 @@ export type PlayState = {
   visitedNodeIds: string[];
   interactionVisibility: Record<string, boolean>;
   sessionStartedAt: number;
+  variableTimeUpdatedAt: number;
   commandsEntered: number;
   lastCommand: string;
 };
@@ -275,6 +279,7 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
     visitedNodeIds: [snapshot.startNodeId],
     interactionVisibility: {},
     sessionStartedAt: now,
+    variableTimeUpdatedAt: now,
     commandsEntered: 0,
     lastCommand: "",
   };
@@ -284,9 +289,10 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
   return state;
 }
 
-export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
+export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, now = Date.now()): PlayState {
   return {
     ...state,
+    variableTimeUpdatedAt: state.variableTimeUpdatedAt ?? now,
     values: {
       ...Object.fromEntries(snapshot.variables.map((definition) => [definition.key, definition.initialValue])),
       ...state.values,

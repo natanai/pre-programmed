@@ -9,7 +9,7 @@ import type {
 } from "../game/model";
 import { OperationHooksEditor } from "./OperationHooksEditor";
 
-export function DefinitionsPanel({ snapshot, onSave, onClose }: {
+export function DefinitionsPanel({ snapshot, onSave, onClose: _onClose }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
@@ -46,20 +46,24 @@ export function DefinitionsPanel({ snapshot, onSave, onClose }: {
   };
 
   return <section className="author-panel author-panel-frame definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>STATE DEFINITIONS</span><button type="button" onClick={onClose}>[X]</button></header>
+    <header><span>STATE DEFINITIONS</span></header>
     <div className="author-panel-body">
       <nav className="panel-tabs"><button type="button" aria-pressed={mode === "variables"} onClick={() => setMode("variables")}>[VARIABLES]</button><button type="button" aria-pressed={mode === "computed"} onClick={() => setMode("computed")}>[COMPUTED]</button><button type="button" aria-pressed={mode === "entities"} onClick={() => setMode("entities")}>[CHARACTERS / LOCATIONS]</button></nav>
       {mode === "variables" ? <>
-      <div className="definition-list">{snapshot.variables.map((item) => <button type="button" key={item.id} onClick={() => setVariable({ ...structuredClone(item), interactable: item.interactable ?? false, operations: item.operations ?? [], hooks: item.hooks ?? [] })}><span>{item.label}</span><span>{item.key} : {item.valueType}</span></button>)}</div>
-      <button type="button" onClick={() => setVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [] })}>[+ VARIABLE]</button>
+      <div className="definition-list">{snapshot.variables.map((item) => <button type="button" key={item.id} onClick={() => setVariable({ ...structuredClone(item), interactable: item.interactable ?? false, operations: item.operations ?? [], hooks: item.hooks ?? [], timeRate: item.timeRate ?? 0, timeUnit: item.timeUnit ?? "second" })}><span>{item.label}</span><span>{item.key} : {item.valueType}{item.valueType === "number" && item.timeRate ? ` / ${item.timeRate > 0 ? "+" : ""}${item.timeRate} per ${item.timeUnit ?? "second"}` : ""}</span></button>)}</div>
+      <button type="button" onClick={() => setVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: 0, timeUnit: "second" })}>[+ VARIABLE]</button>
       {variable ? <div className="definition-form">
         <label>KEY <input value={variable.key} onChange={(event) => setVariable({ ...variable, key: normalizeKey(event.target.value) })} /></label>
         <label>LABEL <input value={variable.label} onChange={(event) => setVariable({ ...variable, label: event.target.value })} /></label>
         <label>TYPE <select value={variable.valueType} onChange={(event) => {
           const valueType = event.target.value as VariableDefinition["valueType"];
-          setVariable({ ...variable, valueType, initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "" });
+          setVariable({ ...variable, valueType, initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "", timeRate: valueType === "number" ? variable.timeRate ?? 0 : 0 });
         }}><option value="number">number</option><option value="boolean">boolean / flag</option><option value="string">text / enum</option></select></label>
         <label>INITIAL VALUE <InitialValueInput definition={variable} onChange={(initialValue) => setVariable({ ...variable, initialValue })} /></label>
+        {variable.valueType === "number" ? <div className="time-change-setting">
+          <label>TIME CHANGE <input aria-label="Time change amount" type="number" step="any" value={variable.timeRate ?? 0} onChange={(event) => setVariable({ ...variable, timeRate: Number(event.target.value) })} /></label>
+          <label>PER <select aria-label="Time change unit" value={variable.timeUnit ?? "second"} onChange={(event) => setVariable({ ...variable, timeUnit: event.target.value as "second" | "minute" | "hour" })}><option value="second">second</option><option value="minute">minute</option><option value="hour">hour</option></select></label>
+        </div> : null}
         <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => setVariable({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>
         {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => setVariable({ ...variable, ...capability })} /> : null}
       </div> : null}

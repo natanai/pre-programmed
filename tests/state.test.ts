@@ -4,6 +4,7 @@ import { executeEffects } from "../src/game/effects";
 import { interpolateText } from "../src/game/interpolation";
 import { createEmptyPlayState, reconcilePlayState, type Interaction } from "../src/game/model";
 import { executeInteraction } from "../src/game/runtime";
+import { advanceTimedVariables } from "../src/game/timedVariables";
 import { project } from "./fixtures";
 
 const snapshot = project({
@@ -21,6 +22,13 @@ describe("conditions, effects, counters, and interpolation", () => {
     ] });
 
     expect(reconcilePlayState(expanded, state).values).toEqual({ old: 9, new: 4 });
+
+    const timed = project({ variables: [{
+      id: "drain", key: "drain", label: "Drain", valueType: "number", initialValue: 10,
+      showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: -2, timeUnit: "minute",
+    }] });
+    const advanced = advanceTimedVariables(timed, createEmptyPlayState(timed, 1_000), 61_000);
+    expect(advanced.values.drain).toBe(8);
   });
 
   it("evaluates variable comparisons and logical groups", () => {
