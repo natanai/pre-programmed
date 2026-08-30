@@ -5,7 +5,7 @@ These rules are architectural constraints, not suggestions.
 1. **Playing is the primary interface.** Authoring augments the exact game being played; do not create a separate conventional editor as the primary workflow.
 2. **Public mode is fictionally clean.** Node IDs, dead-end notation, diagnostics, edit affordances, asset paths, conditions, and author controls are author-only.
 3. **The browser thinks; Cloudflare persists.** Per-keystroke search, parser matching, graph traversal, dead-end analysis, relationship notation, validation, and synth playback happen locally after synchronization. Never make a request per keystroke.
-4. **Git owns files.** Application code, images, fonts, sprites, MP3s, and other binary/static assets live in this repository. Cloudflare stores references, not duplicate asset bytes.
+4. **Git owns files.** Application code, images, fonts, sprites, MP3s, and other binary/static assets live in this repository. The public client is built from `main` and hosted by GitHub Pages; Cloudflare stores references, not duplicate asset bytes.
 5. **D1 owns mutable structured project state.** Nodes, interactions, conditions, effects, entities, synth recipes, revisions, bookmarks, saves, and releases belong in D1 once persistence is implemented.
 6. **Derived browser indexes are not canonical.** IndexedDB is a working cache and offline queue; in-memory indexes are derived data.
 7. **No Twine-style graph is required.** Prefer current-node context, compact notation, local cascading branch navigation, raw/searchable structure, and relative relationships.
@@ -15,8 +15,11 @@ These rules are architectural constraints, not suggestions.
 11. **Do not hard-code story copy into presentation components.** Canonical story text belongs in game data, including the opening `you are born` node.
 12. **Repository assets used by a public release are immutable by path.** Replace a released asset by adding a new path; do not overwrite the old path in place.
 13. **No AI is required for parser semantics.** The player parser is deterministic and author-inspectable.
-14. **Do not introduce R2, Durable Objects, WebSockets, collaboration, or a second persistence layer without an actual requirement.** Initial backend target is Worker + D1.
+14. **Do not introduce R2, Durable Objects, WebSockets, collaboration, or a second persistence layer without an actual requirement.** Initial backend target is API-only Worker + D1.
 15. **Branch workflow.** Feature work belongs on branches and should be reviewed/merged when ready rather than using main as a scratchpad.
+16. **Hosting ownership stays split.** GitHub Pages serves the player/author client. `pre-programmed.natanai.workers.dev` is an API endpoint, not a second public client host. Do not create two competing frontend deployments.
+17. **Backups read canonical D1.** Author backup/export must be generated from D1 itself and include enough schema + table data to be portable. Do not call an IndexedDB/cache export a database backup.
+18. **Keep automation sparse.** Prefer the existing CI workflow for GitHub-side build/deploy duties. Do not add scheduled or high-frequency workflows without a concrete need.
 
 ## Opening invariant
 
