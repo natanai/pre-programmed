@@ -87,7 +87,7 @@ jobs:
               }
 
               const health = await response.json();
-              if (health?.ok !== true || health?.service !== "pre-programmed" || health?.apiVersion !== 1 || health?.persistence !== "d1") {
+              if (health?.ok !== true || health?.service !== "pre-programmed" || health?.apiVersion !== 1 || health?.persistence !== "d1" || health?.authorConfigured !== true) {
                 throw new Error(`unexpected health payload: ${JSON.stringify(health)}`);
               }
 

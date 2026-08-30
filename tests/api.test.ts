@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { readJson, waitForProjectSnapshot } from "../src/data/api";
+import { ApiError, authorLoginErrorMessage, readJson, waitForProjectSnapshot } from "../src/data/api";
 import { project } from "./fixtures";
 
 describe("API synchronization", () => {
@@ -26,5 +26,14 @@ describe("API synchronization", () => {
     expect(fetchSnapshot).toHaveBeenCalledTimes(3);
     expect(onAttemptFailure).toHaveBeenNthCalledWith(1, expect.any(TypeError), 1);
     expect(onAttemptFailure).toHaveBeenNthCalledWith(2, expect.any(Error), 2);
+  });
+
+  it("distinguishes missing author configuration from a key mismatch", () => {
+    expect(authorLoginErrorMessage(new ApiError(503, "Author access has not been configured.")))
+      .toBe("AUTHOR ACCESS NOT CONFIGURED.");
+    expect(authorLoginErrorMessage(new ApiError(401, "Unauthorized")))
+      .toBe("ACCESS KEY DOES NOT MATCH.");
+    expect(authorLoginErrorMessage(new TypeError("network unavailable")))
+      .toBe("AUTHOR LOGIN UNAVAILABLE.");
   });
 });

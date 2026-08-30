@@ -7,6 +7,7 @@ import { NodeEditor } from "./components/NodeEditor";
 import { StructureNavigator } from "./components/StructureNavigator";
 import {
   apiUrl,
+  authorLoginErrorMessage,
   fetchProjectSnapshot,
   readJson,
   submitProjectMutation,
@@ -314,7 +315,7 @@ export default function App() {
       try {
         const result = await readJson<{ token: string }>(await fetch(apiUrl("/api/author/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: value }) }));
         sessionStorage.setItem(AUTHOR_TOKEN_KEY, result.token); setAuthorToken(result.token); setAuthorMode(true); setRequestingKey(false); setAuthorMessage("AUTHOR MODE.");
-      } catch { setAuthorMessage("ACCESS DENIED."); }
+      } catch (error) { setAuthorMessage(authorLoginErrorMessage(error)); }
       return;
     }
     if (!value.trim()) return;

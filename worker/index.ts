@@ -597,7 +597,13 @@ export async function handleApi(request: Request, env: Env) {
   const url = new URL(request.url);
   if (request.method === "OPTIONS") return new Response(null, { status: 204 });
   if (url.pathname === "/api/health" && request.method === "GET") {
-    return json({ ok: true, service: "pre-programmed", apiVersion: 1, persistence: "d1" });
+    return json({
+      ok: true,
+      service: "pre-programmed",
+      apiVersion: 1,
+      persistence: "d1",
+      authorConfigured: Boolean(env.ADMIN_KEY),
+    });
   }
   if (url.pathname === "/api/project/snapshot" && request.method === "GET") {
     try {
