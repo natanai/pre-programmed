@@ -95,6 +95,8 @@ Item definitions may declare a non-negative default quantity. Every new playthro
 
 The terminal remains the sole narrative response surface. Silent inventory manipulation may keep the inventory open; an operation that produces response-text or moves the player to another node closes the inventory so play continues where that output can be seen.
 
+Ordinary story prose and direct `user-input-text` → `response-text` output are unprefixed. Other runtime text carries terse textual provenance: operation output uses `[OPERATION > target]` with the authored target name, and floating notification effects use `[NOTIFY]`. Provenance is raw text rather than added color or chrome.
+
 Physical items and nonphysical status entries remain semantically distinct. When an author makes one interactable, its inspect/use/move/remove attempts resolve through the same target-aware runtime path. Attempt counters are keyed by target identity and operation. Computed values remain locally calculated and read-only; attempting an operation may produce authored output and effects without mutating the computed source.
 
 Authenticated authors may temporarily hide all author affordances with the small player/author view toggle. This previews the player experience without ending the authenticated session or changing game state.

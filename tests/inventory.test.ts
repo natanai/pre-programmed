@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { addInventoryItem, addNewDefaultItemsToPlayState, canPlaceItem } from "../src/game/inventory";
 import { createEmptyPlayState, type ItemDefinition } from "../src/game/model";
-import { attemptOperation } from "../src/game/operations";
+import { attemptOperation, executeOperation, formatOperationOutput } from "../src/game/operations";
 import { project } from "./fixtures";
 
 const item: ItemDefinition = {
@@ -44,8 +44,10 @@ describe("inventory engine", () => {
   it("fires hooks for disallowed manipulation and varies them by attempt", () => {
     const state = addInventoryItem(snapshot, createEmptyPlayState(snapshot), item.id, 1);
     const instanceId = state.inventory[0].instanceId;
+    const inspected = executeOperation(snapshot, state, { operation: "inspect", target: { kind: "item", id: instanceId } });
     const first = attemptOperation(snapshot, state, { operation: "remove", target: { kind: "item", id: instanceId } });
     const second = attemptOperation(snapshot, first.state, { operation: "remove", target: { kind: "item", id: instanceId } });
+    expect(formatOperationOutput(inspected, state)).toBe("[INSPECT > Box] A box");
     expect(first).toMatchObject({ accepted: false, responseText: "first refusal", attempt: 1 });
     expect(second).toMatchObject({ accepted: false, responseText: "later refusal", attempt: 2 });
     expect(second.state.inventory).toHaveLength(1);
