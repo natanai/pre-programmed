@@ -1,0 +1,91 @@
+:root {
+  color-scheme: dark;
+  background: #000;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: #000;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.dos-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: #000;
+  color: #aaa;
+  cursor: text;
+}
+
+.dos-terminal {
+  width: min(100%, 720px);
+  margin: 0 auto;
+  font-family: "PreProgrammed VGA", "Courier New", monospace;
+  font-size: 16px;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.story-line {
+  min-height: 1em;
+}
+
+.prompt-line {
+  display: flex;
+  align-items: flex-end;
+  min-height: 2em;
+  padding-top: 1em;
+}
+
+.dos-cursor {
+  display: inline-block;
+  width: 0.5625em;
+  height: 0.125em;
+  margin-left: 0;
+  margin-bottom: 0;
+  background: currentColor;
+  animation: dos-cursor-blink 1.06s steps(1, end) infinite;
+}
+
+@keyframes dos-cursor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dos-cursor {
+    animation: none;
+  }
+}
