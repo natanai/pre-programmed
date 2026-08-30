@@ -26,8 +26,8 @@ No routine Cloudflare dashboard deployment is expected. Cloudflare Workers Build
 The required account setup has already been completed:
 
 - GitHub repository Settings → Pages → Source is **GitHub Actions**.
-- Cloudflare Worker has an encrypted runtime secret named `ADMIN_KEY`. The Wrangler configuration declares it as required, and production health reports only whether it is present (never its value), so deployment fails before Pages publication when author access is unavailable.
-- GitHub Actions repository secrets contain `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` for non-interactive Wrangler deployment.
+- GitHub Actions repository secrets contain `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, and `ADMIN_KEY` for non-interactive Wrangler deployment. The workflow uploads `ADMIN_KEY` directly as an encrypted Worker runtime secret; it never writes the value into Git.
+- Wrangler declares `ADMIN_KEY` as required, and production health reports only whether it is present (never its value), so deployment and Pages publication stop when author access is unavailable.
 
 Do not ask for, reveal, log, commit, or store any of those secret values in the repository, issue tracker, PR, frontend bundle, or game database.
 
