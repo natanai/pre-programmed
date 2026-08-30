@@ -97,7 +97,7 @@ Physical items and nonphysical status entries remain semantically distinct. When
 
 Authenticated authors may temporarily hide all author affordances with the small player/author view toggle. This previews the player experience without ending the authenticated session or changing game state.
 
-On phones, the normal Author workspace includes the software keyboard. Core text editors therefore follow one shared frame: close/context remains at the top, the active form is the only scrolling region, and save/cancel remains visible above the keyboard. Dialogue editing preserves a smaller live-play context above that frame rather than dividing the reduced viewport evenly.
+On phones, the normal Author workspace includes the software keyboard. Core text editors therefore follow one shared frame: close/context remains at the top, the active form is the only scrolling region, and save/cancel remains visible above the keyboard. During dialogue editing, live-play context takes only its natural content height up to a scrolling cap; the active editor owns every remaining pixel rather than inheriting a fixed percentage split.
 
 ## Release boundary
 

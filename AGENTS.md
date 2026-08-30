@@ -25,7 +25,7 @@ These rules are architectural constraints, not suggestions.
 21. **Complexity reveals progressively.** Keep node text and the `user-input-text` → `response-text` pair primary. Conditions, effects, aliases, metadata, and global tools remain directly reachable but collapsed until requested.
 22. **Hierarchy comes from proximity and disclosure, not decoration.** Author mode keeps the raw DOS palette and text rhythm. Do not compensate for unclear placement with extra helper copy, colored panels, badges, or button chrome.
 23. **Attempted operations have one runtime owner.** Physical items, exposed variables, and exposed computed values remain distinct definitions but resolve through one target-aware operation dispatcher for counters, conditions, output, effects, notifications, and success policy.
-24. **Mobile authoring assumes the software keyboard is present.** Text-entry editors must fit the visual viewport with a stable header, one scrollable body, and reachable primary actions. Preserve enough live dialogue to orient the author, but never spend half of the keyboard-reduced viewport on passive context.
+24. **Mobile authoring assumes the software keyboard is present.** Text-entry editors must fit the visual viewport with a stable header, one scrollable body, and reachable primary actions. Live dialogue context sizes to its content up to a scrolling cap; never reserve a fixed empty fraction of the keyboard-reduced viewport for passive context.
 
 ## Opening invariant
 
