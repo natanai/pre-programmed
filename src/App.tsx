@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
 import { InteractionEditor } from "./components/InteractionEditor";
@@ -106,9 +106,29 @@ export default function App() {
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string }>>([]);
   const [eventArt, setEventArt] = useState("");
   const terminalInputRef = useRef<HTMLInputElement>(null);
+  const terminalHistoryRef = useRef<HTMLDivElement>(null);
+  const historyPinnedToPresentRef = useRef(true);
   const firedCueIds = useRef(new Set<string>());
   const flushingQueue = useRef(false);
   const typewriter = useTypewriter(activeText, activePerformance);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const viewport = window.visualViewport;
+    const syncViewport = () => {
+      root.style.setProperty("--terminal-viewport-height", `${viewport?.height ?? window.innerHeight}px`);
+    };
+    syncViewport();
+    viewport?.addEventListener("resize", syncViewport);
+    viewport?.addEventListener("scroll", syncViewport);
+    window.addEventListener("resize", syncViewport);
+    return () => {
+      viewport?.removeEventListener("resize", syncViewport);
+      viewport?.removeEventListener("scroll", syncViewport);
+      window.removeEventListener("resize", syncViewport);
+      root.style.removeProperty("--terminal-viewport-height");
+    };
+  }, []);
 
   const currentNode = snapshot && playState
     ? snapshot.nodes.find((node) => node.id === playState.currentNodeId) ?? null
@@ -117,6 +137,26 @@ export default function App() {
   const currentNotation = snapshot && playState && graph
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
     : [];
+
+  const scrollHistoryToPresent = () => {
+    const history = terminalHistoryRef.current;
+    if (!history) return;
+    historyPinnedToPresentRef.current = true;
+    history.scrollTop = history.scrollHeight;
+  };
+
+  const handleHistoryScroll = () => {
+    const history = terminalHistoryRef.current;
+    if (!history) return;
+    const distanceFromPresent = history.scrollHeight - history.clientHeight - history.scrollTop;
+    historyPinnedToPresentRef.current = distanceFromPresent <= 24;
+  };
+
+  useLayoutEffect(() => {
+    if (!historyPinnedToPresentRef.current) return;
+    const frame = window.requestAnimationFrame(scrollHistoryToPresent);
+    return () => window.cancelAnimationFrame(frame);
+  }, [transcript.length, typewriter.visibleText]);
 
   const showNode = (project: ProjectSnapshot, node: GameNode, state: PlayState) => {
     firedCueIds.current = new Set();
@@ -307,6 +347,8 @@ export default function App() {
   const handleTerminalSubmit = async (event: FormEvent) => {
     event.preventDefault();
     if (!snapshot || !playState) return;
+    historyPinnedToPresentRef.current = true;
+    scrollHistoryToPresent();
     const value = command;
     const normalized = value.trim().toLowerCase();
     setCommand(""); setAuthorMessage(""); setUnhandledCommand("");
@@ -382,30 +424,46 @@ export default function App() {
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
   const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
+  const workSurfaceOpen = Boolean(panel || inventoryOpen);
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) { typewriter.completeImmediately(); return; }
     focusTerminal();
   }}>
-    <div className="dos-terminal" aria-live="polite">
-      {transcript.map((line) => authorMode && line.nodeId ? <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button> : <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}</div>)}
-      {activeText ? authorMode && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
+    <div className="dos-terminal">
+      <div
+        ref={terminalHistoryRef}
+        className="terminal-history"
+        aria-live="polite"
+        onScroll={handleHistoryScroll}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          if (!typewriter.complete) typewriter.completeImmediately();
+        }}
+      >
+        <div className="terminal-history-content">
+          {transcript.map((line) => authorMode && line.nodeId ? <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button> : <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}</div>)}
+          {activeText ? authorMode && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
+        </div>
+      </div>
 
       {typewriter.complete && !panel && !inventoryOpen ? <form className="prompt-line" onSubmit={(event) => void handleTerminalSubmit(event)}><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => setCommand(event.target.value)} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
-      {authorMode && typewriter.complete ? <div className="author-context" onPointerDown={(event) => event.stopPropagation()}><div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ RESPONSE]</button><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[DEFINITIONS]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button></div></div> : null}
-      {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools" onPointerDown={(event) => event.stopPropagation()}><span>TURN “{unhandledCommand}” INTO:</span><button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[NEW STAY / TRANSITION]</button><div className="alias-strip"><span>ALIAS:</span>{snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId).map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!snapshot.interactions.some((interaction) => interaction.sourceNodeId === playState.currentNodeId) ? <span>no current interactions</span> : null}</div></div> : null}
-      {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
+      <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
+        {authorMode && typewriter.complete ? <div className="author-context"><div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ RESPONSE]</button><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[DEFINITIONS]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button></div></div> : null}
+        {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools"><span>TURN “{unhandledCommand}” INTO:</span><button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[NEW STAY / TRANSITION]</button><div className="alias-strip"><span>ALIAS:</span>{snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId).map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!snapshot.interactions.some((interaction) => interaction.sourceNodeId === playState.currentNodeId) ? <span>no current interactions</span> : null}</div></div> : null}
+        {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
 
-      {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
-      {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-      {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-      {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
+        {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+      </div>
     </div>
     <div className="floating-notifications" aria-live="polite">{notifications.map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
