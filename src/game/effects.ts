@@ -12,6 +12,10 @@ export type EffectExecution = {
   events: EffectEvent[];
 };
 
+export function formatNotificationOutput(text: string) {
+  return `[NOTIFY] ${text}`;
+}
+
 function numericValue(value: Value | undefined) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0;
 }

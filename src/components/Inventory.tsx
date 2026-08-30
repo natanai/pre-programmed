@@ -14,7 +14,7 @@ import type {
   PlayState,
   ProjectSnapshot,
 } from "../game/model";
-import { executeOperation, type OperationRequest } from "../game/operations";
+import { executeOperation, formatOperationOutput, type OperationRequest } from "../game/operations";
 import { readComputedValue } from "../game/runtimeValues";
 import { ASSET_MANIFEST } from "../generated/assetManifest";
 import { OperationHooksEditor } from "./OperationHooksEditor";
@@ -55,8 +55,9 @@ export function Inventory({
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
+    const output = formatOperationOutput(execution, state);
     onEvents(execution.events);
-    if (execution.responseText) onOutput(execution.responseText);
+    if (output) onOutput(output);
     onState(execution.state);
     if (request.target.kind === "item" && request.operation === "remove" && execution.accepted) setSelected(null);
   };

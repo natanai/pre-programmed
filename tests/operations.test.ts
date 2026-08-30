@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { addInventoryItem } from "../src/game/inventory";
+import { formatNotificationOutput } from "../src/game/effects";
 import {
   createEmptyPlayState,
   reconcilePlayState,
@@ -8,7 +9,7 @@ import {
   type OperationHook,
   type VariableDefinition,
 } from "../src/game/model";
-import { executeOperation } from "../src/game/operations";
+import { executeOperation, formatOperationOutput } from "../src/game/operations";
 import { readComputedValue } from "../src/game/runtimeValues";
 import { project } from "./fixtures";
 
@@ -55,7 +56,12 @@ describe("shared attempted-operation runtime", () => {
     const before = readComputedValue(computed, snapshot, state, 5_000);
     const result = executeOperation(snapshot, state, { target: { kind: "computed", id: computed.id }, operation: "remove" }, 5_000);
 
-    expect(result).toMatchObject({ accepted: false, attempt: 1, responseText: "first 4" });
+    expect(result).toMatchObject({
+      accepted: false,
+      attempt: 1,
+      responseText: "first 4",
+      provenance: { operation: "remove", targetLabel: "Elapsed" },
+    });
     expect(readComputedValue(computed, snapshot, result.state, 5_000)).toBe(before);
   });
 
@@ -88,13 +94,21 @@ describe("shared attempted-operation runtime", () => {
 
   it("runs ordered effects and interpolated notifications through the same dispatcher", () => {
     const snapshot = project({ variables: [variable] });
-    const result = executeOperation(snapshot, createEmptyPlayState(snapshot), {
+    const state = createEmptyPlayState(snapshot);
+    const result = executeOperation(snapshot, state, {
       target: { kind: "variable", id: variable.id }, operation: "use",
     });
 
     expect(result.state.values.count).toBe(1);
     expect(result.responseText).toBe("count 1");
+    expect(formatOperationOutput(result, state)).toBe("[USE > Count] count 1");
+    expect(formatOperationOutput({
+      ...result,
+      responseText: "",
+      state: { ...result.state, traversal: [...result.state.traversal, "next"] },
+    }, result.state)).toBe("[USE > Count]");
     expect(result.events).toContainEqual({ type: "notification", text: "+1" });
+    expect(formatNotificationOutput("+1")).toBe("[NOTIFY] +1");
   });
 
   it("keeps computed refreshes local", () => {

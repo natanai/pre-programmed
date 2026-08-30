@@ -22,7 +22,7 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
-import { type EffectEvent } from "./game/effects";
+import { formatNotificationOutput, type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
 import { addNewDefaultItemsToPlayState } from "./game/inventory";
 import { interpolateText } from "./game/interpolation";
@@ -380,7 +380,7 @@ export default function App() {
     for (const event of events) {
       if (event.type === "notification") {
         const id = crypto.randomUUID();
-        setNotifications((items) => [...items, { id, text: event.text, anchorLineId }]);
+        setNotifications((items) => [...items, { id, text: formatNotificationOutput(event.text), anchorLineId }]);
         window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 1800);
       } else if (event.type === "synth" && snapshot) {
         const sound = snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);

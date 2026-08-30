@@ -26,7 +26,15 @@ export type OperationResult = {
   state: PlayState;
 };
 
-export type OperationExecution = Omit<OperationResult, "effects"> & { events: EffectEvent[] };
+export type OperationProvenance = {
+  operation: InventoryOperation;
+  targetLabel: string;
+};
+
+export type OperationExecution = Omit<OperationResult, "effects"> & {
+  events: EffectEvent[];
+  provenance: OperationProvenance;
+};
 
 type ResolvedTarget = {
   definitionId: string;
@@ -62,6 +70,27 @@ function resolveTarget(snapshot: ProjectSnapshot, state: PlayState, target: Oper
 
 export function operationEventKey(target: OperationTarget, operation: InventoryOperation) {
   return `${target.kind}:${target.id}:${operation}`;
+}
+
+function operationTargetLabel(snapshot: ProjectSnapshot, state: PlayState, target: OperationTarget) {
+  if (target.kind === "item") {
+    const entry = state.inventory.find((candidate) => candidate.instanceId === target.id);
+    const definition = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
+    return definition?.name || definition?.key || target.id;
+  }
+  if (target.kind === "variable") {
+    const definition = snapshot.variables.find((candidate) => candidate.id === target.id);
+    return definition?.label || definition?.key || target.id;
+  }
+  const definition = snapshot.computedValues.find((candidate) => candidate.id === target.id);
+  return definition?.label || definition?.key || target.id;
+}
+
+export function formatOperationOutput(execution: OperationExecution, previousState: PlayState) {
+  const transitioned = execution.state.traversal.length > previousState.traversal.length;
+  if (!execution.responseText && !transitioned) return "";
+  const prefix = `[${execution.provenance.operation.toUpperCase()} > ${execution.provenance.targetLabel}]`;
+  return execution.responseText ? `${prefix} ${execution.responseText}` : prefix;
 }
 
 /**
@@ -153,6 +182,10 @@ export function executeOperation(
   request: OperationRequest,
   now = Date.now(),
 ): OperationExecution {
+  const provenance = {
+    operation: request.operation,
+    targetLabel: operationTargetLabel(snapshot, state, request.target),
+  };
   const attempt = attemptOperation(snapshot, state, request);
   const execution = executeEffects(snapshot, attempt.state, attempt.effects);
   const context = { snapshot, state: execution.state, now };
@@ -161,6 +194,7 @@ export function executeOperation(
     attempt: attempt.attempt,
     accepted: attempt.accepted,
     responseText: interpolateText(attempt.responseText, context),
+    provenance,
     state: execution.state,
     events: execution.events.map((event) => event.type === "notification"
       ? { ...event, text: interpolateText(event.text, context) }

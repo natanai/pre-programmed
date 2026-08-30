@@ -28,6 +28,7 @@ These rules are architectural constraints, not suggestions.
 24. **Mobile authoring assumes the software keyboard is present.** Text-entry editors must fit the visual viewport with a stable header, one scrollable body, and reachable primary actions. Live dialogue context sizes to its content up to a scrolling cap; never reserve a fixed empty fraction of the keyboard-reduced viewport for passive context.
 25. **Narrative output has one surface.** Inventory may remain open for silent manipulation, but it yields to the terminal whenever an operation produces response-text or changes nodes. Do not duplicate story responses inside tool panels.
 26. **Draft UI is not a source-text contract.** Keep automated coverage for deterministic mechanics, persistence, migrations, authentication, and data safety. During active interface drafting, do not freeze CSS declarations or component source strings in tests; verify visual layout and interaction with concise desktop/mobile manual routes until the behavior is stable and independently testable.
+27. **Non-dialogue text names its source.** Ordinary story and `user-input-text` → `response-text` prose stays unprefixed. Text emitted by another runtime system begins with terse raw provenance, such as `[INSPECT > organs]` or `[NOTIFY]`; do not substitute color or decorative badges for source information.
 
 ## Opening invariant
 
