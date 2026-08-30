@@ -9,7 +9,7 @@ A local-first text RPG whose authenticated author mode edits the exact game bein
 - Mutable world state: Cloudflare D1
 - Source and binary/static assets: this GitHub repository
 
-See [`docs/HOSTING.md`](docs/HOSTING.md), [`docs/FOUNDATION.md`](docs/FOUNDATION.md), and [`docs/CODEX-HANDOFF.md`](docs/CODEX-HANDOFF.md) for the ownership model, foundational constraints, and current implementation milestone.
+See [`docs/HOSTING.md`](docs/HOSTING.md), [`docs/FOUNDATION.md`](docs/FOUNDATION.md), and [`docs/CODEX-HANDOFF.md`](docs/CODEX-HANDOFF.md) for the ownership model, foundational constraints, and current implementation milestone. A coding agent taking over this project should read those files plus root [`AGENTS.md`](AGENTS.md) before changing code.
 
 ## Development
 
