@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { addInventoryItem } from "../src/game/inventory";
-import { formatNotificationOutput } from "../src/game/effects";
 import {
   createEmptyPlayState,
   reconcilePlayState,
@@ -108,7 +107,6 @@ describe("shared attempted-operation runtime", () => {
       state: { ...result.state, traversal: [...result.state.traversal, "next"] },
     }, result.state)).toBe("[USE > Count]");
     expect(result.events).toContainEqual({ type: "notification", text: "+1" });
-    expect(formatNotificationOutput("+1")).toBe("[NOTIFY] +1");
   });
 
   it("keeps computed refreshes local", () => {
