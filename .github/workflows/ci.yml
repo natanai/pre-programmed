@@ -30,7 +30,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Typecheck and build Pages client
+      - name: Test, typecheck, and build Pages client
         run: npm test && npm run typecheck && npm run build:pages
 
       - name: Configure Pages
@@ -43,9 +43,70 @@ jobs:
         with:
           path: ./dist
 
-  deploy-pages:
+  deploy-worker:
     if: github.event_name == 'push'
     needs: build
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Deploy API Worker
+        run: npx wrangler deploy
+
+      - name: Verify production API
+        run: |
+          node --input-type=module <<'NODE'
+          const url = "https://pre-programmed.natanai.workers.dev/api/health";
+          let lastError = "unknown error";
+
+          for (let attempt = 1; attempt <= 12; attempt += 1) {
+            try {
+              const response = await fetch(url, {
+                cache: "no-store",
+                headers: {
+                  Accept: "application/json",
+                  "Cache-Control": "no-cache",
+                },
+              });
+              const contentType = response.headers.get("content-type") ?? "";
+              if (!response.ok) throw new Error(`HTTP ${response.status}`);
+              if (!contentType.includes("application/json")) {
+                throw new Error(`expected JSON, got ${contentType || "no content-type"}`);
+              }
+
+              const health = await response.json();
+              if (health?.ok !== true || health?.service !== "pre-programmed" || health?.apiVersion !== 1 || health?.persistence !== "d1") {
+                throw new Error(`unexpected health payload: ${JSON.stringify(health)}`);
+              }
+
+              console.log("Production API verified:", health);
+              process.exit(0);
+            } catch (error) {
+              lastError = error instanceof Error ? error.message : String(error);
+              console.log(`API verification attempt ${attempt}/12 failed: ${lastError}`);
+              if (attempt < 12) await new Promise((resolve) => setTimeout(resolve, 5000));
+            }
+          }
+
+          console.error(`Production API verification failed: ${lastError}`);
+          process.exit(1);
+          NODE
+
+  deploy-pages:
+    if: github.event_name == 'push'
+    needs: [build, deploy-worker]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
