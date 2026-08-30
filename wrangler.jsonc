@@ -3,7 +3,9 @@
   "name": "pre-programmed",
   "compatibility_date": "2026-08-30",
   "main": "./worker/index.ts",
-  "keep_vars": true,
+  "secrets": {
+    "required": ["ADMIN_KEY"]
+  },
   "d1_databases": [
     {
       "binding": "DB",

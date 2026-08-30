@@ -63,7 +63,27 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Deploy API Worker
-        run: npx wrangler deploy
+        env:
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+        run: |
+          WORKER_SECRETS_FILE="$RUNNER_TEMP/pre-programmed-worker-secrets.json"
+          export WORKER_SECRETS_FILE
+          trap 'rm -f "$WORKER_SECRETS_FILE"' EXIT
+          node --input-type=module <<'NODE'
+          import { writeFileSync } from "node:fs";
+
+          if (!process.env.ADMIN_KEY) {
+            console.error("Required GitHub Actions secret ADMIN_KEY is not configured.");
+            process.exit(1);
+          }
+
+          writeFileSync(
+            process.env.WORKER_SECRETS_FILE,
+            JSON.stringify({ ADMIN_KEY: process.env.ADMIN_KEY }),
+            { mode: 0o600 },
+          );
+          NODE
+          npx wrangler deploy --secrets-file "$WORKER_SECRETS_FILE"
 
       - name: Verify production API
         run: |
