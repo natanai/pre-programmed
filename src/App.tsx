@@ -10,6 +10,7 @@ import {
   fetchProjectSnapshot,
   readJson,
   submitProjectMutation,
+  waitForProjectSnapshot,
 } from "./data/api";
 import {
   listQueuedMutations,
@@ -87,7 +88,7 @@ function useTypewriter(text: string, performance: TextPerformance) {
 export default function App() {
   const [snapshot, setSnapshot] = useState<ProjectSnapshot | null>(null);
   const [playState, setPlayState] = useState<PlayState | null>(null);
-  const [loadError, setLoadError] = useState(false);
+  const [connectionState, setConnectionState] = useState<"connecting" | "retrying" | "ready">("connecting");
   const [command, setCommand] = useState("");
   const [requestingKey, setRequestingKey] = useState(false);
   const [authorToken, setAuthorToken] = useState(() => sessionStorage.getItem(AUTHOR_TOKEN_KEY) ?? "");
@@ -125,9 +126,11 @@ export default function App() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     void (async () => {
       const cached = await loadCachedSnapshot();
       if (cached && !cancelled) {
+        setConnectionState("ready");
         const state = createEmptyPlayState(cached);
         setSnapshot(cached);
         setPlayState(state);
@@ -135,8 +138,14 @@ export default function App() {
         if (node) showNode(cached, node, state);
       }
       try {
-        const project = await fetchProjectSnapshot();
+        const project = await waitForProjectSnapshot({
+          signal: controller.signal,
+          onAttemptFailure: () => {
+            if (!cached && !cancelled) setConnectionState("retrying");
+          },
+        });
         if (cancelled) return;
+        setConnectionState("ready");
         setSnapshot(project);
         setPlayState((existing) => {
           const state = existing && project.nodes.some((node) => node.id === existing.currentNodeId)
@@ -147,11 +156,16 @@ export default function App() {
           return state;
         });
         await saveCachedSnapshot(project);
-      } catch {
-        if (!cached && !cancelled) setLoadError(true);
+      } catch (error) {
+        if (!cached && !cancelled && (!(error instanceof Error) || error.name !== "AbortError")) {
+          setConnectionState("retrying");
+        }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
   }, []);
 
   const clearAuthorSession = () => {
@@ -364,8 +378,7 @@ export default function App() {
     void saveCachedSnapshot(project);
   };
 
-  if (loadError) return <main className="dos-screen"><div className="dos-terminal">SYSTEM ERROR: UNIVERSE UNAVAILABLE.</div></main>;
-  if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal" />;
+  if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
   const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
 
