@@ -5,6 +5,16 @@ import {
   UNIVERSE_DRIVE_PROMPT,
 } from "./game/opening";
 
+const API_ORIGIN = "https://pre-programmed.natanai.workers.dev";
+const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
+
+function apiUrl(path: string) {
+  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+    return `http://localhost:8787${path}`;
+  }
+  return `${API_ORIGIN}${path}`;
+}
+
 function useTypewriter(text: string, charactersPerSecond: number) {
   const [count, setCount] = useState(0);
   const intervalMs = useMemo(
@@ -50,7 +60,9 @@ export default function App() {
   const [loadError, setLoadError] = useState(false);
   const [command, setCommand] = useState("");
   const [requestingKey, setRequestingKey] = useState(false);
-  const [authorKey, setAuthorKey] = useState(() => sessionStorage.getItem("pre-programmed:author-key") ?? "");
+  const [authorToken, setAuthorToken] = useState(
+    () => sessionStorage.getItem(AUTHOR_TOKEN_KEY) ?? "",
+  );
   const [authorMode, setAuthorMode] = useState(false);
   const [authorMessage, setAuthorMessage] = useState("");
   const [editing, setEditing] = useState(false);
@@ -58,9 +70,15 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const terminalInputRef = useRef<HTMLInputElement>(null);
 
+  const clearAuthorSession = () => {
+    sessionStorage.removeItem(AUTHOR_TOKEN_KEY);
+    setAuthorToken("");
+    setAuthorMode(false);
+  };
+
   useEffect(() => {
     let cancelled = false;
-    void fetch("/api/project/bootstrap")
+    void fetch(apiUrl("/api/project/bootstrap"))
       .then((response) => readJson<ProjectBootstrap>(response))
       .then((bootstrap) => {
         if (cancelled) return;
@@ -77,24 +95,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!authorKey) return;
+    if (!authorToken) return;
     let cancelled = false;
-    void fetch("/api/author/check", {
+    void fetch(apiUrl("/api/author/check"), {
       method: "POST",
-      headers: { Authorization: `Bearer ${authorKey}` },
+      headers: { Authorization: `Bearer ${authorToken}` },
     }).then((response) => {
       if (cancelled) return;
       if (response.ok) {
         setAuthorMode(true);
       } else {
-        sessionStorage.removeItem("pre-programmed:author-key");
-        setAuthorKey("");
+        clearAuthorSession();
       }
     });
     return () => {
       cancelled = true;
     };
-  }, [authorKey]);
+  }, [authorToken]);
 
   const typewriter = useTypewriter(
     node?.text ?? "",
@@ -105,31 +122,75 @@ export default function App() {
     if (!editing) terminalInputRef.current?.focus();
   };
 
+  const downloadBackup = async () => {
+    if (!authorToken) return;
+    setAuthorMessage("BACKING UP...");
+    try {
+      const response = await fetch(apiUrl("/api/author/backup"), {
+        headers: { Authorization: `Bearer ${authorToken}` },
+      });
+      if (response.status === 401) {
+        clearAuthorSession();
+        setAuthorMessage("AUTHOR SESSION EXPIRED.");
+        return;
+      }
+      if (!response.ok) throw new Error(await response.text());
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("content-disposition") ?? "";
+      const match = disposition.match(/filename="([^"]+)"/);
+      const filename = match?.[1] ?? `pre-programmed-backup-${Date.now()}.json`;
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setAuthorMessage("BACKUP DOWNLOADED.");
+    } catch {
+      setAuthorMessage("BACKUP FAILED.");
+    }
+  };
+
   const handleTerminalSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const value = command;
+    const normalized = value.trim().toLowerCase();
     setCommand("");
     setAuthorMessage("");
 
     if (requestingKey) {
-      const response = await fetch("/api/author/check", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${value}` },
-      });
-      if (response.ok) {
-        sessionStorage.setItem("pre-programmed:author-key", value);
-        setAuthorKey(value);
+      try {
+        const response = await fetch(apiUrl("/api/author/login"), {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ key: value }),
+        });
+        const result = await readJson<{ token: string; expiresAt: string }>(response);
+        sessionStorage.setItem(AUTHOR_TOKEN_KEY, result.token);
+        setAuthorToken(result.token);
         setAuthorMode(true);
         setRequestingKey(false);
         setAuthorMessage("AUTHOR MODE.");
-      } else {
+      } catch {
         setAuthorMessage("ACCESS DENIED.");
       }
       return;
     }
 
-    if (value.trim().toLowerCase() === "admin") {
-      setRequestingKey(true);
+    if (normalized === "admin") {
+      if (authorMode) {
+        setAuthorMessage("AUTHOR MODE.");
+      } else {
+        setRequestingKey(true);
+      }
+      return;
+    }
+
+    if (authorMode && (normalized === "backup" || normalized === "/backup")) {
+      await downloadBackup();
       return;
     }
 
@@ -137,14 +198,14 @@ export default function App() {
   };
 
   const saveNode = async () => {
-    if (!node || !authorKey || saving) return;
+    if (!node || !authorToken || saving) return;
     setSaving(true);
     setAuthorMessage("SAVING...");
     try {
-      const response = await fetch(`/api/author/nodes/${encodeURIComponent(node.id)}`, {
+      const response = await fetch(apiUrl(`/api/author/nodes/${encodeURIComponent(node.id)}`), {
         method: "PATCH",
         headers: {
-          Authorization: `Bearer ${authorKey}`,
+          Authorization: `Bearer ${authorToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -152,6 +213,11 @@ export default function App() {
           charactersPerSecond: node.performance.charactersPerSecond,
         }),
       });
+      if (response.status === 401) {
+        clearAuthorSession();
+        setAuthorMessage("AUTHOR SESSION EXPIRED.");
+        return;
+      }
       const result = await readJson<{ node: GameNode; revision: number }>(response);
       setNode(result.node);
       setRevision(result.revision);
