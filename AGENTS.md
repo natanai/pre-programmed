@@ -23,6 +23,8 @@ These rules are architectural constraints, not suggestions.
 19. **Author terminology is causal.** The player's authored command/choice text is `user-input-text`; the program's resulting prose is `response-text`. Keep those fields visually adjacent. Generate the primary parser alias from `user-input-text` and keep alternate aliases progressively disclosed.
 20. **Choice reveal is authored data.** An interaction may be shown immediately, revealed by tapping/clicking the prompt, or remain typing-only. Public choice surfaces must honor that setting without changing deterministic parser access.
 21. **Complexity reveals progressively.** Keep node text and the `user-input-text` → `response-text` pair primary. Conditions, effects, aliases, metadata, and global tools remain directly reachable but collapsed until requested.
+22. **Hierarchy comes from proximity and disclosure, not decoration.** Author mode keeps the raw DOS palette and text rhythm. Do not compensate for unclear placement with extra helper copy, colored panels, badges, or button chrome.
+23. **Attempted operations have one runtime owner.** Physical items, exposed variables, and exposed computed values remain distinct definitions but resolve through one target-aware operation dispatcher for counters, conditions, output, effects, notifications, and success policy.
 
 ## Opening invariant
 

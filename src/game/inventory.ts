@@ -1,7 +1,5 @@
-import { evaluateCondition } from "./conditions";
 import type {
   InventoryEntry,
-  InventoryOperation,
   ItemDefinition,
   PlayState,
   ProjectSnapshot,
@@ -9,21 +7,6 @@ import type {
 
 export const INVENTORY_COLUMNS = 10;
 export const INVENTORY_ROWS = 6;
-
-export type InventoryOperationRequest = {
-  operation: InventoryOperation;
-  instanceId: string;
-  target?: { x: number; y: number };
-};
-
-export type InventoryOperationResult = {
-  eventKey: string;
-  attempt: number;
-  accepted: boolean;
-  responseText: string;
-  effects: import("./model").Effect[];
-  state: PlayState;
-};
 
 function itemForEntry(snapshot: ProjectSnapshot, entry: InventoryEntry) {
   return snapshot.items.find((item) => item.id === entry.itemId);
@@ -128,101 +111,4 @@ export function removeInventoryItem(state: PlayState, itemId: string, quantity =
     if (entry.quantity > 0) inventory.push(entry);
   }
   return { ...state, inventory };
-}
-
-export function attemptInventoryOperation(
-  snapshot: ProjectSnapshot,
-  state: PlayState,
-  request: InventoryOperationRequest,
-): InventoryOperationResult {
-  const entry = state.inventory.find((candidate) => candidate.instanceId === request.instanceId);
-  const item = entry && itemForEntry(snapshot, entry);
-  const eventKey = `inventory:${entry?.itemId ?? "missing"}:${request.operation}`;
-  const attempt = (state.attempts[eventKey] ?? 0) + 1;
-  let nextState: PlayState = {
-    ...state,
-    attempts: { ...state.attempts, [eventKey]: attempt },
-  };
-  if (!entry || !item) {
-    return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState };
-  }
-
-  const hook = [...item.hooks]
-    .filter((candidate) => candidate.operation === request.operation)
-    .sort((left, right) => left.order - right.order)
-    .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state: nextState, eventKey }));
-
-  if (hook) {
-    let accepted = hook.success;
-    if (hook.success && request.operation === "move" && request.target) {
-      accepted = canPlaceItem(
-        snapshot,
-        nextState.inventory,
-        item,
-        request.target.x,
-        request.target.y,
-        entry.instanceId,
-      );
-      if (accepted) {
-        nextState = {
-          ...nextState,
-          inventory: nextState.inventory.map((candidate) =>
-            candidate.instanceId === entry.instanceId
-              ? { ...candidate, x: request.target!.x, y: request.target!.y }
-              : candidate,
-          ),
-        };
-      }
-    }
-    if (hook.success && request.operation === "remove") {
-      nextState = {
-        ...nextState,
-        inventory: nextState.inventory.filter((candidate) => candidate.instanceId !== entry.instanceId),
-      };
-    }
-    return {
-      eventKey,
-      attempt,
-      accepted,
-      responseText: hook.responseText,
-      effects: hook.effects,
-      state: nextState,
-    };
-  }
-
-  if (request.operation === "inspect") {
-    return { eventKey, attempt, accepted: true, responseText: item.description, effects: [], state: nextState };
-  }
-
-  if (request.operation === "move" && request.target) {
-    const valid = canPlaceItem(
-      snapshot,
-      nextState.inventory,
-      item,
-      request.target.x,
-      request.target.y,
-      entry.instanceId,
-    );
-    if (valid) {
-      nextState = {
-        ...nextState,
-        inventory: nextState.inventory.map((candidate) =>
-          candidate.instanceId === entry.instanceId
-            ? { ...candidate, x: request.target!.x, y: request.target!.y }
-            : candidate,
-        ),
-      };
-    }
-    return { eventKey, attempt, accepted: valid, responseText: "", effects: [], state: nextState };
-  }
-
-  if (request.operation === "remove" && item.removable) {
-    nextState = {
-      ...nextState,
-      inventory: nextState.inventory.filter((candidate) => candidate.instanceId !== entry.instanceId),
-    };
-    return { eventKey, attempt, accepted: true, responseText: "", effects: [], state: nextState };
-  }
-
-  return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState };
 }

@@ -22,7 +22,10 @@ function readSettings(): DisplaySettings {
   }
 }
 
-export function AuthorSettings() {
+export function AuthorSettings({ authorView, onToggleAuthorView }: {
+  authorView: boolean;
+  onToggleAuthorView: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(readSettings);
 
@@ -38,13 +41,12 @@ export function AuthorSettings() {
   }, [settings]);
 
   return <div className="author-settings" onPointerDown={(event) => event.stopPropagation()}>
-    <button
-      type="button"
-      className="author-settings-gear"
-      aria-label="Author display settings"
-      aria-expanded={open}
-      onClick={() => setOpen((value) => !value)}
-    >⚙</button>
+    <div className="author-corner-controls">
+      <button type="button" className="author-view-toggle" aria-label={authorView ? "Preview player experience" : "Return to Author experience"}
+        aria-pressed={authorView} onClick={onToggleAuthorView}><span aria-hidden="true" /></button>
+      <button type="button" className="author-settings-gear" aria-label="Author display settings" aria-expanded={open}
+        onClick={() => setOpen((value) => !value)}>⚙</button>
+    </div>
     {open ? <section className="author-settings-popover" aria-label="Display settings">
       <header><span>DISPLAY SETTINGS</span><button type="button" onClick={() => setOpen(false)}>[X]</button></header>
       <label>TEXT SIZE <span>{settings.fontSize}px</span>

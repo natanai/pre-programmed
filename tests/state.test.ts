@@ -7,17 +7,17 @@ import { executeInteraction } from "../src/game/runtime";
 import { project } from "./fixtures";
 
 const snapshot = project({
-  variables: [{ id: "v", key: "count", label: "Count", valueType: "number", initialValue: 0, showInStatus: true }],
-  computedValues: [{ id: "c", key: "elapsed", label: "Elapsed", source: "elapsed_seconds", format: "integer", showInStatus: true }],
+  variables: [{ id: "v", key: "count", label: "Count", valueType: "number", initialValue: 0, showInStatus: true, interactable: false, operations: [], hooks: [] }],
+  computedValues: [{ id: "c", key: "elapsed", label: "Elapsed", source: "elapsed_seconds", format: "integer", showInStatus: true, interactable: false, operations: [], hooks: [] }],
 });
 
 describe("conditions, effects, counters, and interpolation", () => {
   it("adds newly authored variable defaults to an active play state without resetting existing values", () => {
-    const original = project({ variables: [{ id: "old", key: "old", label: "Old", valueType: "number", initialValue: 1, showInStatus: false }] });
+    const original = project({ variables: [{ id: "old", key: "old", label: "Old", valueType: "number", initialValue: 1, showInStatus: false, interactable: false, operations: [], hooks: [] }] });
     const state = { ...createEmptyPlayState(original), values: { old: 9 } };
     const expanded = project({ variables: [
       ...original.variables,
-      { id: "new", key: "new", label: "New", valueType: "number", initialValue: 4, showInStatus: false },
+      { id: "new", key: "new", label: "New", valueType: "number", initialValue: 4, showInStatus: false, interactable: false, operations: [], hooks: [] },
     ] });
 
     expect(reconcilePlayState(expanded, state).values).toEqual({ old: 9, new: 4 });

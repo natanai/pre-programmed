@@ -222,7 +222,59 @@ const migrations: Migration[] = [
       UPDATE project_meta SET schema_version = 4 WHERE id = 1;
     `,
   },
+  {
+    id: 5,
+    name: "shared-operation-capabilities",
+    sql: `
+      ALTER TABLE variable_definitions
+      ADD COLUMN operation_interactable INTEGER NOT NULL DEFAULT 0
+      CHECK (operation_interactable IN (0, 1));
+
+      ALTER TABLE variable_definitions
+      ADD COLUMN operations_json TEXT NOT NULL DEFAULT '[]';
+
+      ALTER TABLE computed_definitions
+      ADD COLUMN operation_interactable INTEGER NOT NULL DEFAULT 0
+      CHECK (operation_interactable IN (0, 1));
+
+      ALTER TABLE computed_definitions
+      ADD COLUMN operations_json TEXT NOT NULL DEFAULT '[]';
+
+      ALTER TABLE item_definitions
+      ADD COLUMN operation_interactable INTEGER NOT NULL DEFAULT 1
+      CHECK (operation_interactable IN (0, 1));
+
+      ALTER TABLE item_definitions
+      ADD COLUMN operations_json TEXT NOT NULL DEFAULT '["inspect","use","move","remove"]';
+
+      CREATE TABLE operation_hooks (
+        id TEXT PRIMARY KEY,
+        target_kind TEXT NOT NULL CHECK (target_kind IN ('item', 'variable', 'computed')),
+        target_id TEXT NOT NULL,
+        operation TEXT NOT NULL CHECK (operation IN ('inspect', 'use', 'move', 'remove')),
+        order_index INTEGER NOT NULL DEFAULT 0,
+        condition_json TEXT NOT NULL DEFAULT '{"type":"always"}',
+        response_text TEXT NOT NULL DEFAULT '',
+        effects_json TEXT NOT NULL DEFAULT '[]',
+        success INTEGER NOT NULL DEFAULT 0 CHECK (success IN (0, 1))
+      );
+
+      INSERT INTO operation_hooks
+        (id, target_kind, target_id, operation, order_index, condition_json, response_text, effects_json, success)
+      SELECT id, 'item', item_id, operation, order_index, condition_json, response_text, effects_json, success
+      FROM item_operation_hooks;
+
+      DROP TABLE item_operation_hooks;
+
+      CREATE INDEX operation_hooks_target_idx
+      ON operation_hooks(target_kind, target_id, operation, order_index);
+
+      UPDATE project_meta SET schema_version = 5 WHERE id = 1;
+    `,
+  },
 ];
+
+export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));
 
 let ready: Promise<void> | null = null;
 

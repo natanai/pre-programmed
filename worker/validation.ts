@@ -39,6 +39,7 @@ const OPERATION_TYPES = new Set([
   "bookmark.upsert",
   "bookmark.delete",
 ]);
+const ATTEMPTED_OPERATIONS = new Set(["inspect", "use", "move", "remove"]);
 
 function object(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -78,13 +79,19 @@ export function validateMutationBody(value: unknown) {
     if (!object(operation) || typeof operation.type !== "string" || !OPERATION_TYPES.has(operation.type)) {
       return "Unknown mutation operation.";
     }
-    const nested = operation.interaction ?? operation.item;
+    const nested = operation.interaction ?? operation.item ?? operation.definition;
     if (object(nested)) {
       if (operation.type === "interaction.upsert" && nested.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(nested.choiceVisibility))) {
         return "Interaction choice visibility is invalid.";
       }
       if (operation.type === "item.upsert" && nested.startingQuantity !== undefined && (!Number.isInteger(nested.startingQuantity) || (nested.startingQuantity as number) < 0)) {
         return "Item starting quantity must be a non-negative integer.";
+      }
+      if (nested.interactable !== undefined && typeof nested.interactable !== "boolean") {
+        return "Operation interactivity must be true or false.";
+      }
+      if (nested.operations !== undefined && (!Array.isArray(nested.operations) || nested.operations.some((candidate) => !ATTEMPTED_OPERATIONS.has(String(candidate))))) {
+        return "An attempted operation is invalid.";
       }
       const outcomes = Array.isArray(nested.outcomes) ? nested.outcomes : [];
       const hooks = Array.isArray(nested.hooks) ? nested.hooks : [];
@@ -94,6 +101,9 @@ export function validateMutationBody(value: unknown) {
         }
         if (outcomes.includes(candidate) && candidate.authorStatus !== undefined && !["draft", "configured"].includes(String(candidate.authorStatus))) {
           return "Interaction outcome author status is invalid.";
+        }
+        if (hooks.includes(candidate) && (!ATTEMPTED_OPERATIONS.has(String(candidate.operation)) || typeof candidate.success !== "boolean")) {
+          return "An operation hook is invalid.";
         }
       }
     }

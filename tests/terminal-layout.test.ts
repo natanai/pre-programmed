@@ -25,4 +25,23 @@ describe("terminal present-moment layout", () => {
     expect(app).toContain("--terminal-viewport-height");
     expect(app).toContain("terminal-history-content");
   });
+
+  it("keeps dialogue authoring beside the live prompt and avoids decorative choice chrome", () => {
+    const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+    const choiceButton = css.match(/\.player-choice-surface button\s*\{([^}]+)\}/)?.[1] ?? "";
+
+    expect(app).toContain("dialogueAuthoring");
+    expect(app).toContain("dialogue-authoring-popover");
+    expect(app).not.toContain("prompt-choice-caret");
+    expect(choiceButton).toContain("border: 0");
+    expect(choiceButton).toContain("text-align: left");
+    for (const accent of ["#6cf", "#9cf", "#9f9", "#fc6", "#123", "#345"]) expect(css).not.toContain(accent);
+  });
+
+  it("does not restart an unchanged opening when the network snapshot replaces its cache", () => {
+    const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    expect(app).toContain("const performanceKey = JSON.stringify(performance)");
+    expect(app).toContain("[text, performanceKey]");
+  });
 });

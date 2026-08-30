@@ -1,5 +1,6 @@
+import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
-import { executeSqlScript, splitSqlStatements } from "../worker/db/migrations";
+import { executeSqlScript, MIGRATION_SCRIPTS, splitSqlStatements } from "../worker/db/migrations";
 
 describe("D1 migration scripts", () => {
   it("keeps multi-line statements intact for D1 prepared execution", () => {
@@ -30,5 +31,23 @@ describe("D1 migration scripts", () => {
       "CREATE TABLE two (id TEXT)",
     ]);
     expect(run).toHaveBeenCalledTimes(2);
+  });
+
+  it("applies every migration to a fresh SQLite database", () => {
+    const database = new DatabaseSync(":memory:");
+    try {
+      for (const migration of MIGRATION_SCRIPTS) {
+        for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
+      }
+      const version = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
+      const hookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'operation_hooks'").get();
+      const oldHookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'item_operation_hooks'").get();
+
+      expect(version.schema_version).toBe(5);
+      expect(hookTable).toBeTruthy();
+      expect(oldHookTable).toBeUndefined();
+    } finally {
+      database.close();
+    }
   });
 });
