@@ -7,5 +7,13 @@
     "binding": "ASSETS",
     "not_found_handling": "single-page-application",
     "run_worker_first": ["/api/*"]
-  }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pre-programmed-db",
+      "database_id": "c13688ea-4f00-49ac-b7d1-88ba623c4c41",
+      "migrations_dir": "migrations"
+    }
+  ]
 }
