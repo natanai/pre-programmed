@@ -16,6 +16,7 @@
     "typecheck": "tsc -b",
     "pretest": "npm run generate:assets",
     "test": "vitest run",
+    "verify:pages": "npm run generate:assets && vitest run && tsc -b && vite build --mode pages",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {

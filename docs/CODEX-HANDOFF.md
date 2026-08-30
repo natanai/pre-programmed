@@ -1026,6 +1026,8 @@ Avoid runtime CSS patch layers. Put visual rules in coherent styles/components.
 
 Add tests where logic is deterministic and easy to regress.
 
+During active interface drafting, do not test visual layout by matching literal CSS declarations or component source strings. Use concise desktop/mobile manual routes for provisional presentation decisions; reserve automated tests for stable behavior that can be exercised through an actual interface or isolated logic boundary.
+
 At minimum, test:
 
 ## Parser
