@@ -111,6 +111,9 @@ export type VariableDefinition = {
   valueType: "number" | "boolean" | "string";
   initialValue: Value;
   showInStatus: boolean;
+  interactable: boolean;
+  operations: InventoryOperation[];
+  hooks: OperationHook[];
 };
 
 export type ComputedSource =
@@ -126,11 +129,14 @@ export type ComputedDefinition = {
   source: ComputedSource;
   format: "raw" | "integer" | "seconds";
   showInStatus: boolean;
+  interactable: boolean;
+  operations: InventoryOperation[];
+  hooks: OperationHook[];
 };
 
 export type InventoryOperation = "inspect" | "use" | "move" | "remove";
 
-export type ItemOperationHook = {
+export type OperationHook = {
   id: string;
   operation: InventoryOperation;
   order: number;
@@ -139,6 +145,14 @@ export type ItemOperationHook = {
   effects: Effect[];
   success: boolean;
 };
+
+/** Retained as a source-compatible name for existing item authoring code. */
+export type ItemOperationHook = OperationHook;
+
+export type OperationTarget =
+  | { kind: "item"; id: string }
+  | { kind: "variable"; id: string }
+  | { kind: "computed"; id: string };
 
 export type ItemDefinition = {
   id: string;
@@ -152,9 +166,11 @@ export type ItemDefinition = {
   maxStack: number;
   removable: boolean;
   startingQuantity: number;
+  interactable: boolean;
+  operations: InventoryOperation[];
   tags: string[];
   initialState: Record<string, Value>;
-  hooks: ItemOperationHook[];
+  hooks: OperationHook[];
 };
 
 export type SynthStep = {

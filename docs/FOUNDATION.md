@@ -93,6 +93,10 @@ Native sprites are at most 32×32 pixels and use pixel-preserving scaling. Large
 
 Item definitions may declare a non-negative starting quantity. A new playthrough deterministically packs those default items into the inventory; Author mode may also add an item to the current test run without changing its starting quantity.
 
+Physical items and nonphysical status entries remain semantically distinct. When an author makes one interactable, its inspect/use/move/remove attempts resolve through the same target-aware runtime path. Attempt counters are keyed by target identity and operation. Computed values remain locally calculated and read-only; attempting an operation may produce authored output and effects without mutating the computed source.
+
+Authenticated authors may temporarily hide all author affordances with the small player/author view toggle. This previews the player experience without ending the authenticated session or changing game state.
+
 ## Release boundary
 
 Author plays mutable Draft. Public players play an immutable structured release snapshot. Because released binary assets remain repository files, a path used by a published release becomes immutable: replacement assets get new paths.

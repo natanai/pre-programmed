@@ -2,10 +2,12 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { AssetExplorer, SynthPanel } from "../src/components/AuthorTools";
+import { AuthorSettings } from "../src/components/AuthorSettings";
 import { DefinitionsPanel } from "../src/components/DefinitionsPanel";
 import { aliasesForUserInput, InteractionEditor, QuickInputsEditor } from "../src/components/InteractionEditor";
 import { Inventory } from "../src/components/Inventory";
 import { NodeEditor } from "../src/components/NodeEditor";
+import { OperationHooksEditor } from "../src/components/OperationHooksEditor";
 import { StructureNavigator } from "../src/components/StructureNavigator";
 import { createEmptyPlayState } from "../src/game/model";
 import { interaction, node, project } from "./fixtures";
@@ -28,7 +30,8 @@ describe("Author surface rendering", () => {
       renderToStaticMarkup(<StructureNavigator snapshot={snapshot} playState={state} onOpenNode={noop} onEditInteraction={noop} onClose={noop} />),
       renderToStaticMarkup(<AssetExplorer snapshot={snapshot} onClose={noop} />),
       renderToStaticMarkup(<SynthPanel snapshot={snapshot} onSave={save} onClose={noop} />),
-      renderToStaticMarkup(<Inventory snapshot={snapshot} state={state} authorMode onState={noop} onOutput={noop} onEvents={noop} onEditItem={noop} onCreateItem={noop} onClose={noop} />),
+      renderToStaticMarkup(<Inventory snapshot={snapshot} state={state} authorMode onState={noop} onOutput={noop} onEvents={noop} onEditItem={noop} onCreateItem={noop} onSave={save} onClose={noop} />),
+      renderToStaticMarkup(<OperationHooksEditor snapshot={snapshot} capability={{ interactable: true, operations: ["inspect"], hooks: [] }} onChange={noop} />),
     ].join("\n");
 
     for (const label of [
@@ -40,13 +43,14 @@ describe("Author surface rendering", () => {
       "REPOSITORY ASSETS",
       "TINY SYNTH",
       "INVENTORY / STATUS",
+      "PLAYER OPERATIONS",
     ]) {
       expect(markup).toContain(label);
     }
     expect(markup).toContain("SAVE &amp; PLAY");
     expect(markup.indexOf("USER-INPUT-TEXT")).toBeLessThan(markup.indexOf("RESPONSE-TEXT"));
     expect(markup).toContain("[ALIASES + AUTHOR DETAILS]");
-    expect(markup).toContain("[SHOW ON TAP]");
+    expect(markup).toContain("[ON PROMPT]");
     expect(markup).toContain("[D] ASSIGN BEHAVIOR");
     expect(markup).toContain("[DEFAULT INVENTORY + ITEM DEFINITIONS]");
     expect(markup).toContain("Inventory cell 10, 6");
@@ -55,5 +59,20 @@ describe("Author surface rendering", () => {
   it("generates the primary parser alias while keeping alternate aliases compact", () => {
     expect(aliasesForUserInput("  Open the door  ", ["open-the-door", "pull the door", "pull the door"]))
       .toEqual(["Open the door", "open-the-door", "pull the door"]);
+  });
+
+  it("renders status capabilities as touch-reachable controls and keeps the corner toggle unlabeled", () => {
+    const statusSnapshot = project({ variables: [{
+      id: "count", key: "count", label: "Count", valueType: "number", initialValue: 0,
+      showInStatus: true, interactable: true, operations: ["inspect"], hooks: [],
+    }] });
+    const statusState = createEmptyPlayState(statusSnapshot);
+    const inventoryMarkup = renderToStaticMarkup(<Inventory snapshot={statusSnapshot} state={statusState} authorMode={false}
+      onState={noop} onOutput={noop} onEvents={noop} onEditItem={noop} onCreateItem={noop} onSave={save} onClose={noop} />);
+    const settingsMarkup = renderToStaticMarkup(<AuthorSettings authorView onToggleAuthorView={noop} />);
+
+    expect(inventoryMarkup).toContain("<button type=\"button\" aria-pressed=\"false\"><span>Count</span>");
+    expect(settingsMarkup).toContain("class=\"author-view-toggle\"");
+    expect(settingsMarkup).toContain("aria-label=\"Preview player experience\"");
   });
 });

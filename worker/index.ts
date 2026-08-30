@@ -118,6 +118,8 @@ type VariableRow = {
   value_type: "number" | "boolean" | "string";
   initial_json: string;
   show_in_status: number;
+  operation_interactable: number;
+  operations_json: string;
 };
 type ComputedRow = {
   id: string;
@@ -126,6 +128,8 @@ type ComputedRow = {
   source: ComputedDefinition["source"];
   format: ComputedDefinition["format"];
   show_in_status: number;
+  operation_interactable: number;
+  operations_json: string;
 };
 type ItemRow = {
   id: string;
@@ -139,12 +143,15 @@ type ItemRow = {
   max_stack: number;
   removable: number;
   starting_quantity: number;
+  operation_interactable: number;
+  operations_json: string;
   tags_json: string;
   initial_state_json: string;
 };
 type HookRow = {
   id: string;
-  item_id: string;
+  target_kind: "item" | "variable" | "computed";
+  target_id: string;
   operation: import("../src/game/model").InventoryOperation;
   order_index: number;
   condition_json: string;
@@ -181,19 +188,20 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         "SELECT id, key, entity_type, name, description, tags_json FROM entity_definitions ORDER BY entity_type, key",
       ).all<EntityRow>(),
       db.prepare(
-        "SELECT id, key, label, value_type, initial_json, show_in_status FROM variable_definitions ORDER BY key",
+        "SELECT id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json FROM variable_definitions ORDER BY key",
       ).all<VariableRow>(),
       db.prepare(
-        "SELECT id, key, label, source, format, show_in_status FROM computed_definitions ORDER BY key",
+        "SELECT id, key, label, source, format, show_in_status, operation_interactable, operations_json FROM computed_definitions ORDER BY key",
       ).all<ComputedRow>(),
       db.prepare(
         `SELECT id, key, name, description, asset_path, width, height, stackable,
-                max_stack, removable, starting_quantity, tags_json, initial_state_json
+                max_stack, removable, starting_quantity, operation_interactable, operations_json,
+                tags_json, initial_state_json
            FROM item_definitions ORDER BY key`,
       ).all<ItemRow>(),
       db.prepare(
-        `SELECT id, item_id, operation, order_index, condition_json, response_text,
-                effects_json, success FROM item_operation_hooks ORDER BY item_id, operation, order_index, id`,
+        `SELECT id, target_kind, target_id, operation, order_index, condition_json, response_text,
+                effects_json, success FROM operation_hooks ORDER BY target_kind, target_id, operation, order_index, id`,
       ).all<HookRow>(),
       db.prepare("SELECT id, key, label, recipe_json FROM synth_sounds ORDER BY key").all<SynthRow>(),
       currentRevision(db),
@@ -202,10 +210,19 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   if (!meta) throw new Error("Project has not been initialized.");
   const aliasGroups = groupRows(aliases.results, (row) => row.interaction_id);
   const outcomeGroups = groupRows(outcomes.results, (row) => row.interaction_id);
-  const hookGroups = groupRows(hooks.results, (row) => row.item_id);
+  const hookGroups = groupRows(hooks.results, (row) => `${row.target_kind}:${row.target_id}`);
+  const hooksFor = (kind: HookRow["target_kind"], id: string) => (hookGroups.get(`${kind}:${id}`) ?? []).map((hook) => ({
+    id: hook.id,
+    operation: hook.operation,
+    order: hook.order_index,
+    condition: parseJson(hook.condition_json, { type: "always" } as const),
+    responseText: hook.response_text,
+    effects: parseJson(hook.effects_json, []),
+    success: Boolean(hook.success),
+  }));
 
   return {
-    schemaVersion: Math.max(4, meta.schema_version),
+    schemaVersion: Math.max(5, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     nodes: nodes.results.map((row): GameNode => {
@@ -262,6 +279,9 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       valueType: row.value_type,
       initialValue: parseJson(row.initial_json, null),
       showInStatus: Boolean(row.show_in_status),
+      interactable: Boolean(row.operation_interactable),
+      operations: parseJson(row.operations_json, []),
+      hooks: hooksFor("variable", row.id),
     })),
     computedValues: computed.results.map((row): ComputedDefinition => ({
       id: row.id,
@@ -270,6 +290,9 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       source: row.source,
       format: row.format,
       showInStatus: Boolean(row.show_in_status),
+      interactable: Boolean(row.operation_interactable),
+      operations: parseJson(row.operations_json, []),
+      hooks: hooksFor("computed", row.id),
     })),
     items: items.results.map((row): ItemDefinition => ({
       id: row.id,
@@ -283,17 +306,11 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       maxStack: row.max_stack,
       removable: Boolean(row.removable),
       startingQuantity: row.starting_quantity,
+      interactable: Boolean(row.operation_interactable),
+      operations: parseJson(row.operations_json, ["inspect", "use", "move", "remove"]),
       tags: parseJson(row.tags_json, []),
       initialState: parseJson(row.initial_state_json, {}),
-      hooks: (hookGroups.get(row.id) ?? []).map((hook) => ({
-        id: hook.id,
-        operation: hook.operation,
-        order: hook.order_index,
-        condition: parseJson(hook.condition_json, { type: "always" }),
-        responseText: hook.response_text,
-        effects: parseJson(hook.effects_json, []),
-        success: Boolean(hook.success),
-      })),
+      hooks: hooksFor("item", row.id),
     })),
     synthSounds: synths.results.map((row): SynthSound => ({
       ...parseJson<Omit<SynthSound, "id" | "key" | "label">>(row.recipe_json, {
@@ -327,6 +344,25 @@ async function getBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
     note: row.note,
     createdAt: row.created_at,
   }));
+}
+
+function hookStatements(
+  db: D1Database,
+  targetKind: HookRow["target_kind"],
+  targetId: string,
+  hooks: import("../src/game/model").OperationHook[] = [],
+) {
+  return [
+    db.prepare("DELETE FROM operation_hooks WHERE target_kind = ? AND target_id = ?").bind(targetKind, targetId),
+    ...hooks.map((hook) => db.prepare(
+      `INSERT INTO operation_hooks
+       (id, target_kind, target_id, operation, order_index, condition_json, response_text, effects_json, success)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).bind(
+      hook.id, targetKind, targetId, hook.operation, hook.order, JSON.stringify(hook.condition),
+      hook.responseText, JSON.stringify(hook.effects), Number(hook.success),
+    )),
+  ];
 }
 
 function operationStatements(db: D1Database, operation: MutationOperation): D1PreparedStatement[] {
@@ -413,20 +449,32 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
     case "variable.upsert": {
       const value = operation.definition;
       return [db.prepare(
-        `INSERT INTO variable_definitions (id, key, label, value_type, initial_json, show_in_status, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `INSERT INTO variable_definitions
+         (id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET key=excluded.key, label=excluded.label, value_type=excluded.value_type,
-           initial_json=excluded.initial_json, show_in_status=excluded.show_in_status, updated_at=CURRENT_TIMESTAMP`,
-      ).bind(value.id, value.key, value.label, value.valueType, JSON.stringify(value.initialValue), Number(value.showInStatus))];
+           initial_json=excluded.initial_json, show_in_status=excluded.show_in_status,
+           operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
+           updated_at=CURRENT_TIMESTAMP`,
+      ).bind(
+        value.id, value.key, value.label, value.valueType, JSON.stringify(value.initialValue), Number(value.showInStatus),
+        Number(value.interactable ?? false), JSON.stringify(value.operations ?? []),
+      ), ...hookStatements(db, "variable", value.id, value.hooks)];
     }
     case "computed.upsert": {
       const value = operation.definition;
       return [db.prepare(
-        `INSERT INTO computed_definitions (id, key, label, source, format, show_in_status, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        `INSERT INTO computed_definitions
+         (id, key, label, source, format, show_in_status, operation_interactable, operations_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET key=excluded.key, label=excluded.label, source=excluded.source,
-           format=excluded.format, show_in_status=excluded.show_in_status, updated_at=CURRENT_TIMESTAMP`,
-      ).bind(value.id, value.key, value.label, value.source, value.format, Number(value.showInStatus))];
+           format=excluded.format, show_in_status=excluded.show_in_status,
+           operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
+           updated_at=CURRENT_TIMESTAMP`,
+      ).bind(
+        value.id, value.key, value.label, value.source, value.format, Number(value.showInStatus),
+        Number(value.interactable ?? false), JSON.stringify(value.operations ?? []),
+      ), ...hookStatements(db, "computed", value.id, value.hooks)];
     }
     case "item.upsert": {
       const item = operation.item;
@@ -434,29 +482,24 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
         db.prepare(
           `INSERT INTO item_definitions
            (id, key, name, description, asset_path, width, height, stackable, max_stack,
-            removable, starting_quantity, tags_json, initial_state_json, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            removable, starting_quantity, operation_interactable, operations_json,
+            tags_json, initial_state_json, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET key=excluded.key, name=excluded.name,
              description=excluded.description, asset_path=excluded.asset_path, width=excluded.width,
              height=excluded.height, stackable=excluded.stackable, max_stack=excluded.max_stack,
              removable=excluded.removable, starting_quantity=excluded.starting_quantity,
+             operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
              tags_json=excluded.tags_json,
              initial_state_json=excluded.initial_state_json, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           item.id, item.key, item.name, item.description, item.assetPath, item.width, item.height,
           Number(item.stackable), item.maxStack, Number(item.removable), item.startingQuantity ?? 0,
+          Number(item.interactable ?? true), JSON.stringify(item.operations ?? ["inspect", "use", "move", "remove"]),
           JSON.stringify(item.tags),
           JSON.stringify(item.initialState),
         ),
-        db.prepare("DELETE FROM item_operation_hooks WHERE item_id = ?").bind(item.id),
-        ...item.hooks.map((hook) => db.prepare(
-          `INSERT INTO item_operation_hooks
-           (id, item_id, operation, order_index, condition_json, response_text, effects_json, success)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).bind(
-          hook.id, item.id, hook.operation, hook.order, JSON.stringify(hook.condition),
-          hook.responseText, JSON.stringify(hook.effects), Number(hook.success),
-        )),
+        ...hookStatements(db, "item", item.id, item.hooks),
       ];
     }
     case "synth.upsert": {
@@ -516,7 +559,7 @@ function restoreStatements(
     "DELETE FROM interaction_aliases",
     "DELETE FROM interaction_outcomes",
     "DELETE FROM interactions",
-    "DELETE FROM item_operation_hooks",
+    "DELETE FROM operation_hooks",
     "DELETE FROM item_definitions",
     "DELETE FROM variable_definitions",
     "DELETE FROM computed_definitions",

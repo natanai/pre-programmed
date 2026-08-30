@@ -68,6 +68,7 @@ function delayForPosition(performance: TextPerformance, position: number) {
 
 function useTypewriter(text: string, performance: TextPerformance) {
   const [progress, setProgress] = useState({ text, count: 0 });
+  const performanceKey = JSON.stringify(performance);
   useEffect(() => {
     setProgress({ text, count: 0 });
     if (!text) return;
@@ -83,7 +84,7 @@ function useTypewriter(text: string, performance: TextPerformance) {
     };
     tick(0);
     return () => window.clearTimeout(timeout);
-  }, [text, performance]);
+  }, [text, performanceKey]);
   const count = progress.text === text ? progress.count : 0;
   return { count, visibleText: text.slice(0, count), complete: count >= text.length, completeImmediately: () => setProgress({ text, count: text.length }) };
 }
@@ -96,6 +97,7 @@ export default function App() {
   const [requestingKey, setRequestingKey] = useState(false);
   const [authorToken, setAuthorToken] = useState(() => sessionStorage.getItem(AUTHOR_TOKEN_KEY) ?? "");
   const [authorMode, setAuthorMode] = useState(false);
+  const [authorView, setAuthorView] = useState(true);
   const [authorMessage, setAuthorMessage] = useState("");
   const [panel, setPanel] = useState<Panel>(null);
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -234,6 +236,7 @@ export default function App() {
     sessionStorage.removeItem(AUTHOR_TOKEN_KEY);
     setAuthorToken("");
     setAuthorMode(false);
+    setAuthorView(true);
     setPanel(null);
   };
 
@@ -245,6 +248,7 @@ export default function App() {
         if (cancelled) return;
         if (!response.ok) { clearAuthorSession(); return; }
         setAuthorMode(true);
+        setAuthorView(true);
         if (flushingQueue.current) return;
         flushingQueue.current = true;
         const queued = await listQueuedMutations();
@@ -375,20 +379,20 @@ export default function App() {
     if (requestingKey) {
       try {
         const result = await readJson<{ token: string }>(await fetch(apiUrl("/api/author/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: value }) }));
-        sessionStorage.setItem(AUTHOR_TOKEN_KEY, result.token); setAuthorToken(result.token); setAuthorMode(true); setRequestingKey(false); setAuthorMessage("AUTHOR MODE.");
+        sessionStorage.setItem(AUTHOR_TOKEN_KEY, result.token); setAuthorToken(result.token); setAuthorMode(true); setAuthorView(true); setRequestingKey(false); setAuthorMessage("");
       } catch (error) { setAuthorMessage(authorLoginErrorMessage(error)); }
       return;
     }
     if (!value.trim()) return;
-    if (normalized === "admin") { authorMode ? setAuthorMessage("AUTHOR MODE.") : setRequestingKey(true); return; }
+    if (normalized === "admin") { if (authorMode) { setAuthorView(true); setAuthorMessage(""); } else setRequestingKey(true); return; }
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
-    if (authorMode && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
+    if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
     if (normalized === "inventory" || normalized === "inv") { setInventoryOpen(true); return; }
-    if (authorMode && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
-    if (authorMode && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
-    if (authorMode && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
-    if (authorMode && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
-    if (authorMode && ["/history", "/locations", "/bookmark", "history", "locations"].includes(normalized)) { setPanel({ type: "workspace" }); return; }
+    if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
+    if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
+    if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
+    if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
+    if (authorMode && authorView && ["/history", "/locations", "/bookmark", "history", "locations"].includes(normalized)) { setPanel({ type: "workspace" }); return; }
 
     const commandState = { ...playState, commandsEntered: playState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
@@ -399,7 +403,7 @@ export default function App() {
     if (!parsed.interaction) {
       setPlayState(commandState);
       setActiveText(""); setActiveNodeId(undefined);
-      if (authorMode) { setUnhandledCommand(value); setAuthorMessage(`UNHANDLED: ${parsed.reason}.`); }
+      if (authorMode && authorView) { setUnhandledCommand(value); setAuthorMessage(`UNHANDLED: ${parsed.reason}.`); }
       return;
     }
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
@@ -454,7 +458,9 @@ export default function App() {
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
   const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
-  const workSurfaceOpen = Boolean(panel || inventoryOpen);
+  const dialogueAuthoring = panel?.type === "interaction" || panel?.type === "quick-inputs";
+  const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
+  const authorExperience = authorMode && authorView;
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) { typewriter.completeImmediately(); return; }
@@ -473,14 +479,15 @@ export default function App() {
       >
         <div className="terminal-history-content">
           {transcript.map((line) => {
-            if (authorMode && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button>;
+            if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
           })}
-          {activeText ? authorMode && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
+          {activeText ? authorExperience && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
         </div>
       </div>
 
+      {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
       {typewriter.complete && !panel && !inventoryOpen ? <form
         ref={promptFormRef}
         className="prompt-line"
@@ -490,15 +497,20 @@ export default function App() {
           if (!requestingKey && !command && promptChoices.length) setChoiceMenuOpen((value) => !value);
         }}
         aria-expanded={!requestingKey && choiceMenuOpen}
-      ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" />{!requestingKey && !command && promptChoices.length ? <span className="prompt-choice-caret" aria-hidden="true">▼</span> : null}<input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
+      ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {!requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !workSurfaceOpen ? <div className="player-choice-surface" aria-label="Available choices">
+        {!requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <div className="player-choice-surface" aria-label="Available choices">
           {immediateChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
           {choiceMenuOpen ? promptChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>) : null}
         </div> : null}
 
-        {authorMode && typewriter.complete ? <div className="author-context">
+        {dialogueAuthoring ? <div className="dialogue-authoring-popover">
+          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+          {panel?.type === "quick-inputs" ? <QuickInputsEditor snapshot={snapshot} playState={playState} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        </div> : null}
+
+        {authorExperience && typewriter.complete && !dialogueAuthoring ? <div className="author-context">
           <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
           <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" onClick={() => setPanel({ type: "quick-inputs" })}>[+ SEVERAL]</button></div>
           <div className="current-inputs">
@@ -507,17 +519,15 @@ export default function App() {
           </div>
           <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
         </div> : null}
-        {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools">
+        {unhandledCommand && authorExperience && !panel ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
           <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
           <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
         </div> : null}
         {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
 
-        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
+        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
         {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-        {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-        {panel?.type === "quick-inputs" ? <QuickInputsEditor snapshot={snapshot} playState={playState} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
@@ -526,7 +536,12 @@ export default function App() {
         {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       </div>
     </div>
-    {authorMode ? <AuthorSettings /> : null}
+    {authorMode ? <AuthorSettings authorView={authorView} onToggleAuthorView={() => {
+      setAuthorView((value) => !value);
+      setPanel(null);
+      setUnhandledCommand("");
+      setAuthorMessage("");
+    }} /> : null}
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;

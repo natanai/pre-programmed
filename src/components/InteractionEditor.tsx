@@ -16,9 +16,9 @@ import { buildSearchIndex, searchProject } from "../game/search";
 import { ConditionEditor, EffectsEditor, ValueTokenBar } from "./AuthorFields";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
-  { value: "immediate", label: "SHOW NOW", help: "Visible beside the prompt immediately." },
-  { value: "prompt", label: "SHOW ON TAP", help: "Revealed when the player taps or clicks the prompt." },
-  { value: "typed", label: "TYPING ONLY", help: "Never shown as a choice; the player must type it." },
+  { value: "immediate", label: "VISIBLE", help: "Visible immediately." },
+  { value: "prompt", label: "ON PROMPT", help: "Revealed from the prompt." },
+  { value: "typed", label: "TYPED", help: "Typing only." },
 ];
 
 function emptyOutcome(order = 0, responseText = ""): InteractionOutcome {
@@ -71,7 +71,7 @@ function ChoiceRevealSetting({ value, onChange }: {
   onChange: (value: InteractionChoiceVisibility) => void;
 }) {
   return <fieldset className="choice-reveal-setting">
-    <legend>PLAYER DISCOVERY</legend>
+    <legend>CHOICE VISIBILITY</legend>
     <div className="choice-reveal-options">
       {revealOptions.map((option) => <button
         type="button"
@@ -81,7 +81,6 @@ function ChoiceRevealSetting({ value, onChange }: {
         onClick={() => onChange(option.value)}
       >[{option.label}]</button>)}
     </div>
-    <small>{revealOptions.find((option) => option.value === value)?.help}</small>
   </fieldset>;
 }
 
@@ -177,11 +176,10 @@ export function InteractionEditor({
     <div className="causal-author-flow">
       <label className="user-input-field">USER-INPUT-TEXT
         <input value={draft.wording} onChange={(event) => setDraft({ ...draft, wording: event.target.value })} autoFocus />
-        <small>This is what the player types or selects.</small>
       </label>
       <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} />
 
-      <div className="response-flow-heading"><span aria-hidden="true">↓</span><strong>WHAT THEY SEE IN RESPONSE</strong></div>
+      <div className="response-flow-heading"><strong>RESPONSE-TEXT</strong></div>
       {draft.outcomes.map((outcome, index) => <OutcomeEditor
         key={outcome.id}
         outcome={outcome}
@@ -215,12 +213,10 @@ export function InteractionEditor({
         />
         <button type="button" onClick={addResponseDraft}>[+ DRAFT RESPONSE [D]]</button>
       </div>
-      <small className="muted">New response drafts stay marked [D] until you open their behavior.</small>
     </div>
 
     <details className="advanced-author-details">
       <summary>[ALIASES + AUTHOR DETAILS]</summary>
-      <p className="muted">The user-input-text is already a generated parser alias. Add only alternate ways a player may type it.</p>
       <label>OTHER ALIASES <textarea rows={2} value={draft.aliases.join("\n")} placeholder="one alternate phrase per line"
         onChange={(event) => setDraft({ ...draft, aliases: event.target.value.split("\n") })} /></label>
       <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
@@ -266,7 +262,6 @@ export function QuickInputsEditor({ snapshot, playState, onSave, onCancel }: {
       <textarea rows={7} value={text} onChange={(event) => setText(event.target.value)} placeholder="one possible player input per line" autoFocus />
     </label>
     <ChoiceRevealSetting value={choiceVisibility} onChange={setChoiceVisibility} />
-    <p className="muted">Each line becomes a clickable [D] draft. Open a draft afterward to write its response and assign behavior.</p>
     {error ? <div className="author-message" role="alert">{error}</div> : null}
     <div className="author-actions"><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : `CREATE ${values.length || ""} DRAFT${values.length === 1 ? "" : "S"}`}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
   </section>;
@@ -300,7 +295,6 @@ function OutcomeEditor({ outcome, snapshot, playState, newNodeText, onNewNodeTex
     <legend><span className={outcome.authorStatus === "draft" ? "notation-dead" : "notation-ready"}>{behaviorBadge}</span> RESPONSE {index + 1}</legend>
     <label className="response-text-field">RESPONSE-TEXT
       <textarea rows={3} value={outcome.responseText} onChange={(event) => onChange({ ...outcome, responseText: event.target.value })} />
-      <small>This appears directly after the user-input-text.</small>
     </label>
     <ValueTokenBar snapshot={snapshot} onInsert={insertResponse} />
 
