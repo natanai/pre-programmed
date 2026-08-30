@@ -46,10 +46,13 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
     <div className="author-panel-body">
       <label>NODE-TEXT <textarea ref={textarea} rows={5} value={draft.text} onChange={(event) => setDraft({ ...draft, text: event.target.value })} autoFocus /></label>
       <ValueTokenBar snapshot={snapshot} onInsert={insertToken} />
+      <details className="text-speed-setting">
+        <summary>[TEXT SPEED: {draft.performance.charactersPerSecond} CHARACTERS/SECOND]</summary>
+        <label className="text-speed-input">CHARACTERS/SECOND <input type="number" min={1} max={120} value={draft.performance.charactersPerSecond} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, charactersPerSecond: Number(event.target.value) } })} /></label>
+      </details>
       <details className="advanced-author-details">
-        <summary>[TEXT BEHAVIOR + NODE DETAILS]</summary>
+        <summary>[CUES + NODE DETAILS]</summary>
         <div className="node-meta-grid">
-          <label>TYPE SPEED <input type="number" min={1} max={120} value={draft.performance.charactersPerSecond} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, charactersPerSecond: Number(event.target.value) } })} /></label>
           <label className="check-label"><input type="checkbox" checked={draft.ending} onChange={(event) => setDraft({ ...draft, ending: event.target.checked })} /> intentional ending [E]</label>
           <label>CHARACTER / SPEAKER <select value={draft.characterId ?? ""} onChange={(event) => setDraft({ ...draft, characterId: event.target.value || null })}><option value="">none</option>{snapshot.entities.filter((entity) => entity.type === "character").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label>
           <label>LOCATION <select value={draft.locationId ?? ""} onChange={(event) => setDraft({ ...draft, locationId: event.target.value || null })}><option value="">none</option>{snapshot.entities.filter((entity) => entity.type === "location").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label>

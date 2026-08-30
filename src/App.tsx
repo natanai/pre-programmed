@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent }
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { AuthorSettings } from "./components/AuthorSettings";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
-import { InteractionEditor, QuickInputsEditor } from "./components/InteractionEditor";
+import { InteractionEditor } from "./components/InteractionEditor";
 import { Inventory, ItemEditor } from "./components/Inventory";
 import { NodeEditor } from "./components/NodeEditor";
 import { StructureNavigator } from "./components/StructureNavigator";
@@ -24,6 +24,7 @@ import {
 import { assetUrl } from "./data/assets";
 import { type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
+import { addNewDefaultItemsToPlayState } from "./game/inventory";
 import { interpolateText } from "./game/interpolation";
 import { applyOperations } from "./game/mutations";
 import {
@@ -51,7 +52,6 @@ type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boo
 type Panel =
   | { type: "node"; node: GameNode }
   | { type: "interaction"; interaction?: Interaction; command?: string }
-  | { type: "quick-inputs" }
   | { type: "definitions" }
   | { type: "structure" }
   | { type: "assets" }
@@ -308,7 +308,9 @@ export default function App() {
     const before = snapshot;
     const beforeState = playState;
     const optimistic = applyOperations(snapshot, operations);
-    const optimisticState = playState ? reconcilePlayState(optimistic, playState) : null;
+    const optimisticState = playState
+      ? addNewDefaultItemsToPlayState(snapshot, optimistic, reconcilePlayState(optimistic, playState))
+      : null;
     const mutation: ProjectMutation = { expectedRevision: snapshot.revision, description, operations };
     setSnapshot(optimistic);
     if (optimisticState) setPlayState(optimisticState);
@@ -475,6 +477,10 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     setInventoryOpen(false);
   };
+  const showInventoryResponse = (text: string) => {
+    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
+    setInventoryOpen(false);
+  };
   const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
     if (!playState) return;
     const state = project.nodes.some((node) => node.id === playState.currentNodeId)
@@ -490,7 +496,7 @@ export default function App() {
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
   const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
-  const dialogueAuthoring = panel?.type === "interaction" || panel?.type === "quick-inputs";
+  const dialogueAuthoring = panel?.type === "interaction";
   const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
   const authorExperience = authorMode && authorView;
 
@@ -539,12 +545,11 @@ export default function App() {
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
           {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-          {panel?.type === "quick-inputs" ? <QuickInputsEditor snapshot={snapshot} playState={playState} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         </div> : null}
 
         {authorExperience && typewriter.complete && !dialogueAuthoring ? <div className="author-context">
           <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
-          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" onClick={() => setPanel({ type: "quick-inputs" })}>[+ SEVERAL]</button></div>
+          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button></div>
           <div className="current-inputs">
             <span>USER INPUTS FROM HERE</span>
             <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
@@ -558,14 +563,17 @@ export default function App() {
         </div> : null}
         {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
 
-        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
+        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
         {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={async (operations, description) => {
+          await persist(operations, description);
+          setInventoryOpen(true);
+        }} onCancel={() => { setPanel(null); setInventoryOpen(true); }} /> : null}
       </div>
     </div>
     {authorMode ? <AuthorSettings authorView={authorView} onToggleAuthorView={() => {

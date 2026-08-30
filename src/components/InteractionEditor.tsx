@@ -239,47 +239,6 @@ export function InteractionEditor({
   </section>;
 }
 
-export function QuickInputsEditor({ snapshot, playState, onSave, onCancel }: {
-  snapshot: ProjectSnapshot;
-  playState: PlayState;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
-  onCancel: () => void;
-}) {
-  const [text, setText] = useState("");
-  const [choiceVisibility, setChoiceVisibility] = useState<InteractionChoiceVisibility>("prompt");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const values = [...new Set(text.split("\n").map((value) => value.trim()).filter(Boolean))];
-
-  const save = async () => {
-    if (!values.length) { setError("Enter at least one user-input-text, one per line."); return; }
-    if (values.length > 40) { setError("Add no more than forty at once."); return; }
-    setSaving(true);
-    try {
-      const operations: MutationOperation[] = values.map((wording) => ({
-        type: "interaction.upsert",
-        interaction: {
-          ...emptyInteraction(playState.currentNodeId, wording),
-          choiceVisibility,
-        },
-      }));
-      await onSave(operations, `Created ${values.length} draft user inputs from node #${snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.nodeNumber}`);
-    } finally { setSaving(false); }
-  };
-
-  return <section className="author-panel author-panel-frame quick-inputs-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>QUICK USER INPUTS FROM #{snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.nodeNumber}</span><button type="button" onClick={onCancel}>[X]</button></header>
-    <div className="author-panel-body">
-      <label>USER-INPUT-TEXTS
-        <textarea rows={7} value={text} onChange={(event) => setText(event.target.value)} placeholder="one possible player input per line" autoFocus />
-      </label>
-      <ChoiceRevealSetting value={choiceVisibility} onChange={setChoiceVisibility} />
-      {error ? <div className="author-message" role="alert">{error}</div> : null}
-    </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : `CREATE ${values.length || ""} DRAFT${values.length === 1 ? "" : "S"}`}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
-  </section>;
-}
-
 function OutcomeEditor({ outcome, snapshot, playState, responseRef, newNodeText, onNewNodeText, onChange, onMove, onRemove, index }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;

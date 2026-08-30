@@ -96,6 +96,24 @@ export function addInventoryItem(
   return { ...state, inventory };
 }
 
+export function addNewDefaultItemsToPlayState(
+  previousSnapshot: ProjectSnapshot,
+  nextSnapshot: ProjectSnapshot,
+  state: PlayState,
+) {
+  const previousItemIds = new Set(previousSnapshot.items.map((item) => item.id));
+  let nextState = state;
+  for (const item of nextSnapshot.items) {
+    if (previousItemIds.has(item.id)) continue;
+    const currentQuantity = nextState.inventory
+      .filter((entry) => entry.itemId === item.id)
+      .reduce((total, entry) => total + entry.quantity, 0);
+    const missingQuantity = Math.max(0, (item.startingQuantity ?? 0) - currentQuantity);
+    nextState = addInventoryItem(nextSnapshot, nextState, item.id, missingQuantity);
+  }
+  return nextState;
+}
+
 export function removeInventoryItem(state: PlayState, itemId: string, quantity = 1): PlayState {
   let remaining = Math.max(0, Math.floor(quantity));
   const inventory: InventoryEntry[] = [];

@@ -137,11 +137,11 @@ export function Inventory({
     </div>
     {authorMode ? <details className="inventory-authoring">
       <summary>[DEFAULT INVENTORY + ITEM DEFINITIONS]</summary>
-      <p className="muted">Starting quantity controls what a new playthrough contains. “Add now” changes only this test run.</p>
+      <p className="muted">Default quantity starts each new playthrough. Add to this run places another now.</p>
       <div className="inventory-definition-list">
         {snapshot.items.map((item) => <div key={item.id}>
           <span><strong>{item.name}</strong></span>
-          <span><button type="button" aria-label={`Decrease starting ${item.name}`} onClick={() => void onSave([{ type: "item.upsert", item: { ...item, startingQuantity: Math.max(0, (item.startingQuantity ?? 0) - 1) } }], `Changed starting ${item.name}`)}>[-]</button> {item.startingQuantity ?? 0} <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void onSave([{ type: "item.upsert", item: { ...item, startingQuantity: (item.startingQuantity ?? 0) + 1 } }], `Changed starting ${item.name}`)}>[+]</button> <button type="button" onClick={() => onState(addInventoryItem(snapshot, state, item.id, 1))}>[ADD NOW]</button> <button type="button" onClick={() => onEditItem(item)}>[EDIT]</button></span>
+          <span>DEFAULT <button type="button" aria-label={`Decrease starting ${item.name}`} onClick={() => void onSave([{ type: "item.upsert", item: { ...item, startingQuantity: Math.max(0, (item.startingQuantity ?? 0) - 1) } }], `Changed starting ${item.name}`)}>[-]</button> {item.startingQuantity ?? 0} <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void onSave([{ type: "item.upsert", item: { ...item, startingQuantity: (item.startingQuantity ?? 0) + 1 } }], `Changed starting ${item.name}`)}>[+]</button> <button type="button" onClick={() => onState(addInventoryItem(snapshot, state, item.id, 1))}>[ADD TO THIS RUN]</button> <button type="button" onClick={() => onEditItem(item)}>[EDIT]</button></span>
         </div>)}
         {!snapshot.items.length ? <span className="muted">No item definitions yet.</span> : null}
       </div>
@@ -185,7 +185,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
         <label className="check-label"><input type="checkbox" checked={draft.stackable} onChange={(event) => setDraft({ ...draft, stackable: event.target.checked })} /> stackable</label>
         <label>MAX STACK <input type="number" min={1} value={draft.maxStack} onChange={(event) => setDraft({ ...draft, maxStack: Number(event.target.value) })} /></label>
         <label className="check-label"><input type="checkbox" checked={draft.removable} onChange={(event) => setDraft({ ...draft, removable: event.target.checked })} /> removal succeeds without a hook</label>
-        <label>STARTING QUANTITY <input type="number" min={0} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(0, Math.floor(Number(event.target.value))) })} /><small>Items placed in every new playthrough by default.</small></label>
+        <label>DEFAULT QUANTITY <input type="number" min={0} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(0, Math.floor(Number(event.target.value))) })} /><small>Placed in every new playthrough.</small></label>
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
       </div>
       <OperationHooksEditor snapshot={snapshot} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? ["inspect", "use", "move", "remove"], hooks: draft.hooks ?? [] }}

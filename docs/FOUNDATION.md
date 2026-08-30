@@ -91,7 +91,9 @@ Binary audio files live in Git. A deliberately tiny built-in sound chip is store
 
 Native sprites are at most 32×32 pixels and use pixel-preserving scaling. Larger special-event art may exist as general artwork rather than a Sprite. The graphical inventory is a later reveal and is opened by typed `inventory`/`inv`, not by an always-visible public button.
 
-Item definitions may declare a non-negative starting quantity. A new playthrough deterministically packs those default items into the inventory; Author mode may also add an item to the current test run without changing its starting quantity.
+Item definitions may declare a non-negative default quantity. Every new playthrough deterministically packs those items into the inventory. Creating a new default also mirrors that quantity into the already-running Author test so the author can test it immediately; adding another item to the current run does not change the saved default.
+
+The terminal remains the sole narrative response surface. Silent inventory manipulation may keep the inventory open; an operation that produces response-text or moves the player to another node closes the inventory so play continues where that output can be seen.
 
 Physical items and nonphysical status entries remain semantically distinct. When an author makes one interactable, its inspect/use/move/remove attempts resolve through the same target-aware runtime path. Attempt counters are keyed by target identity and operation. Computed values remain locally calculated and read-only; attempting an operation may produce authored output and effects without mutating the computed source.
 

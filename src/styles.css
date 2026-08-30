@@ -138,7 +138,9 @@ button:disabled { opacity: .45; cursor: default; }
 .author-primary-actions { color: var(--dos-text); }
 .author-more-tools { margin-top: .65em; color: var(--dos-muted); }
 .author-more-tools[open] { color: var(--dos-text); }
-.author-more-tools > summary, .advanced-author-details > summary, .behavior-details > summary, .inventory-authoring > summary, .alias-strip > summary, .operation-capability-editor > summary { width: fit-content; cursor: pointer; color: var(--dos-text); }
+.author-more-tools > summary, .advanced-author-details > summary, .behavior-details > summary, .inventory-authoring > summary, .alias-strip > summary, .operation-capability-editor > summary, .text-speed-setting > summary { width: fit-content; cursor: pointer; color: var(--dos-text); }
+.text-speed-setting { margin: .35em 0 .75em; }
+.text-speed-input { grid-template-columns: auto 5em; align-items: center; max-width: 16em; margin: .45em 0 0 !important; }
 .current-inputs { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: .7em; align-items: start; margin-top: .75em; color: var(--dos-muted); }
 .current-inputs > div { display: flex; max-height: 3.5em; overflow: auto; flex-wrap: wrap; gap: .4em .75em; }
 .current-inputs button { padding: 0; border: 0; background: transparent; color: var(--dos-text); cursor: pointer; text-align: left; }
@@ -337,7 +339,6 @@ button:disabled { opacity: .45; cursor: default; }
   .choice-reveal-options button { flex: none; min-height: 2.75em; }
   .outcome-head { display: grid; grid-template-columns: 1fr auto auto auto; align-items: end; }
   .outcome-head label { min-width: 0; margin: 0; }
-  .quick-inputs-panel textarea { min-height: 6em; }
   .author-settings-gear, .author-view-toggle { width: 2.75em; height: 2.75em; border-color: transparent; }
   .structure-mobile-nav { display: flex; }
   .structure-columns { overflow: hidden; }

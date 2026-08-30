@@ -37,7 +37,11 @@ describe("terminal present-moment layout", () => {
 
     expect(app).toContain("dialogueAuthoring");
     expect(app).toContain("dialogue-authoring-popover");
+    expect(app).not.toContain("[+ SEVERAL]");
+    expect(app).not.toContain("quick-inputs");
     expect(app).not.toContain("prompt-choice-caret");
+    expect(app).toContain("const showInventoryResponse");
+    expect(app).toContain("onOutput={showInventoryResponse}");
     expect(choiceButton).toContain("border: 0");
     expect(choiceButton).toContain("text-align: left");
     for (const accent of ["#6cf", "#9cf", "#9f9", "#fc6", "#123", "#345"]) expect(css).not.toContain(accent);
