@@ -25,6 +25,7 @@ import { interpolateText } from "./game/interpolation";
 import { applyOperations } from "./game/mutations";
 import {
   createEmptyPlayState,
+  reconcilePlayState,
   type AuthorBookmark,
   type GameNode,
   type Interaction,
@@ -139,7 +140,7 @@ export default function App() {
         setSnapshot(project);
         setPlayState((existing) => {
           const state = existing && project.nodes.some((node) => node.id === existing.currentNodeId)
-            ? existing
+            ? reconcilePlayState(project, existing)
             : createEmptyPlayState(project);
           const node = project.nodes.find((item) => item.id === state.currentNodeId);
           if (node) showNode(project, node, state);
@@ -180,6 +181,7 @@ export default function App() {
           }
           if (queued.length) {
             setSnapshot(project);
+            setPlayState((existing) => existing ? reconcilePlayState(project, existing) : createEmptyPlayState(project));
             await saveCachedSnapshot(project);
           }
         } finally {
@@ -192,9 +194,12 @@ export default function App() {
   const persist = async (operations: MutationOperation[], description: string) => {
     if (!snapshot || !authorToken) return;
     const before = snapshot;
+    const beforeState = playState;
     const optimistic = applyOperations(snapshot, operations);
+    const optimisticState = playState ? reconcilePlayState(optimistic, playState) : null;
     const mutation: ProjectMutation = { expectedRevision: snapshot.revision, description, operations };
     setSnapshot(optimistic);
+    if (optimisticState) setPlayState(optimisticState);
     await saveCachedSnapshot(optimistic);
     const queueId = await queueMutation(mutation);
     setAuthorMessage("SAVING...");
@@ -202,13 +207,15 @@ export default function App() {
       const result = await submitProjectMutation(authorToken, mutation);
       await removeQueuedMutation(queueId);
       setSnapshot(result.snapshot);
+      const savedState = optimisticState ? reconcilePlayState(result.snapshot, optimisticState) : null;
+      if (savedState) setPlayState(savedState);
       await saveCachedSnapshot(result.snapshot);
       const changedCurrentNode = operations.some((operation) =>
         operation.type === "node.upsert" && operation.node.id === playState?.currentNodeId,
       );
-      if (changedCurrentNode && playState) {
-        const changed = result.snapshot.nodes.find((node) => node.id === playState.currentNodeId);
-        if (changed) showNode(result.snapshot, changed, playState);
+      if (changedCurrentNode && savedState) {
+        const changed = result.snapshot.nodes.find((node) => node.id === savedState.currentNodeId);
+        if (changed) showNode(result.snapshot, changed, savedState);
       }
       setPanel(null);
       setAuthorMessage(`SAVED R${result.snapshot.revision}.`);
@@ -217,8 +224,13 @@ export default function App() {
       if (conflict) {
         await removeQueuedMutation(queueId);
         setSnapshot(before);
+        if (beforeState) setPlayState(beforeState);
         const fresh = await fetchProjectSnapshot().catch(() => null);
-        if (fresh) { setSnapshot(fresh); await saveCachedSnapshot(fresh); }
+        if (fresh) {
+          setSnapshot(fresh);
+          if (beforeState) setPlayState(reconcilePlayState(fresh, beforeState));
+          await saveCachedSnapshot(fresh);
+        }
         setAuthorMessage("NEWER REVISION FOUND. SYNCHRONIZED; REVIEW AND SAVE AGAIN.");
       } else {
         setSnapshot(optimistic);
@@ -318,16 +330,38 @@ export default function App() {
     handleEffectEvents(execution.events);
     const destination = snapshot.nodes.find((node) => node.id === execution.state.currentNodeId);
     if (execution.responseText) setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: execution.responseText }]);
-    if (execution.outcome?.disposition === "transition" && destination) showNode(snapshot, destination, execution.state);
+    if (execution.state.traversal.length > commandState.traversal.length && destination) showNode(snapshot, destination, execution.state);
     else { setActiveText(""); setActiveNodeId(undefined); }
   };
 
   const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
   const restoreBookmark = (bookmark: AuthorBookmark) => {
-    setPlayState(bookmark.playState);
+    if (!snapshot) return;
+    const state = reconcilePlayState(snapshot, bookmark.playState);
+    setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
-    if (snapshot && node) showNode(snapshot, node, bookmark.playState);
+    if (node) showNode(snapshot, node, state);
     setPanel(null); setAuthorMessage("LOCATION RESTORED.");
+  };
+  const applyInventoryState = (state: PlayState) => {
+    if (!snapshot || !playState) return;
+    const transitioned = state.traversal.length > playState.traversal.length;
+    setPlayState(state);
+    if (!transitioned) return;
+    const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
+    if (node) showNode(snapshot, node, state);
+    setInventoryOpen(false);
+  };
+  const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
+    if (!playState) return;
+    const state = project.nodes.some((node) => node.id === playState.currentNodeId)
+      ? reconcilePlayState(project, playState)
+      : createEmptyPlayState(project);
+    setSnapshot(project);
+    setPlayState(state);
+    const node = project.nodes.find((candidate) => candidate.id === state.currentNodeId);
+    if (node) showNode(project, node, state);
+    void saveCachedSnapshot(project);
   };
 
   if (loadError) return <main className="dos-screen"><div className="dos-terminal">SYSTEM ERROR: UNIVERSE UNAVAILABLE.</div></main>;
@@ -349,14 +383,14 @@ export default function App() {
       {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools" onPointerDown={(event) => event.stopPropagation()}><span>TURN “{unhandledCommand}” INTO:</span><button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[NEW STAY / TRANSITION]</button><div className="alias-strip"><span>ALIAS:</span>{snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId).map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!snapshot.interactions.some((interaction) => interaction.sourceNodeId === playState.currentNodeId) ? <span>no current interactions</span> : null}</div></div> : null}
       {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
 
-      {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={setPlayState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
+      {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
       {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
       {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
       {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
       {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-      {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={(project) => { setSnapshot(project); void saveCachedSnapshot(project); }} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
+      {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
       {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
     </div>
     <div className="floating-notifications" aria-live="polite">{notifications.map((item) => <div key={item.id}>{item.text}</div>)}</div>

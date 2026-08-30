@@ -19,13 +19,39 @@ export type SearchResult = SearchDocument & {
 
 export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
   return [
-    ...snapshot.nodes.map((node) => ({
-      id: node.id,
-      kind: "node" as const,
-      label: `#${String(node.nodeNumber).padStart(3, "0")} ${node.text.slice(0, 90)}`,
-      searchText: [node.text, ...node.tags].join(" "),
-      nodeId: node.id,
-    })),
+    ...snapshot.nodes.map((node) => {
+      const interactions = snapshot.interactions.filter((interaction) => interaction.sourceNodeId === node.id);
+      const context = snapshot.entities.filter((entity) =>
+        entity.id === node.characterId || entity.id === node.locationId,
+      );
+      const referencedItemIds = new Set(interactions.flatMap((interaction) =>
+        interaction.outcomes.flatMap((outcome) => outcome.effects.flatMap((effect) =>
+          effect.type === "give_item" || effect.type === "remove_item" || effect.type === "set_item_state"
+            ? [effect.itemId]
+            : [],
+        )),
+      ));
+      const referencedItems = snapshot.items.filter((item) => referencedItemIds.has(item.id));
+      return {
+        id: node.id,
+        kind: "node" as const,
+        label: `#${String(node.nodeNumber).padStart(3, "0")} ${node.text.slice(0, 90)}`,
+        searchText: [
+          node.text,
+          ...node.tags,
+          ...interactions.flatMap((interaction) => [
+            interaction.wording,
+            interaction.notes,
+            ...interaction.aliases,
+            ...interaction.tags,
+            ...interaction.outcomes.map((outcome) => outcome.responseText),
+          ]),
+          ...context.flatMap((entity) => [entity.key, entity.name, entity.description, ...entity.tags]),
+          ...referencedItems.flatMap((item) => [item.key, item.name, item.description, ...item.tags]),
+        ].join(" "),
+        nodeId: node.id,
+      };
+    }),
     ...snapshot.interactions.map((interaction) => ({
       id: interaction.id,
       kind: "interaction" as const,

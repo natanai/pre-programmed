@@ -12,6 +12,7 @@ describe("canonical D1 backup", () => {
     const schema = [
       { type: "table", name: "nodes", tbl_name: "nodes", sql: "CREATE TABLE nodes(id TEXT)" },
       { type: "table", name: "future_table", tbl_name: "future_table", sql: "CREATE TABLE future_table(id TEXT)" },
+      { type: "table", name: "_cf_METADATA", tbl_name: "_cf_METADATA", sql: "CREATE TABLE _cf_METADATA(key TEXT)" },
     ];
     const rows: Record<string, unknown[]> = { nodes: [{ id: "a" }], future_table: [{ id: "future" }] };
     const db = {
@@ -28,6 +29,6 @@ describe("canonical D1 backup", () => {
     const backup = await collectD1Backup(db, "2026-08-30T00:00:00.000Z");
     expect(Object.keys(backup.tables)).toEqual(["nodes", "future_table"]);
     expect(backup.tables.future_table).toEqual([{ id: "future" }]);
-    expect(backup.schema).toEqual(schema);
+    expect(backup.schema).toEqual(schema.slice(0, 2));
   });
 });

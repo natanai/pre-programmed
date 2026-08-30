@@ -602,7 +602,8 @@ export async function handleApi(request: Request, env: Env) {
   if (url.pathname === "/api/project/snapshot" && request.method === "GET") {
     try {
       return json(await getProjectSnapshot(env.DB));
-    } catch {
+    } catch (error) {
+      console.error("Project snapshot initialization failed.", error);
       return json({ error: "Project has not been initialized." }, { status: 503 });
     }
   }

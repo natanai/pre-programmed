@@ -57,12 +57,24 @@ export function InteractionEditor({
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [error, setError] = useState("");
 
   const updateOutcome = (id: string, next: InteractionOutcome) =>
     setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
 
   const save = async () => {
-    if (!draft.aliases.some((alias) => alias.trim())) return;
+    if (!draft.aliases.some((alias) => alias.trim())) {
+      setError("Add at least one parser alias.");
+      return;
+    }
+    const incompleteTransition = draft.outcomes.find((outcome) =>
+      outcome.disposition === "transition" && !outcome.destinationNodeId && !newNodeText[outcome.id]?.trim(),
+    );
+    if (incompleteTransition) {
+      setError(`Choose an existing destination or enter new node text for ${incompleteTransition.label || "the transition"}.`);
+      return;
+    }
+    setError("");
     setSaving(true);
     try {
       let nodeNumber = nextNodeNumber(snapshot);
@@ -130,6 +142,7 @@ export function InteractionEditor({
       />)}
       <button type="button" onClick={() => setDraft({ ...draft, outcomes: [...draft.outcomes, emptyOutcome(draft.outcomes.length)] })}>[+ CONDITIONAL OUTCOME]</button>
     </div>
+    {error ? <div className="author-message" role="alert">{error}</div> : null}
     <div className="author-actions"><button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? confirmDelete ? <><span>Delete this interaction?</span><button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], `Deleted interaction ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}</div>
   </section>;
 }

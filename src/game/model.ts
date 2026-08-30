@@ -257,6 +257,16 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
   };
 }
 
+export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
+  return {
+    ...state,
+    values: {
+      ...Object.fromEntries(snapshot.variables.map((definition) => [definition.key, definition.initialValue])),
+      ...state.values,
+    },
+  };
+}
+
 export function nextNodeNumber(snapshot: ProjectSnapshot) {
   return snapshot.nodes.reduce((maximum, node) => Math.max(maximum, node.nodeNumber), 0) + 1;
 }
