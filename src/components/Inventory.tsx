@@ -3,6 +3,7 @@ import { assetUrl } from "../data/assets";
 import { executeEffects, type EffectEvent } from "../game/effects";
 import { interpolateText } from "../game/interpolation";
 import {
+  addInventoryItem,
   attemptInventoryOperation,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
@@ -117,14 +118,25 @@ export function Inventory({
         </> : <p>Tap an item, then tap a cell to move it. Desktop also supports drag and drop.</p>}
       </aside>
     </div>
-    {authorMode ? <div className="author-actions"><button type="button" onClick={onCreateItem}>[+ ITEM DEFINITION]</button></div> : null}
+    {authorMode ? <details className="inventory-authoring">
+      <summary>[DEFAULT INVENTORY + ITEM DEFINITIONS]</summary>
+      <p className="muted">Starting quantity controls what a new playthrough contains. “Add now” changes only this test run.</p>
+      <div className="inventory-definition-list">
+        {snapshot.items.map((item) => <div key={item.id}>
+          <span><strong>{item.name}</strong> · starts with {item.startingQuantity ?? 0}</span>
+          <span><button type="button" onClick={() => onState(addInventoryItem(snapshot, state, item.id, 1))}>[ADD NOW]</button> <button type="button" onClick={() => onEditItem(item)}>[EDIT]</button></span>
+        </div>)}
+        {!snapshot.items.length ? <span className="muted">No item definitions yet.</span> : null}
+      </div>
+      <div className="author-actions"><button type="button" onClick={onCreateItem}>[+ DEFAULT ITEM]</button></div>
+    </details> : null}
   </section>;
 }
 
 function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetPath: "", width: 1, height: 1,
-    stackable: false, maxStack: 1, removable: true, tags: [], initialState: {}, hooks: [],
+    stackable: false, maxStack: 1, removable: true, startingQuantity: 1, tags: [], initialState: {}, hooks: [],
   };
 }
 
@@ -158,6 +170,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
       <label className="check-label"><input type="checkbox" checked={draft.stackable} onChange={(event) => setDraft({ ...draft, stackable: event.target.checked })} /> stackable</label>
       <label>MAX STACK <input type="number" min={1} value={draft.maxStack} onChange={(event) => setDraft({ ...draft, maxStack: Number(event.target.value) })} /></label>
       <label className="check-label"><input type="checkbox" checked={draft.removable} onChange={(event) => setDraft({ ...draft, removable: event.target.checked })} /> removal succeeds without a hook</label>
+      <label>STARTING QUANTITY <input type="number" min={0} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(0, Math.floor(Number(event.target.value))) })} /><small>Items placed in every new playthrough by default.</small></label>
       <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
     </div>
     <h3>OPERATION HOOKS</h3>

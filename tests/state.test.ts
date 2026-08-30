@@ -43,10 +43,10 @@ describe("conditions, effects, counters, and interpolation", () => {
 
   it("increments engine-owned attempts before selecting first/subsequent outcomes", () => {
     const interaction: Interaction = {
-      id: "try", sourceNodeId: "a", wording: "try", aliases: ["try"], tags: [], notes: "",
+      id: "try", sourceNodeId: "a", wording: "try", choiceVisibility: "prompt", aliases: ["try"], tags: [], notes: "",
       outcomes: [
-        { id: "first", order: 0, label: "first", condition: { type: "attempt", operator: "eq", value: 1 }, responseText: "first", effects: [], disposition: "stay", destinationNodeId: null },
-        { id: "later", order: 1, label: "later", condition: { type: "attempt", operator: "gte", value: 2 }, responseText: "later", effects: [], disposition: "stay", destinationNodeId: null },
+        { id: "first", order: 0, label: "first", authorStatus: "configured", condition: { type: "attempt", operator: "eq", value: 1 }, responseText: "first", effects: [], disposition: "stay", destinationNodeId: null },
+        { id: "later", order: 1, label: "later", authorStatus: "configured", condition: { type: "attempt", operator: "gte", value: 2 }, responseText: "later", effects: [], disposition: "stay", destinationNodeId: null },
       ],
     };
     const first = executeInteraction(snapshot, createEmptyPlayState(snapshot), interaction);
@@ -61,9 +61,9 @@ describe("conditions, effects, counters, and interpolation", () => {
       { id: "b", nodeNumber: 2, text: "destination", ending: false, tags: [], characterId: null, locationId: null, performance: { charactersPerSecond: 18, cues: [] } },
     ] });
     const interaction: Interaction = {
-      id: "effect-transition", sourceNodeId: "a", wording: "move", aliases: ["move"], tags: [], notes: "",
+      id: "effect-transition", sourceNodeId: "a", wording: "move", choiceVisibility: "prompt", aliases: ["move"], tags: [], notes: "",
       outcomes: [{
-        id: "effect-outcome", order: 0, label: "default", condition: { type: "always" }, responseText: "moving",
+        id: "effect-outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "moving",
         effects: [{ id: "transition", type: "transition", nodeId: "b" }], disposition: "stay", destinationNodeId: null,
       }],
     };

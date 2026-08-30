@@ -203,6 +203,25 @@ const migrations: Migration[] = [
       SELECT id FROM nodes;
     `,
   },
+  {
+    id: 4,
+    name: "progressive-authoring-and-starting-inventory",
+    sql: `
+      ALTER TABLE interactions
+      ADD COLUMN choice_visibility TEXT NOT NULL DEFAULT 'prompt'
+      CHECK (choice_visibility IN ('immediate', 'prompt', 'typed'));
+
+      ALTER TABLE item_definitions
+      ADD COLUMN starting_quantity INTEGER NOT NULL DEFAULT 0
+      CHECK (starting_quantity >= 0);
+
+      ALTER TABLE interaction_outcomes
+      ADD COLUMN author_status TEXT NOT NULL DEFAULT 'configured'
+      CHECK (author_status IN ('draft', 'configured'));
+
+      UPDATE project_meta SET schema_version = 4 WHERE id = 1;
+    `,
+  },
 ];
 
 let ready: Promise<void> | null = null;

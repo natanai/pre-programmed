@@ -80,11 +80,20 @@ export function validateMutationBody(value: unknown) {
     }
     const nested = operation.interaction ?? operation.item;
     if (object(nested)) {
+      if (operation.type === "interaction.upsert" && nested.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(nested.choiceVisibility))) {
+        return "Interaction choice visibility is invalid.";
+      }
+      if (operation.type === "item.upsert" && nested.startingQuantity !== undefined && (!Number.isInteger(nested.startingQuantity) || (nested.startingQuantity as number) < 0)) {
+        return "Item starting quantity must be a non-negative integer.";
+      }
       const outcomes = Array.isArray(nested.outcomes) ? nested.outcomes : [];
       const hooks = Array.isArray(nested.hooks) ? nested.hooks : [];
       for (const candidate of [...outcomes, ...hooks]) {
         if (!object(candidate) || !conditionValid(candidate.condition) || !effectsValid(candidate.effects)) {
           return "A condition or effect sequence is invalid.";
+        }
+        if (outcomes.includes(candidate) && candidate.authorStatus !== undefined && !["draft", "configured"].includes(String(candidate.authorStatus))) {
+          return "Interaction outcome author status is invalid.";
         }
       }
     }

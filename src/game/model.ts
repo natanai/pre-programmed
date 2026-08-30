@@ -1,3 +1,5 @@
+import { addInventoryItem } from "./inventory";
+
 export type Value = string | number | boolean | null;
 
 export type TextCueType =
@@ -77,10 +79,13 @@ export type Effect =
 
 export type InteractionDisposition = "stay" | "transition";
 
+export type InteractionChoiceVisibility = "immediate" | "prompt" | "typed";
+
 export type InteractionOutcome = {
   id: string;
   order: number;
   label: string;
+  authorStatus: "draft" | "configured";
   condition: Condition;
   responseText: string;
   effects: Effect[];
@@ -92,6 +97,7 @@ export type Interaction = {
   id: string;
   sourceNodeId: string;
   wording: string;
+  choiceVisibility: InteractionChoiceVisibility;
   aliases: string[];
   tags: string[];
   notes: string;
@@ -145,6 +151,7 @@ export type ItemDefinition = {
   stackable: boolean;
   maxStack: number;
   removable: boolean;
+  startingQuantity: number;
   tags: string[];
   initialState: Record<string, Value>;
   hooks: ItemOperationHook[];
@@ -243,7 +250,7 @@ export type ProjectMutation = {
 };
 
 export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()): PlayState {
-  return {
+  let state: PlayState = {
     currentNodeId: snapshot.startNodeId,
     traversal: [snapshot.startNodeId],
     values: Object.fromEntries(snapshot.variables.map((definition) => [definition.key, definition.initialValue])),
@@ -255,6 +262,10 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
     commandsEntered: 0,
     lastCommand: "",
   };
+  for (const item of snapshot.items) {
+    state = addInventoryItem(snapshot, state, item.id, item.startingQuantity ?? 0);
+  }
+  return state;
 }
 
 export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {

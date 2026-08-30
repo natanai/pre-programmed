@@ -30,6 +30,20 @@ Keeps an IndexedDB working cache and in-memory indexes. Search, graph calculatio
 
 Reusable structured entities initially include Characters, Items, Locations, Variables, and Synth Sounds.
 
+### Author interaction language and reveal
+
+The Author UI calls the text a player can type or select **`user-input-text`** and the prose produced by that interaction **`response-text`**. These appear together as one causal editing unit. The primary parser alias is generated from `user-input-text`; alternate aliases remain available behind an advanced disclosure.
+
+Each interaction owns a player-choice reveal setting:
+
+- **show now** — visible immediately beside the prompt
+- **show on tap** — revealed when the player taps/clicks the prompt region
+- **typing only** — never listed; the player must enter it manually
+
+This presentation setting does not change deterministic parser availability.
+
+New response drafts may remain author-marked `[D]` until their behavior is opened and assigned. Author-only draft notation never leaks into public play.
+
 ## Author search/linking
 
 In Author mode, connection-capable text fields are simultaneously text entry and local search. Every keystroke updates a compact result strip directly beneath the field, capped at roughly two visible rows. Results include tight structural notation and can immediately become a link destination without replacing the text being typed.
@@ -76,6 +90,8 @@ Binary audio files live in Git. A deliberately tiny built-in sound chip is store
 ## Graphics
 
 Native sprites are at most 32×32 pixels and use pixel-preserving scaling. Larger special-event art may exist as general artwork rather than a Sprite. The graphical inventory is a later reveal and is opened by typed `inventory`/`inv`, not by an always-visible public button.
+
+Item definitions may declare a non-negative starting quantity. A new playthrough deterministically packs those default items into the inventory; Author mode may also add an item to the current test run without changing its starting quantity.
 
 ## Release boundary
 

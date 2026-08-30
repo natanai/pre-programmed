@@ -1,7 +1,8 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
+import { AuthorSettings } from "./components/AuthorSettings";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
-import { InteractionEditor } from "./components/InteractionEditor";
+import { InteractionEditor, QuickInputsEditor } from "./components/InteractionEditor";
 import { Inventory, ItemEditor } from "./components/Inventory";
 import { NodeEditor } from "./components/NodeEditor";
 import { StructureNavigator } from "./components/StructureNavigator";
@@ -49,6 +50,7 @@ type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boo
 type Panel =
   | { type: "node"; node: GameNode }
   | { type: "interaction"; interaction?: Interaction; command?: string }
+  | { type: "quick-inputs" }
   | { type: "definitions" }
   | { type: "structure" }
   | { type: "assets" }
@@ -103,9 +105,11 @@ export default function App() {
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [unhandledCommand, setUnhandledCommand] = useState("");
-  const [notifications, setNotifications] = useState<Array<{ id: string; text: string }>>([]);
+  const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
+  const [choiceMenuOpen, setChoiceMenuOpen] = useState(false);
   const [eventArt, setEventArt] = useState("");
   const terminalInputRef = useRef<HTMLInputElement>(null);
+  const promptFormRef = useRef<HTMLFormElement>(null);
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
   const firedCueIds = useRef(new Set<string>());
@@ -137,6 +141,23 @@ export default function App() {
   const currentNotation = snapshot && playState && graph
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
     : [];
+  const currentInputs = snapshot && playState
+    ? snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId)
+    : [];
+  const playerChoiceInputs = playState
+    ? currentInputs.filter((interaction) => playState.interactionVisibility[interaction.id] !== false)
+    : [];
+  const immediateChoices = playerChoiceInputs.filter((interaction) => interaction.choiceVisibility === "immediate");
+  const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
+
+  const notationForInput = (interaction: Interaction) => {
+    if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
+    const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
+    if (!first) return "[D]";
+    if (first.disposition === "stay" || !first.destinationNodeId) return "[H]";
+    if (!snapshot || !playState || !graph) return "[A1]";
+    return notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, first.destinationNodeId).join("") || "[A1]";
+  };
 
   const scrollHistoryToPresent = () => {
     const history = terminalHistoryRef.current;
@@ -317,11 +338,11 @@ export default function App() {
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, nodeId: activeNodeId }]);
   };
 
-  const handleEffectEvents = (events: EffectEvent[]) => {
+  const handleEffectEvents = (events: EffectEvent[], anchorLineId?: string) => {
     for (const event of events) {
       if (event.type === "notification") {
         const id = crypto.randomUUID();
-        setNotifications((items) => [...items, { id, text: event.text }]);
+        setNotifications((items) => [...items, { id, text: event.text, anchorLineId }]);
         window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 1800);
       } else if (event.type === "synth" && snapshot) {
         const sound = snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);
@@ -344,14 +365,12 @@ export default function App() {
     }
   }, [typewriter.count, activePerformance]);
 
-  const handleTerminalSubmit = async (event: FormEvent) => {
-    event.preventDefault();
+  const handleTerminalValue = async (value: string) => {
     if (!snapshot || !playState) return;
     historyPinnedToPresentRef.current = true;
     scrollHistoryToPresent();
-    const value = command;
     const normalized = value.trim().toLowerCase();
-    setCommand(""); setAuthorMessage(""); setUnhandledCommand("");
+    setCommand(""); setAuthorMessage(""); setUnhandledCommand(""); setChoiceMenuOpen(false);
 
     if (requestingKey) {
       try {
@@ -375,7 +394,8 @@ export default function App() {
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
     appendActive();
-    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: `${UNIVERSE_DRIVE_PROMPT}${value}`, command: true }]);
+    const commandLineId = crypto.randomUUID();
+    setTranscript((lines) => [...lines, { id: commandLineId, text: `${UNIVERSE_DRIVE_PROMPT}${value}`, command: true }]);
     if (!parsed.interaction) {
       setPlayState(commandState);
       setActiveText(""); setActiveNodeId(undefined);
@@ -384,11 +404,21 @@ export default function App() {
     }
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
     setPlayState(execution.state);
-    handleEffectEvents(execution.events);
+    handleEffectEvents(execution.events, commandLineId);
     const destination = snapshot.nodes.find((node) => node.id === execution.state.currentNodeId);
     if (execution.responseText) setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: execution.responseText }]);
     if (execution.state.traversal.length > commandState.traversal.length && destination) showNode(snapshot, destination, execution.state);
     else { setActiveText(""); setActiveNodeId(undefined); }
+  };
+
+  const handleTerminalSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    void handleTerminalValue(command);
+  };
+
+  const choosePlayerInput = (interaction: Interaction) => {
+    const value = interaction.aliases[0] || interaction.wording;
+    if (value) void handleTerminalValue(value);
   };
 
   const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
@@ -442,21 +472,52 @@ export default function App() {
         }}
       >
         <div className="terminal-history-content">
-          {transcript.map((line) => authorMode && line.nodeId ? <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button> : <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}</div>)}
+          {transcript.map((line) => {
+            if (authorMode && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button>;
+            const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
+            return <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
+          })}
           {activeText ? authorMode && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
         </div>
       </div>
 
-      {typewriter.complete && !panel && !inventoryOpen ? <form className="prompt-line" onSubmit={(event) => void handleTerminalSubmit(event)}><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => setCommand(event.target.value)} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
+      {typewriter.complete && !panel && !inventoryOpen ? <form
+        ref={promptFormRef}
+        className="prompt-line"
+        onSubmit={handleTerminalSubmit}
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          if (!requestingKey && !command && promptChoices.length) setChoiceMenuOpen((value) => !value);
+        }}
+        aria-expanded={!requestingKey && choiceMenuOpen}
+      ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" />{!requestingKey && !command && promptChoices.length ? <span className="prompt-choice-caret" aria-hidden="true">▼</span> : null}<input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {authorMode && typewriter.complete ? <div className="author-context"><div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ RESPONSE]</button><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[DEFINITIONS]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button></div></div> : null}
-        {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools"><span>TURN “{unhandledCommand}” INTO:</span><button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[NEW STAY / TRANSITION]</button><div className="alias-strip"><span>ALIAS:</span>{snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId).map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!snapshot.interactions.some((interaction) => interaction.sourceNodeId === playState.currentNodeId) ? <span>no current interactions</span> : null}</div></div> : null}
+        {!requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !workSurfaceOpen ? <div className="player-choice-surface" aria-label="Available choices">
+          {immediateChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
+          {choiceMenuOpen ? promptChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>) : null}
+        </div> : null}
+
+        {authorMode && typewriter.complete ? <div className="author-context">
+          <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
+          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" onClick={() => setPanel({ type: "quick-inputs" })}>[+ SEVERAL]</button></div>
+          <div className="current-inputs">
+            <span>USER INPUTS FROM HERE</span>
+            <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
+          </div>
+          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
+        </div> : null}
+        {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools">
+          <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
+          <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
+          <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
+        </div> : null}
         {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
 
         {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorMode} onState={applyInventoryState} onOutput={(text) => setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }])} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onClose={() => setInventoryOpen(false)} /> : null}
         {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {panel?.type === "quick-inputs" ? <QuickInputsEditor snapshot={snapshot} playState={playState} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
@@ -465,7 +526,8 @@ export default function App() {
         {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       </div>
     </div>
-    <div className="floating-notifications" aria-live="polite">{notifications.map((item) => <div key={item.id}>{item.text}</div>)}</div>
+    {authorMode ? <AuthorSettings /> : null}
+    <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
 }

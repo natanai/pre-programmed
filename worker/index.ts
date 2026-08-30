@@ -82,13 +82,21 @@ type NodeRow = {
   character_id: string | null;
   location_id: string | null;
 };
-type InteractionRow = { id: string; source_node_id: string; wording: string; tags_json: string; notes: string };
+type InteractionRow = {
+  id: string;
+  source_node_id: string;
+  wording: string;
+  choice_visibility: Interaction["choiceVisibility"];
+  tags_json: string;
+  notes: string;
+};
 type AliasRow = { interaction_id: string; alias: string; order_index: number };
 type OutcomeRow = {
   id: string;
   interaction_id: string;
   order_index: number;
   label: string;
+  author_status: Interaction["outcomes"][number]["authorStatus"];
   condition_json: string;
   response_text: string;
   effects_json: string;
@@ -130,6 +138,7 @@ type ItemRow = {
   stackable: number;
   max_stack: number;
   removable: number;
+  starting_quantity: number;
   tags_json: string;
   initial_state_json: string;
 };
@@ -159,12 +168,12 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, wording, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
       db.prepare(
-        `SELECT id, interaction_id, order_index, label, condition_json, response_text,
+        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text,
                 effects_json, disposition, destination_node_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
@@ -179,7 +188,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       ).all<ComputedRow>(),
       db.prepare(
         `SELECT id, key, name, description, asset_path, width, height, stackable,
-                max_stack, removable, tags_json, initial_state_json
+                max_stack, removable, starting_quantity, tags_json, initial_state_json
            FROM item_definitions ORDER BY key`,
       ).all<ItemRow>(),
       db.prepare(
@@ -196,7 +205,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   const hookGroups = groupRows(hooks.results, (row) => row.item_id);
 
   return {
-    schemaVersion: Math.max(3, meta.schema_version),
+    schemaVersion: Math.max(4, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     nodes: nodes.results.map((row): GameNode => {
@@ -222,6 +231,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       id: row.id,
       sourceNodeId: row.source_node_id,
       wording: row.wording,
+      choiceVisibility: row.choice_visibility,
       tags: parseJson(row.tags_json, []),
       notes: row.notes,
       aliases: (aliasGroups.get(row.id) ?? []).map((alias) => alias.alias),
@@ -229,6 +239,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         id: outcome.id,
         order: outcome.order_index,
         label: outcome.label,
+        authorStatus: outcome.author_status,
         condition: parseJson(outcome.condition_json, { type: "always" }),
         responseText: outcome.response_text,
         effects: parseJson(outcome.effects_json, []),
@@ -271,6 +282,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       stackable: Boolean(row.stackable),
       maxStack: row.max_stack,
       removable: Boolean(row.removable),
+      startingQuantity: row.starting_quantity,
       tags: parseJson(row.tags_json, []),
       initialState: parseJson(row.initial_state_json, {}),
       hooks: (hookGroups.get(row.id) ?? []).map((hook) => ({
@@ -346,11 +358,19 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
       const value = operation.interaction;
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions (id, source_node_id, wording, choice_visibility, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             tags_json=excluded.tags_json, notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
-        ).bind(value.id, value.sourceNodeId, value.wording, JSON.stringify(value.tags), value.notes),
+             choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
+             notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
+        ).bind(
+          value.id,
+          value.sourceNodeId,
+          value.wording,
+          value.choiceVisibility ?? "prompt",
+          JSON.stringify(value.tags),
+          value.notes,
+        ),
         db.prepare("DELETE FROM interaction_aliases WHERE interaction_id = ?").bind(value.id),
         db.prepare("DELETE FROM interaction_outcomes WHERE interaction_id = ?").bind(value.id),
         ...value.aliases.map((alias, index) =>
@@ -361,8 +381,8 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
           db.prepare(
             `INSERT INTO interaction_outcomes
              (id, interaction_id, order_index, label, condition_json, response_text,
-              effects_json, disposition, destination_node_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              effects_json, disposition, destination_node_id, author_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ).bind(
             outcome.id,
             value.id,
@@ -373,6 +393,7 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
             JSON.stringify(outcome.effects),
             outcome.disposition,
             outcome.destinationNodeId,
+            outcome.authorStatus ?? "configured",
           ),
         ),
       ];
@@ -413,16 +434,18 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
         db.prepare(
           `INSERT INTO item_definitions
            (id, key, name, description, asset_path, width, height, stackable, max_stack,
-            removable, tags_json, initial_state_json, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            removable, starting_quantity, tags_json, initial_state_json, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET key=excluded.key, name=excluded.name,
              description=excluded.description, asset_path=excluded.asset_path, width=excluded.width,
              height=excluded.height, stackable=excluded.stackable, max_stack=excluded.max_stack,
-             removable=excluded.removable, tags_json=excluded.tags_json,
+             removable=excluded.removable, starting_quantity=excluded.starting_quantity,
+             tags_json=excluded.tags_json,
              initial_state_json=excluded.initial_state_json, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           item.id, item.key, item.name, item.description, item.assetPath, item.width, item.height,
-          Number(item.stackable), item.maxStack, Number(item.removable), JSON.stringify(item.tags),
+          Number(item.stackable), item.maxStack, Number(item.removable), item.startingQuantity ?? 0,
+          JSON.stringify(item.tags),
           JSON.stringify(item.initialState),
         ),
         db.prepare("DELETE FROM item_operation_hooks WHERE item_id = ?").bind(item.id),

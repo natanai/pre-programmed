@@ -5,7 +5,7 @@ import { project } from "./fixtures";
 
 const item: ItemDefinition = {
   id: "box", key: "box", name: "Box", description: "A box", assetPath: "", width: 2, height: 2,
-  stackable: false, maxStack: 1, removable: false, tags: [], initialState: {}, hooks: [
+  stackable: false, maxStack: 1, removable: false, startingQuantity: 0, tags: [], initialState: {}, hooks: [
     { id: "drop-first", operation: "remove", order: 0, condition: { type: "attempt", operator: "eq", value: 1 }, responseText: "first refusal", effects: [], success: false },
     { id: "drop-later", operation: "remove", order: 1, condition: { type: "attempt", operator: "gte", value: 2 }, responseText: "later refusal", effects: [], success: false },
   ],
@@ -13,6 +13,14 @@ const item: ItemDefinition = {
 const snapshot = project({ items: [item] });
 
 describe("inventory engine", () => {
+  it("places author-defined starting quantities into a new playthrough", () => {
+    const startingItem = { ...item, startingQuantity: 2 };
+    const startingSnapshot = project({ items: [startingItem] });
+    const state = createEmptyPlayState(startingSnapshot);
+    expect(state.inventory).toHaveLength(2);
+    expect(state.inventory.every((entry) => entry.itemId === item.id)).toBe(true);
+  });
+
   it("validates physical placement and rejects collisions", () => {
     const state = addInventoryItem(snapshot, createEmptyPlayState(snapshot), item.id, 1);
     expect(canPlaceItem(snapshot, state.inventory, item, 9, 5)).toBe(false);
