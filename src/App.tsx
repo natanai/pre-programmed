@@ -348,7 +348,15 @@ export default function App() {
     else { setActiveText(""); setActiveNodeId(undefined); }
   };
 
-  const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
+  const focusTerminal = () => {
+    if (!panel && !inventoryOpen) terminalInputRef.current?.focus({ preventScroll: true });
+  };
+
+  useEffect(() => {
+    if (!typewriter.complete || panel || inventoryOpen) return;
+    if (window.matchMedia("(pointer: fine)").matches) focusTerminal();
+  }, [typewriter.complete, panel, inventoryOpen, requestingKey]);
+
   const restoreBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
     const state = reconcilePlayState(snapshot, bookmark.playState);
@@ -390,7 +398,7 @@ export default function App() {
       {transcript.map((line) => authorMode && line.nodeId ? <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button> : <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}</div>)}
       {activeText ? authorMode && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
 
-      {typewriter.complete && !panel && !inventoryOpen ? <form className="prompt-line" onSubmit={(event) => void handleTerminalSubmit(event)}><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => setCommand(event.target.value)} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
+      {typewriter.complete && !panel && !inventoryOpen ? <form className="prompt-line" onSubmit={(event) => void handleTerminalSubmit(event)}><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => setCommand(event.target.value)} autoFocus autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       {authorMode && typewriter.complete ? <div className="author-context" onPointerDown={(event) => event.stopPropagation()}><div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ RESPONSE]</button><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[DEFINITIONS]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button></div></div> : null}
       {unhandledCommand && authorMode && !panel ? <div className="unhandled-tools" onPointerDown={(event) => event.stopPropagation()}><span>TURN “{unhandledCommand}” INTO:</span><button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[NEW STAY / TRANSITION]</button><div className="alias-strip"><span>ALIAS:</span>{snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId).map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!snapshot.interactions.some((interaction) => interaction.sourceNodeId === playState.currentNodeId) ? <span>no current interactions</span> : null}</div></div> : null}
