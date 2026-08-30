@@ -49,10 +49,13 @@ describe("terminal present-moment layout", () => {
     expect(app).toContain("[text, performanceKey]");
   });
 
-  it("gives keyboard-open dialogue more room while preserving a fixed editing frame", () => {
+  it("lets mobile dialogue content size its context while preserving a fixed editing frame", () => {
     const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
 
+    expect(css).toContain(".dialogue-authoring-active { display: grid; grid-template-rows: minmax(0, auto) auto minmax(0, 1fr)");
+    expect(css).toContain(".dialogue-authoring-active .terminal-history-content { min-height: 0");
     expect(css).toContain("html[data-keyboard-open=\"true\"] .dialogue-authoring-active .terminal-history");
+    expect(css).not.toContain(".dialogue-authoring-active .terminal-history { bottom:");
     expect(css).toContain("grid-template-rows: auto minmax(0, 1fr) auto");
     expect(css).toContain(".author-panel-body");
     expect(css).toContain(".author-panel-footer");
