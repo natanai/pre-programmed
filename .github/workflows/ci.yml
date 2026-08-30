@@ -31,7 +31,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Typecheck and build Pages client
-        run: npm run build:pages
+        run: npm test && npm run typecheck && npm run build:pages
 
       - name: Configure Pages
         if: github.event_name == 'push'

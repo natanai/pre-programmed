@@ -5,11 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "generate:assets": "node scripts/generate-asset-manifest.mjs",
+    "prebuild": "npm run generate:assets",
     "build": "tsc -b && vite build",
+    "prebuild:pages": "npm run generate:assets",
     "build:pages": "tsc -b && vite build --mode pages",
     "preview": "npm run build && vite preview",
     "deploy": "npm run typecheck && wrangler deploy",
+    "pretypecheck": "npm run generate:assets",
     "typecheck": "tsc -b",
+    "pretest": "npm run generate:assets",
+    "test": "vitest run",
     "cf-typegen": "wrangler types"
   },
   "dependencies": {
@@ -23,6 +29,7 @@
     "@vitejs/plugin-react": "6.1.1",
     "typescript": "^5.9.0",
     "vite": "8.2.2",
+    "vitest": "^3.2.4",
     "wrangler": "4.127.1"
   }
 }

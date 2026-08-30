@@ -1,13 +1,4 @@
-export type TextPerformance = {
-  charactersPerSecond: number;
-};
-
-export type GameNode = {
-  id: string;
-  nodeNumber: number;
-  text: string;
-  performance: TextPerformance;
-};
+import type { GameNode } from "./model";
 
 export type ProjectBootstrap = {
   startNode: GameNode;
