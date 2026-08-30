@@ -288,9 +288,9 @@ button:disabled { opacity: .45; cursor: default; }
 
 .command-line { position: relative; }
 .inline-floating-notifications { position: relative; display: inline-block; width: 0; height: 1em; margin-left: .6em; vertical-align: top; pointer-events: none; }
-.inline-floating-notifications > span { position: absolute; left: 0; bottom: 0; min-width: max-content; padding: .25em .45em; border: 1px solid #aaa; background: #000; color: #fff; animation: notification-float 1.8s ease-out forwards; }
+.inline-floating-notifications > span { position: absolute; left: 0; bottom: 0; min-width: max-content; padding: .25em .45em; border: 1px solid #aaa; background: #000; color: #fff; animation: notification-float 4s ease-out forwards; }
 .floating-notifications { position: fixed; left: 50%; bottom: max(3.5em, env(safe-area-inset-bottom)); z-index: 20; pointer-events: none; transform: translateX(-50%); font-family: "PreProgrammed VGA", monospace; }
-.floating-notifications > div { min-width: max-content; padding: .35em .6em; border: 1px solid #aaa; background: #000; color: #fff; animation: notification-float 1.8s ease-out forwards; }
+.floating-notifications > div { min-width: max-content; padding: .35em .6em; border: 1px solid #aaa; background: #000; color: #fff; animation: notification-float 4s ease-out forwards; }
 .author-settings { position: fixed; top: calc(var(--terminal-viewport-top, 0px) + max(6px, env(safe-area-inset-top))); right: max(8px, env(safe-area-inset-right)); z-index: 30; font-family: "PreProgrammed VGA", monospace; font-size: 16px; color: var(--dos-text); }
 .author-corner-controls { display: flex; justify-content: flex-end; gap: .3em; }
 .author-settings-gear, .author-view-toggle { width: 1.7em; height: 1.7em; padding: 0; border: 1px solid var(--dos-line); background: #000; color: var(--dos-text); cursor: pointer; }
@@ -307,7 +307,7 @@ button:disabled { opacity: .45; cursor: default; }
 .event-art img { max-width: 100%; max-height: calc(100% - 2em); image-rendering: pixelated; }.event-art button { color: #fff; background: #000; border: 0; }
 
 @keyframes dos-cursor-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-@keyframes notification-float { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-4em); opacity: 0; } }
+@keyframes notification-float { 0% { transform: translateY(0); opacity: 1; } 75% { transform: translateY(-2em); opacity: 1; } 100% { transform: translateY(-4em); opacity: 0; } }
 @keyframes cue-wave { from { transform: translateY(-1px); } to { transform: translateY(1px); } }
 @keyframes cue-shake { from { transform: translateX(-1px); } to { transform: translateX(1px); } }
 
@@ -375,12 +375,12 @@ button:disabled { opacity: .45; cursor: default; }
 
 @media (prefers-reduced-motion: reduce) {
   .dos-cursor, .cue-wave, .cue-shake, .cue-blink { animation: none; }
-  .floating-notifications > div, .inline-floating-notifications > span { animation: notification-fade 1.8s linear forwards; }
+  .floating-notifications > div, .inline-floating-notifications > span { animation: notification-fade 4s linear forwards; }
 }
 [data-reduce-motion="true"] .dos-cursor,
 [data-reduce-motion="true"] .cue-wave,
 [data-reduce-motion="true"] .cue-shake,
 [data-reduce-motion="true"] .cue-blink { animation: none; }
 [data-reduce-motion="true"] .floating-notifications > div,
-[data-reduce-motion="true"] .inline-floating-notifications > span { animation: notification-fade 1.8s linear forwards; }
-@keyframes notification-fade { from { opacity: 1; } to { opacity: 0; } }
+[data-reduce-motion="true"] .inline-floating-notifications > span { animation: notification-fade 4s linear forwards; }
+@keyframes notification-fade { 0%, 75% { opacity: 1; } 100% { opacity: 0; } }
