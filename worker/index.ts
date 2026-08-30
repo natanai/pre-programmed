@@ -1,7 +1,6 @@
 import { ensureSchema } from "./db/migrations";
 
 type Env = {
-  ASSETS: Fetcher;
   DB: D1Database;
   ADMIN_KEY?: string;
 };
@@ -13,15 +12,100 @@ type NodeRow = {
   characters_per_second: number;
 };
 
+type SchemaRow = {
+  type: string;
+  name: string;
+  tbl_name: string;
+  sql: string | null;
+};
+
+const ALLOWED_ORIGINS = new Set([
+  "https://natanai.github.io",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+const AUTHOR_SESSION_SECONDS = 8 * 60 * 60;
+const encoder = new TextEncoder();
+
 function json(data: unknown, init: ResponseInit = {}) {
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json; charset=utf-8");
   return new Response(JSON.stringify(data), { ...init, headers });
 }
 
-function isAuthor(request: Request, env: Env) {
+function withCors(request: Request, response: Response) {
+  const origin = request.headers.get("origin");
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set("access-control-allow-origin", origin);
+  headers.set("access-control-allow-methods", "GET, POST, PATCH, OPTIONS");
+  headers.set("access-control-allow-headers", "Authorization, Content-Type");
+  headers.append("vary", "Origin");
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
+function base64Url(bytes: Uint8Array) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+function fromBase64Url(value: string) {
+  const base64 = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+async function getSigningKey(secret: string) {
+  return crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign", "verify"],
+  );
+}
+
+async function createAuthorToken(secret: string) {
+  const expiresAt = Math.floor(Date.now() / 1000) + AUTHOR_SESSION_SECONDS;
+  const payload = `author.${expiresAt}`;
+  const key = await getSigningKey(secret);
+  const signature = new Uint8Array(await crypto.subtle.sign("HMAC", key, encoder.encode(payload)));
+  return {
+    token: `${expiresAt}.${base64Url(signature)}`,
+    expiresAt: new Date(expiresAt * 1000).toISOString(),
+  };
+}
+
+async function isAuthor(request: Request, env: Env) {
   if (!env.ADMIN_KEY) return false;
-  return request.headers.get("authorization") === `Bearer ${env.ADMIN_KEY}`;
+  const header = request.headers.get("authorization");
+  if (!header?.startsWith("Bearer ")) return false;
+
+  const token = header.slice("Bearer ".length);
+  const [expiresRaw, signatureRaw, extra] = token.split(".");
+  if (!expiresRaw || !signatureRaw || extra) return false;
+
+  const expiresAt = Number(expiresRaw);
+  if (!Number.isInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) return false;
+
+  try {
+    const key = await getSigningKey(env.ADMIN_KEY);
+    return crypto.subtle.verify(
+      "HMAC",
+      key,
+      fromBase64Url(signatureRaw),
+      encoder.encode(`author.${expiresAt}`),
+    );
+  } catch {
+    return false;
+  }
 }
 
 function toGameNode(row: NodeRow) {
@@ -59,8 +143,31 @@ async function getBootstrap(env: Env) {
   });
 }
 
+async function loginAuthor(request: Request, env: Env) {
+  if (!env.ADMIN_KEY) {
+    return json({ error: "Author access has not been configured." }, { status: 503 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  if (!body || typeof body !== "object" || typeof (body as { key?: unknown }).key !== "string") {
+    return json({ error: "Invalid body" }, { status: 400 });
+  }
+
+  if ((body as { key: string }).key !== env.ADMIN_KEY) {
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  return json(await createAuthorToken(env.ADMIN_KEY));
+}
+
 async function updateNode(request: Request, env: Env, id: string) {
-  if (!isAuthor(request, env)) {
+  if (!(await isAuthor(request, env))) {
     return json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -150,33 +257,97 @@ async function updateNode(request: Request, env: Env, id: string) {
   });
 }
 
+function quoteIdentifier(name: string) {
+  return `"${name.replace(/"/g, '""')}"`;
+}
+
+async function downloadBackup(request: Request, env: Env) {
+  if (!(await isAuthor(request, env))) {
+    return json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  await ensureSchema(env.DB);
+
+  const schemaResult = await env.DB.prepare(
+    `SELECT type, name, tbl_name, sql
+       FROM sqlite_master
+      WHERE name NOT LIKE 'sqlite_%' AND sql IS NOT NULL
+      ORDER BY CASE type WHEN 'table' THEN 0 ELSE 1 END, name`,
+  ).all<SchemaRow>();
+
+  const tables: Record<string, unknown[]> = {};
+  for (const entry of schemaResult.results) {
+    if (entry.type !== "table") continue;
+    const rows = await env.DB.prepare(`SELECT * FROM ${quoteIdentifier(entry.name)}`).all();
+    tables[entry.name] = rows.results;
+  }
+
+  const exportedAt = new Date().toISOString();
+  const body = JSON.stringify(
+    {
+      format: "pre-programmed-d1-backup",
+      version: 1,
+      exportedAt,
+      schema: schemaResult.results,
+      tables,
+    },
+    null,
+    2,
+  );
+  const filename = `pre-programmed-backup-${exportedAt.replace(/[:.]/g, "-")}.json`;
+
+  return new Response(body, {
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+      "content-disposition": `attachment; filename="${filename}"`,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function handleApi(request: Request, env: Env) {
+  const url = new URL(request.url);
+
+  if (request.method === "OPTIONS") {
+    return new Response(null, { status: 204 });
+  }
+
+  if (url.pathname === "/api/health" && request.method === "GET") {
+    return json({ ok: true, service: "pre-programmed" });
+  }
+
+  if (url.pathname === "/api/project/bootstrap" && request.method === "GET") {
+    return getBootstrap(env);
+  }
+
+  if (url.pathname === "/api/author/login" && request.method === "POST") {
+    return loginAuthor(request, env);
+  }
+
+  if (url.pathname === "/api/author/check" && request.method === "POST") {
+    return (await isAuthor(request, env))
+      ? new Response(null, { status: 204 })
+      : json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (url.pathname === "/api/author/backup" && request.method === "GET") {
+    return downloadBackup(request, env);
+  }
+
+  const nodeMatch = url.pathname.match(/^\/api\/author\/nodes\/([^/]+)$/);
+  if (nodeMatch && request.method === "PATCH") {
+    return updateNode(request, env, decodeURIComponent(nodeMatch[1]));
+  }
+
+  return json({ error: "Not found" }, { status: 404 });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-
-    if (url.pathname === "/api/health") {
-      return json({ ok: true, service: "pre-programmed" });
+    if (!url.pathname.startsWith("/api/")) {
+      return new Response("Pre-Programmed API", { status: 404 });
     }
-
-    if (url.pathname === "/api/project/bootstrap" && request.method === "GET") {
-      return getBootstrap(env);
-    }
-
-    if (url.pathname === "/api/author/check" && request.method === "POST") {
-      return isAuthor(request, env)
-        ? new Response(null, { status: 204 })
-        : json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const nodeMatch = url.pathname.match(/^\/api\/author\/nodes\/([^/]+)$/);
-    if (nodeMatch && request.method === "PATCH") {
-      return updateNode(request, env, decodeURIComponent(nodeMatch[1]));
-    }
-
-    if (url.pathname.startsWith("/api/")) {
-      return json({ error: "Not found" }, { status: 404 });
-    }
-
-    return env.ASSETS.fetch(request);
+    return withCors(request, await handleApi(request, env));
   },
 } satisfies ExportedHandler<Env>;
