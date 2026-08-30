@@ -55,9 +55,9 @@ export function Inventory({
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
-    onState(execution.state);
     onEvents(execution.events);
     if (execution.responseText) onOutput(execution.responseText);
+    onState(execution.state);
     if (request.target.kind === "item" && request.operation === "remove" && execution.accepted) setSelected(null);
   };
 

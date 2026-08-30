@@ -65,4 +65,23 @@ describe("terminal present-moment layout", () => {
     expect(css).toContain(".author-panel-footer");
     expect(css).toContain("font-size: max(16px, 1em)");
   });
+
+  it("places inventory response-text after the active line before returning to play", () => {
+    const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    const inventory = readFileSync(new URL("../src/components/Inventory.tsx", import.meta.url), "utf8");
+    const outputHandler = app.slice(
+      app.indexOf("const showInventoryResponse"),
+      app.indexOf("const applyCanonicalSnapshot"),
+    );
+    const operationHandler = inventory.slice(
+      inventory.indexOf("const operate"),
+      inventory.indexOf("const moveSelected"),
+    );
+
+    expect(outputHandler.indexOf("appendActive();")).toBeLessThan(outputHandler.indexOf("setTranscript"));
+    expect(outputHandler).toContain("setInventoryOpen(false)");
+    expect(operationHandler.indexOf("onOutput(execution.responseText)")).toBeLessThan(
+      operationHandler.indexOf("onState(execution.state)"),
+    );
+  });
 });

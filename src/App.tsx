@@ -478,6 +478,9 @@ export default function App() {
     setInventoryOpen(false);
   };
   const showInventoryResponse = (text: string) => {
+    appendActive();
+    setActiveText("");
+    setActiveNodeId(undefined);
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
     setInventoryOpen(false);
   };
