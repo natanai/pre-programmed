@@ -1,3 +1,5 @@
+import { ensureSchema } from "./db/migrations";
+
 type Env = {
   ASSETS: Fetcher;
   DB: D1Database;
@@ -34,6 +36,8 @@ function toGameNode(row: NodeRow) {
 }
 
 async function getBootstrap(env: Env) {
+  await ensureSchema(env.DB);
+
   const row = await env.DB.prepare(
     `SELECT n.id, n.node_number, n.text, n.characters_per_second
        FROM project_meta p
@@ -59,6 +63,8 @@ async function updateNode(request: Request, env: Env, id: string) {
   if (!isAuthor(request, env)) {
     return json({ error: "Unauthorized" }, { status: 401 });
   }
+
+  await ensureSchema(env.DB);
 
   let body: unknown;
   try {

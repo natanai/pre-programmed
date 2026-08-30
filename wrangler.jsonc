@@ -12,8 +12,7 @@
     {
       "binding": "DB",
       "database_name": "pre-programmed-db",
-      "database_id": "c13688ea-4f00-49ac-b7d1-88ba623c4c41",
-      "migrations_dir": "migrations"
+      "database_id": "c13688ea-4f00-49ac-b7d1-88ba623c4c41"
     }
   ]
 }
