@@ -25,4 +25,4 @@ npm run typecheck
 npm run build:pages
 ```
 
-Cloudflare deployment remains automatic from `main` through the connected Workers Build. GitHub Pages is published from the existing CI workflow on pushes to `main`.
+Production deployment is owned by the repository's existing GitHub Actions workflow. On pushes to `main`, it validates the project, deploys and verifies the Cloudflare API Worker first, then publishes the same commit's client to GitHub Pages. Cloudflare's separate Git/Workers Build pipeline is not a production deployment owner.
