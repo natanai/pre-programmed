@@ -16,12 +16,14 @@ Normal deployment flow:
 
 No routine Cloudflare dashboard deployment is expected.
 
-## One-time account setup
+## One-time account setup — completed
 
-1. GitHub repository Settings → Pages → Source → **GitHub Actions**.
-2. Cloudflare Worker → Variables and Secrets → add encrypted secret `ADMIN_KEY`.
+The required account setup has already been completed:
 
-Do not put the `ADMIN_KEY` value in the repository, issue tracker, PR, or game database.
+- GitHub repository Settings → Pages → Source is **GitHub Actions**.
+- Cloudflare Worker has an encrypted secret named `ADMIN_KEY`.
+
+Do not ask for, reveal, log, commit, or store the `ADMIN_KEY` value in the repository, issue tracker, PR, frontend bundle, or game database.
 
 ## Backups
 
