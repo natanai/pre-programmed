@@ -11,7 +11,7 @@ Normal deployment flow:
 
 1. Work on a feature branch.
 2. Merge an approved PR to `main`.
-3. GitHub Actions publishes the client to GitHub Pages.
+3. The repository's single CI workflow publishes the client to GitHub Pages.
 4. Cloudflare's existing Git integration deploys the API Worker from the same `main` commit.
 
 No routine Cloudflare dashboard deployment is expected.
