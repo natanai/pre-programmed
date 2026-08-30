@@ -97,6 +97,8 @@ Physical items and nonphysical status entries remain semantically distinct. When
 
 Authenticated authors may temporarily hide all author affordances with the small player/author view toggle. This previews the player experience without ending the authenticated session or changing game state.
 
+On phones, the normal Author workspace includes the software keyboard. Core text editors therefore follow one shared frame: close/context remains at the top, the active form is the only scrolling region, and save/cancel remains visible above the keyboard. Dialogue editing preserves a smaller live-play context above that frame rather than dividing the reduced viewport evenly.
+
 ## Release boundary
 
 Author plays mutable Draft. Public players play an immutable structured release snapshot. Because released binary assets remain repository files, a path used by a published release becomes immutable: replacement assets get new paths.

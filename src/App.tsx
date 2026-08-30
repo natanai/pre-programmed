@@ -42,6 +42,7 @@ import {
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
+import { isSoftwareKeyboardOpen } from "./ui/viewport";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
@@ -121,18 +122,49 @@ export default function App() {
   useEffect(() => {
     const root = document.documentElement;
     const viewport = window.visualViewport;
+    let maximumViewportHeight = viewport?.height ?? window.innerHeight;
+    let viewportWidth = viewport?.width ?? window.innerWidth;
+    let focusFrame = 0;
     const syncViewport = () => {
-      root.style.setProperty("--terminal-viewport-height", `${viewport?.height ?? window.innerHeight}px`);
+      const height = viewport?.height ?? window.innerHeight;
+      const width = viewport?.width ?? window.innerWidth;
+      if (Math.abs(width - viewportWidth) > 80) {
+        maximumViewportHeight = height;
+        viewportWidth = width;
+      } else {
+        maximumViewportHeight = Math.max(maximumViewportHeight, height);
+      }
+      const active = document.activeElement;
+      const editableFocused = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
+      root.style.setProperty("--terminal-viewport-height", `${height}px`);
+      root.style.setProperty("--terminal-viewport-top", `${viewport?.offsetTop ?? 0}px`);
+      root.dataset.keyboardOpen = String(isSoftwareKeyboardOpen({
+        viewportHeight: height,
+        maximumViewportHeight,
+        viewportWidth: width,
+        editableFocused,
+      }));
+    };
+    const syncViewportAfterFocus = () => {
+      window.cancelAnimationFrame(focusFrame);
+      focusFrame = window.requestAnimationFrame(syncViewport);
     };
     syncViewport();
     viewport?.addEventListener("resize", syncViewport);
     viewport?.addEventListener("scroll", syncViewport);
     window.addEventListener("resize", syncViewport);
+    document.addEventListener("focusin", syncViewportAfterFocus);
+    document.addEventListener("focusout", syncViewportAfterFocus);
     return () => {
       viewport?.removeEventListener("resize", syncViewport);
       viewport?.removeEventListener("scroll", syncViewport);
       window.removeEventListener("resize", syncViewport);
+      document.removeEventListener("focusin", syncViewportAfterFocus);
+      document.removeEventListener("focusout", syncViewportAfterFocus);
+      window.cancelAnimationFrame(focusFrame);
       root.style.removeProperty("--terminal-viewport-height");
+      root.style.removeProperty("--terminal-viewport-top");
+      delete root.dataset.keyboardOpen;
     };
   }, []);
 
@@ -466,7 +498,7 @@ export default function App() {
     if (!typewriter.complete) { typewriter.completeImmediately(); return; }
     focusTerminal();
   }}>
-    <div className="dos-terminal">
+    <div className={`dos-terminal${dialogueAuthoring ? " dialogue-authoring-active" : ""}`}>
       <div
         ref={terminalHistoryRef}
         className="terminal-history"

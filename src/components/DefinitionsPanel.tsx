@@ -45,10 +45,11 @@ export function DefinitionsPanel({ snapshot, onSave, onClose }: {
     } finally { setSaving(false); }
   };
 
-  return <section className="author-panel definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="author-panel author-panel-frame definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>STATE DEFINITIONS</span><button type="button" onClick={onClose}>[X]</button></header>
-    <nav className="panel-tabs"><button type="button" aria-pressed={mode === "variables"} onClick={() => setMode("variables")}>[VARIABLES]</button><button type="button" aria-pressed={mode === "computed"} onClick={() => setMode("computed")}>[COMPUTED]</button><button type="button" aria-pressed={mode === "entities"} onClick={() => setMode("entities")}>[CHARACTERS / LOCATIONS]</button></nav>
-    {mode === "variables" ? <>
+    <div className="author-panel-body">
+      <nav className="panel-tabs"><button type="button" aria-pressed={mode === "variables"} onClick={() => setMode("variables")}>[VARIABLES]</button><button type="button" aria-pressed={mode === "computed"} onClick={() => setMode("computed")}>[COMPUTED]</button><button type="button" aria-pressed={mode === "entities"} onClick={() => setMode("entities")}>[CHARACTERS / LOCATIONS]</button></nav>
+      {mode === "variables" ? <>
       <div className="definition-list">{snapshot.variables.map((item) => <button type="button" key={item.id} onClick={() => setVariable({ ...structuredClone(item), interactable: item.interactable ?? false, operations: item.operations ?? [], hooks: item.hooks ?? [] })}><span>{item.label}</span><span>{item.key} : {item.valueType}</span></button>)}</div>
       <button type="button" onClick={() => setVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [] })}>[+ VARIABLE]</button>
       {variable ? <div className="definition-form">
@@ -61,7 +62,6 @@ export function DefinitionsPanel({ snapshot, onSave, onClose }: {
         <label>INITIAL VALUE <InitialValueInput definition={variable} onChange={(initialValue) => setVariable({ ...variable, initialValue })} /></label>
         <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => setVariable({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>
         {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => setVariable({ ...variable, ...capability })} /> : null}
-        <div className="author-actions"><button type="button" disabled={saving} onClick={() => void saveVariable()}>[SAVE]</button><button type="button" onClick={() => setVariable(null)}>[CANCEL]</button></div>
       </div> : null}
     </> : mode === "computed" ? <>
       <div className="definition-list">{snapshot.computedValues.map((item) => <button type="button" key={item.id} onClick={() => setComputed({ ...structuredClone(item), interactable: item.interactable ?? false, operations: item.operations ?? [], hooks: item.hooks ?? [] })}><span>{item.label}</span><span>{item.key} : {item.source}</span></button>)}</div>
@@ -73,7 +73,6 @@ export function DefinitionsPanel({ snapshot, onSave, onClose }: {
         <label>FORMAT <select value={computed.format} onChange={(event) => setComputed({ ...computed, format: event.target.value as ComputedDefinition["format"] })}><option value="raw">raw</option><option value="integer">rounded integer</option><option value="seconds">seconds with unit</option></select></label>
         <label className="check-label"><input type="checkbox" checked={computed.showInStatus} onChange={(event) => setComputed({ ...computed, showInStatus: event.target.checked })} /> show in inventory/status</label>
         {computed.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => setComputed({ ...computed, ...capability })} /> : null}
-        <div className="author-actions"><button type="button" disabled={saving} onClick={() => void saveComputed()}>[SAVE]</button><button type="button" onClick={() => setComputed(null)}>[CANCEL]</button></div>
       </div> : null}
     </> : <>
       <div className="definition-list">{snapshot.entities.map((item) => <button type="button" key={item.id} onClick={() => setEntity(structuredClone(item))}><span>{item.name}</span><span>{item.key} : {item.type}</span></button>)}</div>
@@ -84,9 +83,12 @@ export function DefinitionsPanel({ snapshot, onSave, onClose }: {
         <label>NAME <input value={entity.name} onChange={(event) => setEntity({ ...entity, name: event.target.value })} /></label>
         <label>DESCRIPTION <textarea rows={3} value={entity.description} onChange={(event) => setEntity({ ...entity, description: event.target.value })} /></label>
         <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => setEntity({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
-        <div className="author-actions"><button type="button" disabled={saving} onClick={() => void saveEntity()}>[SAVE]</button><button type="button" onClick={() => setEntity(null)}>[CANCEL]</button></div>
       </div> : null}
-    </>}
+      </>}
+    </div>
+    {mode === "variables" && variable ? <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void saveVariable()}>[SAVE]</button><button type="button" onClick={() => setVariable(null)}>[CANCEL]</button></div> : null}
+    {mode === "computed" && computed ? <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void saveComputed()}>[SAVE]</button><button type="button" onClick={() => setComputed(null)}>[CANCEL]</button></div> : null}
+    {mode === "entities" && entity ? <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void saveEntity()}>[SAVE]</button><button type="button" onClick={() => setEntity(null)}>[CANCEL]</button></div> : null}
   </section>;
 }
 
