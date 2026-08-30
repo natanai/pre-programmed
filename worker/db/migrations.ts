@@ -272,6 +272,31 @@ const migrations: Migration[] = [
       UPDATE project_meta SET schema_version = 5 WHERE id = 1;
     `,
   },
+  {
+    id: 6,
+    name: "time-based-variables",
+    sql: `
+      ALTER TABLE variable_definitions
+      ADD COLUMN time_rate REAL NOT NULL DEFAULT 0;
+
+      ALTER TABLE variable_definitions
+      ADD COLUMN time_unit TEXT NOT NULL DEFAULT 'second'
+      CHECK (time_unit IN ('second', 'minute', 'hour'));
+
+      UPDATE project_meta SET schema_version = 6 WHERE id = 1;
+    `,
+  },
+  {
+    id: 7,
+    name: "response-text-speed",
+    sql: `
+      ALTER TABLE interaction_outcomes
+      ADD COLUMN response_characters_per_second INTEGER NOT NULL DEFAULT 18
+      CHECK (response_characters_per_second BETWEEN 1 AND 120);
+
+      UPDATE project_meta SET schema_version = 7 WHERE id = 1;
+    `,
+  },
 ];
 
 export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));

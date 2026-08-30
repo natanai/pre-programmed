@@ -99,6 +99,7 @@ type OutcomeRow = {
   author_status: Interaction["outcomes"][number]["authorStatus"];
   condition_json: string;
   response_text: string;
+  response_characters_per_second: number;
   effects_json: string;
   disposition: "stay" | "transition";
   destination_node_id: string | null;
@@ -120,6 +121,8 @@ type VariableRow = {
   show_in_status: number;
   operation_interactable: number;
   operations_json: string;
+  time_rate: number;
+  time_unit: "second" | "minute" | "hour";
 };
 type ComputedRow = {
   id: string;
@@ -180,7 +183,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
       db.prepare(
-        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text,
+        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_characters_per_second,
                 effects_json, disposition, destination_node_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
@@ -188,7 +191,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         "SELECT id, key, entity_type, name, description, tags_json FROM entity_definitions ORDER BY entity_type, key",
       ).all<EntityRow>(),
       db.prepare(
-        "SELECT id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json FROM variable_definitions ORDER BY key",
+        "SELECT id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json, time_rate, time_unit FROM variable_definitions ORDER BY key",
       ).all<VariableRow>(),
       db.prepare(
         "SELECT id, key, label, source, format, show_in_status, operation_interactable, operations_json FROM computed_definitions ORDER BY key",
@@ -222,7 +225,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   }));
 
   return {
-    schemaVersion: Math.max(5, meta.schema_version),
+    schemaVersion: Math.max(7, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     nodes: nodes.results.map((row): GameNode => {
@@ -259,6 +262,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         authorStatus: outcome.author_status,
         condition: parseJson(outcome.condition_json, { type: "always" }),
         responseText: outcome.response_text,
+        responseCharactersPerSecond: outcome.response_characters_per_second,
         effects: parseJson(outcome.effects_json, []),
         disposition: outcome.disposition,
         destinationNodeId: outcome.destination_node_id,
@@ -282,6 +286,8 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       interactable: Boolean(row.operation_interactable),
       operations: parseJson(row.operations_json, []),
       hooks: hooksFor("variable", row.id),
+      timeRate: row.time_rate,
+      timeUnit: row.time_unit,
     })),
     computedValues: computed.results.map((row): ComputedDefinition => ({
       id: row.id,
@@ -417,8 +423,8 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
           db.prepare(
             `INSERT INTO interaction_outcomes
              (id, interaction_id, order_index, label, condition_json, response_text,
-              effects_json, disposition, destination_node_id, author_status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              response_characters_per_second, effects_json, disposition, destination_node_id, author_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ).bind(
             outcome.id,
             value.id,
@@ -426,6 +432,7 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
             outcome.label,
             JSON.stringify(outcome.condition),
             outcome.responseText,
+            outcome.responseCharactersPerSecond ?? 18,
             JSON.stringify(outcome.effects),
             outcome.disposition,
             outcome.destinationNodeId,
@@ -450,15 +457,16 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
       const value = operation.definition;
       return [db.prepare(
         `INSERT INTO variable_definitions
-         (id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         (id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json, time_rate, time_unit, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET key=excluded.key, label=excluded.label, value_type=excluded.value_type,
            initial_json=excluded.initial_json, show_in_status=excluded.show_in_status,
            operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
+           time_rate=excluded.time_rate, time_unit=excluded.time_unit,
            updated_at=CURRENT_TIMESTAMP`,
       ).bind(
         value.id, value.key, value.label, value.valueType, JSON.stringify(value.initialValue), Number(value.showInStatus),
-        Number(value.interactable ?? false), JSON.stringify(value.operations ?? []),
+        Number(value.interactable ?? false), JSON.stringify(value.operations ?? []), value.timeRate ?? 0, value.timeUnit ?? "second",
       ), ...hookStatements(db, "variable", value.id, value.hooks)];
     }
     case "computed.upsert": {

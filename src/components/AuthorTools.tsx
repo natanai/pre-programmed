@@ -11,7 +11,7 @@ import type {
 import { createSilentSynth, playSynthSound } from "../game/synth";
 import { ASSET_MANIFEST } from "../generated/assetManifest";
 
-export function AssetExplorer({ snapshot, onClose }: { snapshot: ProjectSnapshot; onClose: () => void }) {
+export function AssetExplorer({ snapshot, onClose: _onClose }: { snapshot: ProjectSnapshot; onClose: () => void }) {
   const [query, setQuery] = useState("");
   const assets = ASSET_MANIFEST.filter((asset) => asset.path.toLowerCase().includes(query.toLowerCase()));
   const referenced = new Set([
@@ -21,7 +21,7 @@ export function AssetExplorer({ snapshot, onClose }: { snapshot: ProjectSnapshot
   const runtimePaths = new Set(ASSET_MANIFEST.map((asset) => asset.runtimePath).filter(Boolean));
   const missing = [...referenced].filter((path) => !runtimePaths.has(path));
   return <section className="author-panel author-panel-frame asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>REPOSITORY ASSETS</span><button type="button" onClick={onClose}>[X]</button></header>
+    <header><span>REPOSITORY ASSETS</span></header>
     <div className="author-panel-body">
       <input aria-label="Search repository assets" placeholder="local asset search" value={query} onChange={(event) => setQuery(event.target.value)} />
       {missing.length ? <div className="asset-warning"><strong>MISSING LINKED PATHS</strong>{missing.map((path) => <span key={path}>{path}</span>)}</div> : null}
@@ -31,7 +31,7 @@ export function AssetExplorer({ snapshot, onClose }: { snapshot: ProjectSnapshot
   </section>;
 }
 
-export function SynthPanel({ snapshot, onSave, onClose }: {
+export function SynthPanel({ snapshot, onSave, onClose: _onClose }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
@@ -43,7 +43,7 @@ export function SynthPanel({ snapshot, onSave, onClose }: {
     await onSave([{ type: "synth.upsert", sound: draft }], `Changed synth ${draft.label}`);
   };
   return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>TINY SYNTH</span><button type="button" onClick={onClose}>[X]</button></header>
+    <header><span>TINY SYNTH</span></header>
     <div className="author-panel-body">
       <div className="definition-list">{snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => setDraft(structuredClone(sound))}><span>{sound.label}</span><span>{sound.key}</span></button>)}</div>
       <button type="button" onClick={() => setDraft(createSilentSynth())}>[+ SOUND]</button>
@@ -69,7 +69,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: { sound: SynthSound; voice
   </div>;
 }
 
-export function WorkspacePanel({ token, snapshot, playState, onSave, onSnapshot, onRestore, onClose }: {
+export function WorkspacePanel({ token, snapshot, playState, onSave, onSnapshot, onRestore, onClose: _onClose }: {
   token: string;
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -89,7 +89,7 @@ export function WorkspacePanel({ token, snapshot, playState, onSave, onSnapshot,
     setNote("");
   };
   return <section className="author-panel author-panel-frame workspace-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>HISTORY / LOCATIONS</span><button type="button" onClick={onClose}>[X]</button></header>
+    <header><span>HISTORY / LOCATIONS</span></header>
     <div className="author-panel-body">
       <div className="bookmark-create"><input placeholder="optional bookmark note" value={note} onChange={(event) => setNote(event.target.value)} /><button type="button" onClick={() => void createBookmark()}>[BOOKMARK HERE]</button></div>
       <h3>LOCATIONS</h3><div className="workspace-list">{bookmarks.map((bookmark) => <div key={bookmark.id}><span>#{snapshot.nodes.find((node) => node.id === bookmark.nodeId)?.nodeNumber} {bookmark.note || "untitled location"}</span><button type="button" onClick={() => onRestore(bookmark)}>[RESTORE]</button></div>)}</div>

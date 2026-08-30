@@ -16,7 +16,7 @@ export function interaction(id: string, sourceNodeId: string, destinationNodeId:
 
 export function project(overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
-    schemaVersion: 5, revision: 0, startNodeId: "a", nodes: [node("a", 1)], interactions: [], entities: [], variables: [],
+    schemaVersion: 7, revision: 0, startNodeId: "a", nodes: [node("a", 1)], interactions: [], entities: [], variables: [],
     computedValues: [], items: [], synthSounds: [], ...overrides,
   };
 }
