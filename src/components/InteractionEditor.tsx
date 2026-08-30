@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState, type RefObject } from "react";
 import { buildGraphIndex, notationForNode } from "../game/graph";
 import {
   ALWAYS,
@@ -70,8 +70,9 @@ function ChoiceRevealSetting({ value, onChange }: {
   value: InteractionChoiceVisibility;
   onChange: (value: InteractionChoiceVisibility) => void;
 }) {
-  return <fieldset className="choice-reveal-setting">
-    <legend>CHOICE VISIBILITY</legend>
+  const selected = revealOptions.find((option) => option.value === value)?.label ?? "ON PROMPT";
+  return <details className="choice-reveal-setting">
+    <summary>CHOICE: {selected}</summary>
     <div className="choice-reveal-options">
       {revealOptions.map((option) => <button
         type="button"
@@ -81,7 +82,7 @@ function ChoiceRevealSetting({ value, onChange }: {
         onClick={() => onChange(option.value)}
       >[{option.label}]</button>)}
     </div>
-  </fieldset>;
+  </details>;
 }
 
 export function InteractionEditor({
@@ -105,6 +106,7 @@ export function InteractionEditor({
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
+  const firstResponse = useRef<HTMLTextAreaElement>(null);
 
   const updateOutcome = (id: string, next: InteractionOutcome) =>
     setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
@@ -170,61 +172,70 @@ export function InteractionEditor({
     }
   };
 
-  return <section className="author-panel interaction-editor-panel" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="author-panel author-panel-frame interaction-editor-panel" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>USER INPUT FROM #{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</span><button type="button" onClick={onCancel}>[X]</button></header>
 
-    <div className="causal-author-flow">
-      <label className="user-input-field">USER-INPUT-TEXT
-        <input value={draft.wording} onChange={(event) => setDraft({ ...draft, wording: event.target.value })} autoFocus />
-      </label>
-      <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} />
+    <div className="author-panel-body">
+      <div className="causal-author-flow">
+        <label className="user-input-field">USER-INPUT-TEXT
+          <input value={draft.wording} onChange={(event) => setDraft({ ...draft, wording: event.target.value })}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              firstResponse.current?.focus();
+            }} autoFocus enterKeyHint="next" />
+        </label>
 
-      <div className="response-flow-heading"><strong>RESPONSE-TEXT</strong></div>
-      {draft.outcomes.map((outcome, index) => <OutcomeEditor
-        key={outcome.id}
-        outcome={outcome}
-        snapshot={snapshot}
-        playState={playState}
-        newNodeText={newNodeText[outcome.id] ?? ""}
-        onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [outcome.id]: text }))}
-        onChange={(next) => updateOutcome(outcome.id, next)}
-        onMove={(direction) => setDraft((current) => {
-          const target = index + direction;
-          if (target < 0 || target >= current.outcomes.length) return current;
-          const outcomes = [...current.outcomes];
-          [outcomes[index], outcomes[target]] = [outcomes[target], outcomes[index]];
-          return { ...current, outcomes: outcomes.map((item, order) => ({ ...item, order })) };
-        })}
-        onRemove={draft.outcomes.length > 1 ? () => setDraft({ ...draft, outcomes: draft.outcomes.filter((item) => item.id !== outcome.id) }) : undefined}
-        index={index}
-      />)}
+        <div className="response-flow-heading"><strong>RESPONSE-TEXT</strong></div>
+        {draft.outcomes.map((outcome, index) => <OutcomeEditor
+          key={outcome.id}
+          outcome={outcome}
+          snapshot={snapshot}
+          playState={playState}
+          responseRef={index === 0 ? firstResponse : undefined}
+          newNodeText={newNodeText[outcome.id] ?? ""}
+          onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [outcome.id]: text }))}
+          onChange={(next) => updateOutcome(outcome.id, next)}
+          onMove={(direction) => setDraft((current) => {
+            const target = index + direction;
+            if (target < 0 || target >= current.outcomes.length) return current;
+            const outcomes = [...current.outcomes];
+            [outcomes[index], outcomes[target]] = [outcomes[target], outcomes[index]];
+            return { ...current, outcomes: outcomes.map((item, order) => ({ ...item, order })) };
+          })}
+          onRemove={draft.outcomes.length > 1 ? () => setDraft({ ...draft, outcomes: draft.outcomes.filter((item) => item.id !== outcome.id) }) : undefined}
+          index={index}
+        />)}
 
-      <div className="quick-response-add">
-        <input
-          aria-label="New response-text draft"
-          value={quickResponse}
-          placeholder="another possible response-text"
-          onChange={(event) => setQuickResponse(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key !== "Enter") return;
-            event.preventDefault();
-            addResponseDraft();
-          }}
-        />
-        <button type="button" onClick={addResponseDraft}>[+ DRAFT RESPONSE [D]]</button>
+        <div className="quick-response-add">
+          <input
+            aria-label="New response-text draft"
+            value={quickResponse}
+            placeholder="another possible response-text"
+            onChange={(event) => setQuickResponse(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter") return;
+              event.preventDefault();
+              addResponseDraft();
+            }}
+          />
+          <button type="button" onClick={addResponseDraft}>[+ DRAFT RESPONSE [D]]</button>
+        </div>
+
+        <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} />
       </div>
+
+      <details className="advanced-author-details">
+        <summary>[ALIASES + AUTHOR DETAILS]</summary>
+        <label>OTHER ALIASES <textarea rows={2} value={draft.aliases.join("\n")} placeholder="one alternate phrase per line"
+          onChange={(event) => setDraft({ ...draft, aliases: event.target.value.split("\n") })} /></label>
+        <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
+        <label>AUTHOR NOTE <input value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
+      </details>
+
+      {error ? <div className="author-message" role="alert">{error}</div> : null}
     </div>
-
-    <details className="advanced-author-details">
-      <summary>[ALIASES + AUTHOR DETAILS]</summary>
-      <label>OTHER ALIASES <textarea rows={2} value={draft.aliases.join("\n")} placeholder="one alternate phrase per line"
-        onChange={(event) => setDraft({ ...draft, aliases: event.target.value.split("\n") })} /></label>
-      <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
-      <label>AUTHOR NOTE <input value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
-    </details>
-
-    {error ? <div className="author-message" role="alert">{error}</div> : null}
-    <div className="author-actions"><button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? confirmDelete ? <><span>Delete this user input?</span><button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}</div>
+    <div className="author-actions author-panel-footer"><button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? confirmDelete ? <><span>Delete this user input?</span><button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}</div>
   </section>;
 }
 
@@ -256,21 +267,24 @@ export function QuickInputsEditor({ snapshot, playState, onSave, onCancel }: {
     } finally { setSaving(false); }
   };
 
-  return <section className="author-panel quick-inputs-panel" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="author-panel author-panel-frame quick-inputs-panel" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>QUICK USER INPUTS FROM #{snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.nodeNumber}</span><button type="button" onClick={onCancel}>[X]</button></header>
-    <label>USER-INPUT-TEXTS
-      <textarea rows={7} value={text} onChange={(event) => setText(event.target.value)} placeholder="one possible player input per line" autoFocus />
-    </label>
-    <ChoiceRevealSetting value={choiceVisibility} onChange={setChoiceVisibility} />
-    {error ? <div className="author-message" role="alert">{error}</div> : null}
-    <div className="author-actions"><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : `CREATE ${values.length || ""} DRAFT${values.length === 1 ? "" : "S"}`}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
+    <div className="author-panel-body">
+      <label>USER-INPUT-TEXTS
+        <textarea rows={7} value={text} onChange={(event) => setText(event.target.value)} placeholder="one possible player input per line" autoFocus />
+      </label>
+      <ChoiceRevealSetting value={choiceVisibility} onChange={setChoiceVisibility} />
+      {error ? <div className="author-message" role="alert">{error}</div> : null}
+    </div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : `CREATE ${values.length || ""} DRAFT${values.length === 1 ? "" : "S"}`}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
   </section>;
 }
 
-function OutcomeEditor({ outcome, snapshot, playState, newNodeText, onNewNodeText, onChange, onMove, onRemove, index }: {
+function OutcomeEditor({ outcome, snapshot, playState, responseRef, newNodeText, onNewNodeText, onChange, onMove, onRemove, index }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
+  responseRef?: RefObject<HTMLTextAreaElement | null>;
   newNodeText: string;
   onNewNodeText: (text: string) => void;
   onChange: (outcome: InteractionOutcome) => void;
@@ -294,7 +308,7 @@ function OutcomeEditor({ outcome, snapshot, playState, newNodeText, onNewNodeTex
   return <fieldset className={`outcome-editor${outcome.authorStatus === "draft" ? " draft-outcome" : ""}`}>
     <legend><span className={outcome.authorStatus === "draft" ? "notation-dead" : "notation-ready"}>{behaviorBadge}</span> RESPONSE {index + 1}</legend>
     <label className="response-text-field">RESPONSE-TEXT
-      <textarea rows={3} value={outcome.responseText} onChange={(event) => onChange({ ...outcome, responseText: event.target.value })} />
+      <textarea ref={responseRef} rows={3} value={outcome.responseText} onChange={(event) => onChange({ ...outcome, responseText: event.target.value })} />
     </label>
     <ValueTokenBar snapshot={snapshot} onInsert={insertResponse} />
 

@@ -61,6 +61,21 @@ describe("Author surface rendering", () => {
       .toEqual(["Open the door", "open-the-door", "pull the door"]);
   });
 
+  it("keeps mobile dialogue editing causal and its actions outside the scrolling body", () => {
+    const markup = renderToStaticMarkup(<InteractionEditor snapshot={snapshot} playState={state} onSave={save} onCancel={noop} />);
+    const userInput = markup.indexOf("USER-INPUT-TEXT");
+    const response = markup.indexOf("RESPONSE-TEXT");
+    const choice = markup.indexOf("CHOICE: ON PROMPT");
+    const bodyEnd = markup.indexOf("</div><div class=\"author-actions author-panel-footer\"");
+
+    expect(markup).toContain("author-panel-frame interaction-editor-panel");
+    expect(markup).toContain("author-panel-body");
+    expect(markup).toContain("author-panel-footer");
+    expect(userInput).toBeLessThan(response);
+    expect(response).toBeLessThan(choice);
+    expect(bodyEnd).toBeGreaterThan(choice);
+  });
+
   it("renders status capabilities as touch-reachable controls and keeps the corner toggle unlabeled", () => {
     const statusSnapshot = project({ variables: [{
       id: "count", key: "count", label: "Count", valueType: "number", initialValue: 0,

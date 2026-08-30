@@ -18,12 +18,16 @@ describe("terminal present-moment layout", () => {
 
   it("preserves deliberate history scrolling and follows the mobile visual viewport", () => {
     const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 
     expect(app).toContain("historyPinnedToPresentRef");
     expect(app).toContain("distanceFromPresent <= 24");
     expect(app).toContain("window.visualViewport");
     expect(app).toContain("--terminal-viewport-height");
+    expect(app).toContain("--terminal-viewport-top");
+    expect(app).toContain("root.dataset.keyboardOpen");
     expect(app).toContain("terminal-history-content");
+    expect(html).toContain("interactive-widget=resizes-content");
   });
 
   it("keeps dialogue authoring beside the live prompt and avoids decorative choice chrome", () => {
@@ -43,5 +47,15 @@ describe("terminal present-moment layout", () => {
     const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
     expect(app).toContain("const performanceKey = JSON.stringify(performance)");
     expect(app).toContain("[text, performanceKey]");
+  });
+
+  it("gives keyboard-open dialogue more room while preserving a fixed editing frame", () => {
+    const css = readFileSync(new URL("../src/styles.css", import.meta.url), "utf8");
+
+    expect(css).toContain("html[data-keyboard-open=\"true\"] .dialogue-authoring-active .terminal-history");
+    expect(css).toContain("grid-template-rows: auto minmax(0, 1fr) auto");
+    expect(css).toContain(".author-panel-body");
+    expect(css).toContain(".author-panel-footer");
+    expect(css).toContain("font-size: max(16px, 1em)");
   });
 });
