@@ -37,7 +37,11 @@ describe("terminal present-moment layout", () => {
 
     expect(app).toContain("dialogueAuthoring");
     expect(app).toContain("dialogue-authoring-popover");
+    expect(app).not.toContain("[+ SEVERAL]");
+    expect(app).not.toContain("quick-inputs");
     expect(app).not.toContain("prompt-choice-caret");
+    expect(app).toContain("const showInventoryResponse");
+    expect(app).toContain("onOutput={showInventoryResponse}");
     expect(choiceButton).toContain("border: 0");
     expect(choiceButton).toContain("text-align: left");
     for (const accent of ["#6cf", "#9cf", "#9f9", "#fc6", "#123", "#345"]) expect(css).not.toContain(accent);
@@ -60,5 +64,24 @@ describe("terminal present-moment layout", () => {
     expect(css).toContain(".author-panel-body");
     expect(css).toContain(".author-panel-footer");
     expect(css).toContain("font-size: max(16px, 1em)");
+  });
+
+  it("places inventory response-text after the active line before returning to play", () => {
+    const app = readFileSync(new URL("../src/App.tsx", import.meta.url), "utf8");
+    const inventory = readFileSync(new URL("../src/components/Inventory.tsx", import.meta.url), "utf8");
+    const outputHandler = app.slice(
+      app.indexOf("const showInventoryResponse"),
+      app.indexOf("const applyCanonicalSnapshot"),
+    );
+    const operationHandler = inventory.slice(
+      inventory.indexOf("const operate"),
+      inventory.indexOf("const moveSelected"),
+    );
+
+    expect(outputHandler.indexOf("appendActive();")).toBeLessThan(outputHandler.indexOf("setTranscript"));
+    expect(outputHandler).toContain("setInventoryOpen(false)");
+    expect(operationHandler.indexOf("onOutput(execution.responseText)")).toBeLessThan(
+      operationHandler.indexOf("onState(execution.state)"),
+    );
   });
 });

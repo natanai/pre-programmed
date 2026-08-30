@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addInventoryItem, canPlaceItem } from "../src/game/inventory";
+import { addInventoryItem, addNewDefaultItemsToPlayState, canPlaceItem } from "../src/game/inventory";
 import { createEmptyPlayState, type ItemDefinition } from "../src/game/model";
 import { attemptOperation } from "../src/game/operations";
 import { project } from "./fixtures";
@@ -21,6 +21,17 @@ describe("inventory engine", () => {
     const state = createEmptyPlayState(startingSnapshot);
     expect(state.inventory).toHaveLength(2);
     expect(state.inventory.every((entry) => entry.itemId === item.id)).toBe(true);
+  });
+
+  it("places a newly authored default into the current test run without duplicating it", () => {
+    const previous = project({ items: [] });
+    const next = project({ items: [{ ...item, startingQuantity: 2 }] });
+    const current = createEmptyPlayState(previous);
+    const placed = addNewDefaultItemsToPlayState(previous, next, current);
+    const repeated = addNewDefaultItemsToPlayState(previous, next, placed);
+
+    expect(placed.inventory).toHaveLength(2);
+    expect(repeated.inventory).toHaveLength(2);
   });
 
   it("validates physical placement and rejects collisions", () => {
