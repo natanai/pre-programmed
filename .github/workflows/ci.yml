@@ -35,7 +35,11 @@ jobs:
         run: |
           SECRETS_FILE="$RUNNER_TEMP/pre-programmed-worker-secrets.json"
           trap 'rm -f "$SECRETS_FILE"' EXIT
-          node --input-type=module -e 'const fs=require("node:fs"); if(!process.env.ADMIN_KEY) process.exit(1); fs.writeFileSync(process.argv[1], JSON.stringify({ADMIN_KEY:process.env.ADMIN_KEY}), {mode:0o600})' "$SECRETS_FILE"
+          node --input-type=module - "$SECRETS_FILE" <<'NODE'
+          import { writeFileSync } from "node:fs";
+          if (!process.env.ADMIN_KEY) process.exit(1);
+          writeFileSync(process.argv[2], JSON.stringify({ ADMIN_KEY: process.env.ADMIN_KEY }), { mode: 0o600 });
+          NODE
           npx wrangler deploy --secrets-file "$SECRETS_FILE"
 
       - name: Verify API
