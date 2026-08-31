@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
 import { makeValueToken } from "../game/interpolation";
 import type { Condition, Effect, ProjectSnapshot, Value } from "../game/model";
+import { ASSET_MANIFEST } from "../generated/assetManifest";
 
 const conditionTypes: Array<{ value: Condition["type"]; label: string }> = [
   { value: "always", label: "always" },
@@ -259,9 +260,26 @@ function EffectFields({ effect, onChange, snapshot }: { effect: Effect; onChange
   if (effect.type === "set_interaction_visibility") return <><DefinitionSelect value={effect.interactionId} definitions={snapshot.interactions} onChange={(interactionId) => onChange({ ...effect, interactionId })} /><select value={String(effect.visible)} onChange={(event) => onChange({ ...effect, visible: event.target.value === "true" })}><option value="true">show</option><option value="false">hide</option></select></>;
   if (effect.type === "notification") return <div className="effect-notification"><ValueMentionField snapshot={snapshot} value={effect.text} onValueChange={(text) => onChange({ ...effect, text })} placeholder="notification text" /></div>;
   if (effect.type === "synth") return <DefinitionSelect value={effect.synthId} definitions={snapshot.synthSounds} valueMode="id" onChange={(synthId) => onChange({ ...effect, synthId })} />;
-  if (effect.type === "audio" || effect.type === "art") return <input placeholder="manifest asset path" value={effect.assetPath} onChange={(event) => onChange({ ...effect, assetPath: event.target.value })} />;
+  if (effect.type === "audio" || effect.type === "art") return <AssetEffectSelect kind={effect.type} value={effect.assetPath} onChange={(assetPath) => onChange({ ...effect, assetPath })} />;
   if (effect.type === "transition") return <select value={effect.nodeId} onChange={(event) => onChange({ ...effect, nodeId: event.target.value })}><option value="">choose node</option>{snapshot.nodes.map((node) => <option value={node.id} key={node.id}>#{node.nodeNumber} {node.text.slice(0, 40)}</option>)}</select>;
   return null;
+}
+
+function AssetEffectSelect({ kind, value, onChange }: { kind: "audio" | "art"; value: string; onChange: (value: string) => void }) {
+  const manifestType = kind === "art" ? "image" : "audio";
+  const assets = ASSET_MANIFEST.filter((asset) => asset.type === manifestType && asset.runtimePath);
+  const detected = assets.some((asset) => asset.runtimePath === value);
+  const noun = kind === "art" ? "image / sprite" : "audio file";
+  return <div className="asset-effect-picker">
+    <select aria-label={`Choose detected ${noun}`} value={detected ? value : ""} onChange={(event) => onChange(event.target.value)}>
+      <option value="">{assets.length ? `choose detected ${noun}` : `no detected ${noun}s`}</option>
+      {assets.map((asset) => <option value={asset.runtimePath} key={asset.path}>{asset.path.replace(/^public\/assets\//, "")}</option>)}
+    </select>
+    {!assets.length ? <small>Put files in public/assets/ and deploy them; detected files will appear here.</small> : null}
+    <details className="asset-manual-path"><summary>[MANUAL PATH]</summary>
+      <input aria-label={`Manual ${noun} path`} placeholder="/assets/..." value={value} onChange={(event) => onChange(event.target.value)} />
+    </details>
+  </div>;
 }
 
 function DefinitionSelect({ value, definitions, valueMode = "key", onChange }: { value: string; definitions: Array<{ id: string; key?: string; label?: string; name?: string; wording?: string }>; valueMode?: "key" | "id"; onChange: (value: string) => void }) {
