@@ -1,33 +1,50 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
+import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import type { SynthSound } from "../model";
 import { createSilentSynth } from "../synth";
 import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 
-export function SynthPanel({ snapshot, onSave }: {
+/** List workspace. Editing a sound is a child Author route rather than hidden local navigation. */
+export function SynthPanel({ snapshot, onOpenSound, onNewSound }: {
   snapshot: ProjectSnapshot;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
-  onClose: () => void;
+  onOpenSound: (sound: SynthSound) => void;
+  onNewSound: () => void;
 }) {
-  const [draft, setDraft] = useState<SynthSound | null>(null);
+  return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
+    <header><span>TINY SYNTH</span></header>
+    <div className="author-panel-body synth-panel-body">
+      <div className="definition-list synth-definition-list">
+        {snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => onOpenSound(sound)}><span>{sound.label}</span><span>{sound.voices.length} voice{sound.voices.length === 1 ? "" : "s"} · {sound.tempo} bpm</span></button>)}
+      </div>
+      {!snapshot.synthSounds.length ? <div className="workspace-empty">NO SYNTH SOUNDS YET.</div> : null}
+      <button type="button" className="synth-create" onClick={onNewSound}>[+ SOUND]</button>
+    </div>
+  </section>;
+}
+
+export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
+  snapshot: ProjectSnapshot;
+  initial?: SynthSound;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
+  setWorkspaceDirty: (dirty: boolean) => void;
+}) {
+  const [draft, setDraft] = useState<SynthSound>(() => structuredClone(initial ?? { ...createSilentSynth(), key: "" }));
+  const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [voiceIndex, setVoiceIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
 
-  const openSound = (sound: SynthSound) => {
-    setDraft(structuredClone(sound));
-    setVoiceIndex(0);
-  };
-
-  const newSound = () => {
-    setDraft({ ...createSilentSynth(), key: "" });
-    setVoiceIndex(0);
-  };
+  useEffect(() => {
+    setWorkspaceDirty(dirty);
+    return () => setWorkspaceDirty(false);
+  }, [dirty, setWorkspaceDirty]);
 
   const save = async () => {
-    if (!draft?.label.trim()) return;
+    if (!draft.label.trim()) return;
     const sound = {
       ...draft,
       key: resolveAuthorKey({
@@ -39,40 +56,39 @@ export function SynthPanel({ snapshot, onSave }: {
     };
     setDraft(sound);
     setSaving(true);
-    try { await onSave([{ type: "synth.upsert", sound }], `Changed synth ${sound.label}`); }
-    finally { setSaving(false); }
+    try {
+      const result = await onSave([{ type: "synth.upsert", sound }], `${initial ? "Changed" : "Created"} synth ${sound.label}`);
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(sound));
+        setWorkspaceDirty(false);
+      }
+    } finally { setSaving(false); }
   };
 
   return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>{draft ? `SOUND · ${draft.label || "NEW"}` : "TINY SYNTH"}</span></header>
+    <header><span>SOUND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body synth-panel-body">
-      {!draft ? <>
-        <div className="definition-list synth-definition-list">
-          {snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => openSound(sound)}><span>{sound.label}</span><span>{sound.voices.length} voice{sound.voices.length === 1 ? "" : "s"} · {sound.tempo} bpm</span></button>)}
-        </div>
-        {!snapshot.synthSounds.length ? <div className="workspace-empty">NO SYNTH SOUNDS YET.</div> : null}
-        <button type="button" className="synth-create" onClick={newSound}>[+ SOUND]</button>
-      </> : <>
-        <button type="button" className="synth-back" onClick={() => setDraft(null)}>[← BACK TO SOUNDS]</button>
-        <div className="synth-editor focused-synth-editor">
-          <section className="synth-section">
-            <h3>RECIPE</h3>
-            <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} autoFocus /></label>
-            <div className="form-grid">
-              <label>TEMPO <input type="number" min={30} max={300} value={draft.tempo} onChange={(event) => setDraft({ ...draft, tempo: Number(event.target.value) })} /></label>
-              <label className="check-label"><input type="checkbox" checked={draft.loop} onChange={(event) => setDraft({ ...draft, loop: event.target.checked })} /> loop recipe</label>
-            </div>
-            <GeneratedKeyField source={draft.label} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
-          </section>
-          <section className="synth-section">
-            <h3>VOICES</h3>
-            <nav className="voice-tabs">{draft.voices.map((voice, index) => <button type="button" aria-pressed={voiceIndex === index} key={index} onClick={() => setVoiceIndex(index)}>[V{index + 1} {voice.waveform}]</button>)}</nav>
-            {draft.voices[voiceIndex] ? <VoiceEditor sound={draft} voiceIndex={voiceIndex} onChange={setDraft} /> : <div className="workspace-empty">NO VOICE SELECTED.</div>}
-          </section>
-        </div>
-      </>}
+      <div className="synth-editor focused-synth-editor">
+        <section className="synth-section">
+          <h3>RECIPE</h3>
+          <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} autoFocus /></label>
+          <div className="form-grid">
+            <label>TEMPO <input type="number" min={30} max={300} value={draft.tempo} onChange={(event) => setDraft({ ...draft, tempo: Number(event.target.value) })} /></label>
+            <label className="check-label"><input type="checkbox" checked={draft.loop} onChange={(event) => setDraft({ ...draft, loop: event.target.checked })} /> loop recipe</label>
+          </div>
+          <GeneratedKeyField source={draft.label} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
+        </section>
+        <section className="synth-section">
+          <h3>VOICES</h3>
+          <nav className="voice-tabs">{draft.voices.map((voice, index) => <button type="button" aria-pressed={voiceIndex === index} key={index} onClick={() => setVoiceIndex(index)}>[V{index + 1} {voice.waveform}]</button>)}</nav>
+          {draft.voices[voiceIndex] ? <VoiceEditor sound={draft} voiceIndex={voiceIndex} onChange={setDraft} /> : <div className="workspace-empty">NO VOICE SELECTED.</div>}
+        </section>
+      </div>
     </div>
-    {draft ? <div className="author-panel-footer author-actions"><button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={() => setDraft(null)}>[CANCEL]</button></div> : null}
+    <div className="author-panel-footer author-actions">
+      <button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button>
+      <button type="button" disabled={saving || !dirty || !draft.label.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
+    </div>
   </section>;
 }
 
