@@ -1,8 +1,9 @@
-import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject } from "react";
+import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject, type SyntheticEvent } from "react";
 import { makeValueToken } from "../game/interpolation";
 import type { ProjectSnapshot } from "../game/model";
 
 type Mention = { start: number; end: number; query: string };
+type TextSelection = { start: number; end: number };
 
 function mentionAt(value: string, cursor: number): Mention | null {
   const beforeCursor = value.slice(0, cursor);
@@ -23,6 +24,7 @@ export function ValueMentionField({
   autoFocus,
   textareaRef,
   onKeyDown,
+  onSelectionChange,
 }: {
   snapshot: ProjectSnapshot;
   value: string;
@@ -34,6 +36,7 @@ export function ValueMentionField({
   autoFocus?: boolean;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
+  onSelectionChange?: (selection: TextSelection) => void;
 }) {
   const control = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [mention, setMention] = useState<Mention | null>(null);
@@ -66,6 +69,11 @@ export function ValueMentionField({
     setMention(mentionAt(next, cursor ?? next.length));
     setSelection(0);
   };
+  const reportSelection = (element: HTMLInputElement | HTMLTextAreaElement) => {
+    const start = element.selectionStart ?? 0;
+    const end = Math.max(start, element.selectionEnd ?? start);
+    onSelectionChange?.({ start, end });
+  };
   const selectMatch = (match: (typeof matches)[number]) => {
     if (!mention) return;
     const next = `${value.slice(0, mention.start)}${match.token}${value.slice(mention.end)}`;
@@ -75,6 +83,7 @@ export function ValueMentionField({
     window.requestAnimationFrame(() => {
       control.current?.focus();
       control.current?.setSelectionRange(cursor, cursor);
+      if (control.current) reportSelection(control.current);
     });
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -97,6 +106,7 @@ export function ValueMentionField({
     }
     onKeyDown?.(event);
   };
+  const handleSelect = (event: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => reportSelection(event.currentTarget);
   const common = {
     value,
     placeholder,
@@ -105,10 +115,16 @@ export function ValueMentionField({
     onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       onValueChange(event.target.value);
       syncMention(event.target.value, event.target.selectionStart);
+      reportSelection(event.target);
     },
-    onClick: (event: MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => syncMention(value, event.currentTarget.selectionStart),
+    onClick: (event: MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      syncMention(value, event.currentTarget.selectionStart);
+      reportSelection(event.currentTarget);
+    },
+    onSelect: handleSelect,
     onKeyUp: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       if (!["ArrowDown", "ArrowUp", "Enter", "Tab", "Escape"].includes(event.key)) syncMention(event.currentTarget.value, event.currentTarget.selectionStart);
+      reportSelection(event.currentTarget);
     },
     onKeyDown: handleKeyDown,
   };
