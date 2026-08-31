@@ -457,6 +457,7 @@ export default function App() {
   };
 
   const presentRuntimeExecution = (
+    project: ProjectSnapshot,
     execution: { state: PlayState; events: EffectEvent[]; responseText: string },
     previousState: PlayState,
     commandLineId: string,
@@ -466,7 +467,7 @@ export default function App() {
     handleEffectEvents(execution.events, commandLineId);
     const transitioned = execution.state.traversal.length > previousState.traversal.length;
     const destination = transitioned
-      ? snapshot.nodes.find((node) => node.id === execution.state.currentNodeId)
+      ? project.nodes.find((node) => node.id === execution.state.currentNodeId)
       : undefined;
     if (execution.responseText) {
       firedCueIds.current = new Set();
@@ -478,7 +479,7 @@ export default function App() {
       setPendingDestinationNodeId(destination?.id ?? null);
     } else if (destination) {
       setPendingDestinationNodeId(null);
-      showNode(snapshot, destination, execution.state);
+      showNode(project, destination, execution.state);
     } else {
       setPendingDestinationNodeId(null);
       setActiveText("");
@@ -553,7 +554,7 @@ export default function App() {
         operation: parsed.invocation.operation,
         arguments: parsed.invocation.arguments,
       });
-      presentRuntimeExecution(execution, commandState, commandLineId);
+      presentRuntimeExecution(snapshot, execution, commandState, commandLineId);
       if (!execution.accepted && !execution.responseText && authorMode && authorView) {
         setAuthorMessage(`TARGET DOES NOT HANDLE ${parsed.invocation.operation.toUpperCase()}.`);
       }
@@ -569,6 +570,7 @@ export default function App() {
 
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
     presentRuntimeExecution(
+      snapshot,
       execution,
       commandState,
       commandLineId,
