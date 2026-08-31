@@ -284,6 +284,7 @@ button:disabled { opacity: .45; cursor: default; }
 .synth-steps button { min-height: 2em; }
 .synth-steps select { padding: 0; }
 .bookmark-create { display: grid; grid-template-columns: 1fr auto; gap: .5em; }
+.workspace-empty { display: block; padding: .45em; background: #050505; color: var(--dos-muted); }
 .revisions { max-height: 15em; overflow: auto; }
 
 .command-line { position: relative; }

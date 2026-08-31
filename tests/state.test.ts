@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { evaluateCondition } from "../src/game/conditions";
 import { executeEffects } from "../src/game/effects";
 import { interpolateText } from "../src/game/interpolation";
-import { createEmptyPlayState, reconcilePlayState, type Interaction } from "../src/game/model";
+import { createEmptyPlayState, reconcilePlayState, resumeAuthorBookmark, type Interaction } from "../src/game/model";
 import { executeInteraction } from "../src/game/runtime";
 import { advanceTimedVariables } from "../src/game/timedVariables";
 import { project } from "./fixtures";
@@ -27,8 +27,14 @@ describe("conditions, effects, counters, and interpolation", () => {
       id: "drain", key: "drain", label: "Drain", valueType: "number", initialValue: 10,
       showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: -2, timeUnit: "minute",
     }] });
-    const advanced = advanceTimedVariables(timed, createEmptyPlayState(timed, 1_000), 61_000);
-    expect(advanced.values.drain).toBe(8);
+    const advanced = advanceTimedVariables(timed, createEmptyPlayState(timed, 1_000), 121_000);
+    expect(advanced.values.drain).toBe(6);
+    const resumed = resumeAuthorBookmark(timed, {
+      id: "saved", nodeId: "a", traversal: ["a"], playState: advanced, note: "", createdAt: new Date(121_000).toISOString(),
+    }, 1_000_000);
+    expect(resumed.sessionStartedAt).toBe(880_000);
+    expect(resumed.variableTimeUpdatedAt).toBe(1_000_000);
+    expect(advanceTimedVariables(timed, resumed, 1_060_000).values.drain).toBe(4);
   });
 
   it("evaluates variable comparisons and logical groups", () => {

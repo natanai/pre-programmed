@@ -30,6 +30,7 @@ import { applyOperations } from "./game/mutations";
 import {
   createEmptyPlayState,
   reconcilePlayState,
+  resumeAuthorBookmark,
   type AuthorBookmark,
   type GameNode,
   type Interaction,
@@ -57,7 +58,7 @@ type Panel =
   | { type: "structure" }
   | { type: "assets" }
   | { type: "synth" }
-  | { type: "workspace" }
+  | { type: "workspace"; view?: "locations" | "history" }
   | { type: "item"; item?: ItemDefinition }
   | null;
 
@@ -456,7 +457,8 @@ export default function App() {
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
     if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
     if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
-    if (authorMode && authorView && ["/history", "/locations", "/bookmark", "history", "locations"].includes(normalized)) { setPanel({ type: "workspace" }); return; }
+    if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
+    if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 
     const currentState = advanceTimedVariables(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
@@ -508,11 +510,11 @@ export default function App() {
   const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
   const restoreBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
-    const state = reconcilePlayState(snapshot, bookmark.playState);
+    const state = resumeAuthorBookmark(snapshot, bookmark);
     setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
     if (node) showNode(snapshot, node, state);
-    setPanel(null); setAuthorMessage("LOCATION RESTORED.");
+    setPanel(null); setAuthorMessage("LOCATION LOADED.");
   };
   const applyInventoryState = (state: PlayState) => {
     if (!snapshot || !playState) return;
@@ -605,7 +607,7 @@ export default function App() {
             <span>USER INPUTS FROM HERE</span>
             <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
           </div>
-          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
+          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "locations" })}>[LOCATIONS]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "history" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
         </div> : null}
         {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
@@ -620,7 +622,7 @@ export default function App() {
         {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} initialView={panel.view} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       </div>
     </div>
