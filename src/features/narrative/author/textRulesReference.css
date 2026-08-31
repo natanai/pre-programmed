@@ -1,0 +1,58 @@
+.text-rules-reference {
+  width: fit-content;
+  max-width: 100%;
+  margin: .35em 0 .75em;
+  color: var(--dos-muted);
+}
+
+.text-rules-reference > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--dos-text);
+  list-style: none;
+}
+
+.text-rules-reference > summary::-webkit-details-marker {
+  display: none;
+}
+
+.text-rules-reference-body {
+  width: min(42em, calc(100vw - 3em));
+  margin-top: .45em;
+  padding: .55em;
+  border: 1px dotted var(--dos-line);
+  background: #000;
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.text-rules-reference-body p {
+  margin: 0 0 .55em;
+}
+
+.text-rules-reference-body p:last-child {
+  margin-bottom: 0;
+}
+
+.text-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .35em 1em;
+  margin-bottom: .55em;
+}
+
+.text-rules-grid strong,
+.text-rules-example strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .text-rules-reference-body {
+    width: min(100%, calc(100vw - 2em));
+  }
+
+  .text-rules-grid {
+    grid-template-columns: 1fr;
+  }
+}
