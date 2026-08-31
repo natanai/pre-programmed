@@ -5,7 +5,7 @@ import type {
   RevisionSummary,
 } from "../game/model";
 import { cloudflareProjectPersistence } from "../platform/persistence/cloudflareProjectPersistence";
-import { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
+import { ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
 export { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
@@ -87,5 +87,3 @@ export async function undoLastRevision(token: string, expectedRevision: number) 
     }),
   );
 }
-
-void API_ORIGIN;
