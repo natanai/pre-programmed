@@ -19,5 +19,9 @@
     "src/game/conditions.ts",
     "src/engine/**/*.ts",
     "src/features/**/*.ts"
+  ],
+  "exclude": [
+    "src/features/**/author/**",
+    "src/features/**/ui/**"
   ]
 }
