@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { buildGraphIndex, notationForNode } from "../../../game/graph";
 import {
   makeId,
@@ -15,6 +15,7 @@ import {
 import { buildSearchIndex, searchProject } from "../../../game/search";
 import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../../components/AuthorFields";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
+import { TextExpressionBar, type TextSelection } from "./TextExpressionBar";
 import "./interactionEditor.css";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
@@ -29,7 +30,7 @@ type EditorScreen =
   | { type: "when"; outcomeId: string }
   | { type: "after"; outcomeId: string }
   | { type: "effects"; outcomeId: string }
-  | { type: "presentation"; outcomeId: string }
+  | { type: "author-details"; outcomeId: string }
   | { type: "input-settings" };
 
 export function aliasesForUserInput(userInputText: string, aliases: string[]) {
@@ -238,6 +239,7 @@ export function InteractionEditor({
     ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : screen.type === "response" ? `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`
+    : screen.type === "author-details" ? "AUTHOR DETAILS"
     : screen.type.toUpperCase();
 
   return <section className="author-panel author-panel-frame interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
@@ -298,7 +300,7 @@ export function InteractionEditor({
         onChange={(effects) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, effects }))}
       /> : null}
 
-      {screen.type === "presentation" && selectedOutcome ? <PresentationWorkspace
+      {screen.type === "author-details" && selectedOutcome ? <ResponseAuthorDetailsWorkspace
         outcome={selectedOutcome}
         onChange={(change) => configureOutcome(selectedOutcome.id, change)}
       /> : null}
@@ -413,21 +415,43 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
   total: number;
   notation: string;
   onText: (text: string) => void;
-  onOpen: (screen: "when" | "after" | "effects" | "presentation") => void;
+  onOpen: (screen: "when" | "after" | "effects" | "author-details") => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
 }) {
+  const textarea = useRef<HTMLTextAreaElement>(null);
+  const [selection, setSelection] = useState<TextSelection>({ start: 0, end: 0 });
+
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
-    <section className="guided-section">
+    <section className="guided-section response-writing-section">
       <h3>RESPONSE TEXT</h3>
-      <ValueMentionField snapshot={snapshot} multiline rows={5} autoFocus ariaLabel={`Response text ${index + 1}`} value={outcome.responseText} onValueChange={onText} />
+      <ValueMentionField
+        snapshot={snapshot}
+        multiline
+        rows={5}
+        autoFocus
+        ariaLabel={`Response text ${index + 1}`}
+        textareaRef={textarea}
+        value={outcome.responseText}
+        onValueChange={onText}
+        onSelectionChange={setSelection}
+      />
+      <TextExpressionBar
+        value={outcome.responseText}
+        selection={selection}
+        textareaRef={textarea}
+        onChange={(text, nextSelection) => {
+          onText(text);
+          setSelection(nextSelection);
+        }}
+      />
     </section>
     <section className="guided-section guided-drill-list">
       <button type="button" className="guided-drill-row" onClick={() => onOpen("when")}><span>WHEN</span><span className="guided-row-value">{conditionSummary(outcome.condition)}</span><span>›</span></button>
       <button type="button" className="guided-drill-row" onClick={() => onOpen("after")}><span>AFTER</span><span className="guided-row-value">{destinationLabel(snapshot, outcome)}</span><span>›</span></button>
       <button type="button" className="guided-drill-row" onClick={() => onOpen("effects")}><span>EFFECTS</span><span className="guided-row-value">{outcome.effects.length || "None"}</span><span>›</span></button>
-      <button type="button" className="guided-drill-row" onClick={() => onOpen("presentation")}><span>PRESENTATION</span><span className="guided-row-value">{outcome.responseCharactersPerSecond ?? 18} chars/sec</span><span>›</span></button>
+      <button type="button" className="guided-drill-row" onClick={() => onOpen("author-details")}><span>AUTHOR DETAILS</span><span className="guided-row-value">{outcome.label.trim() || "Optional label"}</span><span>›</span></button>
     </section>
     <div className="guided-response-actions">
       <button type="button" onClick={() => onMove(-1)} disabled={index === 0}>[MOVE UP]</button>
@@ -520,15 +544,15 @@ function EffectsWorkspace({ outcome, snapshot, onChange }: {
   </div>;
 }
 
-function PresentationWorkspace({ outcome, onChange }: {
+function ResponseAuthorDetailsWorkspace({ outcome, onChange }: {
   outcome: InteractionOutcome;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
 }) {
   return <div className="guided-subworkspace">
     <section className="guided-section">
-      <h3>PRESENTATION</h3>
-      <label>RESPONSE LABEL <input value={outcome.label} onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></label>
-      <label>CHARACTERS / SECOND <input type="number" min={1} max={120} value={outcome.responseCharactersPerSecond ?? 18} onChange={(event) => onChange((current) => ({ ...current, responseCharactersPerSecond: Number(event.target.value) }))} /></label>
+      <h3>AUTHOR DETAILS</h3>
+      <p className="guided-context-copy">Optional private organization for this response. It is not shown to the player and does not affect response selection.</p>
+      <label>RESPONSE LABEL <input value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></label>
     </section>
   </div>;
 }
