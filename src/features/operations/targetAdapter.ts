@@ -1,5 +1,5 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import type { OperationHook, OperationId, OperationTarget } from "./model";
+import type { OperationArguments, OperationHook, OperationId, OperationTarget } from "./model";
 
 export type OperationPlacement = { x: number; y: number };
 
@@ -30,6 +30,7 @@ export type OperationTargetAdapter = {
     state: PlayState;
     target: OperationTarget;
     operation: OperationId;
+    arguments?: OperationArguments;
     placement?: OperationPlacement;
   }) => TargetOperationResult;
   /** Optional behavior when no authored hook handles the attempt. */
@@ -38,6 +39,7 @@ export type OperationTargetAdapter = {
     state: PlayState;
     target: OperationTarget;
     operation: OperationId;
+    arguments?: OperationArguments;
     placement?: OperationPlacement;
   }) => TargetOperationResult;
 };

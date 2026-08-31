@@ -40,12 +40,12 @@ import {
   type ProjectSnapshot,
   type TextPerformance,
 } from "./game/model";
+import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
 import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
-import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
 import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
@@ -456,6 +456,36 @@ export default function App() {
     }
   };
 
+  const presentRuntimeExecution = (
+    execution: { state: PlayState; events: EffectEvent[]; responseText: string },
+    previousState: PlayState,
+    commandLineId: string,
+    charactersPerSecond = 18,
+  ) => {
+    setPlayState(execution.state);
+    handleEffectEvents(execution.events, commandLineId);
+    const transitioned = execution.state.traversal.length > previousState.traversal.length;
+    const destination = transitioned
+      ? snapshot.nodes.find((node) => node.id === execution.state.currentNodeId)
+      : undefined;
+    if (execution.responseText) {
+      firedCueIds.current = new Set();
+      completedPendingDestination.current = "";
+      const compiled = compileTextNotation(execution.responseText, { charactersPerSecond, cues: [] });
+      setActiveText(compiled.text);
+      setActiveNodeId(undefined);
+      setActivePerformance(compiled.performance);
+      setPendingDestinationNodeId(destination?.id ?? null);
+    } else if (destination) {
+      setPendingDestinationNodeId(null);
+      showNode(snapshot, destination, execution.state);
+    } else {
+      setPendingDestinationNodeId(null);
+      setActiveText("");
+      setActiveNodeId(undefined);
+    }
+  };
+
   useEffect(() => {
     for (const cue of activePerformance.cues) {
       if (cue.start > typewriter.count || firedCueIds.current.has(cue.id)) continue;
@@ -497,7 +527,7 @@ export default function App() {
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
 
-    if (!parsed.interaction && authorMode && authorView) {
+    if (!parsed.interaction && !parsed.invocation && authorMode && authorView) {
       const interaction = createDraftInteraction(currentState.currentNodeId, value.trim());
       setParserResult(null);
       await persist([{ type: "interaction.upsert", interaction }], `Created draft user input ${interaction.wording}`);
@@ -506,36 +536,44 @@ export default function App() {
 
     appendActive();
     const commandLineId = crypto.randomUUID();
-    setTranscript((lines) => [...lines, { id: commandLineId, text: `${UNIVERSE_DRIVE_PROMPT}${value}`, command: true }]);
+    setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
+
+    if (parsed.invocation) {
+      if (!parsed.invocation.target) {
+        setPlayState(commandState);
+        setActiveText("");
+        setActiveNodeId(undefined);
+        if (authorMode && authorView) {
+          setAuthorMessage(`COMMAND ${parsed.invocation.operation} MATCHED, BUT NO GLOBAL HANDLER EXISTS YET.`);
+        }
+        return;
+      }
+      const execution = executeOperation(snapshot, commandState, {
+        target: parsed.invocation.target,
+        operation: parsed.invocation.operation,
+        arguments: parsed.invocation.arguments,
+      });
+      presentRuntimeExecution(execution, commandState, commandLineId);
+      if (!execution.accepted && !execution.responseText && authorMode && authorView) {
+        setAuthorMessage(`TARGET DOES NOT HANDLE ${parsed.invocation.operation.toUpperCase()}.`);
+      }
+      return;
+    }
+
     if (!parsed.interaction) {
       setPlayState(commandState);
       setActiveText(""); setActiveNodeId(undefined);
       if (authorMode && authorView) { setUnhandledCommand(value); setAuthorMessage(`UNHANDLED: ${parsed.reason}.`); }
       return;
     }
+
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
-    setPlayState(execution.state);
-    handleEffectEvents(execution.events, commandLineId);
-    const transitioned = execution.state.traversal.length > commandState.traversal.length;
-    const destination = transitioned
-      ? snapshot.nodes.find((node) => node.id === execution.state.currentNodeId)
-      : undefined;
-    if (execution.responseText) {
-      firedCueIds.current = new Set();
-      completedPendingDestination.current = "";
-      const compiled = compileTextNotation(execution.responseText, { charactersPerSecond: execution.outcome?.responseCharactersPerSecond ?? 18, cues: [] });
-      setActiveText(compiled.text);
-      setActiveNodeId(undefined);
-      setActivePerformance(compiled.performance);
-      setPendingDestinationNodeId(destination?.id ?? null);
-    } else if (destination) {
-      setPendingDestinationNodeId(null);
-      showNode(snapshot, destination, execution.state);
-    } else {
-      setPendingDestinationNodeId(null);
-      setActiveText("");
-      setActiveNodeId(undefined);
-    }
+    presentRuntimeExecution(
+      execution,
+      commandState,
+      commandLineId,
+      execution.outcome?.responseCharactersPerSecond ?? 18,
+    );
   };
 
   const playAuthorInput = (interaction: Interaction) => {
@@ -582,7 +620,7 @@ export default function App() {
   };
 
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
-  const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
+  const promptLabel = requestingKey ? "ADMIN KEY>" : snapshot.settings.terminalPrompt;
   const editorOpen = Boolean(panel);
   const authorExperience = authorMode && authorView;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
@@ -646,7 +684,7 @@ export default function App() {
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
-          match={parserResult ? `${parserResult.reason}${parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}` : undefined}
+          match={parserResult ? `${parserResult.reason}${parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : parserResult.matchedPattern ? ` / ${parserResult.matchedPattern}` : ""}` : undefined}
           invalidLabel={invalidLabel}
           invalidDraft={invalidDraft}
           message={authorMessage}

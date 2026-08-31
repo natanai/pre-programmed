@@ -19,6 +19,18 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     groupOrder: 40,
     toolOrder: 10,
     tool: {
+      id: "settings",
+      label: "ADVANCED SETTINGS",
+      description: "Configure project-wide engine behavior, references, and terminal grammar.",
+      onSelect: () => context.pushPanel({ type: "feature", feature: "project", workspace: "settings" }),
+    },
+  },
+  {
+    groupId: "project",
+    groupLabel: "PROJECT",
+    groupOrder: 40,
+    toolOrder: 20,
+    tool: {
       id: "history",
       label: "HISTORY",
       description: "Review revisions and project history.",
@@ -29,7 +41,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     groupId: "project",
     groupLabel: "PROJECT",
     groupOrder: 40,
-    toolOrder: 20,
+    toolOrder: 30,
     tool: {
       id: "backup",
       label: "BACKUP",

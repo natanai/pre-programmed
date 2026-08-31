@@ -28,3 +28,20 @@ export type OperationTarget = {
   kind: string;
   id: string;
 };
+
+/**
+ * Generic arguments carried from authored command grammar into an operation.
+ * Target adapters may inspect additional arguments without Commands knowing
+ * what those targets mean. Free-text arguments intentionally remain strings.
+ */
+export type OperationArgument =
+  | { kind: "text"; value: string }
+  | {
+      kind: "target";
+      sourceKind: string;
+      candidateId: string;
+      label: string;
+      target: OperationTarget;
+    };
+
+export type OperationArguments = Record<string, OperationArgument>;

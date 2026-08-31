@@ -1,10 +1,12 @@
 import type { AuthorFeatureManifest } from "./types";
+import { PROJECT_GENERAL_SETTINGS } from "../settings/projectGeneralSettings";
 import { projectAuthorTools } from "../tools/projectTools";
 import { WorkspacePanel } from "../workspace/WorkspacePanel";
 
 export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
   tools: projectAuthorTools,
+  projectSettings: PROJECT_GENERAL_SETTINGS,
   renderWorkspace(route, context) {
     if (route.type !== "workspace") return null;
     return <WorkspacePanel

@@ -342,6 +342,53 @@ const migrations: Migration[] = [
       UPDATE project_meta SET schema_version = 9 WHERE id = 1;
     `,
   },
+  {
+    id: 10,
+    name: "project-settings",
+    sql: `
+      ALTER TABLE project_meta
+      ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}';
+
+      UPDATE project_meta SET schema_version = 10 WHERE id = 1;
+    `,
+  },
+  {
+    id: 11,
+    name: "world-operation-targets",
+    sql: `
+      ALTER TABLE entity_definitions
+      ADD COLUMN operation_interactable INTEGER NOT NULL DEFAULT 0
+      CHECK (operation_interactable IN (0, 1));
+
+      ALTER TABLE entity_definitions
+      ADD COLUMN operations_json TEXT NOT NULL DEFAULT '[]';
+
+      CREATE TABLE operation_hooks_v11 (
+        id TEXT PRIMARY KEY,
+        target_kind TEXT NOT NULL,
+        target_id TEXT NOT NULL,
+        operation TEXT NOT NULL,
+        order_index INTEGER NOT NULL DEFAULT 0,
+        condition_json TEXT NOT NULL DEFAULT '{"type":"always"}',
+        response_text TEXT NOT NULL DEFAULT '',
+        effects_json TEXT NOT NULL DEFAULT '[]',
+        success INTEGER NOT NULL DEFAULT 0 CHECK (success IN (0, 1))
+      );
+
+      INSERT INTO operation_hooks_v11
+        (id, target_kind, target_id, operation, order_index, condition_json, response_text, effects_json, success)
+      SELECT id, target_kind, target_id, operation, order_index, condition_json, response_text, effects_json, success
+      FROM operation_hooks;
+
+      DROP TABLE operation_hooks;
+      ALTER TABLE operation_hooks_v11 RENAME TO operation_hooks;
+
+      CREATE INDEX operation_hooks_target_idx
+      ON operation_hooks(target_kind, target_id, operation, order_index);
+
+      UPDATE project_meta SET schema_version = 11 WHERE id = 1;
+    `,
+  },
 ];
 
 export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));

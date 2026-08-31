@@ -1,4 +1,5 @@
 import type { ProjectMutation, ProjectSnapshot } from "../game/model";
+import { normalizeProjectSnapshot } from "../engine/project/settings";
 
 const DB_NAME = "pre-programmed-author";
 const DB_VERSION = 1;
@@ -40,9 +41,10 @@ async function withStore<T>(
 
 export async function loadCachedSnapshot() {
   try {
-    return (await withStore("snapshots", "readonly", (store) => store.get(SNAPSHOT_KEY))) as
+    const snapshot = (await withStore("snapshots", "readonly", (store) => store.get(SNAPSHOT_KEY))) as
       | ProjectSnapshot
       | undefined;
+    return snapshot ? normalizeProjectSnapshot(snapshot) : undefined;
   } catch {
     return undefined;
   }

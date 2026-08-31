@@ -1,0 +1,122 @@
+.command-settings-overview,
+.command-settings-list,
+.command-reference-editor,
+.command-editor-body {
+  display: grid;
+  gap: .75rem;
+}
+
+.command-settings-overview > button,
+.command-settings-list > button {
+  width: 100%;
+  min-height: 4.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem .9rem;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+}
+
+.command-settings-overview > button span:first-child,
+.command-settings-list > button span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: .25rem;
+}
+
+.command-settings-overview small,
+.command-settings-list small,
+.command-editor-body small {
+  color: var(--muted);
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.command-settings-note {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.command-settings-note code {
+  color: inherit;
+}
+
+.command-settings-workspace {
+  height: 100%;
+  min-height: 0;
+}
+
+.command-settings-workspace .author-panel-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.command-reference-editor h3,
+.command-slot-editor h3 {
+  margin: .4rem 0 0;
+}
+
+.command-reference-candidates,
+.command-slot-editor {
+  display: grid;
+  gap: .7rem;
+}
+
+.command-reference-candidates > label,
+.command-slot-editor > label,
+.command-editor-body > label {
+  display: grid;
+  gap: .35rem;
+}
+
+.command-reference-candidates textarea,
+.command-editor-body textarea,
+.command-editor-body input,
+.command-slot-editor select {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.command-slot-editor {
+  border-top: 1px solid var(--line);
+  padding-top: .8rem;
+}
+
+.command-slot-editor > label:not(:last-child) {
+  grid-template-columns: minmax(6rem, auto) 1fr;
+  align-items: center;
+}
+
+.command-delete-zone {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  align-items: center;
+}
+
+.command-settings-empty {
+  border: 1px dashed var(--line);
+  padding: 1rem;
+  color: var(--muted);
+}
+
+@media (max-width: 560px) {
+  .command-settings-overview > button,
+  .command-settings-list > button {
+    min-height: 4.8rem;
+  }
+
+  .command-slot-editor > label:not(:last-child) {
+    grid-template-columns: 1fr;
+  }
+}

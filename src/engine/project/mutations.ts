@@ -17,6 +17,9 @@ export function applyOperations(snapshot: ProjectSnapshot, operations: MutationO
   let next = structuredClone(snapshot);
   for (const operation of operations) {
     switch (operation.type) {
+      case "project.settings":
+        next.settings = structuredClone(operation.settings);
+        break;
       case "node.upsert":
         next.nodes = upsertById(next.nodes, operation.node);
         break;

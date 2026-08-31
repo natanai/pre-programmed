@@ -3,14 +3,16 @@ import {
   type ProjectPersistence,
 } from "./projectPersistence";
 import type { ProjectMutation, ProjectSnapshot } from "../../engine/project/model";
+import { normalizeProjectSnapshot } from "../../engine/project/settings";
 import { ApiError, apiUrl, readJson } from "../cloudflare/http";
 
 export const cloudflareProjectPersistence: ProjectPersistence = {
   async readProject() {
-    return readJson<ProjectSnapshot>(await fetch(apiUrl("/api/project/snapshot"), {
+    const snapshot = await readJson<ProjectSnapshot>(await fetch(apiUrl("/api/project/snapshot"), {
       cache: "no-store",
       headers: { Accept: "application/json" },
     }));
+    return normalizeProjectSnapshot(snapshot);
   },
 
   async writeProject(mutation: ProjectMutation, context) {
@@ -21,7 +23,7 @@ export const cloudflareProjectPersistence: ProjectPersistence = {
         headers: { Authorization: `Bearer ${context.authorization}`, "Content-Type": "application/json" },
         body: JSON.stringify(mutation),
       }));
-      return result.snapshot;
+      return normalizeProjectSnapshot(result.snapshot);
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         throw new ProjectRevisionConflictError(error.message);
