@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
+import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { MutationOperation, ProjectSnapshot, SynthSound } from "../../../game/model";
 import { createSilentSynth, playSynthSound } from "../../../game/synth";
 import "./mediaAuthor.css";
@@ -18,14 +20,24 @@ export function SynthPanel({ snapshot, onSave }: {
   };
 
   const newSound = () => {
-    setDraft(createSilentSynth());
+    setDraft({ ...createSilentSynth(), key: "" });
     setVoiceIndex(0);
   };
 
   const save = async () => {
-    if (!draft?.key || !draft.label) return;
+    if (!draft?.label.trim()) return;
+    const sound = {
+      ...draft,
+      key: resolveAuthorKey({
+        override: draft.key,
+        source: draft.label,
+        existingKeys: snapshot.synthSounds.filter((candidate) => candidate.id !== draft.id).map((candidate) => candidate.key),
+        fallback: "sound",
+      }),
+    };
+    setDraft(sound);
     setSaving(true);
-    try { await onSave([{ type: "synth.upsert", sound: draft }], `Changed synth ${draft.label}`); }
+    try { await onSave([{ type: "synth.upsert", sound }], `Changed synth ${sound.label}`); }
     finally { setSaving(false); }
   };
 
@@ -34,7 +46,7 @@ export function SynthPanel({ snapshot, onSave }: {
     <div className="author-panel-body synth-panel-body">
       {!draft ? <>
         <div className="definition-list synth-definition-list">
-          {snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => openSound(sound)}><span>{sound.label}</span><span>{sound.key} · {sound.voices.length} voice{sound.voices.length === 1 ? "" : "s"}</span></button>)}
+          {snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => openSound(sound)}><span>{sound.label}</span><span>{sound.voices.length} voice{sound.voices.length === 1 ? "" : "s"} · {sound.tempo} bpm</span></button>)}
         </div>
         {!snapshot.synthSounds.length ? <div className="workspace-empty">NO SYNTH SOUNDS YET.</div> : null}
         <button type="button" className="synth-create" onClick={newSound}>[+ SOUND]</button>
@@ -43,12 +55,12 @@ export function SynthPanel({ snapshot, onSave }: {
         <div className="synth-editor focused-synth-editor">
           <section className="synth-section">
             <h3>RECIPE</h3>
+            <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} autoFocus /></label>
             <div className="form-grid">
-              <label>KEY <input value={draft.key} onChange={(event) => setDraft({ ...draft, key: event.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") })} /></label>
-              <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} /></label>
               <label>TEMPO <input type="number" min={30} max={300} value={draft.tempo} onChange={(event) => setDraft({ ...draft, tempo: Number(event.target.value) })} /></label>
               <label className="check-label"><input type="checkbox" checked={draft.loop} onChange={(event) => setDraft({ ...draft, loop: event.target.checked })} /> loop recipe</label>
             </div>
+            <GeneratedKeyField source={draft.label} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
           </section>
           <section className="synth-section">
             <h3>VOICES</h3>
