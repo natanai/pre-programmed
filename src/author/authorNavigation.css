@@ -121,6 +121,21 @@
   color: var(--dos-muted);
 }
 
+.work-surface-back {
+  position: fixed;
+  top: calc(var(--terminal-viewport-top, 0px) + max(6px, env(safe-area-inset-top)));
+  left: max(8px, env(safe-area-inset-left));
+  z-index: 60;
+  min-width: 2.75em;
+  min-height: 2.75em;
+  padding: 0;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font-family: "PreProgrammed VGA", monospace;
+  cursor: pointer;
+}
+
 /* Wide Author mode uses the extra horizontal room instead of stretching the phone layout.
    The terminal stays the live context pane; focused Author workspaces occupy the right pane. */
 @media (min-width: 960px) {
@@ -170,6 +185,10 @@
 
   .author-tool-index {
     width: 100%;
+  }
+
+  .work-surface-back {
+    left: calc(50% + 1.5em);
   }
 
   .work-surface-close {
