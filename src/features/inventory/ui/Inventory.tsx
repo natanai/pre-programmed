@@ -7,9 +7,9 @@ import {
   INVENTORY_ROWS,
 } from "../../../game/inventory";
 import type {
-  InventoryOperation,
   ItemDefinition,
   MutationOperation,
+  OperationId,
   OperationTarget,
   PlayState,
   ProjectSnapshot,
@@ -79,7 +79,7 @@ export function Inventory({
     operate({ operation: "move", target: selected, placement: { x, y } });
   };
 
-  const statusOperationButtons = (target: OperationTarget, operations: InventoryOperation[]) => <div className="operation-buttons">
+  const statusOperationButtons = (target: OperationTarget, operations: OperationId[]) => <div className="operation-buttons">
     {operations.map((operation) => <button type="button" key={operation}
       onClick={() => operate({ operation, target })}>[{operation.toUpperCase()}]</button>)}
   </div>;
