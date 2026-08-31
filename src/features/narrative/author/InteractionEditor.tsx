@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useDraftDirty } from "../../../author/useDraftDirty";
 import { buildGraphIndex, notationForNode } from "../../../game/graph";
 import {
   makeId,
@@ -104,6 +105,7 @@ export function InteractionEditor({
   fallback = false,
   onSave,
   onCancel,
+  onDirtyChange,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -112,6 +114,7 @@ export function InteractionEditor({
   fallback?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode));
@@ -121,6 +124,10 @@ export function InteractionEditor({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
+  const mounted = useRef(true);
+  const { markSaved } = useDraftDirty({ draft, newNodeText }, onDirtyChange);
+
+  useEffect(() => () => { mounted.current = false; }, []);
 
   const updateOutcome = (id: string, next: InteractionOutcome) =>
     setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
@@ -210,6 +217,7 @@ export function InteractionEditor({
           return { ...outcome, order: index, destinationNodeId: node.id };
         }),
       };
+      markSaved();
       await onSave(
         [
           ...createdNodes.map((node): MutationOperation => ({ type: "node.upsert", node })),
@@ -219,6 +227,7 @@ export function InteractionEditor({
           ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
           : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
       );
+      if (mounted.current) onDirtyChange?.(true);
     } finally {
       setSaving(false);
     }
@@ -311,7 +320,7 @@ export function InteractionEditor({
       <button type="button" onClick={onCancel}>[CANCEL]</button>
       {screen.type === "overview" && initial ? confirmDelete ? <>
         <span>Delete this {fallbackMode ? "invalid-input response" : "user input"}?</span>
-        <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
+        <button type="button" onClick={() => { markSaved(); void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : `Deleted user input ${initial.wording || initial.aliases[0]}`); }}>[CONFIRM DELETE]</button>
         <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
       </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
     </div>
