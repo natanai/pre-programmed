@@ -51,8 +51,17 @@
   pointer-events: none;
 }
 
+.terminal-command-control {
+  flex: 0 1 calc(clamp(12em, 52vw, 30em) + 2.1em);
+  display: flex;
+  align-items: flex-start;
+  gap: .2em;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .terminal-command-shell {
-  flex: 0 1 clamp(12em, 52vw, 30em);
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-width: 0;
@@ -186,6 +195,32 @@
   outline-color: #fff;
 }
 
+.terminal-command-submit {
+  flex: none;
+  align-self: flex-start;
+  width: 1.9em;
+  height: calc(1em + 2px);
+  min-width: 1.9em;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 1px solid #fff;
+  background: #000;
+  color: #fff;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.terminal-command-submit:hover,
+.terminal-command-submit:focus-visible,
+.terminal-command-submit:active {
+  background: #000;
+  color: #fff !important;
+  outline: 1px dotted #fff;
+  outline-offset: -3px;
+}
+
 .terminal-command-choices {
   grid-column: 1 / -1;
   display: grid;
@@ -229,8 +264,8 @@
 }
 
 @media (max-width: 700px), (pointer: coarse) {
-  .terminal-command-shell {
-    flex-basis: clamp(11em, 52vw, 24em);
+  .terminal-command-control {
+    flex-basis: calc(clamp(11em, 52vw, 24em) + 2.1em);
   }
 
   .terminal-command-label {
@@ -240,6 +275,7 @@
   .terminal-command-field,
   .terminal-command-mirror,
   .terminal-command-toggle,
+  .terminal-command-submit,
   .terminal-command-choices button {
     font-size: max(16px, 1em);
   }
