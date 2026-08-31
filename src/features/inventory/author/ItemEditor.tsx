@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
+import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { ItemDefinition, MutationOperation, ProjectSnapshot } from "../../../game/model";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
@@ -14,14 +15,23 @@ function emptyItem(): ItemDefinition {
   };
 }
 
-export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
+export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: ItemDefinition;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
+  setWorkspaceDirty: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(initial ?? emptyItem()));
+  const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
+  const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
+
+  useEffect(() => {
+    setWorkspaceDirty(dirty);
+    return () => setWorkspaceDirty(false);
+  }, [dirty, setWorkspaceDirty]);
+
   const save = async () => {
     if (!draft.name.trim()) return;
     const item = {
@@ -35,8 +45,13 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
     };
     setDraft(item);
     setSaving(true);
-    try { await onSave([{ type: "item.upsert", item }], `${initial ? "Changed" : "Created"} item ${item.name}`); }
-    finally { setSaving(false); }
+    try {
+      const result = await onSave([{ type: "item.upsert", item }], `${initial ? "Changed" : "Created"} item ${item.name}`);
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(item));
+        setWorkspaceDirty(false);
+      }
+    } finally { setSaving(false); }
   };
 
   return <section className="author-panel author-panel-frame item-editor" onPointerDown={(event) => event.stopPropagation()}>
@@ -72,6 +87,6 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </section>
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
   </section>;
 }

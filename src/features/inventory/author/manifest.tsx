@@ -25,10 +25,9 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
     if (route.type === "item") return <ItemEditor
       snapshot={context.snapshot}
       initial={route.item}
-      onSave={async (operations, description) => {
-        await context.persist(operations, description);
-      }}
+      onSave={(operations, description) => context.persist(operations, description)}
       onCancel={context.leaveCurrentSurface}
+      setWorkspaceDirty={context.setWorkspaceDirty}
     />;
 
     return null;
