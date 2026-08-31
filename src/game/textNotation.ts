@@ -115,6 +115,12 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
         inlineCues.push(generatedCue(`inline:p:${index}:${cueSequence++}`, "pause", output.length, output.length, pauseMs));
         mapSkipped(index, length);
         index += length;
+        // Treat a natural `word /p next` as one ordinary word-space, not two
+        // spaces separated by an invisible control marker.
+        if (rawText[index] === " " && output.at(-1) === " ") {
+          mapSkipped(index, 1);
+          index += 1;
+        }
         continue;
       }
     }
