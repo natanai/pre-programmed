@@ -23,6 +23,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
   const [entity, setEntity] = useState<EntityDefinition | null>(null);
   const [saving, setSaving] = useState(false);
   const editing = Boolean(variable || computed || entity);
+  const selectedId = variable?.id ?? computed?.id ?? entity?.id;
 
   const resetEditor = () => {
     setVariable(null);
@@ -92,35 +93,47 @@ export function DefinitionsPanel({ snapshot, onSave }: {
         ? `${entity.type.toUpperCase()} · ${entity.name || entity.key || "NEW"}`
         : "STATE + PEOPLE";
 
+  const backLabel = mode === "variables" ? "VARIABLES" : mode === "computed" ? "COMPUTED" : "PEOPLE + PLACES";
+
   return <section className="author-panel author-panel-frame definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>{title}</span></header>
-    <div className="author-panel-body definitions-panel-body">
-      {!editing ? <DefinitionIndex
-        snapshot={snapshot}
-        mode={mode}
-        onMode={setMode}
-        onVariable={openVariable}
-        onComputed={openComputed}
-        onEntity={openEntity}
-        onNewVariable={() => openVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: 0, timeUnit: "second" })}
-        onNewComputed={() => openComputed({ id: crypto.randomUUID(), key: "", label: "", source: "elapsed_seconds", format: "integer", showInStatus: false, interactable: false, operations: [], hooks: [] })}
-        onNewEntity={(type) => openEntity({ id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [] })}
-      /> : <>
-        <button type="button" className="definition-back" onClick={resetEditor}>[← BACK TO {mode === "variables" ? "VARIABLES" : mode === "computed" ? "COMPUTED" : "PEOPLE + PLACES"}]</button>
-        {variable ? <VariableEditor variable={variable} snapshot={snapshot} onChange={setVariable} /> : null}
-        {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
-        {entity ? <EntityEditor entity={entity} onChange={setEntity} /> : null}
-      </>}
+    <header>
+      <span>{title}</span>
+      {editing ? <span className="definition-header-context">STATE + PEOPLE</span> : null}
+    </header>
+    <div className={`author-panel-body definitions-panel-body${editing ? " is-editing" : ""}`}>
+      <div className="definitions-master-pane">
+        <DefinitionIndex
+          snapshot={snapshot}
+          mode={mode}
+          selectedId={selectedId}
+          onMode={(nextMode) => { setMode(nextMode); resetEditor(); }}
+          onVariable={openVariable}
+          onComputed={openComputed}
+          onEntity={openEntity}
+          onNewVariable={() => openVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: 0, timeUnit: "second" })}
+          onNewComputed={() => openComputed({ id: crypto.randomUUID(), key: "", label: "", source: "elapsed_seconds", format: "integer", showInStatus: false, interactable: false, operations: [], hooks: [] })}
+          onNewEntity={(type) => openEntity({ id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [] })}
+        />
+      </div>
+      {editing ? <div className="definitions-detail-pane">
+        <button type="button" className="definition-back" onClick={resetEditor}>[← {backLabel}]</button>
+        <div className="definition-detail-scroll">
+          {variable ? <VariableEditor variable={variable} snapshot={snapshot} onChange={setVariable} /> : null}
+          {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
+          {entity ? <EntityEditor entity={entity} onChange={setEntity} /> : null}
+        </div>
+        {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={resetEditor} /> : null}
+        {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={resetEditor} /> : null}
+        {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={resetEditor} /> : null}
+      </div> : null}
     </div>
-    {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={resetEditor} /> : null}
-    {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={resetEditor} /> : null}
-    {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={resetEditor} /> : null}
   </section>;
 }
 
-function DefinitionIndex({ snapshot, mode, onMode, onVariable, onComputed, onEntity, onNewVariable, onNewComputed, onNewEntity }: {
+function DefinitionIndex({ snapshot, mode, selectedId, onMode, onVariable, onComputed, onEntity, onNewVariable, onNewComputed, onNewEntity }: {
   snapshot: ProjectSnapshot;
   mode: Mode;
+  selectedId?: string;
   onMode: (mode: Mode) => void;
   onVariable: (item: VariableDefinition) => void;
   onComputed: (item: ComputedDefinition) => void;
@@ -129,43 +142,92 @@ function DefinitionIndex({ snapshot, mode, onMode, onVariable, onComputed, onEnt
   onNewComputed: () => void;
   onNewEntity: (type: EntityDefinition["type"]) => void;
 }) {
-  const characters = snapshot.entities.filter((item) => item.type === "character");
-  const locations = snapshot.entities.filter((item) => item.type === "location");
+  const [query, setQuery] = useState("");
+  const normalizedQuery = query.trim().toLowerCase();
+  const matches = (...values: Array<string | number | undefined>) => !normalizedQuery || values.some((value) => String(value ?? "").toLowerCase().includes(normalizedQuery));
+  const variables = snapshot.variables.filter((item) => matches(item.label, item.key, item.valueType, item.timeUnit, item.timeRate));
+  const computedValues = snapshot.computedValues.filter((item) => matches(item.label, item.key, item.source, item.format));
+  const characters = snapshot.entities.filter((item) => item.type === "character" && matches(item.name, item.key, item.description, item.tags.join(" ")));
+  const locations = snapshot.entities.filter((item) => item.type === "location" && matches(item.name, item.key, item.description, item.tags.join(" ")));
+  const resultCount = mode === "variables" ? variables.length : mode === "computed" ? computedValues.length : characters.length + locations.length;
+  const totalCount = mode === "variables" ? snapshot.variables.length : mode === "computed" ? snapshot.computedValues.length : snapshot.entities.length;
+  const switchMode = (nextMode: Mode) => {
+    setQuery("");
+    onMode(nextMode);
+  };
+
   return <>
-    <nav className="panel-tabs definition-tabs" aria-label="State and people categories">
-      <button type="button" aria-pressed={mode === "variables"} onClick={() => onMode("variables")}>[VARIABLES]</button>
-      <button type="button" aria-pressed={mode === "computed"} onClick={() => onMode("computed")}>[COMPUTED]</button>
-      <button type="button" aria-pressed={mode === "entities"} onClick={() => onMode("entities")}>[PEOPLE + PLACES]</button>
-    </nav>
+    <div className="definition-master-controls">
+      <nav className="panel-tabs definition-tabs" aria-label="State and people categories">
+        <button type="button" aria-pressed={mode === "variables"} onClick={() => switchMode("variables")}>VARIABLES</button>
+        <button type="button" aria-pressed={mode === "computed"} onClick={() => switchMode("computed")}>COMPUTED</button>
+        <button type="button" aria-pressed={mode === "entities"} onClick={() => switchMode("entities")}>PEOPLE + PLACES</button>
+      </nav>
+      <div className="definition-search-row">
+        <label htmlFor="definition-search">FIND</label>
+        <div className="definition-search-control">
+          <input
+            id="definition-search"
+            type="search"
+            value={query}
+            placeholder={mode === "variables" ? "variable name or key" : mode === "computed" ? "computed value or source" : "person, place, key, or tag"}
+            onChange={(event) => setQuery(event.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <span className="definition-result-count" aria-live="polite">{normalizedQuery ? `${resultCount}/${totalCount}` : totalCount}</span>
+          {query ? <button type="button" className="definition-search-clear" aria-label="Clear search" onClick={() => setQuery("")}>[X]</button> : null}
+        </div>
+      </div>
+    </div>
 
-    {mode === "variables" ? <section className="definition-index-section">
-      <div className="definition-list">{snapshot.variables.map((item) => <button type="button" key={item.id} onClick={() => onVariable(item)}>
-        <span>{item.label}</span>
-        <span>{item.key} : {item.valueType}{item.valueType === "number" && item.timeRate ? ` / ${item.timeRate > 0 ? "+" : ""}${item.timeRate} per ${item.timeUnit ?? "second"}` : ""}</span>
-      </button>)}</div>
-      <button type="button" className="definition-create" onClick={onNewVariable}>[+ VARIABLE]</button>
-    </section> : null}
+    <div className="definition-index-scroll">
+      {mode === "variables" ? <section className="definition-index-section">
+        {variables.length ? <div className="definition-list">{variables.map((item) => <DefinitionRow
+          key={item.id}
+          title={item.label || item.key || "Untitled variable"}
+          detail={`${item.key} · ${item.valueType}${item.valueType === "number" && item.timeRate ? ` · ${item.timeRate > 0 ? "+" : ""}${item.timeRate}/${item.timeUnit ?? "second"}` : ""}`}
+          selected={selectedId === item.id}
+          onOpen={() => onVariable(item)}
+        />)}</div> : <div className="definition-empty">{normalizedQuery ? "NO MATCHING VARIABLES." : "NO VARIABLES YET."}</div>}
+      </section> : null}
 
-    {mode === "computed" ? <section className="definition-index-section">
-      <div className="definition-list">{snapshot.computedValues.map((item) => <button type="button" key={item.id} onClick={() => onComputed(item)}>
-        <span>{item.label}</span><span>{item.key} : {item.source}</span>
-      </button>)}</div>
-      <button type="button" className="definition-create" onClick={onNewComputed}>[+ COMPUTED VALUE]</button>
-    </section> : null}
+      {mode === "computed" ? <section className="definition-index-section">
+        {computedValues.length ? <div className="definition-list">{computedValues.map((item) => <DefinitionRow
+          key={item.id}
+          title={item.label || item.key || "Untitled computed value"}
+          detail={`${item.key} · ${item.source}`}
+          selected={selectedId === item.id}
+          onOpen={() => onComputed(item)}
+        />)}</div> : <div className="definition-empty">{normalizedQuery ? "NO MATCHING COMPUTED VALUES." : "NO COMPUTED VALUES YET."}</div>}
+      </section> : null}
 
-    {mode === "entities" ? <section className="definition-index-section entity-index">
-      <DefinitionKind title="CHARACTERS" items={characters} onOpen={onEntity} empty="No characters yet." />
-      <button type="button" className="definition-create" onClick={() => onNewEntity("character")}>[+ CHARACTER]</button>
-      <DefinitionKind title="LOCATIONS" items={locations} onOpen={onEntity} empty="No locations yet." />
-      <button type="button" className="definition-create" onClick={() => onNewEntity("location")}>[+ LOCATION]</button>
-    </section> : null}
+      {mode === "entities" ? <section className="definition-index-section entity-index">
+        <DefinitionKind title="CHARACTERS" items={characters} onOpen={onEntity} selectedId={selectedId} empty={normalizedQuery ? "No matching characters." : "No characters yet."} />
+        <DefinitionKind title="LOCATIONS" items={locations} onOpen={onEntity} selectedId={selectedId} empty={normalizedQuery ? "No matching locations." : "No locations yet."} />
+      </section> : null}
+    </div>
+
+    <div className="definition-index-actions">
+      {mode === "variables" ? <button type="button" onClick={onNewVariable}>[+ VARIABLE]</button> : null}
+      {mode === "computed" ? <button type="button" onClick={onNewComputed}>[+ COMPUTED VALUE]</button> : null}
+      {mode === "entities" ? <><button type="button" onClick={() => onNewEntity("character")}>[+ CHARACTER]</button><button type="button" onClick={() => onNewEntity("location")}>[+ LOCATION]</button></> : null}
+    </div>
   </>;
 }
 
-function DefinitionKind({ title, items, onOpen, empty }: { title: string; items: EntityDefinition[]; onOpen: (item: EntityDefinition) => void; empty: string }) {
+function DefinitionRow({ title, detail, selected, onOpen }: { title: string; detail: string; selected: boolean; onOpen: () => void }) {
+  return <button type="button" className="definition-row" aria-current={selected ? "true" : undefined} onClick={onOpen}>
+    <span className="definition-row-copy"><strong>{title}</strong><small>{detail}</small></span>
+    <span className="definition-row-arrow" aria-hidden="true">›</span>
+  </button>;
+}
+
+function DefinitionKind({ title, items, onOpen, selectedId, empty }: { title: string; items: EntityDefinition[]; onOpen: (item: EntityDefinition) => void; selectedId?: string; empty: string }) {
   return <section className="definition-kind-group">
     <h3>{title}</h3>
-    {items.length ? <div className="definition-list">{items.map((item) => <button type="button" key={item.id} onClick={() => onOpen(item)}><span>{item.name}</span><span>{item.key}</span></button>)}</div> : <div className="definition-empty">{empty}</div>}
+    {items.length ? <div className="definition-list">{items.map((item) => <DefinitionRow key={item.id} title={item.name || item.key || `Untitled ${item.type}`} detail={item.key} selected={selectedId === item.id} onOpen={() => onOpen(item)} />)}</div> : <div className="definition-empty">{empty}</div>}
   </section>;
 }
 
@@ -209,7 +271,7 @@ function EntityEditor({ entity, onChange }: { entity: EntityDefinition; onChange
 }
 
 function EditorFooter({ saving, onSave, onCancel }: { saving: boolean; onSave: () => void; onCancel: () => void }) {
-  return <div className="author-actions author-panel-footer">
+  return <div className="author-actions author-panel-footer definition-detail-footer">
     <button type="button" disabled={saving} onClick={onSave}>[{saving ? "SAVING..." : "SAVE"}]</button>
     <button type="button" onClick={onCancel}>[CANCEL]</button>
   </div>;
