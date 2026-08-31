@@ -10,7 +10,7 @@ export const inventoryAuthorTools: AuthorToolContributor = (context) => [
       id: "inventory",
       label: "INVENTORY",
       description: "Inspect inventory and author item definitions.",
-      onSelect: context.pushInventory,
+      onSelect: () => context.pushPanel({ type: "inventory" }),
     },
   },
 ];
