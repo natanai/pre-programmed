@@ -61,7 +61,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose: _onClose }: {
         }}><option value="number">number</option><option value="boolean">boolean / flag</option><option value="string">text / enum</option></select></label>
         <label>INITIAL VALUE <InitialValueInput definition={variable} onChange={(initialValue) => setVariable({ ...variable, initialValue })} /></label>
         {variable.valueType === "number" ? <div className="time-change-setting">
-          <label>TIME CHANGE <input aria-label="Time change amount" type="number" step="any" value={variable.timeRate ?? 0} onChange={(event) => setVariable({ ...variable, timeRate: Number(event.target.value) })} /></label>
+          <label>CHANGE OVER TIME (+/-) <input aria-label="Change over time amount" type="number" step="any" value={variable.timeRate ?? 0} onChange={(event) => setVariable({ ...variable, timeRate: Number(event.target.value) })} /></label>
           <label>PER <select aria-label="Time change unit" value={variable.timeUnit ?? "second"} onChange={(event) => setVariable({ ...variable, timeUnit: event.target.value as "second" | "minute" | "hour" })}><option value="second">second</option><option value="minute">minute</option><option value="hour">hour</option></select></label>
         </div> : null}
         <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => setVariable({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>

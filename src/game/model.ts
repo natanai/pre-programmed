@@ -81,6 +81,8 @@ export type InteractionDisposition = "stay" | "transition";
 
 export type InteractionChoiceVisibility = "immediate" | "prompt" | "typed";
 
+export type InteractionMatchMode = "command" | "fallback";
+
 export type InteractionOutcome = {
   id: string;
   order: number;
@@ -98,6 +100,7 @@ export type Interaction = {
   id: string;
   sourceNodeId: string;
   wording: string;
+  matchMode?: InteractionMatchMode;
   choiceVisibility: InteractionChoiceVisibility;
   aliases: string[];
   tags: string[];

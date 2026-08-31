@@ -52,7 +52,7 @@ const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean };
 type Panel =
   | { type: "node"; node: GameNode }
-  | { type: "interaction"; interaction?: Interaction; command?: string }
+  | { type: "interaction"; interaction?: Interaction; command?: string; fallback?: boolean }
   | { type: "definitions" }
   | { type: "structure" }
   | { type: "assets" }
@@ -179,8 +179,11 @@ export default function App() {
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
     : [];
   const currentInputs = snapshot && playState
-    ? snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId)
+    ? snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId && (interaction.matchMode ?? "command") === "command")
     : [];
+  const fallbackInput = snapshot && playState
+    ? snapshot.interactions.find((interaction) => interaction.sourceNodeId === playState.currentNodeId && interaction.matchMode === "fallback")
+    : undefined;
   const playerChoiceInputs = playState
     ? currentInputs.filter((interaction) => playState.interactionVisibility[interaction.id] !== false)
     : [];
@@ -592,24 +595,24 @@ export default function App() {
         </div> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
-          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         </div> : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring ? <div className="author-context">
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <div className="author-context">
           <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
-          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button></div>
+          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" className={fallbackInput && notationForInput(fallbackInput) === "[D]" ? "draft-input" : ""} onClick={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}>{fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "[+ INVALID INPUT]"}</button></div>
           <div className="current-inputs">
             <span>USER INPUTS FROM HERE</span>
             <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
           </div>
           <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
         </div> : null}
-        {unhandledCommand && authorExperience && !panel ? <div className="unhandled-tools">
+        {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
           <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
           <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
         </div> : null}
-        {authorMessage ? <div className="author-message">{authorMessage}</div> : null}
+        {authorMessage && !panel && !inventoryOpen ? <div className="author-message">{authorMessage}</div> : null}
 
         {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
         {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}

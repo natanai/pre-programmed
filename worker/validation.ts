@@ -84,6 +84,9 @@ export function validateMutationBody(value: unknown) {
       if (operation.type === "interaction.upsert" && nested.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(nested.choiceVisibility))) {
         return "Interaction choice visibility is invalid.";
       }
+      if (operation.type === "interaction.upsert" && nested.matchMode !== undefined && !["command", "fallback"].includes(String(nested.matchMode))) {
+        return "Interaction match mode is invalid.";
+      }
       if (operation.type === "item.upsert" && nested.startingQuantity !== undefined && (!Number.isInteger(nested.startingQuantity) || (nested.startingQuantity as number) < 0)) {
         return "Item starting quantity must be a non-negative integer.";
       }

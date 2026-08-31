@@ -34,6 +34,14 @@ describe("deterministic parser", () => {
     const state = createEmptyPlayState(snapshot);
     expect(parseCommand("please inspect the old wooden door", snapshot, state).reason).toBe("phrase-rule");
     expect(parseCommand("sing", snapshot, state)).toMatchObject({ interaction: null, reason: "fallback" });
+
+    const fallback = { ...interaction("invalid", "a", null, []), matchMode: "fallback" as const };
+    const withFallback = project({ interactions: [...snapshot.interactions, fallback] });
+    expect(parseCommand("sing", withFallback, createEmptyPlayState(withFallback))).toMatchObject({
+      interaction: { id: "invalid" },
+      reason: "fallback",
+      matchedAlias: null,
+    });
   });
 
   it("keeps typing-only choices available to the deterministic parser", () => {

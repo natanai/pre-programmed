@@ -36,13 +36,14 @@ function emptyOutcome(order = 0, responseText = ""): InteractionOutcome {
   };
 }
 
-function emptyInteraction(sourceNodeId: string, command = ""): Interaction {
+function emptyInteraction(sourceNodeId: string, command = "", fallback = false): Interaction {
   return {
     id: makeId(),
     sourceNodeId,
-    wording: command,
-    choiceVisibility: "prompt",
-    aliases: command ? [command] : [],
+    wording: fallback ? "" : command,
+    matchMode: fallback ? "fallback" : "command",
+    choiceVisibility: fallback ? "typed" : "prompt",
+    aliases: fallback ? [] : command ? [command] : [],
     tags: [],
     notes: "",
     outcomes: [emptyOutcome()],
@@ -60,8 +61,9 @@ export function aliasesForUserInput(userInputText: string, aliases: string[]) {
   });
 }
 
-function normalizedInteraction(initial: Interaction | undefined, sourceNodeId: string, command: string) {
-  const value = structuredClone(initial ?? emptyInteraction(sourceNodeId, command));
+function normalizedInteraction(initial: Interaction | undefined, sourceNodeId: string, command: string, fallback: boolean) {
+  const value = structuredClone(initial ?? emptyInteraction(sourceNodeId, command, fallback));
+  value.matchMode ??= fallback ? "fallback" : "command";
   value.choiceVisibility ??= "prompt";
   value.outcomes = value.outcomes.map((outcome) => ({
     ...outcome,
@@ -95,6 +97,7 @@ export function InteractionEditor({
   playState,
   initial,
   initialCommand = "",
+  fallback = false,
   onSave,
   onCancel,
 }: {
@@ -102,10 +105,12 @@ export function InteractionEditor({
   playState: PlayState;
   initial?: Interaction;
   initialCommand?: string;
+  fallback?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onCancel: () => void;
 }) {
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand));
+  const fallbackMode = fallback || initial?.matchMode === "fallback";
+  const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode));
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
   const [focusOutcomeId, setFocusOutcomeId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -127,7 +132,7 @@ export function InteractionEditor({
 
   const save = async () => {
     const userInputText = draft.wording.trim();
-    if (!userInputText) {
+    if (!fallbackMode && !userInputText) {
       setError("Enter user-input-text. Its matching alias will be generated automatically.");
       return;
     }
@@ -145,8 +150,10 @@ export function InteractionEditor({
       const createdNodes: GameNode[] = [];
       const interaction: Interaction = {
         ...draft,
-        wording: userInputText,
-        aliases: aliasesForUserInput(userInputText, draft.aliases),
+        wording: fallbackMode ? "" : userInputText,
+        matchMode: fallbackMode ? "fallback" : "command",
+        choiceVisibility: fallbackMode ? "typed" : draft.choiceVisibility,
+        aliases: fallbackMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
         outcomes: draft.outcomes.map((outcome, index) => {
           const text = newNodeText[outcome.id]?.trim();
           if (outcome.disposition !== "transition" || outcome.destinationNodeId || !text) {
@@ -171,7 +178,9 @@ export function InteractionEditor({
           ...createdNodes.map((node): MutationOperation => ({ type: "node.upsert", node })),
           { type: "interaction.upsert", interaction },
         ],
-        initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
+        fallbackMode
+          ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
+          : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
       );
     } finally {
       setSaving(false);
@@ -179,18 +188,18 @@ export function InteractionEditor({
   };
 
   return <section className="author-panel author-panel-frame interaction-editor-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>USER INPUT FROM #{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</span></header>
+    <header><span>{fallbackMode ? "INVALID INPUT" : "USER INPUT"} FROM #{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</span></header>
 
     <div className="author-panel-body">
       <div className="causal-author-flow">
-        <label className="user-input-field">USER-INPUT-TEXT
+        {!fallbackMode ? <label className="user-input-field">USER-INPUT-TEXT
           <input value={draft.wording} onChange={(event) => setDraft({ ...draft, wording: event.target.value })}
             onKeyDown={(event) => {
               if (event.key !== "Enter") return;
               event.preventDefault();
               firstResponse.current?.focus();
             }} autoFocus enterKeyHint="next" />
-        </label>
+        </label> : null}
 
         <div className="response-flow-heading"><strong>RESPONSE-TEXT</strong></div>
         {draft.outcomes.map((outcome, index) => <OutcomeEditor
@@ -199,7 +208,7 @@ export function InteractionEditor({
           snapshot={snapshot}
           playState={playState}
           responseRef={index === 0 ? firstResponse : undefined}
-          autoFocus={focusOutcomeId === outcome.id}
+          autoFocus={(fallbackMode && index === 0) || focusOutcomeId === outcome.id}
           newNodeText={newNodeText[outcome.id] ?? ""}
           onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [outcome.id]: text }))}
           onChange={(next) => updateOutcome(outcome.id, next)}
@@ -216,20 +225,21 @@ export function InteractionEditor({
 
         <button className="add-response" type="button" aria-label="Add response" title="Add response" onClick={addResponseDraft}>+</button>
 
-        <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} />
+        {!fallbackMode ? <ChoiceRevealSetting value={draft.choiceVisibility} onChange={(choiceVisibility) => setDraft({ ...draft, choiceVisibility })} /> : null}
       </div>
 
       <details className="advanced-author-details">
-        <summary>[ALIASES + AUTHOR DETAILS]</summary>
-        <label>OTHER ALIASES <textarea rows={2} value={draft.aliases.join("\n")} placeholder="one alternate phrase per line"
+        <summary>[{fallbackMode ? "AUTHOR DETAILS" : "ALIASES + AUTHOR DETAILS"}]</summary>
+        {!fallbackMode ? <label>OTHER ALIASES <textarea rows={2} value={draft.aliases.join("\n")} placeholder="one alternate phrase per line"
           onChange={(event) => setDraft({ ...draft, aliases: event.target.value.split("\n") })} /></label>
+        : null}
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
         <label>AUTHOR NOTE <input value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} /></label>
       </details>
 
       {error ? <div className="author-message" role="alert">{error}</div> : null}
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? confirmDelete ? <><span>Delete this user input?</span><button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}</div>
+    <div className="author-actions author-panel-footer"><button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? confirmDelete ? <><span>Delete this {fallbackMode ? "invalid-input response" : "user input"}?</span><button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}</div>
   </section>;
 }
 

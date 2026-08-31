@@ -26,12 +26,12 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         const arrivalSource = columnIndex === 0 ? playState.traversal.at(-2) : path[columnIndex - 1];
         const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.outcomes.some((outcome) => outcome.destinationNodeId === nodeId && interaction.sourceNodeId === arrivalSource)) : null;
         return <section className={`structure-level${columnIndex === path.length - 1 ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
-          <small>{arrivedBy ? `VIA ${arrivedBy.wording || arrivedBy.aliases[0]}` : "HERE"}</small>
+          <small>{arrivedBy ? `VIA ${arrivedBy.matchMode === "fallback" ? "INVALID INPUT" : arrivedBy.wording || arrivedBy.aliases[0]}` : "HERE"}</small>
           <button type="button" className="structure-node" onClick={() => onOpenNode(node.id)}><span>#{node.nodeNumber} {node.text.slice(0, 70)}</span><strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</strong></button>
           <div className="structure-branches">
             {outgoing.map((interaction) => <div className="structure-branch" key={interaction.id}>
               <button type="button" className="branch-edit" onClick={() => onEditInteraction(interaction)}>[EDIT]</button>
-              <span>{interaction.wording || interaction.aliases[0]}</span>
+              <span>{interaction.matchMode === "fallback" ? "INVALID INPUT" : interaction.wording || interaction.aliases[0]}</span>
               {interaction.outcomes.map((outcome) => {
                 const destination = outcome.destinationNodeId && snapshot.nodes.find((candidate) => candidate.id === outcome.destinationNodeId);
                 if (!destination) return <span className="stay-destination" key={outcome.id}>↺ stay</span>;
