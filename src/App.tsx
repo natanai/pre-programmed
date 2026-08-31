@@ -1,15 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AuthorHome } from "./author/AuthorHome";
-import { AuthorToolIndex } from "./author/AuthorToolIndex";
 import { buildAuthorToolGroups } from "./author/tools/registry";
+import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
-import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
-import { DefinitionsPanel } from "./components/DefinitionsPanel";
-import { InteractionEditor } from "./components/InteractionEditor";
-import { Inventory, ItemEditor } from "./components/Inventory";
-import { NodeEditor } from "./components/NodeEditor";
-import { StructureNavigator } from "./components/StructureNavigator";
 import {
   apiUrl,
   authorLoginErrorMessage,
@@ -651,10 +645,6 @@ export default function App() {
           onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
         /> : null}
 
-        {dialogueAuthoring ? <div className="dialogue-authoring-popover">
-          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={(operations, description) => persist(operations, description, true)} onCancel={leaveCurrentSurface} /> : null}
-        </div> : null}
-
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
@@ -673,15 +663,23 @@ export default function App() {
           <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
         </div> : null}
 
-        {panel?.type === "tools" ? <AuthorToolIndex groups={authorToolGroups} /> : null}
-        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => workSurface.pushPanel({ type: "item", item })} onCreateItem={() => workSurface.pushPanel({ type: "item" })} onSave={persist} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
-        {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) workSurface.pushPanel({ type: "node", node }); }} onEditInteraction={(interaction) => workSurface.pushPanel({ type: "interaction", interaction })} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} initialView={panel.view} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={leaveCurrentSurface} /> : null}
-        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
+        <AuthorWorkspaceHost
+          panel={panel}
+          inventoryOpen={inventoryOpen}
+          toolGroups={authorToolGroups}
+          snapshot={snapshot}
+          playState={playState}
+          authorMode={authorExperience}
+          authorToken={authorToken}
+          persist={persist}
+          leaveCurrentSurface={leaveCurrentSurface}
+          pushPanel={workSurface.pushPanel}
+          onInventoryState={applyInventoryState}
+          onInventoryOutput={showInventoryResponse}
+          onEvents={handleEffectEvents}
+          onSnapshot={applyCanonicalSnapshot}
+          onRestore={restoreBookmark}
+        />
       </div>
     </div>
     {editorOpen && workSurface.canBack ? <button className="work-surface-back" type="button" aria-label="Back to previous Author workspace" onPointerDown={(event) => event.stopPropagation()} onClick={workSurface.back}>[←]</button> : null}
