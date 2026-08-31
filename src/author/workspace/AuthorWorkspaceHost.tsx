@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import { renderAuthorFeatureWorkspace } from "../features/registry";
 import type { AuthorWorkspaceContext } from "../features/types";
@@ -20,9 +21,14 @@ export function AuthorWorkspaceHost({
   toolGroups: AuthorToolGroup[];
 }) {
   const guard = useWorkSurfaceGuard();
+  const panelRef = useRef(panel);
+  panelRef.current = panel;
   const workspaceContext: AuthorWorkspaceContext = {
     ...context,
-    onWorkspaceDirtyChange: guard.setDirty,
+    // Async editors can finish work after their route has already closed.
+    // Ignore a late dirty=true report once there is no surface left to protect,
+    // while still allowing dirty=false cleanup and conflict re-arming in place.
+    onWorkspaceDirtyChange: (dirty) => guard.setDirty(dirty && Boolean(panelRef.current)),
     requestWorkspaceDiscard: guard.requestDiscard,
   };
 
