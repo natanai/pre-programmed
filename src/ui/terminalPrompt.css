@@ -90,6 +90,10 @@
 
 /* Player choices are a true drop-out from the white terminal entry area,
    rather than a separate full-width panel lower on the screen. */
+.terminal-lower:has(> .player-choice-scroll:not(.author-choice-scroll)) {
+  overflow: visible;
+}
+
 .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) {
   position: relative;
   z-index: 3;
