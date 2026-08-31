@@ -60,7 +60,12 @@ export function DefinitionsPanel({ snapshot, onSave }: {
   const openEntity = (item: EntityDefinition) => {
     resetEditor();
     setMode("entities");
-    setEntity(structuredClone(item));
+    setEntity({
+      ...structuredClone(item),
+      interactable: item.interactable ?? false,
+      operations: item.operations ?? [],
+      hooks: item.hooks ?? [],
+    });
   };
 
   const saveVariable = async () => {
@@ -144,7 +149,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
           onEntity={openEntity}
           onNewVariable={() => openVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: 0, timeUnit: "second" })}
           onNewComputed={() => openComputed({ id: crypto.randomUUID(), key: "", label: "", source: "elapsed_seconds", format: "integer", showInStatus: false, interactable: false, operations: [], hooks: [] })}
-          onNewEntity={(type) => openEntity({ id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [] })}
+          onNewEntity={(type) => openEntity({ id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [], interactable: false, operations: [], hooks: [] })}
         />
       </div>
       {editing ? <div className="definitions-detail-pane">
@@ -152,7 +157,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
         <div className="definition-detail-scroll">
           {variable ? <VariableEditor variable={variable} snapshot={snapshot} onChange={setVariable} /> : null}
           {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
-          {entity ? <EntityEditor entity={entity} onChange={setEntity} /> : null}
+          {entity ? <EntityEditor entity={entity} snapshot={snapshot} onChange={setEntity} /> : null}
         </div>
         {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={resetEditor} /> : null}
         {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={resetEditor} /> : null}
@@ -298,12 +303,21 @@ function ComputedEditor({ computed, snapshot, onChange }: { computed: ComputedDe
   </div>;
 }
 
-function EntityEditor({ entity, onChange }: { entity: EntityDefinition; onChange: (value: EntityDefinition) => void }) {
+function EntityEditor({ entity, snapshot, onChange }: { entity: EntityDefinition; snapshot: ProjectSnapshot; onChange: (value: EntityDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
     <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} autoFocus /></label>
     <label>TYPE <select value={entity.type} onChange={(event) => onChange({ ...entity, type: event.target.value as EntityDefinition["type"] })}><option value="character">character</option><option value="location">location</option></select></label>
     <label>DESCRIPTION <textarea rows={3} value={entity.description} onChange={(event) => onChange({ ...entity, description: event.target.value })} /></label>
     <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => onChange({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
+    <OperationHooksEditor
+      snapshot={snapshot}
+      capability={{
+        interactable: entity.interactable ?? false,
+        operations: entity.operations ?? [],
+        hooks: entity.hooks ?? [],
+      }}
+      onChange={(capability) => onChange({ ...entity, ...capability })}
+    />
     <GeneratedKeyField source={entity.name} value={entity.key} onChange={(key) => onChange({ ...entity, key })} />
   </div>;
 }
