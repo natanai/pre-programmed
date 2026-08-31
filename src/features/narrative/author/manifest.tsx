@@ -27,6 +27,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       onSave={context.persist}
       onCancel={context.leaveCurrentSurface}
+      onDirtyChange={context.onWorkspaceDirtyChange}
     />;
 
     if (route.type === "structure") return <StructureNavigator
