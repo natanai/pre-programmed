@@ -1,7 +1,7 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
+import { evaluateCondition } from "../../engine/rules/conditions";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
-import { evaluateCondition } from "../../game/conditions";
 import { transitionState } from "./effectRuntime";
 import { interpolateText } from "./interpolation";
 import type { Interaction, InteractionOutcome } from "./model";
