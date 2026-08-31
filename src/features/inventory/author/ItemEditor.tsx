@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
+import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { ItemDefinition, MutationOperation, ProjectSnapshot } from "../../../game/model";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
@@ -21,9 +23,19 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
   const [draft, setDraft] = useState(() => structuredClone(initial ?? emptyItem()));
   const [saving, setSaving] = useState(false);
   const save = async () => {
-    if (!draft.key || !draft.name) return;
+    if (!draft.name.trim()) return;
+    const item = {
+      ...draft,
+      key: resolveAuthorKey({
+        override: draft.key,
+        source: draft.name,
+        existingKeys: snapshot.items.filter((candidate) => candidate.id !== draft.id).map((candidate) => candidate.key),
+        fallback: "item",
+      }),
+    };
+    setDraft(item);
     setSaving(true);
-    try { await onSave([{ type: "item.upsert", item: draft }], `${initial ? "Changed" : "Created"} item ${draft.name}`); }
+    try { await onSave([{ type: "item.upsert", item }], `${initial ? "Changed" : "Created"} item ${item.name}`); }
     finally { setSaving(false); }
   };
 
@@ -32,12 +44,10 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
     <div className="author-panel-body item-editor-body">
       <section className="item-editor-section">
         <h3>IDENTITY</h3>
-        <div className="form-grid">
-          <label>KEY <input value={draft.key} onChange={(event) => setDraft({ ...draft, key: event.target.value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-") })} /></label>
-          <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-        </div>
+        <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus /></label>
         <label>DESCRIPTION <textarea rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
+        <GeneratedKeyField source={draft.name} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
       </section>
 
       <section className="item-editor-section">
