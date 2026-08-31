@@ -591,10 +591,10 @@ export default function App() {
       ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <div className="player-choice-surface" aria-label="Available choices">
-          {immediateChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
-          {choiceMenuOpen ? promptChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>) : null}
-        </div> : null}
+        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <PlayerChoiceSurface
+          choices={[...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])]}
+          onChoose={choosePlayerInput}
+        /> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
           {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={() => setPanel(null)} /> : null}
@@ -636,6 +636,37 @@ export default function App() {
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
+}
+
+function PlayerChoiceSurface({ choices, onChoose }: { choices: Interaction[]; onChoose: (interaction: Interaction) => void }) {
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+  const choiceKey = choices.map((choice) => choice.id).join(":");
+  const measure = () => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    setHasMoreBelow(surface.scrollTop + surface.clientHeight < surface.scrollHeight - 2);
+  };
+
+  useLayoutEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(surface);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [choiceKey]);
+
+  return <div className="player-choice-scroll">
+    <div ref={surfaceRef} className="player-choice-surface" aria-label="Available choices" onScroll={measure}>
+      {choices.map((interaction) => <button type="button" key={interaction.id} onClick={() => onChoose(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
+    </div>
+    {hasMoreBelow ? <button type="button" className="choice-scroll-cue" aria-label="Show more choices" onClick={() => surfaceRef.current?.scrollBy({ top: Math.max(44, surfaceRef.current.clientHeight * .8), behavior: "auto" })}>↓</button> : null}
+  </div>;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {
