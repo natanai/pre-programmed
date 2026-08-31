@@ -25,6 +25,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       initial={route.item}
       onSave={context.persist}
       onCancel={context.leaveCurrentSurface}
+      onDirtyChange={context.onWorkspaceDirtyChange}
     />;
 
     return null;
