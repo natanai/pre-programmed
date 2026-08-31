@@ -1,5 +1,6 @@
 .focused-node-editor {
   width: min(100%, 960px);
+  container-type: inline-size;
 }
 
 .focused-node-header {
@@ -29,6 +30,63 @@
   display: grid;
   align-content: start;
   gap: .8em;
+}
+
+.node-text-field {
+  margin-bottom: 0 !important;
+}
+
+.node-text-field .value-mention-field textarea {
+  min-height: 12em;
+  padding: .65em;
+  line-height: 1.25;
+  resize: vertical;
+}
+
+.node-writing-meta {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .25em .75em;
+  margin-top: -.35em;
+  color: var(--dos-muted);
+  font-size: .9em;
+}
+
+.node-notation-reference {
+  margin: 0;
+  padding: .25em 0 .5em;
+  border-bottom: 1px dotted var(--dos-line);
+  color: var(--dos-muted);
+}
+
+.node-notation-reference > summary {
+  width: fit-content;
+  cursor: pointer;
+  color: var(--dos-muted);
+}
+
+.node-notation-reference[open] > summary {
+  color: var(--dos-text);
+}
+
+.node-notation-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
+  gap: .35em .8em;
+  margin-top: .5em;
+  color: var(--dos-muted);
+  line-height: 1.15;
+}
+
+.node-notation-grid > span {
+  min-width: 0;
+}
+
+.node-notation-grid strong {
+  color: var(--dos-bright);
+  font-weight: 400;
 }
 
 .node-summary-list {
@@ -131,9 +189,31 @@
   margin-top: 0;
 }
 
-@media (max-width: 700px) {
+@container (min-width: 700px) {
+  .node-text-field .value-mention-field textarea {
+    min-height: 15em;
+  }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
   .focused-node-editor {
     width: 100%;
+  }
+
+  .node-text-field .value-mention-field textarea {
+    min-height: 10em;
+    font-size: max(16px, 1em);
+  }
+
+  .node-notation-reference > summary {
+    min-height: 2.75em;
+    display: inline-flex;
+    align-items: center;
+    font-size: max(16px, 1em);
+  }
+
+  .node-notation-grid {
+    grid-template-columns: 1fr 1fr;
   }
 
   .node-summary-list > button {
