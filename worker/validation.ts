@@ -12,10 +12,14 @@ const OPERATION_TYPES = new Set([
   "bookmark.upsert",
   "bookmark.delete",
 ]);
-const ATTEMPTED_OPERATIONS = new Set(["inspect", "use", "move", "remove"]);
+const OPERATION_ID_PATTERN = /^[a-z][a-z0-9_.-]{0,63}$/;
 
 function object(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function operationIdValid(value: unknown) {
+  return typeof value === "string" && OPERATION_ID_PATTERN.test(value);
 }
 
 function conditionValid(value: unknown, depth = 0): boolean {
@@ -72,8 +76,12 @@ export function validateMutationBody(value: unknown) {
       if (nested.interactable !== undefined && typeof nested.interactable !== "boolean") {
         return "Operation interactivity must be true or false.";
       }
-      if (nested.operations !== undefined && (!Array.isArray(nested.operations) || nested.operations.some((candidate) => !ATTEMPTED_OPERATIONS.has(String(candidate))))) {
-        return "An attempted operation is invalid.";
+      if (nested.operations !== undefined && (
+        !Array.isArray(nested.operations) ||
+        nested.operations.length > 50 ||
+        nested.operations.some((candidate) => !operationIdValid(candidate))
+      )) {
+        return "An attempted operation ID is invalid.";
       }
       const outcomes = Array.isArray(nested.outcomes) ? nested.outcomes : [];
       const hooks = Array.isArray(nested.hooks) ? nested.hooks : [];
@@ -87,7 +95,7 @@ export function validateMutationBody(value: unknown) {
         if (outcomes.includes(candidate) && candidate.responseCharactersPerSecond !== undefined && (!Number.isInteger(candidate.responseCharactersPerSecond) || (candidate.responseCharactersPerSecond as number) < 1 || (candidate.responseCharactersPerSecond as number) > 120)) {
           return "Response text speed must be an integer from 1 to 120.";
         }
-        if (hooks.includes(candidate) && (!ATTEMPTED_OPERATIONS.has(String(candidate.operation)) || typeof candidate.success !== "boolean")) {
+        if (hooks.includes(candidate) && (!operationIdValid(candidate.operation) || typeof candidate.success !== "boolean")) {
           return "An operation hook is invalid.";
         }
       }
