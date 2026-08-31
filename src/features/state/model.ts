@@ -1,5 +1,5 @@
 import type { Value } from "../../engine/rules/model";
-import type { InventoryOperation, OperationHook } from "../operations/model";
+import type { OperationHook, OperationId } from "../operations/model";
 
 export type VariableDefinition = {
   id: string;
@@ -9,7 +9,7 @@ export type VariableDefinition = {
   initialValue: Value;
   showInStatus: boolean;
   interactable: boolean;
-  operations: InventoryOperation[];
+  operations: OperationId[];
   hooks: OperationHook[];
   timeRate?: number;
   timeUnit?: "second" | "minute" | "hour";
@@ -29,6 +29,6 @@ export type ComputedDefinition = {
   format: "raw" | "integer" | "seconds";
   showInStatus: boolean;
   interactable: boolean;
-  operations: InventoryOperation[];
+  operations: OperationId[];
   hooks: OperationHook[];
 };
