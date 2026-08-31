@@ -16,10 +16,9 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           initial={route.interaction}
           initialCommand={route.command}
           fallback={route.fallback}
-          onSave={async (operations, description) => {
-            await context.persist(operations, description, true);
-          }}
+          onSave={(operations, description) => context.persist(operations, description, true)}
           onCancel={context.leaveCurrentSurface}
+          onDirtyChange={context.setWorkspaceDirty}
         />
       </div>;
     }
