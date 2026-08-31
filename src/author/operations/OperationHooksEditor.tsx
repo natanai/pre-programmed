@@ -6,7 +6,7 @@ import type {
 } from "../../game/model";
 import type { OperationId } from "../../features/operations/model";
 import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../components/AuthorFields";
-import { AUTHOR_OPERATION_DEFINITIONS } from "./catalog";
+import { authorOperationDefinitions } from "./catalog";
 import "./operationHooksEditor.css";
 
 export type OperationCapabilityDraft = {
@@ -57,11 +57,10 @@ function hookSnippet(hook: OperationHook) {
   return "No response yet";
 }
 
-function operationDefinitionsFor(current?: OperationId) {
-  if (!current || AUTHOR_OPERATION_DEFINITIONS.some((definition) => definition.value === current)) {
-    return AUTHOR_OPERATION_DEFINITIONS;
-  }
-  return [...AUTHOR_OPERATION_DEFINITIONS, { value: current, label: current }];
+function operationDefinitionsFor(snapshot: ProjectSnapshot, current?: OperationId) {
+  const definitions = authorOperationDefinitions(snapshot);
+  if (!current || definitions.some((definition) => definition.value === current)) return definitions;
+  return [...definitions, { value: current, label: current }];
 }
 
 export function OperationHooksEditor({ capability, snapshot, onChange }: {
@@ -72,6 +71,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
+  const operationDefinitions = authorOperationDefinitions(snapshot);
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
@@ -96,7 +96,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
   };
 
   const addHook = () => {
-    const operation = capability.operations[0] ?? AUTHOR_OPERATION_DEFINITIONS[0]?.value ?? "inspect";
+    const operation = capability.operations[0] ?? operationDefinitions[0]?.value ?? "inspect";
     const hook = emptyHook(operation, capability.hooks.length);
     onChange({
       interactable: true,
@@ -138,10 +138,10 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
     <div className="operation-capability-body">
       {screen === "list" ? <>
         <label className="check-label"><input type="checkbox" checked={capability.interactable}
-          onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> allow attempts from inventory/status</label>
+          onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> allow player operation attempts</label>
         {capability.interactable ? <>
           <fieldset className="operation-choices"><legend>AVAILABLE OPERATIONS</legend>
-            {AUTHOR_OPERATION_DEFINITIONS.map((operation) => <label className="check-label" key={operation.value}><input type="checkbox"
+            {operationDefinitions.map((operation) => <label className="check-label" key={operation.value}><input type="checkbox"
               checked={capability.operations.includes(operation.value)}
               onChange={(event) => onChange({
                 ...capability,
@@ -191,7 +191,7 @@ function HookWorkspace({ hook, snapshot, onChange, onOperationChange, onOpenWhen
   onOpenEffects: () => void;
   onRemove: () => void;
 }) {
-  const operationDefinitions = operationDefinitionsFor(hook.operation);
+  const operationDefinitions = operationDefinitionsFor(snapshot, hook.operation);
   return <div className="operation-hook-workspace">
     <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value)}>
       {operationDefinitions.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
