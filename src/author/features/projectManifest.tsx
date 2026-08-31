@@ -12,7 +12,9 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       playState={context.playState}
       initialView={route.view}
-      onSave={context.persist}
+      onSave={async (operations, description) => {
+        await context.persist(operations, description);
+      }}
       onSnapshot={context.onSnapshot}
       onRestore={context.onRestore}
       onClose={context.leaveCurrentSurface}
