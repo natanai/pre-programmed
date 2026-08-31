@@ -1,11 +1,188 @@
 .focused-structure-panel {
   width: min(100%, 1200px);
+  container-type: inline-size;
 }
 
 .focused-structure-body {
-  display: grid;
-  align-content: start;
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
   gap: .6em;
+  overflow: hidden;
+}
+
+.structure-navigation-tools {
+  flex: none;
+  display: grid;
+  gap: .55em;
+  padding-bottom: .6em;
+  border-bottom: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.structure-path-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
+}
+
+.structure-step-back,
+.structure-return-current {
+  min-height: 2.5em;
+  padding: .3em .4em !important;
+  color: var(--dos-text) !important;
+  white-space: nowrap;
+}
+
+.structure-step-back-placeholder {
+  width: 2.5em;
+}
+
+.structure-path {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: .25em;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.structure-path::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+.structure-path-step {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .25em;
+  color: var(--dos-muted);
+}
+
+.structure-path-step > button {
+  min-height: 2.5em;
+  padding: .3em .4em !important;
+  color: var(--dos-muted) !important;
+}
+
+.structure-path-step > button[aria-current="page"] {
+  color: var(--dos-bright) !important;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+.structure-jump-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .55em;
+}
+
+.structure-jump-row > label {
+  margin: 0;
+  color: var(--dos-muted);
+}
+
+.structure-jump-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  border: 1px solid #555;
+}
+
+.structure-jump-control > input {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.75em;
+  margin: 0;
+  padding: .45em .55em;
+  border: 0;
+  appearance: none;
+  background: #000;
+  color: var(--dos-bright);
+  caret-color: var(--dos-bright);
+}
+
+.structure-jump-control > button {
+  min-width: 2.75em;
+  min-height: 2.75em;
+  padding: 0 !important;
+  border-left: 1px dotted var(--dos-line) !important;
+  color: var(--dos-text) !important;
+}
+
+.structure-jump-results {
+  display: grid;
+  max-height: min(13em, 34dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--dos-line);
+  background: #000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.structure-jump-results > button {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .75em;
+  width: 100%;
+  min-height: 3.25em;
+  padding: .45em .55em !important;
+  border-bottom: 1px dotted var(--dos-line) !important;
+  color: var(--dos-text);
+  text-align: left;
+}
+
+.structure-jump-results > button:last-of-type {
+  border-bottom: 0 !important;
+}
+
+.structure-jump-copy {
+  display: grid;
+  min-width: 0;
+  gap: .1em;
+}
+
+.structure-jump-copy strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.structure-jump-copy small {
+  overflow: hidden;
+  color: var(--dos-muted);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.structure-jump-notation {
+  color: var(--dos-warn);
+  white-space: nowrap;
+}
+
+.structure-jump-empty {
+  padding: .75em .55em;
+  color: var(--dos-muted);
+}
+
+.structure-notation-legend {
+  flex: none;
+  max-height: min(12em, 30dvh);
+  overflow-y: auto;
+  margin: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.structure-columns {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .structure-arrival,
@@ -23,10 +200,34 @@
 .structure-input-name {
   min-width: 0;
   overflow-wrap: anywhere;
+  color: var(--dos-bright);
+}
+
+.focused-structure-panel .structure-branch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .35em;
+  align-items: stretch;
+  padding: .5em 0 .5em .45em;
+}
+
+.structure-branch-head {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75em;
+}
+
+.structure-branch-head .branch-edit {
+  flex: none;
+  min-height: 2.5em;
+  padding: .3em .4em !important;
+  color: var(--dos-muted);
 }
 
 .structure-outcomes {
-  grid-column: 2;
+  grid-column: auto;
   display: grid;
   gap: .3em;
 }
@@ -36,19 +237,35 @@
   grid-column: auto;
 }
 
-@media (max-width: 700px) {
+.structure-outcomes .stay-destination {
+  display: flex;
+  align-items: center;
+  min-height: 2.5em;
+  padding: .35em;
+  border: 1px dotted var(--dos-line);
+  color: var(--dos-muted);
+}
+
+@container (max-width: 620px) {
   .focused-structure-panel {
     width: 100%;
   }
 
-  .focused-structure-panel .structure-mobile-nav {
-    display: flex;
-    align-items: center;
-    min-height: 2.75em;
+  .structure-step-back-placeholder {
+    display: none;
   }
 
-  .focused-structure-panel .structure-mobile-nav button {
-    min-height: 2.75em;
+  .structure-path-bar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .structure-jump-row {
+    grid-template-columns: 1fr;
+    gap: .25em;
+  }
+
+  .structure-jump-row > label {
+    display: none;
   }
 
   .focused-structure-panel .structure-columns {
@@ -69,6 +286,18 @@
     display: block;
   }
 
+  .focused-structure-panel .notation-legend {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .structure-step-back,
+  .structure-return-current,
+  .structure-path-step > button,
+  .structure-jump-control > input,
+  .structure-jump-control > button,
+  .structure-jump-results > button,
   .focused-structure-panel .structure-node,
   .focused-structure-panel .branch-destination,
   .focused-structure-panel .branch-edit {
@@ -76,12 +305,11 @@
     font-size: max(16px, 1em);
   }
 
-  .focused-structure-panel .structure-branch {
-    grid-template-columns: auto minmax(0, 1fr);
-    padding: .45em 0 .45em .45em;
+  .structure-jump-results > button {
+    min-height: 3.5em;
   }
 
-  .focused-structure-panel .notation-legend {
-    grid-template-columns: 1fr;
+  .focused-structure-panel .structure-branch {
+    padding: .5em 0 .5em .45em;
   }
 }
