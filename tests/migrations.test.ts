@@ -40,12 +40,18 @@ describe("D1 migration scripts", () => {
         for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
       }
       const version = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
-      const hookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'operation_hooks'").get();
+      const hookTable = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'operation_hooks'").get() as { sql: string } | undefined;
       const oldHookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'item_operation_hooks'").get();
+      const entityColumns = database.prepare("PRAGMA table_info(entity_definitions)").all() as Array<{ name: string }>;
 
-      expect(version.schema_version).toBe(8);
-      expect(hookTable).toBeTruthy();
+      expect(version.schema_version).toBe(11);
+      expect(hookTable?.sql).toContain("target_kind TEXT NOT NULL");
+      expect(hookTable?.sql).not.toContain("target_kind IN");
       expect(oldHookTable).toBeUndefined();
+      expect(entityColumns.map((column) => column.name)).toEqual(expect.arrayContaining([
+        "operation_interactable",
+        "operations_json",
+      ]));
     } finally {
       database.close();
     }
