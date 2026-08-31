@@ -43,7 +43,7 @@ describe("D1 migration scripts", () => {
       const hookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'operation_hooks'").get();
       const oldHookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'item_operation_hooks'").get();
 
-      expect(version.schema_version).toBe(7);
+      expect(version.schema_version).toBe(8);
       expect(hookTable).toBeTruthy();
       expect(oldHookTable).toBeUndefined();
     } finally {

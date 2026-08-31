@@ -53,7 +53,11 @@ export function parseCommand(
 ): ParserResult {
   const normalizedInput = normalizeCommand(input);
   const available = candidatesAtCurrentNode(snapshot, state);
-  const allAliases = available.flatMap((interaction) =>
+  const commandInteractions = available.filter((interaction) => (interaction.matchMode ?? "command") === "command");
+  const fallbackInteraction = available
+    .filter((interaction) => interaction.matchMode === "fallback")
+    .sort((left, right) => left.id.localeCompare(right.id))[0];
+  const allAliases = commandInteractions.flatMap((interaction) =>
     interaction.aliases.map((alias) => ({ interaction, alias })),
   );
 
@@ -136,6 +140,16 @@ export function parseCommand(
   const mentionsKnownEntity = vocabulary.some(
     (term) => term && (normalizedInput === term || normalizedInput.includes(` ${term}`) || normalizedInput.startsWith(`${term} `)),
   );
+
+  if (fallbackInteraction) {
+    return {
+      interaction: fallbackInteraction,
+      reason: "fallback",
+      matchedAlias: null,
+      candidates: [fallbackInteraction.id],
+      normalizedInput,
+    };
+  }
 
   return {
     interaction: null,

@@ -55,7 +55,9 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
     ...snapshot.interactions.map((interaction) => ({
       id: interaction.id,
       kind: "interaction" as const,
-      label: interaction.wording || interaction.aliases[0] || "untitled interaction",
+      label: interaction.matchMode === "fallback"
+        ? "INVALID INPUT"
+        : interaction.wording || interaction.aliases[0] || "untitled interaction",
       searchText: [
         interaction.wording,
         ...interaction.aliases,

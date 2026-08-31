@@ -146,7 +146,7 @@ button:disabled { opacity: .45; cursor: default; }
 .current-inputs > div { display: flex; max-height: 3.5em; overflow: auto; flex-wrap: wrap; gap: .4em .75em; }
 .current-inputs button { padding: 0; border: 0; background: transparent; color: var(--dos-text); cursor: pointer; text-align: left; }
 .current-inputs button strong { color: var(--dos-bright); }
-.current-inputs button.draft-input, .current-inputs button.draft-input strong { color: var(--dos-warn); }
+.current-inputs button.draft-input, .current-inputs button.draft-input strong, .author-primary-actions button.draft-input { color: var(--dos-warn); }
 .unhandled-tools { display: flex; flex-wrap: wrap; gap: .7em; align-items: center; padding: .55em 0; border-top: 1px dotted var(--dos-line); color: var(--dos-text); }
 .alias-strip { width: 100%; padding: .3em 0; border-top: 1px dotted var(--dos-line); }
 .alias-strip > div { display: flex; max-height: 3.2em; overflow: auto; flex-wrap: wrap; gap: .45em .75em; align-items: center; padding-top: .4em; }

@@ -86,6 +86,7 @@ type InteractionRow = {
   id: string;
   source_node_id: string;
   wording: string;
+  match_mode: Interaction["matchMode"];
   choice_visibility: Interaction["choiceVisibility"];
   tags_json: string;
   notes: string;
@@ -178,7 +179,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
@@ -225,7 +226,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   }));
 
   return {
-    schemaVersion: Math.max(7, meta.schema_version),
+    schemaVersion: Math.max(8, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     nodes: nodes.results.map((row): GameNode => {
@@ -251,6 +252,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       id: row.id,
       sourceNodeId: row.source_node_id,
       wording: row.wording,
+      matchMode: row.match_mode ?? "command",
       choiceVisibility: row.choice_visibility,
       tags: parseJson(row.tags_json, []),
       notes: row.notes,
@@ -400,15 +402,16 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
       const value = operation.interaction;
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, choice_visibility, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
+             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
              notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
           value.sourceNodeId,
           value.wording,
+          value.matchMode ?? "command",
           value.choiceVisibility ?? "prompt",
           JSON.stringify(value.tags),
           value.notes,

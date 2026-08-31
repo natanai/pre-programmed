@@ -297,6 +297,21 @@ const migrations: Migration[] = [
       UPDATE project_meta SET schema_version = 7 WHERE id = 1;
     `,
   },
+  {
+    id: 8,
+    name: "node-invalid-input-fallbacks",
+    sql: `
+      ALTER TABLE interactions
+      ADD COLUMN match_mode TEXT NOT NULL DEFAULT 'command'
+      CHECK (match_mode IN ('command', 'fallback'));
+
+      CREATE UNIQUE INDEX interactions_one_fallback_per_node
+      ON interactions(source_node_id)
+      WHERE match_mode = 'fallback';
+
+      UPDATE project_meta SET schema_version = 8 WHERE id = 1;
+    `,
+  },
 ];
 
 export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));
