@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { buildGraphIndex, notationForNode } from "../../../game/graph";
 import {
   makeId,
@@ -15,7 +15,7 @@ import {
 import { buildSearchIndex, searchProject } from "../../../game/search";
 import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../../components/AuthorFields";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
-import { TextExpressionBar, type TextSelection } from "./TextExpressionBar";
+import { TextRulesReference } from "./TextRulesReference";
 import "./interactionEditor.css";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
@@ -419,9 +419,6 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
 }) {
-  const textarea = useRef<HTMLTextAreaElement>(null);
-  const [selection, setSelection] = useState<TextSelection>({ start: 0, end: 0 });
-
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
     <section className="guided-section response-writing-section">
@@ -432,20 +429,10 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
         rows={5}
         autoFocus
         ariaLabel={`Response text ${index + 1}`}
-        textareaRef={textarea}
         value={outcome.responseText}
         onValueChange={onText}
-        onSelectionChange={setSelection}
       />
-      <TextExpressionBar
-        value={outcome.responseText}
-        selection={selection}
-        textareaRef={textarea}
-        onChange={(text, nextSelection) => {
-          onText(text);
-          setSelection(nextSelection);
-        }}
-      />
+      <TextRulesReference />
     </section>
     <section className="guided-section guided-drill-list">
       <button type="button" className="guided-drill-row" onClick={() => onOpen("when")}><span>WHEN</span><span className="guided-row-value">{conditionSummary(outcome.condition)}</span><span>›</span></button>

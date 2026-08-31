@@ -3,7 +3,7 @@ import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "
 import { compileTextNotation } from "../../../game/textNotation";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { ValueMentionField } from "../../../author/ValueMentionField";
-import { TextExpressionBar, type TextSelection } from "./TextExpressionBar";
+import { TextRulesReference } from "./TextRulesReference";
 import "./nodeEditor.css";
 
 type NodeScreen = "text" | "context" | "cues";
@@ -16,7 +16,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
 }) {
   const [draft, setDraft] = useState(() => structuredClone(node));
   const [screen, setScreen] = useState<NodeScreen>("text");
-  const [selection, setSelection] = useState<TextSelection>({ start: 0, end: 0 });
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [saving, setSaving] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
 
@@ -88,32 +88,8 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
         </label>
         <div className="node-writing-meta" aria-live="polite">
           <span>{draft.text.length} character{draft.text.length === 1 ? "" : "s"}</span>
-          <span>{selectionLabel}</span>
         </div>
-        <TextExpressionBar
-          value={draft.text}
-          selection={selection}
-          textareaRef={textarea}
-          onChange={(text, nextSelection) => {
-            setDraft({ ...draft, text });
-            setSelection(nextSelection);
-          }}
-        />
-        <details className="node-notation-reference">
-          <summary>[TEXT NOTATION]</summary>
-          <div className="node-notation-grid">
-            <span><strong>/p</strong> pause</span>
-            <span><strong>/p800</strong> custom pause</span>
-            <span><strong>/l{'{slow}'}</strong> slower text</span>
-            <span><strong>/f{'{fast}'}</strong> faster text</span>
-            <span><strong>/s{'{shout}'}</strong> shout</span>
-            <span><strong>/h{'{hit}'}</strong> hit</span>
-            <span><strong>/w{'{wave}'}</strong> wave</span>
-            <span><strong>/b{'{blink}'}</strong> blink</span>
-            <span><strong>/i{'{instant}'}</strong> instant</span>
-            <span><strong>//</strong> literal slash</span>
-          </div>
-        </details>
+        <TextRulesReference />
 
         <div className="node-summary-list">
           <button type="button" onClick={() => setScreen("context")}>
@@ -137,7 +113,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
 
       {screen === "cues" ? <div className="node-cue-workspace">
         <h3>ADVANCED CUES · {selectionLabel.toUpperCase()}</h3>
-        <p className="muted">Use Text Expression for ordinary rhythm and emphasis. Advanced cues are for precise values, sound, art, or other manually positioned events.</p>
+        <p className="muted">Use inline text rules for ordinary rhythm and word delivery. Advanced cues are for precise positioned values, sound, synth, art, and legacy exact-value editing.</p>
         <div className="cue-buttons">{(["pause", "speed", "wave", "shake", "blink", "instant", "synth", "audio", "sprite"] as TextCueType[]).map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
         <div className="node-cue-list">
           {draft.performance.cues.map((cue, index) => <div className="cue-row" key={cue.id}>

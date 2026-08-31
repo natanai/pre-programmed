@@ -1,10 +1,9 @@
 /*
  * Canonical Author workspace layout.
  *
- * Author workspaces are rendered by AuthorWorkspaceHost into a portal attached
- * to document.body. They therefore have no player-terminal layout ancestors.
- * The player shell owns transcript/prompt geometry; this layer owns editing and
- * the navigation affordance required to leave an editor safely.
+ * Feature workspaces are portaled to document.body, outside player-terminal
+ * geometry. The portal owns navigation within Author work (Back); the app shell
+ * owns the global exit back to play (X). Feature modules own neither concern.
  */
 
 .author-workspace-layer {
@@ -33,7 +32,8 @@
 .author-workspace-navigation {
   display: flex;
   align-items: center;
-  min-height: 2.25em;
+  min-height: 2.75em;
+  padding-right: 3.25em;
 }
 
 .author-workspace-navigation button {
@@ -74,11 +74,16 @@
   margin: 0;
 }
 
-/* The old App-level controls live inside the player stacking context. While the
- * portal exists, the root Author shell is the only navigation chrome owner. */
-body:has(.author-workspace-layer) .work-surface-back,
-body:has(.author-workspace-layer) .work-surface-close {
+/* App still renders its historical Back control. The portal has the canonical
+ * Back now, so suppress only that duplicate. X remains the application-level
+ * escape to play and is deliberately layered above every Author feature. */
+body:has(.author-workspace-layer) .work-surface-back {
   display: none;
+}
+
+body:has(.author-workspace-layer) .work-surface-close {
+  display: block;
+  z-index: 70;
 }
 
 .author-panel-body,
@@ -93,11 +98,18 @@ body:has(.author-workspace-layer) .work-surface-close {
   }
 
   .author-workspace-navigation {
-    min-height: 2.6em;
+    min-height: 2.75em;
+    padding-right: 3em;
   }
 
   .author-workspace-navigation button {
-    min-height: 2.6em;
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+
+  body:has(.author-workspace-layer) .work-surface-close {
+    min-width: 2.75em;
+    min-height: 2.75em;
     font-size: max(16px, 1em);
   }
 
