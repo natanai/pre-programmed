@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import "./textExpressionBar.css";
 
 export type TextSelection = { start: number; end: number };
@@ -7,7 +7,7 @@ type ScopedExpression = "slow" | "fast" | "shout" | "hit" | "wave" | "blink" | "
 type TextExpression = ScopedExpression | "pause";
 
 const expressions: Array<{ type: TextExpression; label: string; help: string }> = [
-  { type: "pause", label: "PAUSE", help: "Pause at the cursor or after the selected text." },
+  { type: "pause", label: "PAUSE", help: "Pause after the selected text." },
   { type: "slow", label: "SLOW", help: "Slow the selected word or phrase." },
   { type: "fast", label: "FAST", help: "Speed up the selected word or phrase." },
   { type: "shout", label: "SHOUT", help: "Punch up the selection with speed and shake." },
@@ -76,8 +76,21 @@ export function TextExpressionBar({ value, selection, textareaRef, onChange }: {
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   onChange: (value: string, selection: TextSelection) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const hasSelection = selection.end > selection.start;
+
+  useEffect(() => {
+    setOpen(false);
+  }, [selection.start, selection.end]);
+
+  if (!hasSelection) return null;
+
+  const selectedText = value.slice(selection.start, selection.end).replace(/\s+/g, " ").trim();
+  const selectionPreview = selectedText.length > 32 ? `${selectedText.slice(0, 29)}...` : selectedText;
+
   const apply = (type: TextExpression) => {
     const result = applyTextExpression(value, selection, type);
+    setOpen(false);
     onChange(result.value, result.selection);
     window.requestAnimationFrame(() => {
       const field = textareaRef?.current;
@@ -87,20 +100,28 @@ export function TextExpressionBar({ value, selection, textareaRef, onChange }: {
     });
   };
 
-  return <div className="text-expression-bar" aria-label="Text expression">
-    <div className="text-expression-heading">
-      <span>TEXT EXPRESSION</span>
-      <small>{selection.end > selection.start ? "selected text" : "word at cursor"}</small>
-    </div>
-    <div className="text-expression-actions">
+  return <div className="text-expression-context" aria-label="Text expression for selected text">
+    <button
+      type="button"
+      className="text-expression-trigger"
+      aria-expanded={open}
+      aria-haspopup="menu"
+      onPointerDown={(event) => event.preventDefault()}
+      onClick={() => setOpen((value) => !value)}
+    >
+      <span>[TEXT FX]</span>
+      <small>{selectionPreview ? `“${selectionPreview}”` : "selected text"}</small>
+    </button>
+    {open ? <div className="text-expression-menu" role="menu">
       {expressions.map((item) => <button
         type="button"
+        role="menuitem"
         key={item.type}
         title={item.help}
         aria-label={`${item.label}: ${item.help}`}
         onPointerDown={(event) => event.preventDefault()}
         onClick={() => apply(item.type)}
       >[{item.label}]</button>)}
-    </div>
+    </div> : null}
   </div>;
 }

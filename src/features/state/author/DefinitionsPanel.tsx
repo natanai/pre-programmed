@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
+import { resolveAuthorKey } from "../../../author/generatedKey";
 import type {
   ComputedDefinition,
   EntityDefinition,
@@ -62,26 +64,56 @@ export function DefinitionsPanel({ snapshot, onSave }: {
   };
 
   const saveVariable = async () => {
-    if (!variable?.key.trim() || !variable.label.trim()) return;
+    if (!variable?.label.trim()) return;
+    const definition = {
+      ...variable,
+      key: resolveAuthorKey({
+        override: variable.key,
+        source: variable.label,
+        existingKeys: snapshot.variables.filter((item) => item.id !== variable.id).map((item) => item.key),
+        fallback: "variable",
+      }),
+    };
+    setVariable(definition);
     setSaving(true);
     try {
-      await onSave([{ type: "variable.upsert", definition: variable }], `Changed variable ${variable.label}`);
+      await onSave([{ type: "variable.upsert", definition }], `Changed variable ${definition.label}`);
     } finally { setSaving(false); }
   };
 
   const saveComputed = async () => {
-    if (!computed?.key.trim() || !computed.label.trim()) return;
+    if (!computed?.label.trim()) return;
+    const definition = {
+      ...computed,
+      key: resolveAuthorKey({
+        override: computed.key,
+        source: computed.label,
+        existingKeys: snapshot.computedValues.filter((item) => item.id !== computed.id).map((item) => item.key),
+        fallback: "computed",
+      }),
+    };
+    setComputed(definition);
     setSaving(true);
     try {
-      await onSave([{ type: "computed.upsert", definition: computed }], `Changed computed value ${computed.label}`);
+      await onSave([{ type: "computed.upsert", definition }], `Changed computed value ${definition.label}`);
     } finally { setSaving(false); }
   };
 
   const saveEntity = async () => {
-    if (!entity?.key.trim() || !entity.name.trim()) return;
+    if (!entity?.name.trim()) return;
+    const savedEntity = {
+      ...entity,
+      key: resolveAuthorKey({
+        override: entity.key,
+        source: entity.name,
+        existingKeys: snapshot.entities.filter((item) => item.id !== entity.id).map((item) => item.key),
+        fallback: entity.type,
+      }),
+    };
+    setEntity(savedEntity);
     setSaving(true);
     try {
-      await onSave([{ type: "entity.upsert", entity }], `Changed ${entity.type} ${entity.name}`);
+      await onSave([{ type: "entity.upsert", entity: savedEntity }], `Changed ${savedEntity.type} ${savedEntity.name}`);
     } finally { setSaving(false); }
   };
 
@@ -170,7 +202,7 @@ function DefinitionIndex({ snapshot, mode, selectedId, onMode, onVariable, onCom
             id="definition-search"
             type="search"
             value={query}
-            placeholder={mode === "variables" ? "variable name or key" : mode === "computed" ? "computed value or source" : "person, place, key, or tag"}
+            placeholder={mode === "variables" ? "variable name" : mode === "computed" ? "computed value or source" : "person, place, or tag"}
             onChange={(event) => setQuery(event.target.value)}
             autoCapitalize="none"
             autoCorrect="off"
@@ -187,7 +219,7 @@ function DefinitionIndex({ snapshot, mode, selectedId, onMode, onVariable, onCom
         {variables.length ? <div className="definition-list">{variables.map((item) => <DefinitionRow
           key={item.id}
           title={item.label || item.key || "Untitled variable"}
-          detail={`${item.key} · ${item.valueType}${item.valueType === "number" && item.timeRate ? ` · ${item.timeRate > 0 ? "+" : ""}${item.timeRate}/${item.timeUnit ?? "second"}` : ""}`}
+          detail={`${item.valueType}${item.valueType === "number" && item.timeRate ? ` · ${item.timeRate > 0 ? "+" : ""}${item.timeRate}/${item.timeUnit ?? "second"}` : ""}`}
           selected={selectedId === item.id}
           onOpen={() => onVariable(item)}
         />)}</div> : <div className="definition-empty">{normalizedQuery ? "NO MATCHING VARIABLES." : "NO VARIABLES YET."}</div>}
@@ -197,7 +229,7 @@ function DefinitionIndex({ snapshot, mode, selectedId, onMode, onVariable, onCom
         {computedValues.length ? <div className="definition-list">{computedValues.map((item) => <DefinitionRow
           key={item.id}
           title={item.label || item.key || "Untitled computed value"}
-          detail={`${item.key} · ${item.source}`}
+          detail={item.source}
           selected={selectedId === item.id}
           onOpen={() => onComputed(item)}
         />)}</div> : <div className="definition-empty">{normalizedQuery ? "NO MATCHING COMPUTED VALUES." : "NO COMPUTED VALUES YET."}</div>}
@@ -227,14 +259,19 @@ function DefinitionRow({ title, detail, selected, onOpen }: { title: string; det
 function DefinitionKind({ title, items, onOpen, selectedId, empty }: { title: string; items: EntityDefinition[]; onOpen: (item: EntityDefinition) => void; selectedId?: string; empty: string }) {
   return <section className="definition-kind-group">
     <h3>{title}</h3>
-    {items.length ? <div className="definition-list">{items.map((item) => <DefinitionRow key={item.id} title={item.name || item.key || `Untitled ${item.type}`} detail={item.key} selected={selectedId === item.id} onOpen={() => onOpen(item)} />)}</div> : <div className="definition-empty">{empty}</div>}
+    {items.length ? <div className="definition-list">{items.map((item) => <DefinitionRow
+      key={item.id}
+      title={item.name || item.key || `Untitled ${item.type}`}
+      detail={item.description.trim() || `${item.tags.length} tag${item.tags.length === 1 ? "" : "s"}`}
+      selected={selectedId === item.id}
+      onOpen={() => onOpen(item)}
+    />)}</div> : <div className="definition-empty">{empty}</div>}
   </section>;
 }
 
 function VariableEditor({ variable, snapshot, onChange }: { variable: VariableDefinition; snapshot: ProjectSnapshot; onChange: (value: VariableDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
-    <label>KEY <input value={variable.key} onChange={(event) => onChange({ ...variable, key: normalizeKey(event.target.value) })} /></label>
-    <label>LABEL <input value={variable.label} onChange={(event) => onChange({ ...variable, label: event.target.value })} /></label>
+    <label>LABEL <input value={variable.label} onChange={(event) => onChange({ ...variable, label: event.target.value })} autoFocus /></label>
     <label>TYPE <select value={variable.valueType} onChange={(event) => {
       const valueType = event.target.value as VariableDefinition["valueType"];
       onChange({ ...variable, valueType, initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "", timeRate: valueType === "number" ? variable.timeRate ?? 0 : 0 });
@@ -246,27 +283,28 @@ function VariableEditor({ variable, snapshot, onChange }: { variable: VariableDe
     </div> : null}
     <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => onChange({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>
     {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => onChange({ ...variable, ...capability })} /> : null}
+    <GeneratedKeyField source={variable.label} value={variable.key} onChange={(key) => onChange({ ...variable, key })} />
   </div>;
 }
 
 function ComputedEditor({ computed, snapshot, onChange }: { computed: ComputedDefinition; snapshot: ProjectSnapshot; onChange: (value: ComputedDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
-    <label>KEY <input value={computed.key} onChange={(event) => onChange({ ...computed, key: normalizeKey(event.target.value) })} /></label>
-    <label>LABEL <input value={computed.label} onChange={(event) => onChange({ ...computed, label: event.target.value })} /></label>
+    <label>LABEL <input value={computed.label} onChange={(event) => onChange({ ...computed, label: event.target.value })} autoFocus /></label>
     <label>SAFE RUNTIME SOURCE <select value={computed.source} onChange={(event) => onChange({ ...computed, source: event.target.value as ComputedDefinition["source"] })}><option value="elapsed_seconds">elapsed client-session seconds</option><option value="commands_entered">commands entered</option><option value="inventory_slots_used">inventory slots used</option><option value="visited_nodes">distinct visited nodes</option></select></label>
     <label>FORMAT <select value={computed.format} onChange={(event) => onChange({ ...computed, format: event.target.value as ComputedDefinition["format"] })}><option value="raw">raw</option><option value="integer">rounded integer</option><option value="seconds">seconds with unit</option></select></label>
     <label className="check-label"><input type="checkbox" checked={computed.showInStatus} onChange={(event) => onChange({ ...computed, showInStatus: event.target.checked })} /> show in inventory/status</label>
     {computed.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => onChange({ ...computed, ...capability })} /> : null}
+    <GeneratedKeyField source={computed.label} value={computed.key} onChange={(key) => onChange({ ...computed, key })} />
   </div>;
 }
 
 function EntityEditor({ entity, onChange }: { entity: EntityDefinition; onChange: (value: EntityDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
+    <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} autoFocus /></label>
     <label>TYPE <select value={entity.type} onChange={(event) => onChange({ ...entity, type: event.target.value as EntityDefinition["type"] })}><option value="character">character</option><option value="location">location</option></select></label>
-    <label>KEY <input value={entity.key} onChange={(event) => onChange({ ...entity, key: normalizeKey(event.target.value) })} /></label>
-    <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} /></label>
     <label>DESCRIPTION <textarea rows={3} value={entity.description} onChange={(event) => onChange({ ...entity, description: event.target.value })} /></label>
     <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => onChange({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
+    <GeneratedKeyField source={entity.name} value={entity.key} onChange={(key) => onChange({ ...entity, key })} />
   </div>;
 }
 
@@ -275,10 +313,6 @@ function EditorFooter({ saving, onSave, onCancel }: { saving: boolean; onSave: (
     <button type="button" disabled={saving} onClick={onSave}>[{saving ? "SAVING..." : "SAVE"}]</button>
     <button type="button" onClick={onCancel}>[CANCEL]</button>
   </div>;
-}
-
-function normalizeKey(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+/, "");
 }
 
 function InitialValueInput({ definition, onChange }: { definition: VariableDefinition; onChange: (value: Value) => void }) {
