@@ -30,6 +30,7 @@ type TerminalCommandComposerProps = {
 };
 
 const MAX_VISIBLE_LINES = 4;
+const COARSE_POINTER_QUERY = "(pointer: coarse)";
 
 export function normalizeTerminalDraft(value: string) {
   return value.replace(/\r\n?|\n/g, " ");
@@ -179,7 +180,10 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       window.requestAnimationFrame(() => {
         const current = field();
         if (!current) return;
-        current.focus({ preventScroll: true });
+        const coarsePointer = window.matchMedia(COARSE_POINTER_QUERY).matches;
+        if (!coarsePointer || document.activeElement === current) {
+          current.focus({ preventScroll: true });
+        }
         current.setSelectionRange(next.length, next.length);
         setCaretIndex(next.length);
         queueCaretSync();
@@ -196,82 +200,96 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       data-secret={secret ? "true" : "false"}
     >
       <span className="terminal-command-label">{label}</span>
-      <div
-        className={`terminal-command-shell${menuOpen ? " menu-open" : ""}`}
-        data-has-menu={menuChoices.length ? "true" : "false"}
-      >
-        <div className="terminal-command-editor" ref={editorRef}>
-          {secret ? <input
-            ref={secretInputRef}
-            className="terminal-command-field terminal-command-secret"
-            type="password"
-            value={value}
-            onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
-            onKeyDown={handleKeyDown}
-            onSelect={queueCaretSync}
-            onKeyUp={queueCaretSync}
-            onClick={queueCaretSync}
-            onPointerUp={queueCaretSync}
-            onScroll={queueCaretSync}
-            onFocus={queueCaretSync}
-            onCompositionStart={() => { composingRef.current = true; }}
-            onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="send"
-            aria-label={ariaLabel}
-          /> : <textarea
-            ref={textareaRef}
-            className="terminal-command-field terminal-command-textarea"
-            rows={1}
-            value={value}
-            onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
-            onKeyDown={handleKeyDown}
-            onSelect={queueCaretSync}
-            onKeyUp={queueCaretSync}
-            onClick={queueCaretSync}
-            onPointerUp={queueCaretSync}
-            onScroll={queueCaretSync}
-            onFocus={queueCaretSync}
-            onCompositionStart={() => { composingRef.current = true; }}
-            onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="send"
-            aria-label={ariaLabel}
-          />}
-          <div ref={mirrorRef} className="terminal-command-mirror" aria-hidden="true">
-            <span>{mirrorValue.slice(0, mirrorCaret)}</span>
-            <span ref={caretMarkerRef} className="terminal-command-caret-marker">​</span>
-            <span>{mirrorValue.slice(mirrorCaret) || "​"}</span>
+      <div className="terminal-command-control">
+        <div
+          className={`terminal-command-shell${menuOpen ? " menu-open" : ""}`}
+          data-has-menu={menuChoices.length ? "true" : "false"}
+        >
+          <div className="terminal-command-editor" ref={editorRef}>
+            {secret ? <input
+              ref={secretInputRef}
+              className="terminal-command-field terminal-command-secret"
+              type="password"
+              value={value}
+              onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+              onKeyDown={handleKeyDown}
+              onSelect={queueCaretSync}
+              onKeyUp={queueCaretSync}
+              onClick={queueCaretSync}
+              onPointerUp={queueCaretSync}
+              onScroll={queueCaretSync}
+              onFocus={queueCaretSync}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="send"
+              aria-label={ariaLabel}
+            /> : <textarea
+              ref={textareaRef}
+              className="terminal-command-field terminal-command-textarea"
+              rows={1}
+              value={value}
+              onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+              onKeyDown={handleKeyDown}
+              onSelect={queueCaretSync}
+              onKeyUp={queueCaretSync}
+              onClick={queueCaretSync}
+              onPointerUp={queueCaretSync}
+              onScroll={queueCaretSync}
+              onFocus={queueCaretSync}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+              autoCapitalize="none"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              enterKeyHint="send"
+              aria-label={ariaLabel}
+            />}
+            <div ref={mirrorRef} className="terminal-command-mirror" aria-hidden="true">
+              <span>{mirrorValue.slice(0, mirrorCaret)}</span>
+              <span ref={caretMarkerRef} className="terminal-command-caret-marker">​</span>
+              <span>{mirrorValue.slice(mirrorCaret) || "​"}</span>
+            </div>
+            <span className="terminal-command-caret" aria-hidden="true" />
           </div>
-          <span className="terminal-command-caret" aria-hidden="true" />
+
+          {!secret && menuChoices.length ? <button
+            type="button"
+            className="terminal-command-toggle"
+            aria-label={menuOpen ? "Hide available options" : "Show available options"}
+            aria-expanded={menuOpen}
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={() => {
+              setMenuOpen((open) => !open);
+              window.requestAnimationFrame(queueCaretSync);
+            }}
+          >{menuOpen ? "▲" : "▼"}</button> : null}
+
+          {!secret && choices.length ? <div className="terminal-command-choices" aria-label="Available commands">
+            {choices.map((choice) => <button
+              type="button"
+              key={choice.id}
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() => insertChoice(choice)}
+            >{choice.text}</button>)}
+          </div> : null}
         </div>
 
-        {!secret && menuChoices.length ? <button
+        {!secret ? <button
           type="button"
-          className="terminal-command-toggle"
-          aria-label={menuOpen ? "Hide available options" : "Show available options"}
-          aria-expanded={menuOpen}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => {
-            setMenuOpen((open) => !open);
-            window.requestAnimationFrame(queueCaretSync);
+          className="terminal-command-submit"
+          aria-label="Submit command"
+          title="Submit command"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
           }}
-        >{menuOpen ? "▲" : "▼"}</button> : null}
-
-        {!secret && choices.length ? <div className="terminal-command-choices" aria-label="Available commands">
-          {choices.map((choice) => <button
-            type="button"
-            key={choice.id}
-            onPointerDown={(event) => event.preventDefault()}
-            onClick={() => insertChoice(choice)}
-          >{choice.text}</button>)}
-        </div> : null}
+          onClick={submit}
+        >↵</button> : null}
       </div>
     </form>;
   },
