@@ -1,3 +1,14 @@
+.dos-terminal {
+  --terminal-player-input-width: clamp(12em, 52vw, 30em);
+  --terminal-player-toggle-width: 1.9em;
+  --terminal-player-prompt-width: calc(4ch + .35em);
+  --terminal-player-dropdown-width: var(--terminal-player-input-width);
+}
+
+.dos-terminal:has(.prompt-input-row .prompt-choice-toggle) {
+  --terminal-player-dropdown-width: calc(var(--terminal-player-input-width) + var(--terminal-player-toggle-width));
+}
+
 .prompt-line.prompt-input-row {
   width: fit-content;
   max-width: min(100%, 960px);
@@ -19,7 +30,7 @@
 
 .prompt-input-row .terminal-input {
   flex: none;
-  width: clamp(12em, 52vw, 30em);
+  width: var(--terminal-player-input-width);
   height: 2.75em;
   min-height: 0;
   margin: 0;
@@ -56,8 +67,8 @@
 
 .prompt-input-row .prompt-choice-toggle {
   position: relative;
-  width: 1.9em;
-  min-width: 1.9em;
+  width: var(--terminal-player-toggle-width);
+  min-width: var(--terminal-player-toggle-width);
   height: 2.75em;
   min-height: 0;
   margin: 0;
@@ -77,7 +88,79 @@
   border-left: 1px solid #000;
 }
 
+/* Player choices are a true drop-out from the white terminal entry area,
+   rather than a separate full-width panel lower on the screen. */
+.terminal-lower:has(> .player-choice-scroll:not(.author-choice-scroll)) {
+  overflow: visible;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) {
+  position: relative;
+  z-index: 3;
+  width: var(--terminal-player-dropdown-width);
+  max-height: min(12em, 38dvh);
+  margin: calc(-1.5em + 1px) 0 .65em var(--terminal-player-prompt-width);
+  border: 1px solid #fff;
+  border-top: 0;
+  background: #fff;
+  color: #000;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface {
+  background: #fff;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button {
+  min-height: 2em;
+  padding: .5em .25em;
+  border: 0;
+  border-bottom: 1px dotted #777;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:last-child {
+  border-bottom: 0;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:hover,
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:focus-visible,
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:active {
+  background: #000;
+  color: #fff !important;
+  outline: 0;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue {
+  min-height: 1.75em;
+  padding: .375em .25em;
+  border: 0;
+  border-top: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+}
+
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:hover,
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:focus-visible,
+.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:active {
+  background: #000;
+  color: #fff !important;
+  outline: 0;
+}
+
 @media (max-width: 700px), (pointer: coarse) {
+  .dos-terminal {
+    --terminal-player-input-width: clamp(11em, 52vw, 24em);
+    --terminal-player-prompt-width: calc(4ch + .3em);
+  }
+
   .prompt-line.prompt-input-row {
     min-height: 2.75em;
   }
@@ -87,7 +170,7 @@
   }
 
   .prompt-input-row .terminal-input {
-    width: clamp(11em, 52vw, 24em);
+    width: var(--terminal-player-input-width);
     height: 2.75em;
     min-height: 0;
     padding: .875em .25em;
@@ -95,10 +178,20 @@
   }
 
   .prompt-input-row .prompt-choice-toggle {
-    width: 1.9em;
-    min-width: 1.9em;
+    width: var(--terminal-player-toggle-width);
+    min-width: var(--terminal-player-toggle-width);
     height: 2.75em;
     min-height: 0;
+    font-size: max(16px, 1em);
+  }
+
+  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) {
+    width: var(--terminal-player-dropdown-width);
+    margin-top: calc(-1.75em + 1px);
+  }
+
+  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button,
+  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue {
     font-size: max(16px, 1em);
   }
 }

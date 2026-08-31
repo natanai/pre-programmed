@@ -2,6 +2,27 @@ import { useLayoutEffect, useRef, useState } from "react";
 import type { Interaction } from "../model";
 import "./playerChoiceSurface.css";
 
+function playableInputValue(interaction: Interaction) {
+  return interaction.aliases[0] || interaction.wording;
+}
+
+function insertIntoTerminal(value: string) {
+  const input = document.querySelector<HTMLInputElement>(".prompt-input-row .terminal-input:not([type='password'])");
+  if (!input) return false;
+
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+  if (valueSetter) valueSetter.call(input, value);
+  else input.value = value;
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+
+  window.requestAnimationFrame(() => {
+    input.focus({ preventScroll: true });
+    input.setSelectionRange(value.length, value.length);
+    input.dispatchEvent(new Event("select", { bubbles: true }));
+  });
+  return true;
+}
+
 export function PlayerChoiceSurface({
   choices,
   onChoose,
@@ -40,18 +61,21 @@ export function PlayerChoiceSurface({
   return <div className={`player-choice-scroll${authorMode ? " author-choice-scroll" : ""}`}>
     <div ref={surfaceRef} className="player-choice-surface" aria-label={authorMode ? "Current valid inputs" : "Available choices"} onScroll={measure}>
       {choices.map((interaction) => {
-        const label = interaction.wording || interaction.aliases[0] || "untitled";
-        if (!authorMode) return <button type="button" key={interaction.id} onClick={() => onChoose(interaction)}>{label}</button>;
+        const authorLabel = interaction.wording || interaction.aliases[0] || "untitled";
+        const playerLabel = playableInputValue(interaction) || "untitled";
+        if (!authorMode) return <button type="button" key={interaction.id} onClick={() => {
+          if (!insertIntoTerminal(playerLabel)) onChoose(interaction);
+        }}>{playerLabel}</button>;
         const notation = notationForChoice?.(interaction) ?? "[D]";
         return <div className="author-choice-row" key={interaction.id}>
           <button
             type="button"
             className={`author-choice-edit${notation === "[D]" ? " draft-input" : ""}`}
-            aria-label={`Edit ${label}`}
-            title={`Edit ${label}`}
+            aria-label={`Edit ${authorLabel}`}
+            title={`Edit ${authorLabel}`}
             onClick={() => onEdit?.(interaction)}
           >{notation}</button>
-          <button type="button" className="author-choice-play" onClick={() => onChoose(interaction)}>{label}</button>
+          <button type="button" className="author-choice-play" onClick={() => onChoose(interaction)}>{authorLabel}</button>
         </div>;
       })}
     </div>
