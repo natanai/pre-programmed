@@ -2,6 +2,7 @@ import {
   EMPTY_COMMAND_PROJECT_SETTINGS,
   type CommandProjectSettings,
 } from "../../features/commands/model";
+import type { ProjectSnapshot } from "./model";
 
 export type ProjectSettings = {
   /** Player-facing terminal prompt for this game/project. */
@@ -80,4 +81,11 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
     commands: { referenceSources, commands },
   };
+}
+
+type SnapshotLike = Omit<ProjectSnapshot, "settings"> & { settings?: unknown };
+
+/** Accept cached snapshots written before project settings existed. */
+export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
+  return { ...snapshot, settings: normalizeProjectSettings(snapshot.settings) };
 }
