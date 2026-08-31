@@ -33,7 +33,6 @@ type Persist = (
  */
 export function AuthorWorkspaceHost({
   panel,
-  inventoryOpen,
   toolGroups,
   snapshot,
   playState,
@@ -49,7 +48,6 @@ export function AuthorWorkspaceHost({
   onRestore,
 }: {
   panel: AuthorPanelRoute | null;
-  inventoryOpen: boolean;
   toolGroups: AuthorToolGroup[];
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -80,7 +78,7 @@ export function AuthorWorkspaceHost({
 
   if (panel?.type === "tools") return <AuthorToolIndex groups={toolGroups} />;
 
-  if (inventoryOpen) return <Inventory
+  if (panel?.type === "inventory") return <Inventory
     snapshot={snapshot}
     state={playState}
     authorMode={authorMode}
