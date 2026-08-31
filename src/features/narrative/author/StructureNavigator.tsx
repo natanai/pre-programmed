@@ -14,6 +14,23 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
   const [legend, setLegend] = useState(false);
   const [query, setQuery] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
+  const nodeSearchEntries = useMemo(() => {
+    const interactionText = new Map<string, string[]>();
+    for (const interaction of snapshot.interactions) {
+      const values = interactionText.get(interaction.sourceNodeId) ?? [];
+      values.push(interaction.wording, ...interaction.aliases);
+      interactionText.set(interaction.sourceNodeId, values);
+    }
+    return snapshot.nodes.map((node) => ({
+      node,
+      searchText: [
+        `#${node.nodeNumber}`,
+        String(node.nodeNumber),
+        node.text,
+        ...(interactionText.get(node.id) ?? []),
+      ].join(" ").toLowerCase(),
+    }));
+  }, [snapshot]);
   const activeNodeId = path.at(-1) ?? playState.currentNodeId;
   const activeNode = snapshot.nodes.find((node) => node.id === activeNodeId);
   const normalizedQuery = query.trim().toLowerCase();
@@ -21,17 +38,9 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
     if (!normalizedQuery) return [];
     const numericQuery = normalizedQuery.replace(/^#/, "");
     const exactNumber = /^\d+$/.test(numericQuery) ? Number(numericQuery) : null;
-    return snapshot.nodes
-      .filter((node) => {
-        const outgoingText = snapshot.interactions
-          .filter((interaction) => interaction.sourceNodeId === node.id)
-          .flatMap((interaction) => [interaction.wording, ...interaction.aliases])
-          .join(" ")
-          .toLowerCase();
-        return String(node.nodeNumber).includes(numericQuery)
-          || node.text.toLowerCase().includes(normalizedQuery)
-          || outgoingText.includes(normalizedQuery);
-      })
+    return nodeSearchEntries
+      .filter(({ searchText }) => searchText.includes(normalizedQuery) || (/^#?\d+$/.test(normalizedQuery) && searchText.includes(numericQuery)))
+      .map(({ node }) => node)
       .sort((left, right) => {
         if (exactNumber !== null) {
           if (left.nodeNumber === exactNumber && right.nodeNumber !== exactNumber) return -1;
@@ -40,7 +49,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         return left.nodeNumber - right.nodeNumber;
       })
       .slice(0, 12);
-  }, [normalizedQuery, snapshot]);
+  }, [nodeSearchEntries, normalizedQuery]);
 
   const jumpToNode = (nodeId: string) => {
     setPath([nodeId]);
