@@ -3,11 +3,10 @@ import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "
 import { compileTextNotation } from "../../../game/textNotation";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { ValueMentionField } from "../../../author/ValueMentionField";
+import { TextExpressionBar, type TextSelection } from "./TextExpressionBar";
 import "./nodeEditor.css";
 
-type NodeScreen = "text" | "context" | "presentation" | "cues";
-
-type TextSelection = { start: number; end: number };
+type NodeScreen = "text" | "context" | "cues";
 
 export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   node: GameNode;
@@ -91,11 +90,21 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
           <span>{draft.text.length} character{draft.text.length === 1 ? "" : "s"}</span>
           <span>{selectionLabel}</span>
         </div>
+        <TextExpressionBar
+          value={draft.text}
+          selection={selection}
+          textareaRef={textarea}
+          onChange={(text, nextSelection) => {
+            setDraft({ ...draft, text });
+            setSelection(nextSelection);
+          }}
+        />
         <details className="node-notation-reference">
           <summary>[TEXT NOTATION]</summary>
           <div className="node-notation-grid">
             <span><strong>/p</strong> pause</span>
             <span><strong>/p800</strong> custom pause</span>
+            <span><strong>/l{'{slow}'}</strong> slower text</span>
             <span><strong>/f{'{fast}'}</strong> faster text</span>
             <span><strong>/s{'{shout}'}</strong> shout</span>
             <span><strong>/h{'{hit}'}</strong> hit</span>
@@ -110,11 +119,8 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
           <button type="button" onClick={() => setScreen("context")}>
             <span><strong>CONTEXT</strong><small>{speaker} · {location}{draft.tags.length ? ` · ${draft.tags.length} tag${draft.tags.length === 1 ? "" : "s"}` : ""}</small></span><span aria-hidden="true">›</span>
           </button>
-          <button type="button" onClick={() => setScreen("presentation")}>
-            <span><strong>PRESENTATION</strong><small>{draft.performance.charactersPerSecond} characters/second</small></span><span aria-hidden="true">›</span>
-          </button>
           <button type="button" onClick={openCues}>
-            <span><strong>CUES</strong><small>{draft.performance.cues.length ? `${draft.performance.cues.length} configured · ${selectionLabel}` : `None · ${selectionLabel}`}</small></span><span aria-hidden="true">›</span>
+            <span><strong>ADVANCED CUES</strong><small>{draft.performance.cues.length ? `${draft.performance.cues.length} configured · ${selectionLabel}` : `None · ${selectionLabel}`}</small></span><span aria-hidden="true">›</span>
           </button>
         </div>
 
@@ -129,16 +135,9 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
       </div> : null}
 
-      {screen === "presentation" ? <div className="node-focused-form">
-        <h3>DEFAULT TEXT PRESENTATION</h3>
-        <label>CHARACTERS / SECOND <input type="number" min={1} max={120} value={draft.performance.charactersPerSecond} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, charactersPerSecond: Number(event.target.value) } })} /></label>
-        <p className="muted">Inline notation can temporarily change presentation inside the text. This value is the node's default rate.</p>
-        <div className="performance-preview"><PerformanceText node={draft} /></div>
-      </div> : null}
-
       {screen === "cues" ? <div className="node-cue-workspace">
-        <h3>CUES · {selectionLabel.toUpperCase()}</h3>
-        <p className="muted">Return to Node Text to change the selected range, then reopen Cues. A collapsed selection applies at the cursor position.</p>
+        <h3>ADVANCED CUES · {selectionLabel.toUpperCase()}</h3>
+        <p className="muted">Use Text Expression for ordinary rhythm and emphasis. Advanced cues are for precise values, sound, art, or other manually positioned events.</p>
         <div className="cue-buttons">{(["pause", "speed", "wave", "shake", "blink", "instant", "synth", "audio", "sprite"] as TextCueType[]).map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
         <div className="node-cue-list">
           {draft.performance.cues.map((cue, index) => <div className="cue-row" key={cue.id}>
@@ -148,7 +147,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
             {(cue.type === "audio" || cue.type === "sprite") ? <select aria-label={`${cue.type} cue asset`} value={String(cue.value ?? "")} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.map((item) => item.id === cue.id ? { ...item, value: event.target.value } : item) } })}><option value="">choose asset</option>{ASSET_MANIFEST.filter((asset) => asset.runtimePath && (cue.type === "audio" ? asset.type === "audio" : asset.type === "image")).map((asset) => <option key={asset.path} value={asset.runtimePath!}>{asset.path}</option>)}</select> : null}
             <button type="button" onClick={() => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.filter((_, itemIndex) => itemIndex !== index) } })}>[REMOVE]</button>
           </div>)}
-          {!draft.performance.cues.length ? <span className="muted">NO CUES CONFIGURED.</span> : null}
+          {!draft.performance.cues.length ? <span className="muted">NO ADVANCED CUES CONFIGURED.</span> : null}
         </div>
         <div className="performance-preview"><PerformanceText node={draft} /></div>
       </div> : null}
