@@ -4,46 +4,12 @@ import type {
   ProjectSnapshot,
   RevisionSummary,
 } from "../game/model";
+import { cloudflareProjectPersistence } from "../platform/persistence/cloudflareProjectPersistence";
+import { ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
-export const API_ORIGIN = "https://pre-programmed.natanai.workers.dev";
+export { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
 export const SNAPSHOT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
-
-export function apiUrl(path: string) {
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname === "terminal.local") {
-    return path;
-  }
-  return `${API_ORIGIN}${path}`;
-}
-
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    message: string,
-  ) {
-    super(message);
-    this.name = "ApiError";
-  }
-}
-
-export async function readJson<T>(response: Response): Promise<T> {
-  if (!response.ok) {
-    const detail = await response.text();
-    let message = detail || `${response.status}`;
-    try {
-      const parsed = JSON.parse(detail) as { error?: unknown };
-      if (typeof parsed.error === "string") message = parsed.error;
-    } catch {
-      // Preserve non-JSON response details for diagnostics.
-    }
-    throw new ApiError(response.status, message);
-  }
-  const contentType = response.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().includes("application/json")) {
-    throw new Error(`API returned ${contentType || "an unknown content type"}; expected JSON.`);
-  }
-  return response.json() as Promise<T>;
-}
 
 export function authorLoginErrorMessage(error: unknown) {
   if (error instanceof ApiError && error.status === 503) return "AUTHOR ACCESS NOT CONFIGURED.";
@@ -52,10 +18,7 @@ export function authorLoginErrorMessage(error: unknown) {
 }
 
 export async function fetchProjectSnapshot() {
-  return readJson<ProjectSnapshot>(await fetch(apiUrl("/api/project/snapshot"), {
-    cache: "no-store",
-    headers: { Accept: "application/json" },
-  }));
+  return cloudflareProjectPersistence.readProject();
 }
 
 function abortError() {
@@ -103,13 +66,8 @@ export async function waitForProjectSnapshot(options: {
 }
 
 export async function submitProjectMutation(token: string, mutation: ProjectMutation) {
-  return readJson<{ snapshot: ProjectSnapshot }>(
-    await fetch(apiUrl("/api/author/mutate"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify(mutation),
-    }),
-  );
+  const snapshot = await cloudflareProjectPersistence.writeProject(mutation, { authorization: token });
+  return { snapshot };
 }
 
 export async function fetchAuthorWorkspace(token: string) {
