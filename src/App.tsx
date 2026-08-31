@@ -351,7 +351,7 @@ export default function App() {
     return () => { cancelled = true; };
   }, [authorToken]);
 
-  const persist = async (operations: MutationOperation[], description: string) => {
+  const persist = async (operations: MutationOperation[], description: string, closeAfterSave = false) => {
     if (!snapshot || !authorToken) return;
     const before = snapshot;
     const beforeState = playState;
@@ -379,7 +379,7 @@ export default function App() {
         const changed = result.snapshot.nodes.find((node) => node.id === savedState.currentNodeId);
         if (changed) showNode(result.snapshot, changed, savedState);
       }
-      workSurface.close();
+      if (closeAfterSave) workSurface.close();
       setAuthorMessage(`SAVED R${result.snapshot.revision}.`);
     } catch (error) {
       const conflict = error instanceof Error && error.message.includes("another device");
@@ -397,7 +397,7 @@ export default function App() {
       } else {
         setSnapshot(optimistic);
         await saveCachedSnapshot(optimistic);
-        workSurface.close();
+        if (closeAfterSave) workSurface.close();
         setAuthorMessage("SAVED LOCALLY; D1 SYNC QUEUED.");
       }
     }
@@ -652,7 +652,7 @@ export default function App() {
         /> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
-          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
+          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={(operations, description) => persist(operations, description, true)} onCancel={leaveCurrentSurface} /> : null}
         </div> : null}
 
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <AuthorHome
