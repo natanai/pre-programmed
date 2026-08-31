@@ -20,10 +20,18 @@ function AssetEffectSelect({ kind, value, onChange }: { kind: "audio" | "art"; v
   </div>;
 }
 
+function assetName(path: string) {
+  const clean = path.replace(/^\/+/, "");
+  return clean.split("/").pop() || "choose asset";
+}
+
 export const notificationEffectAdapter: EffectAuthorAdapter = {
   type: "notification",
   label: "floating notification",
   create: () => ({ id: crypto.randomUUID(), type: "notification", text: "" }),
+  summarize: (effect) => effect.type === "notification"
+    ? `Notify: ${effect.text.trim() ? `“${effect.text.trim().slice(0, 48)}${effect.text.trim().length > 48 ? "..." : ""}”` : "write text"}`
+    : "Floating notification",
   render: ({ effect, onChange, snapshot }) => effect.type === "notification"
     ? <div className="effect-notification"><ValueMentionField snapshot={snapshot} value={effect.text} onValueChange={(text) => onChange({ ...effect, text })} placeholder="notification text" /></div>
     : null,
@@ -33,6 +41,9 @@ export const synthEffectAdapter: EffectAuthorAdapter = {
   type: "synth",
   label: "play synth",
   create: () => ({ id: crypto.randomUUID(), type: "synth", synthId: "" }),
+  summarize: (effect, snapshot) => effect.type === "synth"
+    ? `Play synth: ${snapshot.synthSounds.find((sound) => sound.id === effect.synthId)?.label || "choose synth"}`
+    : "Play synth",
   render: ({ effect, onChange, snapshot }) => effect.type === "synth"
     ? <DefinitionSelect value={effect.synthId} definitions={snapshot.synthSounds} valueMode="id" onChange={(synthId) => onChange({ ...effect, synthId })} />
     : null,
@@ -42,6 +53,7 @@ export const audioEffectAdapter: EffectAuthorAdapter = {
   type: "audio",
   label: "play repo audio",
   create: () => ({ id: crypto.randomUUID(), type: "audio", assetPath: "" }),
+  summarize: (effect) => effect.type === "audio" ? `Play audio: ${assetName(effect.assetPath)}` : "Play repo audio",
   render: ({ effect, onChange }) => effect.type === "audio"
     ? <AssetEffectSelect kind="audio" value={effect.assetPath} onChange={(assetPath) => onChange({ ...effect, assetPath })} />
     : null,
@@ -51,6 +63,7 @@ export const artEffectAdapter: EffectAuthorAdapter = {
   type: "art",
   label: "show sprite/art",
   create: () => ({ id: crypto.randomUUID(), type: "art", assetPath: "" }),
+  summarize: (effect) => effect.type === "art" ? `Show art: ${assetName(effect.assetPath)}` : "Show sprite/art",
   render: ({ effect, onChange }) => effect.type === "art"
     ? <AssetEffectSelect kind="art" value={effect.assetPath} onChange={(assetPath) => onChange({ ...effect, assetPath })} />
     : null,
