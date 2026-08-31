@@ -1,4 +1,5 @@
 import type { CommandReferenceSource } from "../commands/referenceSource";
+import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
 
 export const WORLD_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSource[] = [
   {
@@ -11,7 +12,7 @@ export const WORLD_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSource[] 
         id: entity.id,
         label: entity.name,
         aliases: [entity.name, entity.key, ...entity.tags],
-        target: { kind: "world.character", id: entity.id },
+        target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id },
       })),
   },
   {
@@ -24,7 +25,7 @@ export const WORLD_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSource[] 
         id: entity.id,
         label: entity.name,
         aliases: [entity.name, entity.key, ...entity.tags],
-        target: { kind: "world.location", id: entity.id },
+        target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id },
       })),
   },
 ];
