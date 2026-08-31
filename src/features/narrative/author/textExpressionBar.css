@@ -1,0 +1,59 @@
+.text-expression-bar {
+  display: grid;
+  gap: .45em;
+  margin: .45em 0 .9em;
+  padding: .55em 0 .7em;
+  border-top: 1px dotted var(--dos-line);
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.text-expression-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 1em;
+  color: var(--dos-muted);
+}
+
+.text-expression-heading small {
+  color: var(--dos-muted);
+}
+
+.text-expression-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45em .75em;
+}
+
+.text-expression-actions button {
+  min-height: 2.5em;
+  padding: .25em .1em !important;
+  border: 0;
+  background: transparent;
+  color: var(--dos-text);
+}
+
+@media (pointer: coarse), (max-width: 640px) {
+  .text-expression-bar {
+    position: sticky;
+    bottom: 0;
+    z-index: 4;
+    margin-bottom: .65em;
+    padding: .55em 0 max(.7em, env(safe-area-inset-bottom));
+    background: #000;
+  }
+
+  .text-expression-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: .35em;
+  }
+
+  .text-expression-actions button {
+    min-height: 2.9em;
+    border: 1px solid var(--dos-line);
+  }
+
+  .text-expression-heading small {
+    display: none;
+  }
+}

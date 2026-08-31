@@ -5,7 +5,7 @@ export type CompiledTextPerformance = {
   performance: TextPerformance;
 };
 
-type ScopeCode = "f" | "s" | "h" | "w" | "b" | "i";
+type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i";
 
 type OpenScope = {
   code: ScopeCode;
@@ -27,6 +27,8 @@ function scopeCues(scope: OpenScope, end: number, baseSpeed: number, sequence: n
   if (end <= scope.outputStart) return [];
   const id = (suffix: string) => `inline:${scope.code}:${scope.rawStart}:${end}:${sequence}:${suffix}`;
   switch (scope.code) {
+    case "l":
+      return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(baseSpeed * .55))];
     case "f":
       return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(baseSpeed * 2))];
     case "s":
@@ -56,6 +58,7 @@ function scopeCues(scope: OpenScope, end: number, baseSpeed: number, sequence: n
  * Supported notation:
  *   /p        350ms pause
  *   /p800     800ms pause
+ *   /l{...}   slow
  *   /f{...}   fast
  *   /s{...}   shout/emphasis (faster + shake)
  *   /h{...}   hard hit (instant + shake)
@@ -87,7 +90,7 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
       continue;
     }
 
-    const scopeMatch = rawText.slice(index).match(/^\/([fshwbi])\{/);
+    const scopeMatch = rawText.slice(index).match(/^\/([lfshwbi])\{/);
     if (scopeMatch) {
       scopes.push({ code: scopeMatch[1] as ScopeCode, outputStart: output.length, rawStart: index });
       mapSkipped(index, 2);
