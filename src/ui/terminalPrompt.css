@@ -1,58 +1,144 @@
 .dos-terminal {
-  --terminal-player-input-width: clamp(12em, 52vw, 30em);
-  --terminal-player-toggle-width: 1.9em;
-  --terminal-player-prompt-width: calc(4ch + .35em);
-  --terminal-player-dropdown-width: var(--terminal-player-input-width);
+  display: grid;
+  grid-template-rows: calc(50% - .5em) auto minmax(0, 1fr);
 }
 
-.dos-terminal:has(.prompt-input-row .prompt-choice-toggle) {
-  --terminal-player-dropdown-width: calc(var(--terminal-player-input-width) + var(--terminal-player-toggle-width));
+.terminal-history {
+  position: relative;
+  inset: auto;
+  grid-row: 1;
+  min-height: 0;
 }
 
-.prompt-line.prompt-input-row {
-  width: fit-content;
-  max-width: min(100%, 960px);
-  min-height: 2.75em;
-  align-items: center;
+.prompt-line {
+  position: relative;
+  top: auto;
+  right: auto;
+  left: auto;
+  grid-row: 2;
+  transform: none;
+}
+
+.terminal-lower {
+  position: relative;
+  inset: auto;
+  grid-row: 3;
+  min-height: 0;
+}
+
+.terminal-lower.terminal-lower-expanded {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+}
+
+.terminal-command-composer {
+  align-items: flex-start;
+  min-height: calc(1em + 2px);
+  overflow: visible;
   border: 0;
   background: transparent;
   color: var(--dos-text);
-  overflow: visible;
 }
 
-.prompt-input-row .prompt-label {
-  height: 1em;
-  padding: 0 .35em 0 0;
-  background: #000;
+.terminal-command-label {
+  flex: none;
+  display: block;
+  padding: 1px .35em 0 0;
   color: var(--dos-bright);
   line-height: 1;
+  white-space: pre;
+  pointer-events: none;
 }
 
-.prompt-input-row .terminal-input {
-  flex: none;
-  width: var(--terminal-player-input-width);
-  height: 2.75em;
-  min-height: 0;
+.terminal-command-shell {
+  flex: 0 1 clamp(12em, 52vw, 30em);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  max-width: 100%;
+  background: #fff;
+  color: #000;
+}
+
+.terminal-command-shell[data-has-menu="true"] {
+  grid-template-columns: minmax(0, 1fr) 1.9em;
+}
+
+.terminal-command-editor {
+  position: relative;
+  min-width: 0;
+  min-height: calc(1em + 2px);
+  background: #fff;
+  overflow: hidden;
+}
+
+.terminal-command-field {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(1em + 2px);
   margin: 0;
-  padding: .875em .25em;
+  padding: 1px .25em;
   border: 0;
-  background: linear-gradient(#fff, #fff) center / 100% calc(1em + 2px) no-repeat;
+  border-radius: 0;
+  appearance: none;
+  resize: none;
+  background: transparent;
   color: #000;
   caret-color: transparent;
+  font: inherit;
+  font-size: inherit;
   line-height: 1;
+  letter-spacing: 0;
+  outline: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overscroll-behavior: contain;
 }
 
-.prompt-input-row .terminal-input::selection {
+.terminal-command-secret {
+  height: calc(1em + 2px);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.terminal-command-field::selection {
   background: #000;
   color: #fff;
 }
 
-.prompt-line.prompt-input-row::after {
-  content: "";
+.terminal-command-mirror {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  min-height: calc(1em + 2px);
+  padding: 1px .25em;
+  border: 0;
+  visibility: hidden;
+  pointer-events: none;
+  font: inherit;
+  font-size: inherit;
+  line-height: 1;
+  letter-spacing: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.terminal-command-caret-marker {
+  display: inline;
+}
+
+.terminal-command-caret {
   position: absolute;
   z-index: 3;
-  top: calc(50% + .375em);
-  left: var(--terminal-caret-left, 0px);
+  top: var(--terminal-command-caret-y, 0);
+  left: var(--terminal-command-caret-x, .25em);
   width: .5625em;
   height: .125em;
   background: #000;
@@ -60,58 +146,61 @@
   pointer-events: none;
 }
 
-.prompt-line.prompt-input-row[data-terminal-caret-ready="true"]::after {
+.terminal-command-editor[data-caret-ready="true"] .terminal-command-caret {
   opacity: 1;
   animation: dos-cursor-blink 1.06s steps(1, end) infinite;
 }
 
-.prompt-input-row .prompt-choice-toggle {
-  position: relative;
-  width: var(--terminal-player-toggle-width);
-  min-width: var(--terminal-player-toggle-width);
-  height: 2.75em;
+.terminal-command-toggle {
+  align-self: start;
+  width: 1.9em;
+  height: calc(1em + 2px);
+  min-width: 1.9em;
   min-height: 0;
   margin: 0;
   padding: 0;
   border: 0;
-  background: linear-gradient(#fff, #fff) center / 100% calc(1em + 2px) no-repeat;
-  color: #000;
-  line-height: 1;
-}
-
-.prompt-input-row .prompt-choice-toggle::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: calc(50% - .5em - 1px);
-  height: calc(1em + 2px);
   border-left: 1px solid #000;
-}
-
-/* Player choices are a true drop-out from the white terminal entry area,
-   rather than a separate full-width panel lower on the screen. */
-.terminal-lower:has(> .player-choice-scroll:not(.author-choice-scroll)) {
-  overflow: visible;
-}
-
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) {
-  position: relative;
-  z-index: 3;
-  width: var(--terminal-player-dropdown-width);
-  max-height: min(12em, 38dvh);
-  margin: calc(-1.5em + 1px) 0 .65em var(--terminal-player-prompt-width);
-  border: 1px solid #fff;
-  border-top: 0;
   background: #fff;
   color: #000;
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
 }
 
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface {
+.terminal-command-toggle:hover,
+.terminal-command-toggle:focus-visible {
+  color: #000 !important;
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+.terminal-command-shell.menu-open .terminal-command-toggle {
+  background: #000;
+  color: #fff;
+}
+
+.terminal-command-shell.menu-open .terminal-command-toggle:hover,
+.terminal-command-shell.menu-open .terminal-command-toggle:focus-visible {
+  color: #fff !important;
+  outline-color: #fff;
+}
+
+.terminal-command-choices {
+  grid-column: 1 / -1;
+  display: grid;
+  max-height: min(12em, 38dvh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid #000;
   background: #fff;
+  color: #000;
+  -webkit-overflow-scrolling: touch;
 }
 
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button {
+.terminal-command-choices button {
   min-height: 2em;
+  margin: 0;
   padding: .5em .25em;
   border: 0;
   border-bottom: 1px dotted #777;
@@ -121,77 +210,53 @@
   font-size: inherit;
   line-height: 1;
   letter-spacing: 0;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: pointer;
 }
 
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:last-child {
+.terminal-command-choices button:last-child {
   border-bottom: 0;
 }
 
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:hover,
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:focus-visible,
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button:active {
-  background: #000;
-  color: #fff !important;
-  outline: 0;
-}
-
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue {
-  min-height: 1.75em;
-  padding: .375em .25em;
-  border: 0;
-  border-top: 1px solid #000;
-  background: #fff;
-  color: #000;
-  font: inherit;
-  font-size: inherit;
-  line-height: 1;
-}
-
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:hover,
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:focus-visible,
-.terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue:active {
+.terminal-command-choices button:hover,
+.terminal-command-choices button:focus-visible,
+.terminal-command-choices button:active {
   background: #000;
   color: #fff !important;
   outline: 0;
 }
 
 @media (max-width: 700px), (pointer: coarse) {
-  .dos-terminal {
-    --terminal-player-input-width: clamp(11em, 52vw, 24em);
-    --terminal-player-prompt-width: calc(4ch + .3em);
+  .terminal-command-shell {
+    flex-basis: clamp(11em, 52vw, 24em);
   }
 
-  .prompt-line.prompt-input-row {
-    min-height: 2.75em;
+  .terminal-command-label {
+    padding-right: .3em;
   }
 
-  .prompt-input-row .prompt-label {
-    padding: 0 .3em 0 0;
-  }
-
-  .prompt-input-row .terminal-input {
-    width: var(--terminal-player-input-width);
-    height: 2.75em;
-    min-height: 0;
-    padding: .875em .25em;
+  .terminal-command-field,
+  .terminal-command-mirror,
+  .terminal-command-toggle,
+  .terminal-command-choices button {
     font-size: max(16px, 1em);
   }
+}
 
-  .prompt-input-row .prompt-choice-toggle {
-    width: var(--terminal-player-toggle-width);
-    min-width: var(--terminal-player-toggle-width);
-    height: 2.75em;
-    min-height: 0;
-    font-size: max(16px, 1em);
+@media (max-width: 700px) {
+  .dos-terminal.dialogue-authoring-active {
+    grid-template-rows: minmax(0, auto) auto minmax(0, 1fr);
   }
+}
 
-  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) {
-    width: var(--terminal-player-dropdown-width);
-    margin-top: calc(-1.75em + 1px);
+@media (prefers-reduced-motion: reduce) {
+  .terminal-command-caret {
+    animation: none !important;
   }
+}
 
-  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .player-choice-surface button,
-  .terminal-lower > .player-choice-scroll:not(.author-choice-scroll) .choice-scroll-cue {
-    font-size: max(16px, 1em);
-  }
+[data-reduce-motion="true"] .terminal-command-caret {
+  animation: none !important;
 }

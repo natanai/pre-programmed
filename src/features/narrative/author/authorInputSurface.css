@@ -1,0 +1,87 @@
+.author-input-scroll {
+  width: min(100%, 960px);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  max-height: min(18em, 100%);
+  margin: 0 0 .65em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.author-input-surface {
+  min-height: 0;
+  display: grid;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.author-input-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 2.5em;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.author-input-row:last-child {
+  border-bottom: 0;
+}
+
+.author-input-row > button {
+  min-height: 2.5em;
+  border: 0;
+  background: #000;
+  font: inherit;
+  cursor: pointer;
+}
+
+.author-input-edit {
+  min-width: 3.35em;
+  padding-inline: .55em;
+  border-right: 1px dotted var(--dos-line) !important;
+  color: var(--dos-muted);
+  text-align: center;
+}
+
+.author-input-edit.draft-input {
+  color: var(--dos-warn);
+}
+
+.author-input-play {
+  min-width: 0;
+  padding-inline: .65em;
+  color: var(--dos-bright);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.author-input-scroll-cue {
+  justify-self: stretch;
+  min-width: 2.75em;
+  min-height: 2.25em;
+  padding: 0;
+  border: 0;
+  border-top: 1px solid var(--dos-line);
+  background: #000;
+  color: var(--dos-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .author-input-scroll {
+    max-height: min(8.75em, 38vh);
+  }
+
+  .author-input-row,
+  .author-input-row > button {
+    min-height: 2.75em;
+  }
+
+  .author-input-scroll + .author-context {
+    padding-bottom: max(4.5em, calc(env(safe-area-inset-bottom) + 3.5em));
+  }
+}
