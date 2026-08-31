@@ -25,7 +25,7 @@ public/assets/images/
 public/assets/audio/
 ```
 
-The build scans that folder recursively. Supported game-asset formats are PNG, WebP, GIF, MP3, WAV, and OGG. Files in `public/assets/` are served at the matching `/assets/...` path and appear in the app's repository asset list after the next build/deploy.
+The build scans that folder recursively. Supported game-asset formats are PNG, WebP, GIF, SVG, MP3, WAV, and OGG. Files in `public/assets/` are served at the matching `/assets/...` path and appear in the app's repository asset list after the next build/deploy.
 
 ## Production
 
