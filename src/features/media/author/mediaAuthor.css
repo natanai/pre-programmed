@@ -1,0 +1,47 @@
+.synth-panel-body,
+.focused-synth-editor,
+.synth-section {
+  display: grid;
+  align-content: start;
+  gap: .7em;
+}
+
+.synth-create,
+.synth-back {
+  width: fit-content;
+  min-height: 2.5em;
+  padding: .35em .5em !important;
+}
+
+.synth-back {
+  color: var(--dos-muted) !important;
+}
+
+.synth-section {
+  padding-bottom: .75em;
+  border-bottom: 1px solid var(--dos-line);
+}
+
+.synth-section:last-child {
+  border-bottom: 0;
+}
+
+.synth-section h3 {
+  margin: 0;
+  color: var(--dos-muted);
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.synth-definition-list button {
+  min-height: 3em;
+}
+
+@media (max-width: 700px) {
+  .synth-create,
+  .synth-back,
+  .synth-definition-list button {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+}
