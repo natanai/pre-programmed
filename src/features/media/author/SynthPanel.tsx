@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
-import type { MutationOperation, ProjectSnapshot, SynthSound } from "../../../game/model";
-import { createSilentSynth, playSynthSound } from "../../../game/synth";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import type { SynthSound } from "../model";
+import { createSilentSynth } from "../synth";
+import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 
 export function SynthPanel({ snapshot, onSave }: {
