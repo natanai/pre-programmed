@@ -1,0 +1,85 @@
+.project-settings-workspace {
+  min-height: 0;
+  height: 100%;
+}
+
+.project-settings-index,
+.project-settings-section-body {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.project-settings-intro,
+.project-settings-description {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.project-settings-section-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.project-settings-section-list > button {
+  width: 100%;
+  min-height: 4.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem .9rem;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: inherit;
+}
+
+.project-settings-section-list > button span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: .3rem;
+}
+
+.project-settings-section-list small {
+  color: var(--muted);
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.project-settings-section-list > button span:last-child {
+  flex: 0 0 auto;
+  font-size: 1.6rem;
+}
+
+.project-setting-card {
+  border: 1px solid var(--line);
+  padding: .85rem;
+  display: grid;
+  gap: .75rem;
+}
+
+.project-setting-card + .project-setting-card {
+  margin-top: .75rem;
+}
+
+.project-setting-card h3 {
+  margin: 0;
+}
+
+.project-setting-actions {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  gap: .75rem;
+  padding: .8rem 0 max(.4rem, env(safe-area-inset-bottom));
+  background: var(--background, #000);
+}
+
+@media (min-width: 760px) {
+  .project-settings-section-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
