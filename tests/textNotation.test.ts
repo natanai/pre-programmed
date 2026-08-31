@@ -6,11 +6,11 @@ const performance = { charactersPerSecond: 20, cues: [] };
 describe("inline text notation", () => {
   it("strips control notation and creates scoped cues", () => {
     const compiled = compileTextNotation("wait /p then /f{run} and /s{MOVE!}", performance);
-    expect(compiled.text).toBe("wait  then run and MOVE!");
+    expect(compiled.text).toBe("wait then run and MOVE!");
     expect(compiled.performance.cues).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "pause", start: 5, end: 5, value: 350 }),
-      expect.objectContaining({ type: "speed", start: 11, end: 14, value: 40 }),
-      expect.objectContaining({ type: "shake", start: 19, end: 24 }),
+      expect.objectContaining({ type: "speed", start: 10, end: 13, value: 40 }),
+      expect.objectContaining({ type: "shake", start: 18, end: 23 }),
     ]));
   });
 
