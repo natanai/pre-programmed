@@ -37,7 +37,7 @@ Once authenticated, the same game you are playing gains author controls. The bas
 4. Save.
 5. Immediately type it into the terminal and test it.
 
-The square control in the upper-right toggles between the Author view and a cleaner player preview. The gear opens local display settings such as text size and reduced motion.
+The square control in the upper-right toggles between the Author view and a cleaner player preview. The gear opens local display settings.
 
 ## The main concepts
 
@@ -102,6 +102,40 @@ An outcome can also run effects. Current effect types include:
 
 Effects run in the order shown in the editor.
 
+## Inline text-performance notation
+
+Node text and normal User Input response text can contain terse slash notation. The notation stays in the authored source string but is removed before the player sees the text; it compiles into the same text-performance cues used by the advanced editor.
+
+```text
+/p          pause 350 ms
+/p800       pause 800 ms
+/f{...}     fast text
+/s{...}     shout/emphasis: faster + shake
+/h{...}     hard hit: reveal the phrase at once + shake
+/w{...}     wave
+/b{...}     blink
+/i{...}     instant reveal
+//          show a literal /
+```
+
+Examples:
+
+```text
+You hear something. /p It is getting closer.
+
+No, wait— /f{RUN.}
+
+/s{GET DOWN!}
+
+The door /h{SLAMS} shut.
+```
+
+Braces make the affected span explicit, so there is no separate “turn the effect off” marker to remember. The controls can be mixed into ordinary prose, and the advanced cue editor remains available for visual/audio/sprite cues or precise manual selection.
+
+`/p` only acts as a pause command when it is a standalone control or followed by a millisecond number. A normal word such as `/place` stays literal. Use `//` when you intentionally want a visible slash before something that otherwise looks like notation.
+
+The local text-speed multiplier in the gear multiplies normal and `/f`/`/s` typing speeds. Pause durations remain authored milliseconds rather than being shortened by the multiplier.
+
 ## A few Author labels that are easy to confuse
 
 - **USER INPUTS FROM HERE** — things the player can type at the current node.
@@ -156,7 +190,7 @@ The generated asset manifest is build output. Do not maintain it by hand; the bu
 
 ## Small sprites vs larger artwork
 
-Image size now decides how a `show sprite/art` effect is presented automatically:
+Image size decides how a `show sprite/art` effect is presented automatically:
 
 - **32×32 pixels or smaller in both dimensions** → appears inline in the terminal transcript and remains in the scrollback history.
 - **Anything larger than 32 pixels in either dimension** → uses the large artwork pop-out with a Close control.
@@ -263,12 +297,17 @@ The browser cache is there for responsiveness and temporary resilience. **D1 is 
 
 ## Display settings
 
-The gear in the upper-right currently contains:
+The gear in the upper-right is available to the player as a local display/playback control. In Author mode, the neighboring square still toggles Author vs player preview.
+
+Current settings:
 
 - text size, 12–24px
+- text-speed multiplier, 0.25×–4×, default 1×
 - reduce motion
 
-These settings live in the local browser, not in D1, because they are display preferences rather than game content.
+The speed multiplier changes playback without rewriting the per-node or per-response authored speeds. It is useful for globally slowing down or speeding up the game while preserving the relative character of individually authored text.
+
+These settings live in the local browser, not in D1, because they are display/playback preferences rather than game content.
 
 ## Working directly in the repo
 
