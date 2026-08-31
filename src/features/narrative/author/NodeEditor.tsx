@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "../../../game/model";
 import { compileTextNotation } from "../../../game/textNotation";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
@@ -8,17 +9,25 @@ import "./nodeEditor.css";
 
 type NodeScreen = "text" | "context" | "cues";
 
-export function NodeEditor({ node, snapshot, onSave, onCancel }: {
+export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: {
   node: GameNode;
   snapshot: ProjectSnapshot;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(node));
+  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(node));
   const [screen, setScreen] = useState<NodeScreen>("text");
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [saving, setSaving] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const draftSignature = JSON.stringify(draft);
+
+  useEffect(() => {
+    onDirtyChange(draftSignature !== savedSignature);
+    return () => onDirtyChange(false);
+  }, [draftSignature, savedSignature, onDirtyChange]);
 
   const rememberSelection = () => {
     const start = textarea.current?.selectionStart ?? 0;
@@ -51,7 +60,8 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   const save = async () => {
     setSaving(true);
     try {
-      await onSave([{ type: "node.upsert", node: draft }], `Changed node #${draft.nodeNumber}`);
+      const result = await onSave([{ type: "node.upsert", node: draft }], `Changed node #${draft.nodeNumber}`);
+      if (result.status === "saved" || result.status === "queued") setSavedSignature(draftSignature);
     } finally {
       setSaving(false);
     }
