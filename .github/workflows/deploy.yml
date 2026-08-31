@@ -1,0 +1,73 @@
+name: Deploy production
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pre-programmed-production
+  cancel-in-progress: true
+
+jobs:
+  build-and-worker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build:pages
+
+      - name: Deploy API Worker
+        env:
+          ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          SECRETS_FILE="$RUNNER_TEMP/pre-programmed-worker-secrets.json"
+          trap 'rm -f "$SECRETS_FILE"' EXIT
+          node --input-type=module - "$SECRETS_FILE" <<'NODE'
+          import { writeFileSync } from "node:fs";
+          if (!process.env.ADMIN_KEY) process.exit(1);
+          writeFileSync(process.argv[2], JSON.stringify({ ADMIN_KEY: process.env.ADMIN_KEY }), { mode: 0o600 });
+          NODE
+          npx wrangler deploy --secrets-file "$SECRETS_FILE"
+
+      - name: Verify API
+        run: |
+          node --input-type=module <<'NODE'
+          const url = "https://pre-programmed.natanai.workers.dev/api/health";
+          for (let attempt = 0; attempt < 12; attempt += 1) {
+            try {
+              const response = await fetch(url, { cache: "no-store" });
+              const health = await response.json();
+              if (response.ok && health?.ok === true && health?.persistence === "d1" && health?.authorConfigured === true) process.exit(0);
+            } catch {}
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+          }
+          process.exit(1);
+          NODE
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: ./dist
+
+  deploy-pages:
+    needs: build-and-worker
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

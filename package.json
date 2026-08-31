@@ -4,20 +4,17 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "generate:assets": "node scripts/generate-asset-manifest.mjs",
+    "predev": "npm run generate:assets",
+    "dev": "vite",
     "prebuild": "npm run generate:assets",
     "build": "tsc -b && vite build",
     "prebuild:pages": "npm run generate:assets",
     "build:pages": "tsc -b && vite build --mode pages",
-    "preview": "npm run build && vite preview",
-    "deploy": "npm run typecheck && wrangler deploy",
     "pretypecheck": "npm run generate:assets",
     "typecheck": "tsc -b",
     "pretest": "npm run generate:assets",
-    "test": "vitest run",
-    "verify:pages": "npm run generate:assets && vitest run && tsc -b && vite build --mode pages",
-    "cf-typegen": "wrangler types"
+    "test": "vitest run"
   },
   "dependencies": {
     "react": "19.2.8",

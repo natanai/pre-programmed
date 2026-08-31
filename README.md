@@ -1,28 +1,35 @@
 # Pre-Programmed
 
-A local-first text RPG whose authenticated author mode edits the exact game being played.
+Prototype text RPG / authoring engine.
 
-## Hosting
-
-- Public client: `https://natanai.github.io/pre-programmed/`
-- API: `https://pre-programmed.natanai.workers.dev/api/*`
-- Mutable world state: Cloudflare D1
-- Source and binary/static assets: this GitHub repository
-
-See [`docs/HOSTING.md`](docs/HOSTING.md), [`docs/FOUNDATION.md`](docs/FOUNDATION.md), and [`docs/CODEX-HANDOFF.md`](docs/CODEX-HANDOFF.md) for the ownership model, foundational constraints, and current implementation milestone. A coding agent taking over this project should read those files plus root [`AGENTS.md`](AGENTS.md) before changing code.
-
-## Development
+## Run locally
 
 ```sh
 npm install
 npm run dev
 ```
 
-Validation:
+## Game assets
 
-```sh
-npm run typecheck
-npm run build:pages
+Put assets you want to assign from the app anywhere under:
+
+```text
+public/assets/
 ```
 
-Production deployment is owned by the repository's existing GitHub Actions workflow. On pushes to `main`, it validates the project, deploys and verifies the Cloudflare API Worker first, then publishes the same commit's client to GitHub Pages. Cloudflare's separate Git/Workers Build pipeline is not a production deployment owner.
+Recommended organization:
+
+```text
+public/assets/sprites/
+public/assets/images/
+public/assets/audio/
+```
+
+The build scans that folder recursively. Supported game-asset formats are PNG, WebP, GIF, SVG, MP3, WAV, and OGG. Files in `public/assets/` are served at the matching `/assets/...` path and appear in the app's repository asset list after the next build/deploy.
+
+## Production
+
+Pushing `main` runs the single GitHub Actions deployment workflow. It builds the client, deploys the Cloudflare Worker, verifies the API, then publishes GitHub Pages.
+
+- App: https://natanai.github.io/pre-programmed/
+- API: https://pre-programmed.natanai.workers.dev/api/*
