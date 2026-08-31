@@ -31,5 +31,6 @@ export type EffectAuthorAdapter = {
   type: Effect["type"];
   label: string;
   create: () => Effect;
+  summarize?: (effect: Effect, snapshot: ProjectSnapshot) => string;
   render: (context: EffectAuthorContext) => ReactNode;
 };
