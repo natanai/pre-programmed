@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
-import { buildGraphIndex, notationForNode } from "../../../game/graph";
+import { useEffect, useMemo, useState } from "react";
+import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import {
   makeId,
   nextNodeNumber,
@@ -12,9 +13,9 @@ import {
   type PlayState,
   type ProjectSnapshot,
 } from "../../../game/model";
-import { buildSearchIndex, searchProject } from "../../../game/search";
 import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../../components/AuthorFields";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
+import { buildGraphIndex, notationForNode } from "../graph";
 import { TextRulesReference } from "./TextRulesReference";
 import "./interactionEditor.css";
 
@@ -105,23 +106,32 @@ export function InteractionEditor({
   fallback = false,
   onSave,
   onCancel,
+  onDirtyChange,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   initial?: Interaction;
   initialCommand?: string;
   fallback?: boolean;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode));
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
+  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify({ draft, newNodeText: {} }));
   const [screen, setScreen] = useState<EditorScreen>({ type: "overview" });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
+  const draftSignature = JSON.stringify({ draft, newNodeText });
+
+  useEffect(() => {
+    onDirtyChange(draftSignature !== savedSignature);
+    return () => onDirtyChange(false);
+  }, [draftSignature, savedSignature, onDirtyChange]);
 
   const updateOutcome = (id: string, next: InteractionOutcome) =>
     setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
@@ -211,7 +221,7 @@ export function InteractionEditor({
           return { ...outcome, order: index, destinationNodeId: node.id };
         }),
       };
-      await onSave(
+      const result = await onSave(
         [
           ...createdNodes.map((node): MutationOperation => ({ type: "node.upsert", node })),
           { type: "interaction.upsert", interaction },
@@ -220,6 +230,11 @@ export function InteractionEditor({
           ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
           : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
       );
+      if (result.status === "saved" || result.status === "queued") {
+        setDraft(interaction);
+        setNewNodeText({});
+        setSavedSignature(JSON.stringify({ draft: interaction, newNodeText: {} }));
+      }
     } finally {
       setSaving(false);
     }
