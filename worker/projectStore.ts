@@ -80,6 +80,8 @@ type EntityRow = {
   name: string;
   description: string;
   tags_json: string;
+  operation_interactable: number;
+  operations_json: string;
 };
 type VariableRow = {
   id: string;
@@ -122,7 +124,7 @@ type ItemRow = {
 };
 type HookRow = {
   id: string;
-  target_kind: "item" | "variable" | "computed";
+  target_kind: string;
   target_id: string;
   operation: OperationId;
   order_index: number;
@@ -158,7 +160,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
       db.prepare(
-        "SELECT id, key, entity_type, name, description, tags_json FROM entity_definitions ORDER BY entity_type, key",
+        "SELECT id, key, entity_type, name, description, tags_json, operation_interactable, operations_json FROM entity_definitions ORDER BY entity_type, key",
       ).all<EntityRow>(),
       db.prepare(
         "SELECT id, key, label, value_type, initial_json, show_in_status, operation_interactable, operations_json, time_rate, time_unit FROM variable_definitions ORDER BY key",
@@ -184,7 +186,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   const aliasGroups = groupRows(aliases.results, (row) => row.interaction_id);
   const outcomeGroups = groupRows(outcomes.results, (row) => row.interaction_id);
   const hookGroups = groupRows(hooks.results, (row) => `${row.target_kind}:${row.target_id}`);
-  const hooksFor = (kind: HookRow["target_kind"], id: string) => (hookGroups.get(`${kind}:${id}`) ?? []).map((hook) => ({
+  const hooksFor = (kind: string, id: string) => (hookGroups.get(`${kind}:${id}`) ?? []).map((hook) => ({
     id: hook.id,
     operation: hook.operation,
     order: hook.order_index,
@@ -195,7 +197,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   }));
 
   return {
-    schemaVersion: Math.max(10, meta.schema_version),
+    schemaVersion: Math.max(11, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     settings,
@@ -247,6 +249,9 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       name: row.name,
       description: row.description,
       tags: parseJson(row.tags_json, []),
+      interactable: Boolean(row.operation_interactable),
+      operations: parseJson(row.operations_json, []),
+      hooks: hooksFor("world.entity", row.id),
     })),
     variables: variables.results.map((row): VariableDefinition => ({
       id: row.id,
@@ -326,7 +331,7 @@ export async function getBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
 
 function hookStatements(
   db: D1Database,
-  targetKind: HookRow["target_kind"],
+  targetKind: string,
   targetId: string,
   hooks: OperationHook[] = [],
 ) {
@@ -415,13 +420,27 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
       return [db.prepare("DELETE FROM interactions WHERE id = ?").bind(operation.id)];
     case "entity.upsert": {
       const entity = operation.entity;
-      return [db.prepare(
-        `INSERT INTO entity_definitions (id, key, entity_type, name, description, tags_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(id) DO UPDATE SET key=excluded.key, entity_type=excluded.entity_type,
-           name=excluded.name, description=excluded.description, tags_json=excluded.tags_json,
-           updated_at=CURRENT_TIMESTAMP`,
-      ).bind(entity.id, entity.key, entity.type, entity.name, entity.description, JSON.stringify(entity.tags))];
+      return [
+        db.prepare(
+          `INSERT INTO entity_definitions
+           (id, key, entity_type, name, description, tags_json, operation_interactable, operations_json, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(id) DO UPDATE SET key=excluded.key, entity_type=excluded.entity_type,
+             name=excluded.name, description=excluded.description, tags_json=excluded.tags_json,
+             operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
+             updated_at=CURRENT_TIMESTAMP`,
+        ).bind(
+          entity.id,
+          entity.key,
+          entity.type,
+          entity.name,
+          entity.description,
+          JSON.stringify(entity.tags),
+          Number(entity.interactable ?? false),
+          JSON.stringify(entity.operations ?? []),
+        ),
+        ...hookStatements(db, "world.entity", entity.id, entity.hooks),
+      ];
     }
     case "variable.upsert": {
       const value = operation.definition;
