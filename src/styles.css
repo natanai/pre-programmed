@@ -59,7 +59,7 @@ button { touch-action: manipulation; }
   position: absolute;
   top: 0;
   right: 0;
-  bottom: 50%;
+  bottom: calc(50% + 1.5em);
   left: 0;
   overflow-y: auto;
   overflow-x: hidden;
@@ -73,8 +73,13 @@ button { touch-action: manipulation; }
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
-  padding-bottom: .75em;
+  justify-content: flex-start;
+  padding-bottom: .5em;
+}
+.terminal-history-content::before {
+  content: "";
+  flex: 1 0 0;
+  min-height: 0;
 }
 .terminal-history-content > :last-child { margin-bottom: 0; }
 
@@ -379,7 +384,8 @@ button:disabled { opacity: .45; cursor: default; }
   .dialogue-authoring-active .terminal-history-content { min-height: 0; padding: 0 5.75em .5em 0; }
   .dialogue-authoring-active .prompt-line { position: relative; inset: auto; width: 100%; transform: none; }
   .dialogue-authoring-active .terminal-lower { position: relative; inset: auto; min-height: 0; padding-top: .25em; }
-  .terminal-history-content { padding-bottom: .5em; }
+  .terminal-history { bottom: calc(50% + 1.75em); }
+  .terminal-history-content { padding-bottom: .35em; }
   .prompt-input-row { min-height: 3em; }
   .prompt-label { padding-left: .6em; }
   .terminal-input { min-height: 3em; font-size: max(16px, 1em); padding: .45em .55em; }
