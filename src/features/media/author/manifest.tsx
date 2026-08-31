@@ -16,6 +16,8 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       onSave={context.persist}
       onClose={context.leaveCurrentSurface}
+      onDirtyChange={context.onWorkspaceDirtyChange}
+      requestDiscard={context.requestWorkspaceDiscard}
     />;
 
     return null;
