@@ -1,0 +1,286 @@
+.native-workspace-panel {
+  width: min(100%, 960px);
+  container-type: inline-size;
+}
+
+.workspace-native-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: .65em;
+  overflow: hidden;
+}
+
+.workspace-tabs {
+  margin-top: 0;
+}
+
+.workspace-tabs button[aria-pressed="true"] {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+
+.workspace-search-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .55em;
+  color: var(--dos-muted);
+}
+
+.workspace-search-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
+}
+
+.workspace-search-control input {
+  min-width: 0;
+  min-height: 2.5em;
+  margin: 0 !important;
+}
+
+.workspace-search-control > span {
+  min-width: 2.5em;
+  color: var(--dos-muted);
+  text-align: right;
+}
+
+.workspace-search-control button {
+  min-height: 2.5em;
+  padding: .3em .4em !important;
+}
+
+.workspace-view {
+  min-height: 0;
+}
+
+.workspace-locations-view {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: .65em;
+}
+
+.workspace-history-view {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+}
+
+.workspace-location-tools {
+  display: grid;
+  gap: .55em;
+  padding-bottom: .6em;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.workspace-current-location {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: .2em .65em;
+  min-width: 0;
+}
+
+.workspace-current-location small {
+  grid-column: 1 / -1;
+  color: var(--dos-muted);
+}
+
+.workspace-current-location strong {
+  color: var(--dos-warn);
+  font-weight: 400;
+}
+
+.workspace-current-location > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-bookmark-create {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .5em;
+  margin: 0;
+}
+
+.workspace-bookmark-create input,
+.workspace-bookmark-create button {
+  min-height: 2.75em;
+}
+
+.workspace-bookmark-create button {
+  padding: .35em .5em !important;
+}
+
+.workspace-native-list {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--dos-line);
+  background: #000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.workspace-native-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65em;
+  min-height: 3.5em;
+  padding: .55em .65em;
+  border-bottom: 1px dotted var(--dos-line);
+  background: #000;
+}
+
+.workspace-native-row:last-of-type {
+  border-bottom: 0;
+}
+
+.workspace-row-copy {
+  display: grid;
+  gap: .15em;
+  min-width: 0;
+}
+
+.workspace-row-copy strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-bright);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-row-copy small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-muted);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-location-row > button {
+  min-height: 2.75em;
+  padding: .35em .45em !important;
+}
+
+.workspace-revision-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.workspace-native-empty {
+  display: block;
+  padding: 1em .65em;
+  color: var(--dos-muted);
+}
+
+.workspace-history-footer {
+  display: flex;
+  min-height: 3.25em;
+  align-items: center;
+  margin: 0;
+  padding-top: .45em;
+}
+
+.workspace-history-footer > button,
+.workspace-undo-confirm button {
+  min-height: 2.75em;
+  padding: .35em .45em !important;
+  border: 0;
+  background: transparent;
+  color: var(--dos-text);
+}
+
+.workspace-undo-confirm {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: .5em .75em;
+}
+
+.workspace-undo-confirm > span {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-warn);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@container (max-width: 560px) {
+  .workspace-search-row {
+    grid-template-columns: 1fr;
+    gap: .25em;
+  }
+
+  .workspace-search-row > label {
+    font-size: .9em;
+  }
+
+  .workspace-current-location {
+    grid-template-columns: 1fr;
+    gap: .15em;
+  }
+
+  .workspace-current-location small,
+  .workspace-current-location strong,
+  .workspace-current-location > span {
+    grid-column: 1;
+  }
+
+  .workspace-current-location > span {
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .workspace-bookmark-create {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-bookmark-create button {
+    width: 100%;
+  }
+
+  .workspace-native-row {
+    min-height: 4em;
+    padding: .6em;
+  }
+
+  .workspace-row-copy strong,
+  .workspace-row-copy small {
+    white-space: normal;
+  }
+
+  .workspace-undo-confirm {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .workspace-undo-confirm > span {
+    grid-column: 1 / -1;
+    white-space: normal;
+    line-height: 1.2;
+  }
+
+  .workspace-undo-confirm button {
+    width: 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .workspace-tabs button,
+  .workspace-search-control input,
+  .workspace-search-control button,
+  .workspace-bookmark-create input,
+  .workspace-bookmark-create button,
+  .workspace-location-row > button,
+  .workspace-history-footer button {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+}
