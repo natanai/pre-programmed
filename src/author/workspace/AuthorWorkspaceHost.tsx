@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import { renderAuthorFeatureWorkspace } from "../features/registry";
 import type { AuthorWorkspaceContext } from "../features/types";
@@ -7,8 +8,9 @@ import type { AuthorPanelRoute } from "../workSurfaceNavigation";
  * Composition host for focused Author workspaces.
  *
  * App supplies the live session/navigation context. Feature-specific rendering
- * is delegated to the Author feature manifest registry, leaving this host to
- * own only cross-feature Author surfaces such as the tool index.
+ * is delegated to the Author feature manifest registry. The rendered workspace
+ * is portaled to a root Author layer so player-terminal geometry can never
+ * constrain an editor's viewport or keyboard behavior.
  */
 export function AuthorWorkspaceHost({
   panel,
@@ -18,7 +20,20 @@ export function AuthorWorkspaceHost({
   panel: AuthorPanelRoute | null;
   toolGroups: AuthorToolGroup[];
 }) {
-  if (panel?.type === "tools") return <AuthorToolIndex groups={toolGroups} />;
   if (!panel) return null;
-  return renderAuthorFeatureWorkspace(panel, context);
+  const workspace = panel.type === "tools"
+    ? <AuthorToolIndex groups={toolGroups} />
+    : renderAuthorFeatureWorkspace(panel, context);
+  if (!workspace) return null;
+
+  return createPortal(
+    <div
+      className="author-workspace-layer"
+      role="presentation"
+      onPointerDown={(event) => event.stopPropagation()}
+    >
+      {workspace}
+    </div>,
+    document.body,
+  );
 }

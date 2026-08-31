@@ -1,38 +1,35 @@
 /*
  * Canonical Author workspace layout.
  *
- * The player terminal owns the split transcript/prompt presentation only while
- * playing. Opening any Author work surface switches the same DOM into a single
- * full-viewport editing workspace. Feature editors own their internal scroll;
- * the player transcript never competes for vertical room or keyboard space.
+ * Author workspaces are rendered by AuthorWorkspaceHost into a portal attached
+ * to document.body. They therefore have no player-terminal layout ancestors.
+ * The player shell owns transcript/prompt geometry; this layer owns editing.
  */
 
-.dos-terminal.dialogue-authoring-active {
-  display: block;
-}
-
-.dos-terminal:has(> .terminal-lower.terminal-lower-expanded) > .terminal-history,
-.dos-terminal.dialogue-authoring-active > .terminal-history,
-.dos-terminal.dialogue-authoring-active > .prompt-line-paused {
-  display: none;
-}
-
-.dos-terminal > .terminal-lower.terminal-lower-expanded,
-.dos-terminal.dialogue-authoring-active > .terminal-lower {
-  position: absolute;
-  inset: 0;
-  z-index: 40;
+.author-workspace-layer {
+  position: fixed;
+  top: var(--terminal-viewport-top, 0px);
+  right: 0;
+  left: 0;
+  z-index: 50;
+  width: 100%;
+  height: var(--terminal-viewport-height, 100dvh);
   min-height: 0;
-  padding: 0;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
   overflow: hidden;
-  border: 0;
   background: #000;
+  color: var(--dos-text);
+  font-family: "PreProgrammed VGA", monospace;
+  font-size: var(--terminal-font-size, 16px);
+  line-height: 1;
+  white-space: normal;
+  cursor: default;
 }
 
-.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover,
-.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel-frame,
-.dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel-frame,
-.dos-terminal > .terminal-lower.terminal-lower-expanded > .inventory-surface {
+.author-workspace-layer > .author-panel-frame,
+.author-workspace-layer > .inventory-surface,
+.author-workspace-layer > .dialogue-authoring-popover,
+.author-workspace-layer > .dialogue-authoring-popover > .author-panel-frame {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -40,12 +37,13 @@
   margin: 0;
 }
 
-.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover {
+.author-workspace-layer > .dialogue-authoring-popover {
+  min-height: 0;
   overflow: hidden;
 }
 
-.dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel,
-.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel {
+.author-workspace-layer > .author-panel,
+.author-workspace-layer > .dialogue-authoring-popover > .author-panel {
   margin: 0;
 }
 
@@ -55,28 +53,19 @@
 }
 
 @media (min-width: 960px) {
-  .dos-terminal > .terminal-lower.terminal-lower-expanded,
-  .dos-terminal.dialogue-authoring-active > .terminal-lower {
-    inset: 0;
-    padding: 0;
-    border: 0;
-  }
-
   .work-surface-back {
     left: max(12px, env(safe-area-inset-left));
   }
 }
 
 @media (max-width: 700px), (pointer: coarse) {
-  .dos-terminal > .terminal-lower.terminal-lower-expanded,
-  .dos-terminal.dialogue-authoring-active > .terminal-lower {
-    inset: 0;
-    padding: 0;
+  .author-workspace-layer {
+    padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
   }
 
-  .dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel,
-  .dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel,
-  .dos-terminal > .terminal-lower.terminal-lower-expanded > .inventory-surface {
+  .author-workspace-layer > .author-panel,
+  .author-workspace-layer > .dialogue-authoring-popover > .author-panel,
+  .author-workspace-layer > .inventory-surface {
     margin: 0;
     padding: .6em;
   }
