@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDraftDirty } from "../../../author/useDraftDirty";
 import type {
   ComputedDefinition,
   EntityDefinition,
@@ -12,10 +13,14 @@ import "./definitionsPanel.css";
 
 type Mode = "variables" | "computed" | "entities";
 
-export function DefinitionsPanel({ snapshot, onSave }: {
+type ActiveDefinition = VariableDefinition | ComputedDefinition | EntityDefinition | null;
+
+export function DefinitionsPanel({ snapshot, onSave, onDirtyChange, requestDiscard }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  requestDiscard?: (discard: () => void) => void;
 }) {
   const [mode, setMode] = useState<Mode>("variables");
   const [variable, setVariable] = useState<VariableDefinition | null>(null);
@@ -24,48 +29,62 @@ export function DefinitionsPanel({ snapshot, onSave }: {
   const [saving, setSaving] = useState(false);
   const editing = Boolean(variable || computed || entity);
   const selectedId = variable?.id ?? computed?.id ?? entity?.id;
+  const activeDraft: ActiveDefinition = variable ?? computed ?? entity;
+  const { markSaved, resetBaseline } = useDraftDirty(activeDraft, onDirtyChange);
+  const request = requestDiscard ?? ((discard: () => void) => discard());
 
-  const resetEditor = () => {
+  const clearEditor = () => {
+    resetBaseline(null);
     setVariable(null);
     setComputed(null);
     setEntity(null);
   };
 
-  const openVariable = (item: VariableDefinition) => {
-    resetEditor();
-    setMode("variables");
-    setVariable({
+  const openVariable = (item: VariableDefinition) => request(() => {
+    const next: VariableDefinition = {
       ...structuredClone(item),
       interactable: item.interactable ?? false,
       operations: item.operations ?? [],
       hooks: item.hooks ?? [],
       timeRate: item.timeRate ?? 0,
       timeUnit: item.timeUnit ?? "second",
-    });
-  };
+    };
+    resetBaseline(next);
+    setComputed(null);
+    setEntity(null);
+    setMode("variables");
+    setVariable(next);
+  });
 
-  const openComputed = (item: ComputedDefinition) => {
-    resetEditor();
-    setMode("computed");
-    setComputed({
+  const openComputed = (item: ComputedDefinition) => request(() => {
+    const next: ComputedDefinition = {
       ...structuredClone(item),
       interactable: item.interactable ?? false,
       operations: item.operations ?? [],
       hooks: item.hooks ?? [],
-    });
-  };
+    };
+    resetBaseline(next);
+    setVariable(null);
+    setEntity(null);
+    setMode("computed");
+    setComputed(next);
+  });
 
-  const openEntity = (item: EntityDefinition) => {
-    resetEditor();
+  const openEntity = (item: EntityDefinition) => request(() => {
+    const next = structuredClone(item);
+    resetBaseline(next);
+    setVariable(null);
+    setComputed(null);
     setMode("entities");
-    setEntity(structuredClone(item));
-  };
+    setEntity(next);
+  });
 
   const saveVariable = async () => {
     if (!variable?.key.trim() || !variable.label.trim()) return;
     setSaving(true);
     try {
       await onSave([{ type: "variable.upsert", definition: variable }], `Changed variable ${variable.label}`);
+      markSaved();
     } finally { setSaving(false); }
   };
 
@@ -74,6 +93,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
     setSaving(true);
     try {
       await onSave([{ type: "computed.upsert", definition: computed }], `Changed computed value ${computed.label}`);
+      markSaved();
     } finally { setSaving(false); }
   };
 
@@ -82,6 +102,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
     setSaving(true);
     try {
       await onSave([{ type: "entity.upsert", entity }], `Changed ${entity.type} ${entity.name}`);
+      markSaved();
     } finally { setSaving(false); }
   };
 
@@ -94,6 +115,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
         : "STATE + PEOPLE";
 
   const backLabel = mode === "variables" ? "VARIABLES" : mode === "computed" ? "COMPUTED" : "PEOPLE + PLACES";
+  const leaveDetail = () => request(clearEditor);
 
   return <section className="author-panel author-panel-frame definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
     <header>
@@ -106,7 +128,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
           snapshot={snapshot}
           mode={mode}
           selectedId={selectedId}
-          onMode={(nextMode) => { setMode(nextMode); resetEditor(); }}
+          onMode={(nextMode) => request(() => { setMode(nextMode); clearEditor(); })}
           onVariable={openVariable}
           onComputed={openComputed}
           onEntity={openEntity}
@@ -116,15 +138,15 @@ export function DefinitionsPanel({ snapshot, onSave }: {
         />
       </div>
       {editing ? <div className="definitions-detail-pane">
-        <button type="button" className="definition-back" onClick={resetEditor}>[← {backLabel}]</button>
+        <button type="button" className="definition-back" onClick={leaveDetail}>[← {backLabel}]</button>
         <div className="definition-detail-scroll">
           {variable ? <VariableEditor variable={variable} snapshot={snapshot} onChange={setVariable} /> : null}
           {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
           {entity ? <EntityEditor entity={entity} onChange={setEntity} /> : null}
         </div>
-        {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={resetEditor} /> : null}
-        {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={resetEditor} /> : null}
-        {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={resetEditor} /> : null}
+        {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={leaveDetail} /> : null}
+        {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={leaveDetail} /> : null}
+        {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={leaveDetail} /> : null}
       </div> : null}
     </div>
   </section>;
