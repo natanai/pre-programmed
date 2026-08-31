@@ -52,7 +52,7 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
     ? commandsValue.commands.flatMap((candidate) => {
       if (!candidate || typeof candidate !== "object") return [];
       const item = candidate as Record<string, unknown>;
-      if (typeof item.id !== "string" || typeof item.key !== "string" || typeof item.operation !== "string") return [];
+      if (typeof item.id !== "string" || typeof item.operation !== "string") return [];
       const slots = Array.isArray(item.slots)
         ? item.slots.flatMap((candidateSlot) => {
           if (!candidateSlot || typeof candidateSlot !== "object") return [];
@@ -64,8 +64,7 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
         : [];
       return [{
         id: item.id,
-        key: item.key,
-        label: typeof item.label === "string" ? item.label : item.key,
+        label: typeof item.label === "string" ? item.label : item.operation,
         operation: item.operation,
         enabled: item.enabled !== false,
         patterns: stringArray(item.patterns),
