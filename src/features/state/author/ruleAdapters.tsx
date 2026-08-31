@@ -8,6 +8,10 @@ function parseValue(value: string, sample: Value): Value {
   return value;
 }
 
+function variableLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], key: string) {
+  return snapshot.variables.find((item) => item.key === key)?.label || key || "choose value";
+}
+
 export const flagConditionAdapter: ConditionAuthorAdapter = {
   type: "flag",
   label: "flag",
@@ -50,6 +54,7 @@ export const setFlagEffectAdapter: EffectAuthorAdapter = {
   type: "set_flag",
   label: "set flag",
   create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "" }),
+  summarize: (effect, snapshot) => effect.type === "set_flag" ? `Set ${variableLabel(snapshot, effect.key)} true` : "Set flag",
   render: ({ effect, onChange, snapshot }) => effect.type === "set_flag"
     ? <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "boolean")} onChange={(key) => onChange({ ...effect, key })} />
     : null,
@@ -59,6 +64,7 @@ export const clearFlagEffectAdapter: EffectAuthorAdapter = {
   type: "clear_flag",
   label: "clear flag",
   create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "" }),
+  summarize: (effect, snapshot) => effect.type === "clear_flag" ? `Set ${variableLabel(snapshot, effect.key)} false` : "Clear flag",
   render: ({ effect, onChange, snapshot }) => effect.type === "clear_flag"
     ? <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "boolean")} onChange={(key) => onChange({ ...effect, key })} />
     : null,
@@ -68,6 +74,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
   type: "set_value",
   label: "set value",
   create: () => ({ id: crypto.randomUUID(), type: "set_value", key: "", value: 0 }),
+  summarize: (effect, snapshot) => effect.type === "set_value" ? `${variableLabel(snapshot, effect.key)} = ${String(effect.value)}` : "Set value",
   render: ({ effect, onChange, snapshot }) => {
     if (effect.type !== "set_value") return null;
     const definition = snapshot.variables.find((item) => item.key === effect.key);
@@ -87,6 +94,7 @@ export const incrementEffectAdapter: EffectAuthorAdapter = {
   type: "increment",
   label: "increment",
   create: () => ({ id: crypto.randomUUID(), type: "increment", key: "", amount: 1 }),
+  summarize: (effect, snapshot) => effect.type === "increment" ? `Increase ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Increment",
   render: ({ effect, onChange, snapshot }) => effect.type === "increment" ? <>
     <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "number")} onChange={(key) => onChange({ ...effect, key })} />
     <input type="number" value={effect.amount} onChange={(event) => onChange({ ...effect, amount: Number(event.target.value) })} />
@@ -97,6 +105,7 @@ export const decrementEffectAdapter: EffectAuthorAdapter = {
   type: "decrement",
   label: "decrement",
   create: () => ({ id: crypto.randomUUID(), type: "decrement", key: "", amount: 1 }),
+  summarize: (effect, snapshot) => effect.type === "decrement" ? `Decrease ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Decrement",
   render: ({ effect, onChange, snapshot }) => effect.type === "decrement" ? <>
     <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "number")} onChange={(key) => onChange({ ...effect, key })} />
     <input type="number" value={effect.amount} onChange={(event) => onChange({ ...effect, amount: Number(event.target.value) })} />
