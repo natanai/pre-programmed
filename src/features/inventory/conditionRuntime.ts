@@ -1,4 +1,4 @@
-import type { ConditionHandler } from "../../engine/rules/conditionRuntime";
+import type { ConditionHandler, ConditionValidator } from "../../engine/rules/conditionRuntime";
 
 const hasItem: ConditionHandler = (condition, context) => {
   if (condition.type !== "has_item") return false;
@@ -13,7 +13,17 @@ const lacksItem: ConditionHandler = (condition, context) => {
   return !context.state.inventory.some((entry) => entry.itemId === condition.itemId && entry.quantity > 0);
 };
 
+const validateItem: ConditionValidator = (condition) =>
+  (condition.type === "has_item" || condition.type === "lacks_item") && !condition.itemId
+    ? ["Item conditions require an item."]
+    : [];
+
 export const INVENTORY_CONDITION_HANDLERS: Readonly<Record<string, ConditionHandler>> = {
   has_item: hasItem,
   lacks_item: lacksItem,
+};
+
+export const INVENTORY_CONDITION_VALIDATORS: Readonly<Record<string, ConditionValidator>> = {
+  has_item: validateItem,
+  lacks_item: validateItem,
 };

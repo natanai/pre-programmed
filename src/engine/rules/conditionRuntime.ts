@@ -8,6 +8,7 @@ export type ConditionContext = {
 };
 
 export type ConditionHandler = (condition: Condition, context: ConditionContext) => boolean;
+export type ConditionValidator = (condition: Condition) => string[];
 
 export function compareValues(left: Value | undefined, operator: ComparisonOperator, right: Value) {
   switch (operator) {
