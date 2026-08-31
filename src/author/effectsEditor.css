@@ -1,0 +1,136 @@
+.effects-overview,
+.effects-chooser,
+.focused-effect-editor {
+  display: grid;
+  gap: .7em;
+}
+
+.effect-summary-list,
+.effect-type-list {
+  display: grid;
+  border: 1px solid var(--dos-line);
+}
+
+.effect-summary-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.effect-summary-row:last-child,
+.effect-type-list > button:last-child {
+  border-bottom: 0;
+}
+
+.effect-summary-open {
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65em;
+  min-width: 0;
+  min-height: 3.25em;
+  padding: .45em .55em !important;
+  text-align: left;
+}
+
+.effect-summary-number {
+  color: var(--dos-muted);
+}
+
+.effect-summary-copy {
+  display: grid;
+  min-width: 0;
+  gap: .1em;
+}
+
+.effect-summary-copy strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.effect-summary-copy small,
+.focused-effect-heading small {
+  overflow: hidden;
+  color: var(--dos-muted);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+}
+
+.effect-summary-order {
+  display: flex;
+  border-left: 1px dotted var(--dos-line);
+}
+
+.effect-summary-order button {
+  min-width: 2.5em;
+  padding: 0 .35em !important;
+}
+
+.effects-back,
+.effect-add,
+.effect-remove {
+  width: fit-content;
+  min-height: 2.5em;
+  padding: .35em .5em !important;
+}
+
+.effects-back {
+  color: var(--dos-muted) !important;
+}
+
+.effects-empty {
+  color: var(--dos-muted);
+}
+
+.effects-chooser h3 {
+  margin: 0;
+  color: var(--dos-text);
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.effect-type-list > button {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1em;
+  width: 100%;
+  min-height: 3em;
+  padding: .45em .6em !important;
+  border-bottom: 1px dotted var(--dos-line) !important;
+  text-align: left;
+}
+
+.focused-effect-heading {
+  display: grid;
+  gap: .15em;
+  padding-bottom: .45em;
+  border-bottom: 1px solid var(--dos-line);
+}
+
+.focused-effect-fields {
+  display: grid;
+  gap: .55em;
+}
+
+.focused-effect-fields > input,
+.focused-effect-fields > select,
+.focused-effect-fields > .asset-effect-picker,
+.focused-effect-fields > .effect-notification {
+  width: 100%;
+}
+
+@media (max-width: 700px) {
+  .effect-summary-open,
+  .effect-type-list > button,
+  .effects-back,
+  .effect-add,
+  .effect-remove {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+
+  .effect-summary-order button {
+    min-width: 2.75em;
+  }
+}
