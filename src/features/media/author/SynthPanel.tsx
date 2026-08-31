@@ -1,32 +1,48 @@
 import { useState } from "react";
+import { useDraftDirty } from "../../../author/useDraftDirty";
 import type { MutationOperation, ProjectSnapshot, SynthSound } from "../../../game/model";
 import { createSilentSynth, playSynthSound } from "../../../game/synth";
 import "./mediaAuthor.css";
 
-export function SynthPanel({ snapshot, onSave }: {
+export function SynthPanel({ snapshot, onSave, onDirtyChange, requestDiscard }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
+  requestDiscard?: (discard: () => void) => void;
 }) {
   const [draft, setDraft] = useState<SynthSound | null>(null);
   const [voiceIndex, setVoiceIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const { markSaved, resetBaseline } = useDraftDirty(draft, onDirtyChange);
+  const request = requestDiscard ?? ((discard: () => void) => discard());
 
-  const openSound = (sound: SynthSound) => {
-    setDraft(structuredClone(sound));
+  const openSound = (sound: SynthSound) => request(() => {
+    const next = structuredClone(sound);
+    resetBaseline(next);
+    setDraft(next);
     setVoiceIndex(0);
-  };
+  });
 
-  const newSound = () => {
-    setDraft(createSilentSynth());
+  const newSound = () => request(() => {
+    const next = createSilentSynth();
+    resetBaseline(next);
+    setDraft(next);
     setVoiceIndex(0);
-  };
+  });
+
+  const closeDraft = () => request(() => {
+    resetBaseline(null);
+    setDraft(null);
+  });
 
   const save = async () => {
     if (!draft?.key || !draft.label) return;
     setSaving(true);
-    try { await onSave([{ type: "synth.upsert", sound: draft }], `Changed synth ${draft.label}`); }
-    finally { setSaving(false); }
+    try {
+      await onSave([{ type: "synth.upsert", sound: draft }], `Changed synth ${draft.label}`);
+      markSaved();
+    } finally { setSaving(false); }
   };
 
   return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
@@ -39,7 +55,7 @@ export function SynthPanel({ snapshot, onSave }: {
         {!snapshot.synthSounds.length ? <div className="workspace-empty">NO SYNTH SOUNDS YET.</div> : null}
         <button type="button" className="synth-create" onClick={newSound}>[+ SOUND]</button>
       </> : <>
-        <button type="button" className="synth-back" onClick={() => setDraft(null)}>[← BACK TO SOUNDS]</button>
+        <button type="button" className="synth-back" onClick={closeDraft}>[← BACK TO SOUNDS]</button>
         <div className="synth-editor focused-synth-editor">
           <section className="synth-section">
             <h3>RECIPE</h3>
@@ -58,7 +74,7 @@ export function SynthPanel({ snapshot, onSave }: {
         </div>
       </>}
     </div>
-    {draft ? <div className="author-panel-footer author-actions"><button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={() => setDraft(null)}>[CANCEL]</button></div> : null}
+    {draft ? <div className="author-panel-footer author-actions"><button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button><button type="button" disabled={saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={closeDraft}>[CANCEL]</button></div> : null}
   </section>;
 }
 
