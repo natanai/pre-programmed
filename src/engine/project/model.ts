@@ -4,11 +4,13 @@ import type { SynthSound } from "../../features/media/model";
 import type { GameNode, Interaction } from "../../features/narrative/model";
 import type { ComputedDefinition, VariableDefinition } from "../../features/state/model";
 import type { EntityDefinition } from "../../features/world/model";
+import type { ProjectSettings } from "./settings";
 
 export type ProjectSnapshot = {
   schemaVersion: number;
   revision: number;
   startNodeId: string;
+  settings: ProjectSettings;
   nodes: GameNode[];
   interactions: Interaction[];
   entities: EntityDefinition[];
@@ -50,6 +52,7 @@ export type RevisionSummary = {
 };
 
 export type MutationOperation =
+  | { type: "project.settings"; settings: ProjectSettings }
   | { type: "node.upsert"; node: GameNode }
   | { type: "interaction.upsert"; interaction: Interaction }
   | { type: "interaction.delete"; id: string }
