@@ -31,7 +31,6 @@ export type CommandSlotDefinition = {
  */
 export type CommandDefinition = {
   id: string;
-  key: string;
   label: string;
   operation: OperationId;
   enabled: boolean;
