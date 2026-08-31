@@ -1,6 +1,5 @@
 import { EFFECT_HANDLERS } from "../engine/rules/effectCatalog";
 import type { EffectExecution, EffectEvent } from "../engine/rules/effectRuntime";
-import { transitionState } from "../features/narrative/effectRuntime";
 import type { Effect, PlayState, ProjectSnapshot } from "./model";
 
 export type { EffectExecution, EffectEvent } from "../engine/rules/effectRuntime";
@@ -24,7 +23,3 @@ export function executeEffects(
 
   return { state, events };
 }
-
-// Keep the imported symbol referenced here so this compatibility module remains
-// the stable legacy home for callers that import transitionState from it.
-void transitionState;
