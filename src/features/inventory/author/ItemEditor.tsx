@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useDraftDirty } from "../../../author/useDraftDirty";
 import type { ItemDefinition, MutationOperation, ProjectSnapshot } from "../../../game/model";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
@@ -12,19 +13,23 @@ function emptyItem(): ItemDefinition {
   };
 }
 
-export function ItemEditor({ snapshot, initial, onSave, onCancel }: {
+export function ItemEditor({ snapshot, initial, onSave, onCancel, onDirtyChange }: {
   snapshot: ProjectSnapshot;
   initial?: ItemDefinition;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(initial ?? emptyItem()));
   const [saving, setSaving] = useState(false);
+  const { markSaved } = useDraftDirty(draft, onDirtyChange);
   const save = async () => {
     if (!draft.key || !draft.name) return;
     setSaving(true);
-    try { await onSave([{ type: "item.upsert", item: draft }], `${initial ? "Changed" : "Created"} item ${draft.name}`); }
-    finally { setSaving(false); }
+    try {
+      await onSave([{ type: "item.upsert", item: draft }], `${initial ? "Changed" : "Created"} item ${draft.name}`);
+      markSaved();
+    } finally { setSaving(false); }
   };
 
   return <section className="author-panel author-panel-frame item-editor" onPointerDown={(event) => event.stopPropagation()}>
