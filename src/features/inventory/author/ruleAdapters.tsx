@@ -1,6 +1,10 @@
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
 import { DefinitionSelect } from "../../../author/rules/controls";
 
+function itemLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], id: string) {
+  return snapshot.items.find((item) => item.id === id)?.name || "choose item";
+}
+
 export const hasItemConditionAdapter: ConditionAuthorAdapter = {
   type: "has_item",
   label: "has item",
@@ -34,6 +38,7 @@ export const giveItemEffectAdapter: EffectAuthorAdapter = {
   type: "give_item",
   label: "give item",
   create: () => ({ id: crypto.randomUUID(), type: "give_item", itemId: "", quantity: 1 }),
+  summarize: (effect, snapshot) => effect.type === "give_item" ? `Give ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Give item",
   render: ({ effect, onChange, snapshot }) => effect.type === "give_item" ? <>
     <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input type="number" min={1} value={effect.quantity} onChange={(event) => onChange({ ...effect, quantity: Number(event.target.value) })} />
@@ -44,6 +49,7 @@ export const removeItemEffectAdapter: EffectAuthorAdapter = {
   type: "remove_item",
   label: "remove item",
   create: () => ({ id: crypto.randomUUID(), type: "remove_item", itemId: "", quantity: 1 }),
+  summarize: (effect, snapshot) => effect.type === "remove_item" ? `Remove ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Remove item",
   render: ({ effect, onChange, snapshot }) => effect.type === "remove_item" ? <>
     <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input type="number" min={1} value={effect.quantity} onChange={(event) => onChange({ ...effect, quantity: Number(event.target.value) })} />
@@ -54,6 +60,9 @@ export const setItemStateEffectAdapter: EffectAuthorAdapter = {
   type: "set_item_state",
   label: "change item state",
   create: () => ({ id: crypto.randomUUID(), type: "set_item_state", itemId: "", key: "", value: "" }),
+  summarize: (effect, snapshot) => effect.type === "set_item_state"
+    ? `${itemLabel(snapshot, effect.itemId)} · ${effect.key || "state"} = ${String(effect.value ?? "")}`
+    : "Change item state",
   render: ({ effect, onChange, snapshot }) => effect.type === "set_item_state" ? <>
     <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input placeholder="state key" value={effect.key} onChange={(event) => onChange({ ...effect, key: event.target.value })} />
