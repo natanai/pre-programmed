@@ -210,6 +210,13 @@ export default function App() {
     return () => window.clearInterval(timer);
   }, [timedVariables]);
 
+  useEffect(() => {
+    if (!typewriter.complete || pendingDestinationNodeId || panel || inventoryOpen) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    const frame = window.requestAnimationFrame(() => terminalInputRef.current?.focus({ preventScroll: true }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [typewriter.complete, pendingDestinationNodeId, panel, inventoryOpen, requestingKey]);
+
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
     const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
@@ -518,7 +525,6 @@ export default function App() {
     if (value) void handleTerminalValue(value);
   };
 
-  const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
   const restoreBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
     const state = resumeAuthorBookmark(snapshot, bookmark);
@@ -537,11 +543,13 @@ export default function App() {
     setInventoryOpen(false);
   };
   const showInventoryResponse = (text: string) => {
+    historyPinnedToPresentRef.current = true;
     appendActive();
     setActiveText("");
     setActiveNodeId(undefined);
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
     setInventoryOpen(false);
+    window.requestAnimationFrame(scrollHistoryToPresent);
   };
   const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
     if (!playState) return;
@@ -557,7 +565,6 @@ export default function App() {
 
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
-  const mirroredCommand = requestingKey ? "*".repeat(command.length) : command;
   const dialogueAuthoring = panel?.type === "interaction";
   const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
   const editorOpen = Boolean(panel || inventoryOpen);
@@ -565,8 +572,7 @@ export default function App() {
   const closeEditor = () => { setPanel(null); setInventoryOpen(false); };
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
-    if (!typewriter.complete) { typewriter.completeImmediately(); return; }
-    focusTerminal();
+    if (!typewriter.complete) typewriter.completeImmediately();
   }}>
     <div className={`dos-terminal${dialogueAuthoring ? " dialogue-authoring-active" : ""}`}>
       <div
@@ -593,14 +599,20 @@ export default function App() {
       {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
       {typewriter.complete && !pendingDestinationNodeId && !panel && !inventoryOpen ? <form
         ref={promptFormRef}
-        className="prompt-line"
+        className="prompt-line prompt-input-row"
         onSubmit={handleTerminalSubmit}
-        onPointerDown={(event) => {
-          event.stopPropagation();
-          if (!requestingKey && !command && promptChoices.length) setChoiceMenuOpen((value) => !value);
-        }}
-        aria-expanded={!requestingKey && choiceMenuOpen}
-      ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
+        onPointerDown={(event) => event.stopPropagation()}
+      >
+        <span className="prompt-label">{promptLabel}</span>
+        <input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command}
+          onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }}
+          autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="send"
+          aria-label={requestingKey ? "Author key" : "Universe command"} />
+        {!requestingKey && promptChoices.length ? <button type="button" className="prompt-choice-toggle"
+          aria-label="Show available options" aria-expanded={choiceMenuOpen}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={() => setChoiceMenuOpen((value) => !value)}>▼</button> : null}
+      </form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
         {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <PlayerChoiceSurface
