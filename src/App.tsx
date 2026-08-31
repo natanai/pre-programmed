@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AuthorHome } from "./author/AuthorHome";
-import { AuthorToolIndex, type AuthorToolGroup } from "./author/AuthorToolIndex";
+import { AuthorToolIndex } from "./author/AuthorToolIndex";
+import { buildAuthorToolGroups } from "./author/tools/registry";
 import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
@@ -587,43 +588,16 @@ export default function App() {
   const leaveCurrentSurface = workSurface.canBack ? workSurface.back : workSurface.close;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
-  const authorToolGroups: AuthorToolGroup[] = [
-    {
-      id: "scene",
-      label: "CURRENT SCENE",
-      tools: [
-        { id: "edit-node", label: "EDIT NODE", description: "Text, speaker, location, tags, and presentation.", onSelect: () => workSurface.pushPanel({ type: "node", node: currentNode }) },
-        { id: "add-input", label: "ADD VALID INPUT", description: "Manual form; typing a new command at U:\\> is faster.", onSelect: () => workSurface.pushPanel({ type: "interaction" }) },
-        { id: "invalid-input", label: fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "ADD INVALID INPUT", description: "What happens when player text does not match a valid input.", tone: invalidDraft ? "draft" : "normal", onSelect: () => workSurface.pushPanel({ type: "interaction", interaction: fallbackInput, fallback: true }) },
-      ],
-    },
-    {
-      id: "systems",
-      label: "GAME SYSTEMS",
-      tools: [
-        { id: "structure", label: "STRUCTURE", description: "Browse nodes, links, and authored interactions.", onSelect: () => workSurface.pushPanel({ type: "structure" }) },
-        { id: "definitions", label: "STATE + PEOPLE", description: "Variables, computed values, characters, and locations.", onSelect: () => workSurface.pushPanel({ type: "definitions" }) },
-        { id: "inventory", label: "INVENTORY", description: "Inspect inventory and author item definitions.", onSelect: workSurface.pushInventory },
-      ],
-    },
-    {
-      id: "media",
-      label: "WORLD + MEDIA",
-      tools: [
-        { id: "locations", label: "SAVED LOCATIONS", description: "Save or restore a play location while authoring.", onSelect: () => workSurface.pushPanel({ type: "workspace", view: "locations" }) },
-        { id: "assets", label: "ASSETS", description: "Browse detected repository art and audio.", onSelect: () => workSurface.pushPanel({ type: "assets" }) },
-        { id: "sound", label: "SOUND", description: "Create and edit synthesized sounds.", onSelect: () => workSurface.pushPanel({ type: "synth" }) },
-      ],
-    },
-    {
-      id: "project",
-      label: "PROJECT",
-      tools: [
-        { id: "history", label: "HISTORY", description: "Review revisions and project history.", onSelect: () => workSurface.pushPanel({ type: "workspace", view: "history" }) },
-        { id: "backup", label: "BACKUP", description: "Download a complete Cloudflare project backup.", onSelect: () => { workSurface.close(); void downloadBackup(); } },
-      ],
-    },
-  ];
+  const authorToolGroups = buildAuthorToolGroups({
+    currentNode,
+    fallbackInput,
+    invalidDraft,
+    notationForInput,
+    pushPanel: workSurface.pushPanel,
+    pushInventory: workSurface.pushInventory,
+    close: workSurface.close,
+    downloadBackup,
+  });
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) typewriter.completeImmediately();
