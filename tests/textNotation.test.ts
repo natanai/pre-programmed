@@ -14,6 +14,14 @@ describe("inline text notation", () => {
     ]));
   });
 
+  it("supports slow scoped text relative to the default rhythm", () => {
+    const compiled = compileTextNotation("say /l{slowly} now", performance);
+    expect(compiled.text).toBe("say slowly now");
+    expect(compiled.performance.cues).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: "speed", start: 4, end: 10, value: 11 }),
+    ]));
+  });
+
   it("supports custom pauses, hit, instant, wave, blink, and literal slashes", () => {
     const compiled = compileTextNotation("A/p800B /h{BAM} /i{now} /w{soft} /b{gone} //path", performance);
     expect(compiled.text).toBe("AB BAM now soft gone /path");
