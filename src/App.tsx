@@ -47,8 +47,10 @@ import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
 import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
-import { isSoftwareKeyboardOpen } from "./ui/viewport";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
+import { createDraftInteraction } from "./features/narrative/drafts";
+import { PlayerChoiceSurface } from "./features/narrative/author/PlayerChoiceSurface";
+import { isSoftwareKeyboardOpen } from "./ui/viewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
@@ -487,6 +489,14 @@ export default function App() {
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
+
+    if (!parsed.interaction && authorMode && authorView) {
+      const interaction = createDraftInteraction(currentState.currentNodeId, value.trim());
+      setParserResult(null);
+      await persist([{ type: "interaction.upsert", interaction }], `Created draft user input ${interaction.wording}`);
+      return;
+    }
+
     appendActive();
     const commandLineId = crypto.randomUUID();
     setTranscript((lines) => [...lines, { id: commandLineId, text: `${UNIVERSE_DRIVE_PROMPT}${value}`, command: true }]);
@@ -575,6 +585,9 @@ export default function App() {
   const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
   const editorOpen = Boolean(panel || inventoryOpen);
   const authorExperience = authorMode && authorView;
+  const presentedChoices = authorExperience
+    ? currentInputs
+    : [...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])];
   const closeEditor = () => { setPanel(null); setInventoryOpen(false); };
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
@@ -614,16 +627,19 @@ export default function App() {
           onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }}
           autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="send"
           aria-label={requestingKey ? "Author key" : "Universe command"} />
-        {!requestingKey && promptChoices.length ? <button type="button" className="prompt-choice-toggle"
+        {!requestingKey && !authorExperience && promptChoices.length ? <button type="button" className="prompt-choice-toggle"
           aria-label="Show available options" aria-expanded={choiceMenuOpen}
           onPointerDown={(event) => event.stopPropagation()}
           onClick={() => setChoiceMenuOpen((value) => !value)}>▼</button> : null}
       </form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <PlayerChoiceSurface
-          choices={[...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])]}
+        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && presentedChoices.length && !panel && !inventoryOpen ? <PlayerChoiceSurface
+          choices={presentedChoices}
           onChoose={choosePlayerInput}
+          authorMode={authorExperience}
+          notationForChoice={notationForInput}
+          onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
         /> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
@@ -633,10 +649,6 @@ export default function App() {
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <div className="author-context">
           <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
           <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" className={fallbackInput && notationForInput(fallbackInput) === "[D]" ? "draft-input" : ""} onClick={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}>{fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "[+ INVALID INPUT]"}</button></div>
-          <div className="current-inputs">
-            <span>USER INPUTS FROM HERE</span>
-            <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
-          </div>
           <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "locations" })}>[LOCATIONS]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "history" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
         </div> : null}
         {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
@@ -666,37 +678,6 @@ export default function App() {
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
-}
-
-function PlayerChoiceSurface({ choices, onChoose }: { choices: Interaction[]; onChoose: (interaction: Interaction) => void }) {
-  const surfaceRef = useRef<HTMLDivElement>(null);
-  const [hasMoreBelow, setHasMoreBelow] = useState(false);
-  const choiceKey = choices.map((choice) => choice.id).join(":");
-  const measure = () => {
-    const surface = surfaceRef.current;
-    if (!surface) return;
-    setHasMoreBelow(surface.scrollTop + surface.clientHeight < surface.scrollHeight - 2);
-  };
-
-  useLayoutEffect(() => {
-    const surface = surfaceRef.current;
-    if (!surface) return;
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(surface);
-    window.addEventListener("resize", measure);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [choiceKey]);
-
-  return <div className="player-choice-scroll">
-    <div ref={surfaceRef} className="player-choice-surface" aria-label="Available choices" onScroll={measure}>
-      {choices.map((interaction) => <button type="button" key={interaction.id} onClick={() => onChoose(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
-    </div>
-    {hasMoreBelow ? <button type="button" className="choice-scroll-cue" aria-label="Show more choices" onClick={() => surfaceRef.current?.scrollBy({ top: Math.max(44, surfaceRef.current.clientHeight * .8), behavior: "auto" })}>↓</button> : null}
-  </div>;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {
