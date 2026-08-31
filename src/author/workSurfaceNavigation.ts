@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { GameNode, Interaction, ItemDefinition } from "../game/model";
 
 export type AuthorPanelRoute =
@@ -24,6 +24,10 @@ export type AuthorLeaveConfirmation = {
   dirtyCount: number;
 };
 
+function entryFor(route: AuthorPanelRoute): WorkSurfaceEntry {
+  return { id: crypto.randomUUID(), route, dirty: false };
+}
+
 /**
  * Navigation owner for temporary play/Author work surfaces.
  *
@@ -39,55 +43,51 @@ export function useWorkSurfaceNavigation() {
   const panel = current?.route ?? null;
   const dirtyCount = stack.filter((entry) => entry.dirty).length;
 
-  const entryFor = (route: AuthorPanelRoute): WorkSurfaceEntry => ({
-    id: crypto.randomUUID(),
-    route,
-    dirty: false,
-  });
-
-  const openPanel = (route: AuthorPanelRoute) => {
+  const openPanel = useCallback((route: AuthorPanelRoute) => {
     setLeaveConfirmation(null);
     setStack([entryFor(route)]);
-  };
-  const pushPanel = (route: AuthorPanelRoute) => {
+  }, []);
+  const pushPanel = useCallback((route: AuthorPanelRoute) => {
     setLeaveConfirmation(null);
     setStack((currentStack) => [...currentStack, entryFor(route)]);
-  };
-  const back = () => {
+  }, []);
+  const back = useCallback(() => {
     setLeaveConfirmation(null);
     setStack((currentStack) => currentStack.slice(0, -1));
-  };
-  const close = () => {
+  }, []);
+  const close = useCallback(() => {
     setLeaveConfirmation(null);
     setStack([]);
-  };
+  }, []);
 
-  const setCurrentDirty = (dirty: boolean) => {
+  const setCurrentDirty = useCallback((dirty: boolean) => {
     setStack((currentStack) => currentStack.map((entry, index) =>
       index === currentStack.length - 1 ? { ...entry, dirty } : entry));
-  };
+  }, []);
 
-  const requestBack = () => {
+  const requestBack = useCallback(() => {
     if (current?.dirty) {
       setLeaveConfirmation({ action: "back", dirtyCount: 1 });
       return;
     }
     back();
-  };
+  }, [back, current?.dirty]);
 
-  const requestClose = () => {
+  const requestClose = useCallback(() => {
     if (dirtyCount) {
       setLeaveConfirmation({ action: "close", dirtyCount });
       return;
     }
     close();
-  };
+  }, [close, dirtyCount]);
 
-  const confirmLeave = () => {
+  const confirmLeave = useCallback(() => {
     const action = leaveConfirmation?.action;
     if (action === "back") back();
     else if (action === "close") close();
-  };
+  }, [back, close, leaveConfirmation?.action]);
+
+  const cancelLeave = useCallback(() => setLeaveConfirmation(null), []);
 
   return {
     panel,
@@ -103,7 +103,7 @@ export function useWorkSurfaceNavigation() {
     requestBack,
     requestClose,
     confirmLeave,
-    cancelLeave: () => setLeaveConfirmation(null),
+    cancelLeave,
     setCurrentDirty,
   };
 }
