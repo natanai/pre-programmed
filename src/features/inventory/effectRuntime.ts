@@ -1,5 +1,5 @@
 import { unchangedEffect, type EffectHandler } from "../../engine/rules/effectRuntime";
-import { addInventoryItem, removeInventoryItem } from "../../game/inventory";
+import { addInventoryItem, removeInventoryItem } from "./runtime";
 
 const giveItem: EffectHandler = (effect, snapshot, state) => {
   if (effect.type !== "give_item") return unchangedEffect(state);
