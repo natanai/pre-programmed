@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
 import { buildAuthorToolGroups } from "./author/tools/registry";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
@@ -46,12 +46,24 @@ import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 import { createDraftInteraction } from "./features/narrative/drafts";
-import { PlayerChoiceSurface } from "./features/narrative/author/PlayerChoiceSurface";
+import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
+import {
+  TerminalCommandComposer,
+  type TerminalCommandChoice,
+  type TerminalCommandComposerHandle,
+} from "./ui/TerminalCommandComposer";
 import { isSoftwareKeyboardOpen } from "./ui/viewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
 type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean; artPath?: string };
+
+function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
+  return {
+    id: interaction.id,
+    text: interaction.aliases[0] || interaction.wording,
+  };
+}
 
 function usesInlineArt(assetPath: string) {
   const runtimePath = `/${assetPath.replace(/^\/+/, "")}`;
@@ -113,10 +125,8 @@ export default function App() {
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [unhandledCommand, setUnhandledCommand] = useState("");
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
-  const [choiceMenuOpen, setChoiceMenuOpen] = useState(false);
   const [eventArt, setEventArt] = useState("");
-  const terminalInputRef = useRef<HTMLInputElement>(null);
-  const promptFormRef = useRef<HTMLFormElement>(null);
+  const terminalComposerRef = useRef<TerminalCommandComposerHandle>(null);
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
   const firedCueIds = useRef(new Set<string>());
@@ -191,6 +201,8 @@ export default function App() {
     : [];
   const immediateChoices = playerChoiceInputs.filter((interaction) => interaction.choiceVisibility === "immediate");
   const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
+  const immediateTerminalChoices = immediateChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
+  const promptTerminalChoices = promptChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
   const timedVariables = snapshot ? timedVariableKey(snapshot) : "[]";
 
   useEffect(() => {
@@ -207,7 +219,7 @@ export default function App() {
   useEffect(() => {
     if (!typewriter.complete || pendingDestinationNodeId || panel) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
-    const frame = window.requestAnimationFrame(() => terminalInputRef.current?.focus({ preventScroll: true }));
+    const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [typewriter.complete, pendingDestinationNodeId, panel, requestingKey]);
 
@@ -357,8 +369,7 @@ export default function App() {
     await saveCachedSnapshot(optimistic);
     const queueId = await queueMutation(mutation);
     setAuthorMessage("SAVING...");
-    try {
-      const result = await submitProjectMutation(authorToken, mutation);
+    try {      const result = await submitProjectMutation(authorToken, mutation);
       await removeQueuedMutation(queueId);
       setSnapshot(result.snapshot);
       const savedState = optimisticState ? reconcilePlayState(result.snapshot, optimisticState) : null;
@@ -452,7 +463,7 @@ export default function App() {
     historyPinnedToPresentRef.current = true;
     scrollHistoryToPresent();
     const normalized = value.trim().toLowerCase();
-    setCommand(""); setAuthorMessage(""); setUnhandledCommand(""); setChoiceMenuOpen(false);
+    setCommand(""); setAuthorMessage(""); setUnhandledCommand("");
 
     if (requestingKey) {
       try {
@@ -519,12 +530,7 @@ export default function App() {
     }
   };
 
-  const handleTerminalSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    void handleTerminalValue(command);
-  };
-
-  const choosePlayerInput = (interaction: Interaction) => {
+  const playAuthorInput = (interaction: Interaction) => {
     const value = interaction.aliases[0] || interaction.wording;
     if (value) void handleTerminalValue(value);
   };
@@ -537,8 +543,7 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close(); setAuthorMessage("LOCATION LOADED.");
   };
-  const applyInventoryState = (state: PlayState) => {
-    if (!snapshot || !playState) return;
+  const applyInventoryState = (state: PlayState) => {    if (!snapshot || !playState) return;
     const transitioned = state.traversal.length > playState.traversal.length;
     setPlayState(state);
     if (!transitioned) return;
@@ -573,9 +578,6 @@ export default function App() {
   const workSurfaceOpen = Boolean(panel && !dialogueAuthoring);
   const editorOpen = Boolean(panel);
   const authorExperience = authorMode && authorView;
-  const presentedChoices = authorExperience
-    ? currentInputs
-    : [...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])];
   const closeEditor = workSurface.close;
   const leaveCurrentSurface = workSurface.canBack ? workSurface.back : workSurface.close;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
@@ -616,28 +618,22 @@ export default function App() {
       </div>
 
       {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
-      {typewriter.complete && !pendingDestinationNodeId && !panel ? <form
-        ref={promptFormRef}
-        className="prompt-line prompt-input-row"
-        onSubmit={handleTerminalSubmit}
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        <span className="prompt-label">{promptLabel}</span>
-        <input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command}
-          onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }}
-          autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} enterKeyHint="send"
-          aria-label={requestingKey ? "Author key" : "Universe command"} />
-        {!requestingKey && !authorExperience && promptChoices.length ? <button type="button" className="prompt-choice-toggle"
-          aria-label="Show available options" aria-expanded={choiceMenuOpen}
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={() => setChoiceMenuOpen((value) => !value)}>▼</button> : null}
-      </form> : null}
+      {typewriter.complete && !pendingDestinationNodeId && !panel ? <TerminalCommandComposer
+        ref={terminalComposerRef}
+        label={promptLabel}
+        value={command}
+        onChange={setCommand}
+        onSubmit={(value) => { void handleTerminalValue(value); }}
+        secret={requestingKey}
+        immediateChoices={requestingKey ? [] : immediateTerminalChoices}
+        menuChoices={requestingKey ? [] : promptTerminalChoices}
+        ariaLabel={requestingKey ? "Author key" : "Universe command"}
+      /> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && presentedChoices.length && !panel ? <PlayerChoiceSurface
-          choices={presentedChoices}
-          onChoose={choosePlayerInput}
-          authorMode={authorExperience}
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && currentInputs.length && !panel ? <AuthorInputSurface
+          choices={currentInputs}
+          onChoose={playAuthorInput}
           notationForChoice={notationForInput}
           onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
         /> : null}
