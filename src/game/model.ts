@@ -1,4 +1,4 @@
-import { addInventoryItem } from "./inventory";
+import { addInventoryItem } from "../features/inventory/runtime";
 import { ALWAYS as ALWAYS_RULE, type Condition } from "../engine/rules/model";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../engine/project/model";
 
