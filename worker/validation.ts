@@ -101,13 +101,16 @@ export function validateMutationBody(value: unknown) {
       if (!projectSettingsValid(operation.settings)) return "Project settings are invalid.";
       continue;
     }
-    const nested = operation.interaction ?? operation.item ?? operation.definition;
+    const nested = operation.interaction ?? operation.item ?? operation.definition ?? operation.entity;
     if (object(nested)) {
       if (operation.type === "interaction.upsert" && nested.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(nested.choiceVisibility))) {
         return "Interaction choice visibility is invalid.";
       }
       if (operation.type === "interaction.upsert" && nested.matchMode !== undefined && !["command", "fallback"].includes(String(nested.matchMode))) {
         return "Interaction match mode is invalid.";
+      }
+      if (operation.type === "entity.upsert" && nested.type !== undefined && !["character", "location"].includes(String(nested.type))) {
+        return "World entity type is invalid.";
       }
       if (operation.type === "item.upsert" && nested.startingQuantity !== undefined && (!Number.isInteger(nested.startingQuantity) || (nested.startingQuantity as number) < 0)) {
         return "Item starting quantity must be a non-negative integer.";
