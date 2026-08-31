@@ -103,9 +103,7 @@ export default function App() {
   const [authorMessage, setAuthorMessage] = useState("");
   const workSurface = useWorkSurfaceNavigation();
   const panel = workSurface.panel;
-  const inventoryOpen = workSurface.inventoryOpen;
   const setPanel = (next: AuthorPanelRoute | null) => next ? workSurface.openPanel(next) : workSurface.close();
-  const setInventoryOpen = (open: boolean) => open ? workSurface.openInventory() : workSurface.close();
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
@@ -207,11 +205,11 @@ export default function App() {
   }, [timedVariables]);
 
   useEffect(() => {
-    if (!typewriter.complete || pendingDestinationNodeId || panel || inventoryOpen) return;
+    if (!typewriter.complete || pendingDestinationNodeId || panel) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const frame = window.requestAnimationFrame(() => terminalInputRef.current?.focus({ preventScroll: true }));
     return () => window.cancelAnimationFrame(frame);
-  }, [typewriter.complete, pendingDestinationNodeId, panel, inventoryOpen, requestingKey]);
+  }, [typewriter.complete, pendingDestinationNodeId, panel, requestingKey]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -467,7 +465,7 @@ export default function App() {
     if (normalized === "admin") { if (authorMode) { setAuthorView(true); setAuthorMessage(""); } else setRequestingKey(true); return; }
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
-    if (normalized === "inventory" || normalized === "inv") { setInventoryOpen(true); return; }
+    if (normalized === "inventory" || normalized === "inv") { setPanel({ type: "inventory" }); return; }
     if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
     if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
@@ -572,8 +570,8 @@ export default function App() {
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
   const dialogueAuthoring = panel?.type === "interaction";
-  const workSurfaceOpen = Boolean((panel && !dialogueAuthoring) || inventoryOpen);
-  const editorOpen = Boolean(panel || inventoryOpen);
+  const workSurfaceOpen = Boolean(panel && !dialogueAuthoring);
+  const editorOpen = Boolean(panel);
   const authorExperience = authorMode && authorView;
   const presentedChoices = authorExperience
     ? currentInputs
@@ -588,7 +586,6 @@ export default function App() {
     invalidDraft,
     notationForInput,
     pushPanel: workSurface.pushPanel,
-    pushInventory: workSurface.pushInventory,
     close: workSurface.close,
     downloadBackup,
   });
@@ -619,7 +616,7 @@ export default function App() {
       </div>
 
       {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
-      {typewriter.complete && !pendingDestinationNodeId && !panel && !inventoryOpen ? <form
+      {typewriter.complete && !pendingDestinationNodeId && !panel ? <form
         ref={promptFormRef}
         className="prompt-line prompt-input-row"
         onSubmit={handleTerminalSubmit}
@@ -637,7 +634,7 @@ export default function App() {
       </form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && presentedChoices.length && !panel && !inventoryOpen ? <PlayerChoiceSurface
+        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && presentedChoices.length && !panel ? <PlayerChoiceSurface
           choices={presentedChoices}
           onChoose={choosePlayerInput}
           authorMode={authorExperience}
@@ -645,7 +642,7 @@ export default function App() {
           onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
         /> : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <AuthorHome
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
@@ -657,7 +654,7 @@ export default function App() {
           onEditInvalid={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}
           onOpenTools={() => setPanel({ type: "tools" })}
         /> : null}
-        {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
+        {unhandledCommand && authorExperience && !panel ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
           <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
           <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
@@ -665,7 +662,6 @@ export default function App() {
 
         <AuthorWorkspaceHost
           panel={panel}
-          inventoryOpen={inventoryOpen}
           toolGroups={authorToolGroups}
           snapshot={snapshot}
           playState={playState}

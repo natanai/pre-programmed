@@ -23,7 +23,6 @@ export type AuthorToolContext = {
   invalidDraft: boolean;
   notationForInput: (interaction: Interaction) => string;
   pushPanel: (route: AuthorPanelRoute) => void;
-  pushInventory: () => void;
   close: () => void;
   downloadBackup: () => Promise<void>;
 };
