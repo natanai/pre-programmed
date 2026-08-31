@@ -3,7 +3,7 @@ import { readdir, readFile, stat, writeFile, mkdir } from "node:fs/promises";
 import { extname, join, relative, sep } from "node:path";
 
 const ASSET_ROOT = new URL("../public/assets/", import.meta.url);
-const EXTENSIONS = new Set([".png", ".webp", ".gif", ".mp3", ".wav", ".ogg"]);
+const EXTENSIONS = new Set([".png", ".webp", ".gif", ".svg", ".mp3", ".wav", ".ogg"]);
 
 async function walk(directory) {
   try {
@@ -26,11 +26,17 @@ function imageDimensions(bytes, extension) {
   if (extension === ".gif" && bytes.length >= 10) {
     return { width: bytes.readUInt16LE(6), height: bytes.readUInt16LE(8) };
   }
+  if (extension === ".svg") {
+    const text = bytes.toString("utf8");
+    const width = Number(text.match(/\bwidth=["']([0-9.]+)["']/i)?.[1]);
+    const height = Number(text.match(/\bheight=["']([0-9.]+)["']/i)?.[1]);
+    if (Number.isFinite(width) && Number.isFinite(height)) return { width, height };
+  }
   return null;
 }
 
 function typeFor(extension) {
-  return [".png", ".webp", ".gif"].includes(extension) ? "image" : "audio";
+  return [".png", ".webp", ".gif", ".svg"].includes(extension) ? "image" : "audio";
 }
 
 const files = (await walk(ASSET_ROOT)).filter((path) => EXTENSIONS.has(extname(path).toLowerCase()));
