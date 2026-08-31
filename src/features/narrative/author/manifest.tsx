@@ -16,7 +16,9 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           initial={route.interaction}
           initialCommand={route.command}
           fallback={route.fallback}
-          onSave={(operations, description) => context.persist(operations, description, true)}
+          onSave={async (operations, description) => {
+            await context.persist(operations, description, true);
+          }}
           onCancel={context.leaveCurrentSurface}
         />
       </div>;
@@ -27,6 +29,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       onSave={context.persist}
       onCancel={context.leaveCurrentSurface}
+      onDirtyChange={context.setWorkspaceDirty}
     />;
 
     if (route.type === "structure") return <StructureNavigator

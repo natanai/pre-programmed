@@ -9,7 +9,9 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "definitions") return null;
     return <DefinitionsPanel
       snapshot={context.snapshot}
-      onSave={context.persist}
+      onSave={async (operations, description) => {
+        await context.persist(operations, description);
+      }}
       onClose={context.leaveCurrentSurface}
     />;
   },

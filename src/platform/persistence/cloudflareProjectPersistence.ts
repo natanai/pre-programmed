@@ -1,6 +1,9 @@
-import type { ProjectPersistence } from "./projectPersistence";
+import {
+  ProjectRevisionConflictError,
+  type ProjectPersistence,
+} from "./projectPersistence";
 import type { ProjectMutation, ProjectSnapshot } from "../../engine/project/model";
-import { apiUrl, readJson } from "../cloudflare/http";
+import { ApiError, apiUrl, readJson } from "../cloudflare/http";
 
 export const cloudflareProjectPersistence: ProjectPersistence = {
   async readProject() {
@@ -12,11 +15,18 @@ export const cloudflareProjectPersistence: ProjectPersistence = {
 
   async writeProject(mutation: ProjectMutation, context) {
     if (!context?.authorization) throw new Error("Author authorization is required for the hosted project store.");
-    const result = await readJson<{ snapshot: ProjectSnapshot }>(await fetch(apiUrl("/api/author/mutate"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${context.authorization}`, "Content-Type": "application/json" },
-      body: JSON.stringify(mutation),
-    }));
-    return result.snapshot;
+    try {
+      const result = await readJson<{ snapshot: ProjectSnapshot }>(await fetch(apiUrl("/api/author/mutate"), {
+        method: "POST",
+        headers: { Authorization: `Bearer ${context.authorization}`, "Content-Type": "application/json" },
+        body: JSON.stringify(mutation),
+      }));
+      return result.snapshot;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        throw new ProjectRevisionConflictError(error.message);
+      }
+      throw error;
+    }
   },
 };
