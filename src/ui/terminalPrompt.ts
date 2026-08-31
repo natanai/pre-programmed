@@ -7,13 +7,21 @@ function terminalInputFromTarget(target: EventTarget | null) {
   return target instanceof HTMLInputElement && target.matches(TERMINAL_INPUT_SELECTOR) ? target : null;
 }
 
-function measureCharacterWidth(input: HTMLInputElement) {
+function textBeforeCaret(input: HTMLInputElement, index: number) {
+  if (input.type === "password") return "•".repeat(index);
+  return input.value.slice(0, index);
+}
+
+function measureTextWidth(input: HTMLInputElement, text: string) {
   const style = window.getComputedStyle(input);
   measureCanvas ??= document.createElement("canvas");
   const context = measureCanvas.getContext("2d");
-  if (!context) return parseFloat(style.fontSize) * 0.6;
-  context.font = style.font;
-  return context.measureText("0").width || parseFloat(style.fontSize) * 0.6;
+  const fallbackCharacterWidth = (parseFloat(style.fontSize) || 16) * 0.6;
+  if (!context) return fallbackCharacterWidth * text.length;
+
+  context.font = `${style.fontStyle} ${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
+  const letterSpacing = parseFloat(style.letterSpacing) || 0;
+  return context.measureText(text).width + Math.max(0, text.length - 1) * letterSpacing;
 }
 
 function caretIndex(input: HTMLInputElement) {
@@ -31,8 +39,9 @@ function syncTerminalCaret(input: HTMLInputElement) {
   const inputRect = input.getBoundingClientRect();
   const style = window.getComputedStyle(input);
   const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const index = caretIndex(input);
   const left = inputRect.left - formRect.left + paddingLeft
-    + caretIndex(input) * measureCharacterWidth(input)
+    + measureTextWidth(input, textBeforeCaret(input, index))
     - input.scrollLeft;
 
   form.style.setProperty("--terminal-caret-left", `${Math.max(0, left)}px`);
@@ -60,11 +69,17 @@ document.addEventListener("selectionchange", () => {
   if (input) queueTerminalCaretSync(input);
 });
 
+document.addEventListener("submit", (event) => {
+  if (!(event.target instanceof HTMLFormElement) || !event.target.matches(".prompt-input-row")) return;
+  const input = event.target.querySelector<HTMLInputElement>(TERMINAL_INPUT_SELECTOR);
+  if (input) queueTerminalCaretSync(input);
+}, true);
+
 const observer = new MutationObserver((records) => {
   records.forEach((record) => {
     record.addedNodes.forEach((node) => {
       if (!(node instanceof Element)) return;
-      if (node.matches(TERMINAL_INPUT_SELECTOR)) syncTerminalCaret(node as HTMLInputElement);
+      if (node instanceof HTMLInputElement && node.matches(TERMINAL_INPUT_SELECTOR)) syncTerminalCaret(node);
       syncTerminalCarets(node);
     });
   });
