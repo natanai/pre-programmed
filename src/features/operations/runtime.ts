@@ -4,13 +4,14 @@ import type { Effect } from "../../engine/rules/model";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { interpolateText } from "../narrative/interpolation";
-import type { OperationId, OperationTarget } from "./model";
+import type { OperationArguments, OperationId, OperationTarget } from "./model";
 import type { OperationPlacement } from "./targetAdapter";
 import { OPERATION_TARGET_ADAPTERS } from "./targetCatalog";
 
 export type OperationRequest = {
   target: OperationTarget;
   operation: OperationId;
+  arguments?: OperationArguments;
   placement?: OperationPlacement;
 };
 
@@ -88,6 +89,7 @@ export function attemptOperation(
         state: nextState,
         target: request.target,
         operation: request.operation,
+        arguments: request.arguments,
         placement: request.placement,
       });
       accepted = targetResult.accepted;
@@ -101,6 +103,7 @@ export function attemptOperation(
     state: nextState,
     target: request.target,
     operation: request.operation,
+    arguments: request.arguments,
     placement: request.placement,
   });
   if (!fallback) {
