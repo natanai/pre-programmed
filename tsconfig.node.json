@@ -15,7 +15,6 @@
     "vite.config.ts",
     "worker",
     "src/game/model.ts",
-    "src/game/inventory.ts",
     "src/engine/**/*.ts",
     "src/features/**/*.ts"
   ],
