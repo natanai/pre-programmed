@@ -74,10 +74,15 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
-    operations: capability.operations.includes(hook.operation)
-      ? capability.operations
-      : [...capability.operations, hook.operation],
     hooks: capability.hooks.map((candidate) => candidate.id === id ? hook : candidate),
+  });
+
+  const setHookOperation = (id: string, operation: InventoryOperation) => onChange({
+    ...capability,
+    operations: capability.operations.includes(operation)
+      ? capability.operations
+      : [...capability.operations, operation],
+    hooks: capability.hooks.map((candidate) => candidate.id === id ? { ...candidate, operation } : candidate),
   });
 
   const moveHook = (id: string, direction: -1 | 1) => {
@@ -163,6 +168,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
         <button type="button" className="operation-hook-back" onClick={back}>[{screen === "hook" ? "← BACK TO RESPONSES" : "← BACK TO RESPONSE"}]</button>
         {screen === "hook" ? <HookWorkspace hook={selectedHook} snapshot={snapshot}
           onChange={(hook) => replaceHook(selectedHook.id, hook)}
+          onOperationChange={(operation) => setHookOperation(selectedHook.id, operation)}
           onOpenWhen={() => setScreen("when")}
           onOpenEffects={() => setScreen("effects")}
           onRemove={removeSelected} /> : null}
@@ -175,16 +181,17 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
   </details>;
 }
 
-function HookWorkspace({ hook, snapshot, onChange, onOpenWhen, onOpenEffects, onRemove }: {
+function HookWorkspace({ hook, snapshot, onChange, onOperationChange, onOpenWhen, onOpenEffects, onRemove }: {
   hook: OperationHook;
   snapshot: ProjectSnapshot;
   onChange: (hook: OperationHook) => void;
+  onOperationChange: (operation: InventoryOperation) => void;
   onOpenWhen: () => void;
   onOpenEffects: () => void;
   onRemove: () => void;
 }) {
   return <div className="operation-hook-workspace">
-    <label>OPERATION <select value={hook.operation} onChange={(event) => onChange({ ...hook, operation: event.target.value as InventoryOperation })}>
+    <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value as InventoryOperation)}>
       {OPERATIONS.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
     </select></label>
     <label className="check-label"><input type="checkbox" checked={hook.success}
