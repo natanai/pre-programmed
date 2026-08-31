@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "../game/model";
+import { compileTextNotation } from "../game/textNotation";
 import { ASSET_MANIFEST } from "../generated/assetManifest";
 import { ValueMentionField } from "./AuthorFields";
 
@@ -39,6 +40,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
     <header><span>NODE #{draft.nodeNumber}</span></header>
     <div className="author-panel-body">
       <label>NODE-TEXT <ValueMentionField snapshot={snapshot} multiline rows={5} textareaRef={textarea} value={draft.text} onValueChange={(text) => setDraft({ ...draft, text })} autoFocus /></label>
+      <div className="field-help">INLINE TEXT: /p pause · /p800 custom pause · /f{'{fast}'} · /s{'{shout}'} · /h{'{hit}'} · /w{'{wave}'} · /b{'{blink}'} · /i{'{instant}'} · // literal slash</div>
       <details className="text-speed-setting">
         <summary>[TEXT SPEED: {draft.performance.charactersPerSecond} CHARACTERS/SECOND]</summary>
         <label className="text-speed-input">CHARACTERS/SECOND <input type="number" min={1} max={120} value={draft.performance.charactersPerSecond} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, charactersPerSecond: Number(event.target.value) } })} /></label>
@@ -70,14 +72,15 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
 }
 
 function PerformanceText({ node }: { node: GameNode }) {
+  const compiled = compileTextNotation(node.text, node.performance);
   const segments: Array<{ text: string; classes: string[] }> = [];
-  for (let index = 0; index < node.text.length; index += 1) {
-    const classes = node.performance.cues
+  for (let index = 0; index < compiled.text.length; index += 1) {
+    const classes = compiled.performance.cues
       .filter((cue) => cue.start <= index && (cue.end > index || cue.start === cue.end))
       .map((cue) => `cue-${cue.type}`);
     const previous = segments.at(-1);
-    if (previous && previous.classes.join(" ") === classes.join(" ")) previous.text += node.text[index];
-    else segments.push({ text: node.text[index], classes });
+    if (previous && previous.classes.join(" ") === classes.join(" ")) previous.text += compiled.text[index];
+    else segments.push({ text: compiled.text[index], classes });
   }
   return <>{segments.map((segment, index) => <span className={segment.classes.join(" ")} key={index}>{segment.text}</span>)}</>;
 }
