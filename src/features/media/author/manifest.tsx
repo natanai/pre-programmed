@@ -14,7 +14,9 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
 
     if (route.type === "synth") return <SynthPanel
       snapshot={context.snapshot}
-      onSave={context.persist}
+      onSave={async (operations, description) => {
+        await context.persist(operations, description);
+      }}
       onClose={context.leaveCurrentSurface}
     />;
 
