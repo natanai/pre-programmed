@@ -342,6 +342,16 @@ const migrations: Migration[] = [
       UPDATE project_meta SET schema_version = 9 WHERE id = 1;
     `,
   },
+  {
+    id: 10,
+    name: "project-settings",
+    sql: `
+      ALTER TABLE project_meta
+      ADD COLUMN settings_json TEXT NOT NULL DEFAULT '{}';
+
+      UPDATE project_meta SET schema_version = 10 WHERE id = 1;
+    `,
+  },
 ];
 
 export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));
