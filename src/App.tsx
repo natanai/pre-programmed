@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AuthorHome } from "./author/AuthorHome";
 import { AuthorToolIndex, type AuthorToolGroup } from "./author/AuthorToolIndex";
+import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
@@ -37,7 +38,6 @@ import {
   type AuthorBookmark,
   type GameNode,
   type Interaction,
-  type ItemDefinition,
   type MutationOperation,
   type PlayState,
   type ProjectMutation,
@@ -57,17 +57,6 @@ import { isSoftwareKeyboardOpen } from "./ui/viewport";
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
 type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean; artPath?: string };
-type Panel =
-  | { type: "node"; node: GameNode }
-  | { type: "interaction"; interaction?: Interaction; command?: string; fallback?: boolean }
-  | { type: "tools" }
-  | { type: "definitions" }
-  | { type: "structure" }
-  | { type: "assets" }
-  | { type: "synth" }
-  | { type: "workspace"; view?: "locations" | "history" }
-  | { type: "item"; item?: ItemDefinition }
-  | null;
 
 function usesInlineArt(assetPath: string) {
   const runtimePath = `/${assetPath.replace(/^\/+/, "")}`;
@@ -117,8 +106,11 @@ export default function App() {
   const [authorMode, setAuthorMode] = useState(false);
   const [authorView, setAuthorView] = useState(true);
   const [authorMessage, setAuthorMessage] = useState("");
-  const [panel, setPanel] = useState<Panel>(null);
-  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const workSurface = useWorkSurfaceNavigation();
+  const panel = workSurface.panel;
+  const inventoryOpen = workSurface.inventoryOpen;
+  const setPanel = (next: AuthorPanelRoute | null) => next ? workSurface.openPanel(next) : workSurface.close();
+  const setInventoryOpen = (open: boolean) => open ? workSurface.openInventory() : workSurface.close();
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
@@ -324,7 +316,7 @@ export default function App() {
     setAuthorToken("");
     setAuthorMode(false);
     setAuthorView(true);
-    setPanel(null);
+    workSurface.close();
   };
 
   useEffect(() => {
@@ -386,7 +378,7 @@ export default function App() {
         const changed = result.snapshot.nodes.find((node) => node.id === savedState.currentNodeId);
         if (changed) showNode(result.snapshot, changed, savedState);
       }
-      setPanel(null);
+      workSurface.close();
       setAuthorMessage(`SAVED R${result.snapshot.revision}.`);
     } catch (error) {
       const conflict = error instanceof Error && error.message.includes("another device");
@@ -404,7 +396,7 @@ export default function App() {
       } else {
         setSnapshot(optimistic);
         await saveCachedSnapshot(optimistic);
-        setPanel(null);
+        workSurface.close();
         setAuthorMessage("SAVED LOCALLY; D1 SYNC QUEUED.");
       }
     }
@@ -550,7 +542,7 @@ export default function App() {
     setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
     if (node) showNode(snapshot, node, state);
-    setPanel(null); setAuthorMessage("LOCATION LOADED.");
+    workSurface.close(); setAuthorMessage("LOCATION LOADED.");
   };
   const applyInventoryState = (state: PlayState) => {
     if (!snapshot || !playState) return;
@@ -559,7 +551,7 @@ export default function App() {
     if (!transitioned) return;
     const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
     if (node) showNode(snapshot, node, state);
-    setInventoryOpen(false);
+    workSurface.close();
   };
   const showInventoryResponse = (text: string) => {
     historyPinnedToPresentRef.current = true;
@@ -567,7 +559,7 @@ export default function App() {
     setActiveText("");
     setActiveNodeId(undefined);
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
-    setInventoryOpen(false);
+    workSurface.close();
     window.requestAnimationFrame(scrollHistoryToPresent);
   };
   const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
@@ -591,7 +583,8 @@ export default function App() {
   const presentedChoices = authorExperience
     ? currentInputs
     : [...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])];
-  const closeEditor = () => { setPanel(null); setInventoryOpen(false); };
+  const closeEditor = workSurface.close;
+  const leaveCurrentSurface = workSurface.canBack ? workSurface.back : workSurface.close;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
   const authorToolGroups: AuthorToolGroup[] = [
@@ -599,35 +592,35 @@ export default function App() {
       id: "scene",
       label: "CURRENT SCENE",
       tools: [
-        { id: "edit-node", label: "EDIT NODE", description: "Text, speaker, location, tags, and presentation.", onSelect: () => setPanel({ type: "node", node: currentNode }) },
-        { id: "add-input", label: "ADD VALID INPUT", description: "Manual form; typing a new command at U:\\> is faster.", onSelect: () => setPanel({ type: "interaction" }) },
-        { id: "invalid-input", label: fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "ADD INVALID INPUT", description: "What happens when player text does not match a valid input.", tone: invalidDraft ? "draft" : "normal", onSelect: () => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true }) },
+        { id: "edit-node", label: "EDIT NODE", description: "Text, speaker, location, tags, and presentation.", onSelect: () => workSurface.pushPanel({ type: "node", node: currentNode }) },
+        { id: "add-input", label: "ADD VALID INPUT", description: "Manual form; typing a new command at U:\\> is faster.", onSelect: () => workSurface.pushPanel({ type: "interaction" }) },
+        { id: "invalid-input", label: fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "ADD INVALID INPUT", description: "What happens when player text does not match a valid input.", tone: invalidDraft ? "draft" : "normal", onSelect: () => workSurface.pushPanel({ type: "interaction", interaction: fallbackInput, fallback: true }) },
       ],
     },
     {
       id: "systems",
       label: "GAME SYSTEMS",
       tools: [
-        { id: "structure", label: "STRUCTURE", description: "Browse nodes, links, and authored interactions.", onSelect: () => setPanel({ type: "structure" }) },
-        { id: "definitions", label: "STATE + PEOPLE", description: "Variables, computed values, characters, and locations.", onSelect: () => setPanel({ type: "definitions" }) },
-        { id: "inventory", label: "INVENTORY", description: "Inspect inventory and author item definitions.", onSelect: () => { setPanel(null); setInventoryOpen(true); } },
+        { id: "structure", label: "STRUCTURE", description: "Browse nodes, links, and authored interactions.", onSelect: () => workSurface.pushPanel({ type: "structure" }) },
+        { id: "definitions", label: "STATE + PEOPLE", description: "Variables, computed values, characters, and locations.", onSelect: () => workSurface.pushPanel({ type: "definitions" }) },
+        { id: "inventory", label: "INVENTORY", description: "Inspect inventory and author item definitions.", onSelect: workSurface.pushInventory },
       ],
     },
     {
       id: "media",
       label: "WORLD + MEDIA",
       tools: [
-        { id: "locations", label: "SAVED LOCATIONS", description: "Save or restore a play location while authoring.", onSelect: () => setPanel({ type: "workspace", view: "locations" }) },
-        { id: "assets", label: "ASSETS", description: "Browse detected repository art and audio.", onSelect: () => setPanel({ type: "assets" }) },
-        { id: "sound", label: "SOUND", description: "Create and edit synthesized sounds.", onSelect: () => setPanel({ type: "synth" }) },
+        { id: "locations", label: "SAVED LOCATIONS", description: "Save or restore a play location while authoring.", onSelect: () => workSurface.pushPanel({ type: "workspace", view: "locations" }) },
+        { id: "assets", label: "ASSETS", description: "Browse detected repository art and audio.", onSelect: () => workSurface.pushPanel({ type: "assets" }) },
+        { id: "sound", label: "SOUND", description: "Create and edit synthesized sounds.", onSelect: () => workSurface.pushPanel({ type: "synth" }) },
       ],
     },
     {
       id: "project",
       label: "PROJECT",
       tools: [
-        { id: "history", label: "HISTORY", description: "Review revisions and project history.", onSelect: () => setPanel({ type: "workspace", view: "history" }) },
-        { id: "backup", label: "BACKUP", description: "Download a complete Cloudflare project backup.", onSelect: () => { setPanel(null); void downloadBackup(); } },
+        { id: "history", label: "HISTORY", description: "Review revisions and project history.", onSelect: () => workSurface.pushPanel({ type: "workspace", view: "history" }) },
+        { id: "backup", label: "BACKUP", description: "Download a complete Cloudflare project backup.", onSelect: () => { workSurface.close(); void downloadBackup(); } },
       ],
     },
   ];
@@ -685,7 +678,7 @@ export default function App() {
         /> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
-          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+          {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
         </div> : null}
 
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <AuthorHome
@@ -707,20 +700,21 @@ export default function App() {
         </div> : null}
 
         {panel?.type === "tools" ? <AuthorToolIndex groups={authorToolGroups} /> : null}
-        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
-        {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
-        {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} initialView={panel.view} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
+        {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => workSurface.pushPanel({ type: "item", item })} onCreateItem={() => workSurface.pushPanel({ type: "item" })} onSave={persist} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
+        {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) workSurface.pushPanel({ type: "node", node }); }} onEditInteraction={(interaction) => workSurface.pushPanel({ type: "interaction", interaction })} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} initialView={panel.view} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={leaveCurrentSurface} /> : null}
+        {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={leaveCurrentSurface} /> : null}
       </div>
     </div>
-    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close editor" onPointerDown={(event) => event.stopPropagation()} onClick={closeEditor}>[X]</button> : null}
+    {editorOpen && workSurface.canBack ? <button className="work-surface-back" type="button" aria-label="Back to previous Author workspace" onPointerDown={(event) => event.stopPropagation()} onClick={workSurface.back}>[←]</button> : null}
+    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close editor and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={closeEditor}>[X]</button> : null}
     <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
-      setPanel(null);
+      workSurface.close();
       setUnhandledCommand("");
       setAuthorMessage("");
     }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
