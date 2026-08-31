@@ -11,6 +11,11 @@ import type { AuthorPanelRoute } from "../workSurfaceNavigation";
  * is delegated to the Author feature manifest registry. The rendered workspace
  * is portaled to a root Author layer so player-terminal geometry can never
  * constrain an editor's viewport or keyboard behavior.
+ *
+ * The root also owns a guaranteed Back affordance. Feature workspaces therefore
+ * cannot accidentally cover or omit their only escape path; the existing
+ * leaveCurrentSurface contract returns to the parent Author route, or to play
+ * when the current route is the root of the Author stack.
  */
 export function AuthorWorkspaceHost({
   panel,
@@ -32,7 +37,18 @@ export function AuthorWorkspaceHost({
       role="presentation"
       onPointerDown={(event) => event.stopPropagation()}
     >
-      {workspace}
+      <nav className="author-workspace-navigation" aria-label="Author workspace navigation">
+        <button
+          type="button"
+          className="author-workspace-back"
+          onClick={context.leaveCurrentSurface}
+        >
+          [← BACK]
+        </button>
+      </nav>
+      <div className="author-workspace-content">
+        {workspace}
+      </div>
     </div>,
     document.body,
   );
