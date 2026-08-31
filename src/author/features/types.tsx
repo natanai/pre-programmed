@@ -23,6 +23,8 @@ export type AuthorWorkspaceContext = {
   persist: AuthorPersist;
   leaveCurrentSurface: () => void;
   pushPanel: (route: AuthorPanelRoute) => void;
+  onWorkspaceDirtyChange: (dirty: boolean) => void;
+  requestWorkspaceDiscard: (discard: () => void) => void;
   onInventoryState: (state: PlayState) => void;
   onInventoryOutput: (text: string) => void;
   onEvents: (events: EffectEvent[]) => void;
