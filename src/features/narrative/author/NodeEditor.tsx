@@ -61,6 +61,10 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
   const speaker = snapshot.entities.find((entity) => entity.id === draft.characterId)?.name ?? "None";
   const location = snapshot.entities.find((entity) => entity.id === draft.locationId)?.name ?? "None";
   const screenTitle = screen === "text" ? `NODE #${draft.nodeNumber}` : screen.toUpperCase();
+  const selectionLength = Math.max(0, selection.end - selection.start);
+  const selectionLabel = selectionLength
+    ? `${selectionLength} selected · ${selection.start}:${selection.end}`
+    : `cursor ${selection.start}`;
 
   return <section className="author-panel author-panel-frame node-editor focused-node-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="focused-node-header">
@@ -71,7 +75,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
 
     <div className="author-panel-body focused-node-body">
       {screen === "text" ? <>
-        <label>NODE TEXT
+        <label className="node-text-field">NODE TEXT
           <ValueMentionField
             snapshot={snapshot}
             multiline
@@ -79,10 +83,28 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
             textareaRef={textarea}
             value={draft.text}
             onValueChange={(text) => setDraft({ ...draft, text })}
+            onSelectionChange={setSelection}
             autoFocus
           />
         </label>
-        <div className="field-help">INLINE TEXT: /p pause · /p800 custom pause · /f{'{fast}'} · /s{'{shout}'} · /h{'{hit}'} · /w{'{wave}'} · /b{'{blink}'} · /i{'{instant}'} · // literal slash</div>
+        <div className="node-writing-meta" aria-live="polite">
+          <span>{draft.text.length} character{draft.text.length === 1 ? "" : "s"}</span>
+          <span>{selectionLabel}</span>
+        </div>
+        <details className="node-notation-reference">
+          <summary>[TEXT NOTATION]</summary>
+          <div className="node-notation-grid">
+            <span><strong>/p</strong> pause</span>
+            <span><strong>/p800</strong> custom pause</span>
+            <span><strong>/f{'{fast}'}</strong> faster text</span>
+            <span><strong>/s{'{shout}'}</strong> shout</span>
+            <span><strong>/h{'{hit}'}</strong> hit</span>
+            <span><strong>/w{'{wave}'}</strong> wave</span>
+            <span><strong>/b{'{blink}'}</strong> blink</span>
+            <span><strong>/i{'{instant}'}</strong> instant</span>
+            <span><strong>//</strong> literal slash</span>
+          </div>
+        </details>
 
         <div className="node-summary-list">
           <button type="button" onClick={() => setScreen("context")}>
@@ -92,7 +114,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
             <span><strong>PRESENTATION</strong><small>{draft.performance.charactersPerSecond} characters/second</small></span><span aria-hidden="true">›</span>
           </button>
           <button type="button" onClick={openCues}>
-            <span><strong>CUES</strong><small>{draft.performance.cues.length ? `${draft.performance.cues.length} configured · selection ${selection.start}:${selection.end}` : "None · select text first for ranged cues"}</small></span><span aria-hidden="true">›</span>
+            <span><strong>CUES</strong><small>{draft.performance.cues.length ? `${draft.performance.cues.length} configured · ${selectionLabel}` : `None · ${selectionLabel}`}</small></span><span aria-hidden="true">›</span>
           </button>
         </div>
 
@@ -115,7 +137,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
       </div> : null}
 
       {screen === "cues" ? <div className="node-cue-workspace">
-        <h3>CUES AT {selection.start}:{selection.end}</h3>
+        <h3>CUES · {selectionLabel.toUpperCase()}</h3>
         <p className="muted">Return to Node Text to change the selected range, then reopen Cues. A collapsed selection applies at the cursor position.</p>
         <div className="cue-buttons">{(["pause", "speed", "wave", "shake", "blink", "instant", "synth", "audio", "sprite"] as TextCueType[]).map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
         <div className="node-cue-list">
