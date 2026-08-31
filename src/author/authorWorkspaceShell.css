@@ -74,16 +74,58 @@
   margin: 0;
 }
 
-/* App still renders its historical Back control. The portal has the canonical
- * Back now, so suppress only that duplicate. X remains the application-level
- * escape to play and is deliberately layered above every Author feature. */
-body:has(.author-workspace-layer) .work-surface-back {
-  display: none;
-}
-
 body:has(.author-workspace-layer) .work-surface-close {
   display: block;
   z-index: 70;
+}
+
+.author-leave-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: max(1em, env(safe-area-inset-top)) max(1em, env(safe-area-inset-right)) max(1em, env(safe-area-inset-bottom)) max(1em, env(safe-area-inset-left));
+  background: rgb(0 0 0 / .86);
+}
+
+.author-leave-confirmation {
+  display: grid;
+  gap: .9em;
+  width: min(100%, 34em);
+  padding: 1em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.author-leave-confirmation h2,
+.author-leave-confirmation p {
+  margin: 0;
+  font: inherit;
+}
+
+.author-leave-confirmation h2 {
+  color: var(--dos-bright);
+}
+
+.author-leave-confirmation p {
+  color: var(--dos-muted);
+  line-height: 1.25;
+}
+
+.author-leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5em;
+}
+
+.author-leave-actions button {
+  min-height: 2.75em;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
 }
 
 .author-panel-body,
@@ -111,6 +153,15 @@ body:has(.author-workspace-layer) .work-surface-close {
     min-width: 2.75em;
     min-height: 2.75em;
     font-size: max(16px, 1em);
+  }
+
+  .author-leave-confirmation,
+  .author-leave-actions button {
+    font-size: max(16px, 1em);
+  }
+
+  .author-leave-actions {
+    display: grid;
   }
 
   .author-workspace-content > .author-panel,
