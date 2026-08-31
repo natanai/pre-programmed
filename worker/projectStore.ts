@@ -6,6 +6,8 @@ import type {
   Interaction,
   ItemDefinition,
   MutationOperation,
+  OperationHook,
+  OperationId,
   ProjectMutation,
   ProjectSnapshot,
   RevisionSummary,
@@ -14,6 +16,7 @@ import type {
 } from "../src/game/model";
 import { ensureSchema } from "./db/migrations";
 import { json } from "./http";
+import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
 
 function parseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
@@ -121,7 +124,7 @@ type HookRow = {
   id: string;
   target_kind: "item" | "variable" | "computed";
   target_id: string;
-  operation: import("../src/game/model").InventoryOperation;
+  operation: OperationId;
   order_index: number;
   condition_json: string;
   response_text: string;
@@ -132,10 +135,11 @@ type SynthRow = { id: string; key: string; label: string; recipe_json: string };
 
 export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapshot> {
   await ensureSchema(db);
-  const [meta, nodes, interactions, aliases, outcomes, entities, variables, computed, items, hooks, synths, revision] =
+  const [meta, settings, nodes, interactions, aliases, outcomes, entities, variables, computed, items, hooks, synths, revision] =
     await Promise.all([
       db.prepare("SELECT schema_version, start_node_id FROM project_meta WHERE id = 1")
         .first<{ schema_version: number; start_node_id: string }>(),
+      loadProjectSettings(db),
       db.prepare(
         `SELECT n.id, n.node_number, n.text, n.characters_per_second,
                 d.ending, d.tags_json, d.performance_json, c.character_id, c.location_id
@@ -191,9 +195,10 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   }));
 
   return {
-    schemaVersion: Math.max(8, meta.schema_version),
+    schemaVersion: Math.max(10, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
+    settings,
     nodes: nodes.results.map((row): GameNode => {
       const performance = parseJson(row.performance_json, {
         charactersPerSecond: row.characters_per_second,
@@ -323,7 +328,7 @@ function hookStatements(
   db: D1Database,
   targetKind: HookRow["target_kind"],
   targetId: string,
-  hooks: import("../src/game/model").OperationHook[] = [],
+  hooks: OperationHook[] = [],
 ) {
   return [
     db.prepare("DELETE FROM operation_hooks WHERE target_kind = ? AND target_id = ?").bind(targetKind, targetId),
@@ -340,6 +345,8 @@ function hookStatements(
 
 function operationStatements(db: D1Database, operation: MutationOperation): D1PreparedStatement[] {
   switch (operation.type) {
+    case "project.settings":
+      return projectSettingsStatements(db, operation.settings);
     case "node.upsert": {
       const { node } = operation;
       return [
@@ -534,6 +541,7 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
     "DELETE FROM entity_definitions",
   ].map((sql) => db.prepare(sql));
   const operations: MutationOperation[] = [
+    { type: "project.settings", settings: snapshot.settings },
     ...snapshot.entities.map((entity) => ({ type: "entity.upsert" as const, entity })),
     ...snapshot.nodes.map((node) => ({ type: "node.upsert" as const, node })),
     ...snapshot.interactions.map((interaction) => ({ type: "interaction.upsert" as const, interaction })),
