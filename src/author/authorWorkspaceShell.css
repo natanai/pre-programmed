@@ -1,0 +1,88 @@
+/*
+ * Canonical Author workspace layout.
+ *
+ * The player terminal owns the split transcript/prompt presentation only while
+ * playing. Opening any Author work surface switches the same DOM into a single
+ * full-viewport editing workspace. Feature editors own their internal scroll;
+ * the player transcript never competes for vertical room or keyboard space.
+ */
+
+.dos-terminal.dialogue-authoring-active {
+  display: block;
+}
+
+.dos-terminal:has(> .terminal-lower.terminal-lower-expanded) > .terminal-history,
+.dos-terminal.dialogue-authoring-active > .terminal-history,
+.dos-terminal.dialogue-authoring-active > .prompt-line-paused {
+  display: none;
+}
+
+.dos-terminal > .terminal-lower.terminal-lower-expanded,
+.dos-terminal.dialogue-authoring-active > .terminal-lower {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #000;
+}
+
+.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover,
+.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel-frame,
+.dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel-frame,
+.dos-terminal > .terminal-lower.terminal-lower-expanded > .inventory-surface {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: 100%;
+  margin: 0;
+}
+
+.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover {
+  overflow: hidden;
+}
+
+.dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel,
+.dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel {
+  margin: 0;
+}
+
+.author-panel-body,
+.definition-detail-scroll {
+  scroll-padding-block: .5em max(4.25em, env(safe-area-inset-bottom));
+}
+
+@media (min-width: 960px) {
+  .dos-terminal > .terminal-lower.terminal-lower-expanded,
+  .dos-terminal.dialogue-authoring-active > .terminal-lower {
+    inset: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .work-surface-back {
+    left: max(12px, env(safe-area-inset-left));
+  }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .dos-terminal > .terminal-lower.terminal-lower-expanded,
+  .dos-terminal.dialogue-authoring-active > .terminal-lower {
+    inset: 0;
+    padding: 0;
+  }
+
+  .dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel,
+  .dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel,
+  .dos-terminal > .terminal-lower.terminal-lower-expanded > .inventory-surface {
+    margin: 0;
+    padding: .6em;
+  }
+
+  html[data-keyboard-open="true"] .author-panel-body,
+  html[data-keyboard-open="true"] .definition-detail-scroll {
+    scroll-padding-bottom: 2.5em;
+  }
+}
