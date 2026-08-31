@@ -7,7 +7,8 @@ export type EntityDefinition = {
   name: string;
   description: string;
   tags: string[];
-  interactable: boolean;
-  operations: OperationId[];
-  hooks: OperationHook[];
+  /** Optional until the World operation persistence/Author slice activates it. */
+  interactable?: boolean;
+  operations?: OperationId[];
+  hooks?: OperationHook[];
 };
