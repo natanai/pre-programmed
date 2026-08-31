@@ -16,7 +16,6 @@
     "worker",
     "src/game/model.ts",
     "src/game/inventory.ts",
-    "src/game/conditions.ts",
     "src/engine/**/*.ts",
     "src/features/**/*.ts"
   ],
