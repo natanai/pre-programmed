@@ -36,3 +36,23 @@
   color: var(--dos-bright);
   text-align: left;
 }
+
+@media (max-width: 700px) {
+  /* Author mode has controls below the playable input list. Do not let the
+     choice list claim the entire lower half of the terminal on a phone. */
+  .author-choice-scroll {
+    max-height: min(8.75em, 38vh);
+  }
+
+  .author-choice-scroll .author-choice-row,
+  .author-choice-scroll .author-choice-row > button {
+    min-height: 2.75em;
+  }
+
+  /* iOS Safari can keep its bottom chrome visually over the page even when
+     the visual viewport has already settled. Give the single outer Author
+     scroller enough tail room to lift the final controls above that chrome. */
+  .author-choice-scroll + .author-context {
+    padding-bottom: max(4.5em, calc(env(safe-area-inset-bottom) + 3.5em));
+  }
+}
