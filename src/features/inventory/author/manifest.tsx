@@ -16,14 +16,18 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       onEvents={context.onEvents}
       onEditItem={(item) => context.pushPanel({ type: "item", item })}
       onCreateItem={() => context.pushPanel({ type: "item" })}
-      onSave={context.persist}
+      onSave={async (operations, description) => {
+        await context.persist(operations, description);
+      }}
       onClose={context.leaveCurrentSurface}
     />;
 
     if (route.type === "item") return <ItemEditor
       snapshot={context.snapshot}
       initial={route.item}
-      onSave={context.persist}
+      onSave={async (operations, description) => {
+        await context.persist(operations, description);
+      }}
       onCancel={context.leaveCurrentSurface}
     />;
 
