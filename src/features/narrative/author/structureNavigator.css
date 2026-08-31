@@ -1,0 +1,87 @@
+.focused-structure-panel {
+  width: min(100%, 1200px);
+}
+
+.focused-structure-body {
+  display: grid;
+  align-content: start;
+  gap: .6em;
+}
+
+.structure-arrival,
+.structure-level-meta {
+  color: var(--dos-muted);
+}
+
+.structure-level-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: .75em;
+  padding: .35em 0 0;
+}
+
+.structure-input-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.structure-outcomes {
+  grid-column: 2;
+  display: grid;
+  gap: .3em;
+}
+
+.structure-outcomes .branch-destination,
+.structure-outcomes .stay-destination {
+  grid-column: auto;
+}
+
+@media (max-width: 700px) {
+  .focused-structure-panel {
+    width: 100%;
+  }
+
+  .focused-structure-panel .structure-mobile-nav {
+    display: flex;
+    align-items: center;
+    min-height: 2.75em;
+  }
+
+  .focused-structure-panel .structure-mobile-nav button {
+    min-height: 2.75em;
+  }
+
+  .focused-structure-panel .structure-columns {
+    display: block;
+    overflow: visible;
+    background: transparent;
+    scroll-snap-type: none;
+  }
+
+  .focused-structure-panel .structure-level {
+    display: none;
+    width: 100%;
+    min-height: 0;
+    padding: .5em 0;
+  }
+
+  .focused-structure-panel .structure-level.active {
+    display: block;
+  }
+
+  .focused-structure-panel .structure-node,
+  .focused-structure-panel .branch-destination,
+  .focused-structure-panel .branch-edit {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+
+  .focused-structure-panel .structure-branch {
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: .45em 0 .45em .45em;
+  }
+
+  .focused-structure-panel .notation-legend {
+    grid-template-columns: 1fr;
+  }
+}
