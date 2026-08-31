@@ -6,6 +6,7 @@ import type {
   PlayState,
   ProjectSnapshot,
 } from "../../game/model";
+import type { AuthorPersistResult } from "../persistence/authorProjectPersistence";
 import type { AuthorToolContributor } from "../tools/types";
 import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 
@@ -13,7 +14,7 @@ export type AuthorPersist = (
   operations: MutationOperation[],
   description: string,
   closeAfterSave?: boolean,
-) => Promise<void>;
+) => Promise<AuthorPersistResult>;
 
 export type AuthorWorkspaceContext = {
   snapshot: ProjectSnapshot;
@@ -22,6 +23,7 @@ export type AuthorWorkspaceContext = {
   authorToken: string;
   persist: AuthorPersist;
   leaveCurrentSurface: () => void;
+  setWorkspaceDirty: (dirty: boolean) => void;
   pushPanel: (route: AuthorPanelRoute) => void;
   onInventoryState: (state: PlayState) => void;
   onInventoryOutput: (text: string) => void;
