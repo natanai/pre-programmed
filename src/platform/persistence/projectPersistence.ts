@@ -6,6 +6,20 @@ export type ProjectWriteContext = {
 };
 
 /**
+ * Storage-independent optimistic-concurrency failure.
+ *
+ * Hosted persistence can translate HTTP/database conflicts into this error;
+ * future local-file persistence can raise the same error when the project on
+ * disk changed after the author loaded it.
+ */
+export class ProjectRevisionConflictError extends Error {
+  constructor(message = "The project changed after this edit began.") {
+    super(message);
+    this.name = "ProjectRevisionConflictError";
+  }
+}
+
+/**
  * Storage boundary for mutable authored project data.
  *
  * The engine/client depends on this contract rather than on D1 itself. The
