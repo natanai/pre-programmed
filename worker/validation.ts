@@ -1,32 +1,5 @@
-const CONDITION_TYPES = new Set([
-  "always",
-  "all",
-  "any",
-  "not",
-  "has_item",
-  "lacks_item",
-  "flag",
-  "variable",
-  "attempt",
-  "visited",
-  "state",
-]);
-const EFFECT_TYPES = new Set([
-  "set_flag",
-  "clear_flag",
-  "set_value",
-  "increment",
-  "decrement",
-  "give_item",
-  "remove_item",
-  "set_item_state",
-  "set_interaction_visibility",
-  "notification",
-  "synth",
-  "audio",
-  "art",
-  "transition",
-]);
+import { CONDITION_TYPE_SET, EFFECT_TYPE_SET } from "../src/engine/rules/catalog";
+
 const OPERATION_TYPES = new Set([
   "node.upsert",
   "interaction.upsert",
@@ -46,7 +19,7 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 
 function conditionValid(value: unknown, depth = 0): boolean {
-  if (!object(value) || typeof value.type !== "string" || !CONDITION_TYPES.has(value.type) || depth > 8) {
+  if (!object(value) || typeof value.type !== "string" || !CONDITION_TYPE_SET.has(value.type) || depth > 8) {
     return false;
   }
   if (value.type === "all" || value.type === "any") {
@@ -60,7 +33,7 @@ function effectsValid(value: unknown) {
   return (
     Array.isArray(value) &&
     value.length <= 100 &&
-    value.every((effect) => object(effect) && typeof effect.type === "string" && EFFECT_TYPES.has(effect.type))
+    value.every((effect) => object(effect) && typeof effect.type === "string" && EFFECT_TYPE_SET.has(effect.type))
   );
 }
 
