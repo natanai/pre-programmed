@@ -22,6 +22,7 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
+import { ASSET_MANIFEST } from "./generated/assetManifest";
 import { type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
 import { addNewDefaultItemsToPlayState } from "./game/inventory";
@@ -50,7 +51,7 @@ import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
-type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean };
+type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean; artPath?: string };
 type Panel =
   | { type: "node"; node: GameNode }
   | { type: "interaction"; interaction?: Interaction; command?: string; fallback?: boolean }
@@ -61,6 +62,12 @@ type Panel =
   | { type: "workspace"; view?: "locations" | "history" }
   | { type: "item"; item?: ItemDefinition }
   | null;
+
+function usesInlineArt(assetPath: string) {
+  const runtimePath = `/${assetPath.replace(/^\/+/, "")}`;
+  const dimensions = ASSET_MANIFEST.find((asset) => asset.runtimePath === runtimePath)?.dimensions;
+  return Boolean(dimensions && dimensions.width <= 32 && dimensions.height <= 32);
+}
 
 function delayForPosition(performance: TextPerformance, position: number) {
   const speedCue = performance.cues.find((cue) => cue.type === "speed" && cue.start <= position && cue.end > position);
@@ -419,7 +426,11 @@ export default function App() {
       } else if (event.type === "audio") {
         void new Audio(assetUrl(event.assetPath)).play().catch(() => undefined);
       } else if (event.type === "art") {
-        setEventArt(assetUrl(event.assetPath));
+        if (usesInlineArt(event.assetPath)) {
+          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: event.assetPath }]);
+        } else {
+          setEventArt(assetUrl(event.assetPath));
+        }
       }
     }
   };
@@ -570,6 +581,7 @@ export default function App() {
       >
         <div className="terminal-history-content">
           {transcript.map((line) => {
+            if (line.artPath) return <div className="story-line" key={line.id} aria-hidden="true"><img src={assetUrl(line.artPath)} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
             if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;

@@ -19,6 +19,10 @@ async function walk(directory) {
   }
 }
 
+function readUInt24LE(bytes, offset) {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16);
+}
+
 function imageDimensions(bytes, extension) {
   if (extension === ".png" && bytes.length >= 24 && bytes.toString("ascii", 1, 4) === "PNG") {
     return { width: bytes.readUInt32BE(16), height: bytes.readUInt32BE(20) };
@@ -26,11 +30,35 @@ function imageDimensions(bytes, extension) {
   if (extension === ".gif" && bytes.length >= 10) {
     return { width: bytes.readUInt16LE(6), height: bytes.readUInt16LE(8) };
   }
+  if (extension === ".webp" && bytes.length >= 30 && bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP") {
+    const chunkType = bytes.toString("ascii", 12, 16);
+    if (chunkType === "VP8X") {
+      return { width: readUInt24LE(bytes, 24) + 1, height: readUInt24LE(bytes, 27) + 1 };
+    }
+    if (chunkType === "VP8L" && bytes[20] === 0x2f) {
+      const b0 = bytes[21];
+      const b1 = bytes[22];
+      const b2 = bytes[23];
+      const b3 = bytes[24];
+      return {
+        width: 1 + b0 + ((b1 & 0x3f) << 8),
+        height: 1 + ((b1 & 0xc0) >> 6) + (b2 << 2) + ((b3 & 0x0f) << 10),
+      };
+    }
+    if (chunkType === "VP8 " && bytes[23] === 0x9d && bytes[24] === 0x01 && bytes[25] === 0x2a) {
+      return { width: bytes.readUInt16LE(26) & 0x3fff, height: bytes.readUInt16LE(28) & 0x3fff };
+    }
+  }
   if (extension === ".svg") {
     const text = bytes.toString("utf8");
-    const width = Number(text.match(/\bwidth=["']([0-9.]+)["']/i)?.[1]);
-    const height = Number(text.match(/\bheight=["']([0-9.]+)["']/i)?.[1]);
+    const width = Number.parseFloat(text.match(/\bwidth=["']([^"']+)["']/i)?.[1] ?? "");
+    const height = Number.parseFloat(text.match(/\bheight=["']([^"']+)["']/i)?.[1] ?? "");
     if (Number.isFinite(width) && Number.isFinite(height)) return { width, height };
+    const viewBox = text.match(/\bviewBox=["']([^"']+)["']/i)?.[1]
+      ?.trim().split(/[\s,]+/).map(Number);
+    if (viewBox?.length === 4 && viewBox.every(Number.isFinite)) {
+      return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
+    }
   }
   return null;
 }
