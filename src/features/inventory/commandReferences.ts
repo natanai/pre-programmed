@@ -9,7 +9,9 @@ export const INVENTORY_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSourc
       const definition = snapshot.items.find((item) => item.id === entry.itemId);
       if (!definition) return [];
       return [{
-        id: entry.instanceId,
+        // Settings aliases belong to the stable item definition while the
+        // operation target remains this playthrough's concrete inventory entry.
+        id: definition.id,
         label: definition.name,
         aliases: [definition.name, definition.key, ...definition.tags],
         target: { kind: "item", id: entry.instanceId },
