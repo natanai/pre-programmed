@@ -34,7 +34,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
           const arrivalSource = columnIndex === 0 ? playState.traversal.at(-2) : path[columnIndex - 1];
           const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.outcomes.some((outcome) => outcome.destinationNodeId === nodeId && interaction.sourceNodeId === arrivalSource)) : null;
           const active = columnIndex === path.length - 1;
-          return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`} aria-hidden={!active && path.length > 1 ? undefined : undefined}>
+          return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
             <small className="structure-arrival">{arrivedBy ? `VIA ${arrivedBy.matchMode === "fallback" ? "INVALID INPUT" : arrivedBy.wording || arrivedBy.aliases[0]}` : columnIndex === 0 ? "CURRENT PATH" : "HERE"}</small>
             <button type="button" className="structure-node" onClick={() => onOpenNode(node.id)}>
               <span>#{node.nodeNumber} {node.text.slice(0, 70)}</span>
