@@ -1,0 +1,38 @@
+.author-choice-scroll .player-choice-surface {
+  gap: 0;
+}
+
+.author-choice-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-height: 2.5em;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.author-choice-row:last-child {
+  border-bottom: 0;
+}
+
+.player-choice-surface .author-choice-row > button {
+  min-height: 2.5em;
+  border-bottom: 0;
+}
+
+.player-choice-surface .author-choice-edit {
+  min-width: 3.35em;
+  padding-inline: .55em;
+  border-right: 1px dotted var(--dos-line);
+  color: var(--dos-muted);
+  text-align: center;
+}
+
+.player-choice-surface .author-choice-edit.draft-input {
+  color: var(--dos-warn);
+}
+
+.player-choice-surface .author-choice-play {
+  min-width: 0;
+  padding-inline: .65em;
+  color: var(--dos-bright);
+  text-align: left;
+}
