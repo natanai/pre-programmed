@@ -121,6 +121,62 @@
   color: var(--dos-muted);
 }
 
+/* Wide Author mode uses the extra horizontal room instead of stretching the phone layout.
+   The terminal stays the live context pane; focused Author workspaces occupy the right pane. */
+@media (min-width: 960px) {
+  .dos-terminal:has(> .terminal-lower.terminal-lower-expanded) > .terminal-history,
+  .dos-terminal.dialogue-authoring-active > .terminal-history {
+    right: calc(50% + .75em);
+    bottom: 0;
+    padding-right: .75em;
+    border-right: 1px solid var(--dos-line);
+  }
+
+  .dos-terminal:has(> .terminal-lower.terminal-lower-expanded) > .terminal-history .terminal-history-content,
+  .dos-terminal.dialogue-authoring-active > .terminal-history .terminal-history-content {
+    width: 100%;
+    max-width: none;
+    min-height: 100%;
+  }
+
+  .dos-terminal > .terminal-lower.terminal-lower-expanded,
+  .dos-terminal.dialogue-authoring-active > .terminal-lower {
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: calc(50% + .75em);
+    padding: 0 0 0 .75em;
+    overflow: hidden;
+    border-left: 0;
+    background: #000;
+  }
+
+  .dos-terminal.dialogue-authoring-active > .prompt-line-paused {
+    display: none;
+  }
+
+  .dos-terminal.dialogue-authoring-active .dialogue-authoring-popover,
+  .dos-terminal.dialogue-authoring-active .dialogue-authoring-popover > .author-panel-frame,
+  .dos-terminal > .terminal-lower.terminal-lower-expanded > .author-panel-frame,
+  .dos-terminal > .terminal-lower.terminal-lower-expanded > .inventory-surface {
+    height: 100%;
+    max-height: 100%;
+    margin-top: 0;
+  }
+
+  .dos-terminal.dialogue-authoring-active .dialogue-authoring-popover {
+    overflow: hidden;
+  }
+
+  .author-tool-index {
+    width: 100%;
+  }
+
+  .work-surface-close {
+    right: max(12px, env(safe-area-inset-right));
+  }
+}
+
 @media (max-width: 700px) {
   .author-home {
     margin-top: .45em;
