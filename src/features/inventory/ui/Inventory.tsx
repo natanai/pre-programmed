@@ -45,6 +45,7 @@ export function Inventory({
 }) {
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const [screen, setScreen] = useState<InventoryScreen>("play");
+  const [definitionQuery, setDefinitionQuery] = useState("");
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -56,6 +57,13 @@ export function Inventory({
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
   const selectedVariable = selected?.kind === "variable" ? snapshot.variables.find((item) => item.id === selected.id) : undefined;
   const selectedComputed = selected?.kind === "computed" ? snapshot.computedValues.find((item) => item.id === selected.id) : undefined;
+  const normalizedDefinitionQuery = definitionQuery.trim().toLowerCase();
+  const visibleDefinitions = snapshot.items.filter((item) => !normalizedDefinitionQuery || [
+    item.name,
+    item.key,
+    item.description,
+    item.tags.join(" "),
+  ].some((value) => value.toLowerCase().includes(normalizedDefinitionQuery)));
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
@@ -78,13 +86,32 @@ export function Inventory({
 
   if (screen === "definitions" && authorMode) return <section className="inventory-surface inventory-definition-workspace" aria-label="Item definitions" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>ITEM DEFINITIONS</span></header>
-    <div className="inventory-definition-workspace-body">
-      <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← BACK TO INVENTORY]</button>
+    <div className="inventory-definition-controls">
+      <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← INVENTORY]</button>
       <div className="inventory-definition-help">Default quantity is added to every new playthrough. “Add to this run” changes only the current play state.</div>
-      <div className="inventory-definition-cards">
-        {snapshot.items.map((item) => <article className="inventory-definition-card" key={item.id}>
+      <div className="inventory-definition-search-row">
+        <label htmlFor="inventory-definition-search">FIND</label>
+        <div className="inventory-definition-search-control">
+          <input
+            id="inventory-definition-search"
+            type="search"
+            value={definitionQuery}
+            placeholder="item name, key, or tag"
+            onChange={(event) => setDefinitionQuery(event.target.value)}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+          />
+          <span aria-live="polite">{normalizedDefinitionQuery ? `${visibleDefinitions.length}/${snapshot.items.length}` : snapshot.items.length}</span>
+          {definitionQuery ? <button type="button" aria-label="Clear item search" onClick={() => setDefinitionQuery("")}>[X]</button> : null}
+        </div>
+      </div>
+    </div>
+    <div className="inventory-definition-scroll">
+      {visibleDefinitions.length ? <div className="inventory-definition-cards">
+        {visibleDefinitions.map((item) => <article className="inventory-definition-card" key={item.id}>
           <button type="button" className="inventory-definition-open" onClick={() => onEditItem(item)}>
-            <span><strong>{item.name}</strong><small>{item.key || "no key"}</small></span><span aria-hidden="true">›</span>
+            <span><strong>{item.name || item.key || "Untitled item"}</strong><small>{item.key || "no key"}</small></span><span aria-hidden="true">›</span>
           </button>
           <div className="inventory-definition-actions">
             <span>DEFAULT</span>
@@ -98,13 +125,14 @@ export function Inventory({
             <button type="button" className="inventory-add-current" onClick={() => onState(addInventoryItem(snapshot, state, item.id, 1))}>[ADD TO THIS RUN]</button>
           </div>
         </article>)}
-        {!snapshot.items.length ? <div className="inventory-definition-empty">No item definitions yet.</div> : null}
-      </div>
+      </div> : <div className="inventory-definition-empty">{normalizedDefinitionQuery ? "NO MATCHING ITEM DEFINITIONS." : "NO ITEM DEFINITIONS YET."}</div>}
+    </div>
+    <div className="inventory-definition-footer">
       <button type="button" className="inventory-create-definition" onClick={onCreateItem}>[+ ITEM DEFINITION]</button>
     </div>
   </section>;
 
-  return <section className="inventory-surface" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="inventory-surface inventory-play-workspace" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>INVENTORY / STATUS</span></header>
     <div className="status-readout">
       {snapshot.variables.filter((item) => item.showInStatus).map((definition) => {
@@ -126,6 +154,22 @@ export function Inventory({
       {!snapshot.variables.some((item) => item.showInStatus) && !snapshot.computedValues.some((item) => item.showInStatus) ? <span className="muted">No status values are exposed.</span> : null}
     </div>
     <div className="inventory-layout">
+      <aside className={`inventory-inspector${selected ? " has-selection" : ""}`} aria-label="Selected inventory details">
+        {selectedEntry && selectedItem ? <>
+          <div className="inventory-inspector-heading"><strong>{selectedItem.name}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
+          <p>{selectedItem.description}</p>
+          {statusOperationButtons({ kind: "item", id: selectedEntry.instanceId }, selectedItem.operations ?? ["inspect", "use", "move", "remove"])}
+          {authorMode ? <button type="button" onClick={() => onEditItem(selectedItem)}>[EDIT DEFINITION]</button> : null}
+        </> : selectedVariable ? <>
+          <div className="inventory-inspector-heading"><strong>{selectedVariable.label}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
+          <p>{String(state.values[selectedVariable.key] ?? "")}</p>
+          {statusOperationButtons({ kind: "variable", id: selectedVariable.id }, selectedVariable.operations ?? [])}
+        </> : selectedComputed ? <>
+          <div className="inventory-inspector-heading"><strong>{selectedComputed.label}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
+          <p>{String(readComputedValue(selectedComputed, snapshot, state, now))}</p>
+          {statusOperationButtons({ kind: "computed", id: selectedComputed.id }, selectedComputed.operations ?? [])}
+        </> : <p className="inventory-inspector-help">Tap an item or interactive status line. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
+      </aside>
       <div className="inventory-grid" style={{ "--columns": INVENTORY_COLUMNS, "--rows": INVENTORY_ROWS } as CSSProperties}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
@@ -154,19 +198,6 @@ export function Inventory({
           </button>;
         })}
       </div>
-      <aside className="inventory-inspector">
-        {selectedEntry && selectedItem ? <>
-          <strong>{selectedItem.name}</strong><p>{selectedItem.description}</p>
-          {statusOperationButtons({ kind: "item", id: selectedEntry.instanceId }, selectedItem.operations ?? ["inspect", "use", "move", "remove"])}
-          {authorMode ? <button type="button" onClick={() => onEditItem(selectedItem)}>[EDIT DEFINITION]</button> : null}
-        </> : selectedVariable ? <>
-          <strong>{selectedVariable.label}</strong><p>{String(state.values[selectedVariable.key] ?? "")}</p>
-          {statusOperationButtons({ kind: "variable", id: selectedVariable.id }, selectedVariable.operations ?? [])}
-        </> : selectedComputed ? <>
-          <strong>{selectedComputed.label}</strong><p>{String(readComputedValue(selectedComputed, snapshot, state, now))}</p>
-          {statusOperationButtons({ kind: "computed", id: selectedComputed.id }, selectedComputed.operations ?? [])}
-        </> : <p>Tap an item or interactive status line. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
-      </aside>
     </div>
     {authorMode ? <div className="inventory-author-actions">
       <button type="button" onClick={() => setScreen("definitions")}>[ITEM DEFINITIONS]</button>
