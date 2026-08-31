@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { useDraftDirty } from "../../../author/useDraftDirty";
 import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "../../../game/model";
 import { compileTextNotation } from "../../../game/textNotation";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
@@ -9,17 +10,19 @@ type NodeScreen = "text" | "context" | "presentation" | "cues";
 
 type TextSelection = { start: number; end: number };
 
-export function NodeEditor({ node, snapshot, onSave, onCancel }: {
+export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: {
   node: GameNode;
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onCancel: () => void;
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(node));
   const [screen, setScreen] = useState<NodeScreen>("text");
   const [selection, setSelection] = useState<TextSelection>({ start: 0, end: 0 });
   const [saving, setSaving] = useState(false);
   const textarea = useRef<HTMLTextAreaElement>(null);
+  const { markSaved } = useDraftDirty(draft, onDirtyChange);
 
   const rememberSelection = () => {
     const start = textarea.current?.selectionStart ?? 0;
@@ -53,6 +56,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel }: {
     setSaving(true);
     try {
       await onSave([{ type: "node.upsert", node: draft }], `Changed node #${draft.nodeNumber}`);
+      markSaved();
     } finally {
       setSaving(false);
     }
