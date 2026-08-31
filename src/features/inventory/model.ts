@@ -1,5 +1,5 @@
 import type { Value } from "../../engine/rules/model";
-import type { InventoryOperation, OperationHook } from "../operations/model";
+import type { OperationHook, OperationId } from "../operations/model";
 
 export type ItemDefinition = {
   id: string;
@@ -14,7 +14,7 @@ export type ItemDefinition = {
   removable: boolean;
   startingQuantity: number;
   interactable: boolean;
-  operations: InventoryOperation[];
+  operations: OperationId[];
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];

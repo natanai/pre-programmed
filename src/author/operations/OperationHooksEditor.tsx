@@ -1,29 +1,23 @@
 import { useState } from "react";
 import type {
   Condition,
-  InventoryOperation,
   OperationHook,
   ProjectSnapshot,
 } from "../../game/model";
+import type { OperationId } from "../../features/operations/model";
 import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../components/AuthorFields";
+import { AUTHOR_OPERATION_DEFINITIONS } from "./catalog";
 import "./operationHooksEditor.css";
 
 export type OperationCapabilityDraft = {
   interactable: boolean;
-  operations: InventoryOperation[];
+  operations: OperationId[];
   hooks: OperationHook[];
 };
 
-const OPERATIONS: Array<{ value: InventoryOperation; label: string }> = [
-  { value: "inspect", label: "inspect" },
-  { value: "use", label: "use" },
-  { value: "move", label: "move" },
-  { value: "remove", label: "remove" },
-];
-
 type HookScreen = "list" | "hook" | "when" | "effects";
 
-function emptyHook(operation: InventoryOperation, order: number): OperationHook {
+function emptyHook(operation: OperationId, order: number): OperationHook {
   return {
     id: crypto.randomUUID(),
     operation,
@@ -63,6 +57,13 @@ function hookSnippet(hook: OperationHook) {
   return "No response yet";
 }
 
+function operationDefinitionsFor(current?: OperationId) {
+  if (!current || AUTHOR_OPERATION_DEFINITIONS.some((definition) => definition.value === current)) {
+    return AUTHOR_OPERATION_DEFINITIONS;
+  }
+  return [...AUTHOR_OPERATION_DEFINITIONS, { value: current, label: current }];
+}
+
 export function OperationHooksEditor({ capability, snapshot, onChange }: {
   capability: OperationCapabilityDraft;
   snapshot: ProjectSnapshot;
@@ -77,7 +78,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
     hooks: capability.hooks.map((candidate) => candidate.id === id ? hook : candidate),
   });
 
-  const setHookOperation = (id: string, operation: InventoryOperation) => onChange({
+  const setHookOperation = (id: string, operation: OperationId) => onChange({
     ...capability,
     operations: capability.operations.includes(operation)
       ? capability.operations
@@ -95,7 +96,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
   };
 
   const addHook = () => {
-    const operation = capability.operations[0] ?? "inspect";
+    const operation = capability.operations[0] ?? AUTHOR_OPERATION_DEFINITIONS[0]?.value ?? "inspect";
     const hook = emptyHook(operation, capability.hooks.length);
     onChange({
       interactable: true,
@@ -140,7 +141,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
           onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> allow attempts from inventory/status</label>
         {capability.interactable ? <>
           <fieldset className="operation-choices"><legend>AVAILABLE OPERATIONS</legend>
-            {OPERATIONS.map((operation) => <label className="check-label" key={operation.value}><input type="checkbox"
+            {AUTHOR_OPERATION_DEFINITIONS.map((operation) => <label className="check-label" key={operation.value}><input type="checkbox"
               checked={capability.operations.includes(operation.value)}
               onChange={(event) => onChange({
                 ...capability,
@@ -185,14 +186,15 @@ function HookWorkspace({ hook, snapshot, onChange, onOperationChange, onOpenWhen
   hook: OperationHook;
   snapshot: ProjectSnapshot;
   onChange: (hook: OperationHook) => void;
-  onOperationChange: (operation: InventoryOperation) => void;
+  onOperationChange: (operation: OperationId) => void;
   onOpenWhen: () => void;
   onOpenEffects: () => void;
   onRemove: () => void;
 }) {
+  const operationDefinitions = operationDefinitionsFor(hook.operation);
   return <div className="operation-hook-workspace">
-    <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value as InventoryOperation)}>
-      {OPERATIONS.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
+    <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value)}>
+      {operationDefinitions.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
     </select></label>
     <label className="check-label"><input type="checkbox" checked={hook.success}
       onChange={(event) => onChange({ ...hook, success: event.target.checked })} /> operation succeeds</label>
