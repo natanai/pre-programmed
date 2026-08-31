@@ -188,6 +188,62 @@
   cursor: pointer;
 }
 
+.author-unsaved-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: end center;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: rgb(0 0 0 / .72);
+}
+
+.author-unsaved-card {
+  display: grid;
+  width: min(100%, 34em);
+  gap: .55em;
+  padding: .8em;
+  border: 1px solid var(--dos-bright);
+  background: #000;
+  color: var(--dos-text);
+  box-shadow: 0 -1em 3em rgb(0 0 0 / .7);
+}
+
+.author-unsaved-card > strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.author-unsaved-card > span {
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.author-unsaved-card > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: .5em;
+}
+
+.author-unsaved-card button {
+  min-height: 2.75em;
+  padding: .4em .5em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.author-unsaved-card button:focus-visible {
+  outline: 1px solid var(--dos-bright);
+  outline-offset: 2px;
+}
+
+.author-unsaved-card .author-discard-action {
+  color: var(--dos-warn);
+}
+
 /* Wide Author mode uses the extra horizontal room instead of stretching the phone layout.
    The terminal stays the live context pane; focused Author workspaces occupy the right pane. */
 @media (min-width: 960px) {
@@ -248,6 +304,12 @@
   }
 }
 
+@media (min-width: 700px) {
+  .author-unsaved-prompt {
+    place-items: center;
+  }
+}
+
 @media (max-width: 700px) {
   .author-home {
     margin-top: .45em;
@@ -279,7 +341,8 @@
   }
 
   .author-tool-search input,
-  .author-tool-search button {
+  .author-tool-search button,
+  .author-unsaved-card button {
     min-height: 2.75em;
     font-size: max(16px, 1em);
   }
