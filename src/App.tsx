@@ -1,4 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { AuthorHome } from "./author/AuthorHome";
+import { AuthorToolIndex, type AuthorToolGroup } from "./author/AuthorToolIndex";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
@@ -58,6 +60,7 @@ type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boo
 type Panel =
   | { type: "node"; node: GameNode }
   | { type: "interaction"; interaction?: Interaction; command?: string; fallback?: boolean }
+  | { type: "tools" }
   | { type: "definitions" }
   | { type: "structure" }
   | { type: "assets" }
@@ -589,6 +592,45 @@ export default function App() {
     ? currentInputs
     : [...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])];
   const closeEditor = () => { setPanel(null); setInventoryOpen(false); };
+  const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
+  const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
+  const authorToolGroups: AuthorToolGroup[] = [
+    {
+      id: "scene",
+      label: "CURRENT SCENE",
+      tools: [
+        { id: "edit-node", label: "EDIT NODE", description: "Text, speaker, location, tags, and presentation.", onSelect: () => setPanel({ type: "node", node: currentNode }) },
+        { id: "add-input", label: "ADD VALID INPUT", description: "Manual form; typing a new command at U:\\> is faster.", onSelect: () => setPanel({ type: "interaction" }) },
+        { id: "invalid-input", label: fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "ADD INVALID INPUT", description: "What happens when player text does not match a valid input.", tone: invalidDraft ? "draft" : "normal", onSelect: () => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true }) },
+      ],
+    },
+    {
+      id: "systems",
+      label: "GAME SYSTEMS",
+      tools: [
+        { id: "structure", label: "STRUCTURE", description: "Browse nodes, links, and authored interactions.", onSelect: () => setPanel({ type: "structure" }) },
+        { id: "definitions", label: "STATE + PEOPLE", description: "Variables, computed values, characters, and locations.", onSelect: () => setPanel({ type: "definitions" }) },
+        { id: "inventory", label: "INVENTORY", description: "Inspect inventory and author item definitions.", onSelect: () => { setPanel(null); setInventoryOpen(true); } },
+      ],
+    },
+    {
+      id: "media",
+      label: "WORLD + MEDIA",
+      tools: [
+        { id: "locations", label: "SAVED LOCATIONS", description: "Save or restore a play location while authoring.", onSelect: () => setPanel({ type: "workspace", view: "locations" }) },
+        { id: "assets", label: "ASSETS", description: "Browse detected repository art and audio.", onSelect: () => setPanel({ type: "assets" }) },
+        { id: "sound", label: "SOUND", description: "Create and edit synthesized sounds.", onSelect: () => setPanel({ type: "synth" }) },
+      ],
+    },
+    {
+      id: "project",
+      label: "PROJECT",
+      tools: [
+        { id: "history", label: "HISTORY", description: "Review revisions and project history.", onSelect: () => setPanel({ type: "workspace", view: "history" }) },
+        { id: "backup", label: "BACKUP", description: "Download a complete Cloudflare project backup.", onSelect: () => { setPanel(null); void downloadBackup(); } },
+      ],
+    },
+  ];
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) typewriter.completeImmediately();
@@ -646,18 +688,25 @@ export default function App() {
           {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         </div> : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <div className="author-context">
-          <div className="author-status"><span>[AUTHOR] #{currentNode.nodeNumber} R{snapshot.revision} {currentNotation.join("")}</span>{parserResult ? <span>MATCH: {parserResult.reason}{parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}</span> : null}</div>
-          <div className="author-primary-actions"><button type="button" onClick={() => setPanel({ type: "node", node: currentNode })}>[EDIT NODE-TEXT]</button><button type="button" onClick={() => setPanel({ type: "interaction" })}>[+ USER-INPUT-TEXT]</button><button type="button" className={fallbackInput && notationForInput(fallbackInput) === "[D]" ? "draft-input" : ""} onClick={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}>{fallbackInput ? `${notationForInput(fallbackInput)} INVALID INPUT` : "[+ INVALID INPUT]"}</button></div>
-          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "locations" })}>[LOCATIONS]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "history" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
-        </div> : null}
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel && !inventoryOpen ? <AuthorHome
+          nodeNumber={currentNode.nodeNumber}
+          revision={snapshot.revision}
+          notation={currentNotation.join("")}
+          match={parserResult ? `${parserResult.reason}${parserResult.matchedAlias ? ` / ${parserResult.matchedAlias}` : ""}` : undefined}
+          invalidLabel={invalidLabel}
+          invalidDraft={invalidDraft}
+          message={authorMessage}
+          onEditNode={() => setPanel({ type: "node", node: currentNode })}
+          onEditInvalid={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}
+          onOpenTools={() => setPanel({ type: "tools" })}
+        /> : null}
         {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
           <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
           <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
         </div> : null}
-        {authorMessage && !panel && !inventoryOpen ? <div className="author-message">{authorMessage}</div> : null}
 
+        {panel?.type === "tools" ? <AuthorToolIndex groups={authorToolGroups} /> : null}
         {inventoryOpen ? <Inventory snapshot={snapshot} state={playState} authorMode={authorExperience} onState={applyInventoryState} onOutput={showInventoryResponse} onEvents={handleEffectEvents} onEditItem={(item) => { setInventoryOpen(false); setPanel({ type: "item", item }); }} onCreateItem={() => { setInventoryOpen(false); setPanel({ type: "item" }); }} onSave={persist} onClose={() => setInventoryOpen(false)} /> : null}
         {panel?.type === "node" ? <NodeEditor node={panel.node} snapshot={snapshot} onSave={persist} onCancel={() => setPanel(null)} /> : null}
         {panel?.type === "definitions" ? <DefinitionsPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
