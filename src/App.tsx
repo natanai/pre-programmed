@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { AssetExplorer, SynthPanel, WorkspacePanel } from "./components/AuthorTools";
-import { AuthorSettings } from "./components/AuthorSettings";
+import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import { DefinitionsPanel } from "./components/DefinitionsPanel";
 import { InteractionEditor } from "./components/InteractionEditor";
 import { Inventory, ItemEditor } from "./components/Inventory";
@@ -45,6 +45,7 @@ import {
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
+import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { isSoftwareKeyboardOpen } from "./ui/viewport";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
@@ -69,16 +70,18 @@ function usesInlineArt(assetPath: string) {
   return Boolean(dimensions && dimensions.width <= 32 && dimensions.height <= 32);
 }
 
-function delayForPosition(performance: TextPerformance, position: number) {
+function delayForPosition(performance: TextPerformance, position: number, speedMultiplier: number) {
   const speedCue = performance.cues.find((cue) => cue.type === "speed" && cue.start <= position && cue.end > position);
   const speed = typeof speedCue?.value === "number" ? speedCue.value : performance.charactersPerSecond;
   const pause = performance.cues.find((cue) => cue.type === "pause" && cue.start === position);
-  return Math.max(16, Math.round(1000 / Math.max(1, speed))) + (typeof pause?.value === "number" ? pause.value : 0);
+  return Math.max(8, Math.round(1000 / Math.max(1, speed * speedMultiplier))) + (typeof pause?.value === "number" ? pause.value : 0);
 }
 
-function useTypewriter(text: string, performance: TextPerformance) {
+function useTypewriter(text: string, performance: TextPerformance, speedMultiplier: number) {
   const [progress, setProgress] = useState({ text, count: 0 });
   const performanceKey = JSON.stringify(performance);
+  const speedMultiplierRef = useRef(speedMultiplier);
+  useEffect(() => { speedMultiplierRef.current = speedMultiplier; }, [speedMultiplier]);
   useEffect(() => {
     setProgress({ text, count: 0 });
     if (!text) return;
@@ -90,7 +93,7 @@ function useTypewriter(text: string, performance: TextPerformance) {
       timeout = window.setTimeout(() => {
         setProgress({ text, count: next });
         tick(next);
-      }, delayForPosition(performance, position));
+      }, delayForPosition(performance, position, speedMultiplierRef.current));
     };
     tick(0);
     return () => window.clearTimeout(timeout);
@@ -115,6 +118,7 @@ export default function App() {
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
+  const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [unhandledCommand, setUnhandledCommand] = useState("");
@@ -128,7 +132,7 @@ export default function App() {
   const firedCueIds = useRef(new Set<string>());
   const completedPendingDestination = useRef("");
   const flushingQueue = useRef(false);
-  const typewriter = useTypewriter(activeText, activePerformance);
+  const typewriter = useTypewriter(activeText, activePerformance, textSpeedMultiplier);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -248,9 +252,10 @@ export default function App() {
 
   const showNode = (project: ProjectSnapshot, node: GameNode, state: PlayState) => {
     firedCueIds.current = new Set();
-    setActiveText(interpolateText(node.text, { snapshot: project, state }));
+    const compiled = compileTextNotation(interpolateText(node.text, { snapshot: project, state }), node.performance);
+    setActiveText(compiled.text);
     setActiveNodeId(node.id);
-    setActivePerformance(node.performance);
+    setActivePerformance(compiled.performance);
   };
 
   useEffect(() => {
@@ -501,9 +506,10 @@ export default function App() {
     if (execution.responseText) {
       firedCueIds.current = new Set();
       completedPendingDestination.current = "";
-      setActiveText(execution.responseText);
+      const compiled = compileTextNotation(execution.responseText, { charactersPerSecond: execution.outcome?.responseCharactersPerSecond ?? 18, cues: [] });
+      setActiveText(compiled.text);
       setActiveNodeId(undefined);
-      setActivePerformance({ charactersPerSecond: execution.outcome?.responseCharactersPerSecond ?? 18, cues: [] });
+      setActivePerformance(compiled.performance);
       setPendingDestinationNodeId(destination?.id ?? null);
     } else if (destination) {
       setPendingDestinationNodeId(null);
@@ -651,12 +657,12 @@ export default function App() {
       </div>
     </div>
     {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close editor" onPointerDown={(event) => event.stopPropagation()} onClick={closeEditor}>[X]</button> : null}
-    {authorMode && !editorOpen ? <AuthorSettings authorView={authorView} onToggleAuthorView={() => {
+    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       setPanel(null);
       setUnhandledCommand("");
       setAuthorMessage("");
-    }} /> : null}
+    }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
