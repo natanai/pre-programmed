@@ -51,7 +51,7 @@ function projectSettingsValid(value: unknown) {
 
   for (const command of commands) {
     if (!object(command) || typeof command.id !== "string" || command.id.length > 96) return false;
-    if (!operationIdValid(command.key) || !operationIdValid(command.operation)) return false;
+    if (!operationIdValid(command.operation)) return false;
     if (typeof command.label !== "string" || command.label.length > 96 || typeof command.enabled !== "boolean") return false;
     if (!stringArray(command.patterns, 32, 180) || !Array.isArray(command.slots) || command.slots.length > 12) return false;
     if (typeof command.targetSlot !== "string" || command.targetSlot.length > 32) return false;
