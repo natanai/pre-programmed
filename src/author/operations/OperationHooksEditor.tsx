@@ -74,6 +74,9 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
+    operations: capability.operations.includes(hook.operation)
+      ? capability.operations
+      : [...capability.operations, hook.operation],
     hooks: capability.hooks.map((candidate) => candidate.id === id ? hook : candidate),
   });
 
