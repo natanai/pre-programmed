@@ -1,28 +1,14 @@
 import type { AuthorToolGroup } from "../AuthorToolIndex";
-import { inventoryAuthorTools } from "../../features/inventory/author/tools";
-import { mediaAuthorTools } from "../../features/media/author/tools";
-import { narrativeAuthorTools } from "../../features/narrative/author/tools";
-import { stateAuthorTools } from "../../features/state/author/tools";
-import { projectAuthorTools } from "./projectTools";
-import type { AuthorToolContext, AuthorToolContributor } from "./types";
+import { AUTHOR_FEATURES } from "../features/registry";
+import type { AuthorToolContext } from "./types";
 
 /**
- * Static composition root for Author navigation contributions.
- *
- * A future feature should own its tool definitions next to the feature and add
- * exactly one contributor here. Group layout is derived from contribution
+ * Builds the Author navigation index from the same feature manifests that own
+ * focused Author workspace rendering. Group layout is derived from contribution
  * metadata rather than hard-coded in App.tsx.
  */
-const CONTRIBUTORS: readonly AuthorToolContributor[] = [
-  narrativeAuthorTools,
-  stateAuthorTools,
-  inventoryAuthorTools,
-  mediaAuthorTools,
-  projectAuthorTools,
-];
-
 export function buildAuthorToolGroups(context: AuthorToolContext): AuthorToolGroup[] {
-  const contributions = CONTRIBUTORS.flatMap((contributor) => contributor(context));
+  const contributions = AUTHOR_FEATURES.flatMap((feature) => feature.tools?.(context) ?? []);
   const groups = new Map<string, {
     id: string;
     label: string;
