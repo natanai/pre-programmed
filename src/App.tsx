@@ -1,5 +1,10 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
+import {
+  flushQueuedAuthorMutations,
+  persistAuthorMutation,
+  type AuthorPersistResult,
+} from "./author/persistence/authorProjectPersistence";
 import { buildAuthorToolGroups } from "./author/tools/registry";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
@@ -9,14 +14,10 @@ import {
   authorLoginErrorMessage,
   fetchProjectSnapshot,
   readJson,
-  submitProjectMutation,
   waitForProjectSnapshot,
 } from "./data/api";
 import {
-  listQueuedMutations,
   loadCachedSnapshot,
-  queueMutation,
-  removeQueuedMutation,
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
@@ -47,6 +48,7 @@ import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { UNIVERSE_DRIVE_PROMPT } from "./game/opening";
 import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
+import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
 import {
   TerminalCommandComposer,
   type TerminalCommandChoice,
@@ -335,18 +337,14 @@ export default function App() {
         setAuthorView(true);
         if (flushingQueue.current) return;
         flushingQueue.current = true;
-        const queued = await listQueuedMutations();
         try {
-          let project = await fetchProjectSnapshot();
-          for (const entry of queued.sort((left, right) => left.queuedAt.localeCompare(right.queuedAt))) {
-            const result = await submitProjectMutation(authorToken, { ...entry.mutation, expectedRevision: project.revision });
-            project = result.snapshot;
-            await removeQueuedMutation(entry.id);
-          }
-          if (queued.length) {
+          const { snapshot: project, flushedCount } = await flushQueuedAuthorMutations({
+            persistence: cloudflareProjectPersistence,
+            authorization: authorToken,
+          });
+          if (flushedCount) {
             setSnapshot(project);
             setPlayState((existing) => existing ? reconcilePlayState(project, existing) : createEmptyPlayState(project));
-            await saveCachedSnapshot(project);
           }
         } finally {
           flushingQueue.current = false;
@@ -355,8 +353,12 @@ export default function App() {
     return () => { cancelled = true; };
   }, [authorToken]);
 
-  const persist = async (operations: MutationOperation[], description: string, closeAfterSave = false) => {
-    if (!snapshot || !authorToken) return;
+  const persist = async (
+    operations: MutationOperation[],
+    description: string,
+    closeAfterSave = false,
+  ): Promise<AuthorPersistResult> => {
+    if (!snapshot || !authorToken) return { status: "failed", snapshot };
     const before = snapshot;
     const beforeState = playState;
     const optimistic = applyOperations(snapshot, operations);
@@ -366,15 +368,20 @@ export default function App() {
     const mutation: ProjectMutation = { expectedRevision: snapshot.revision, description, operations };
     setSnapshot(optimistic);
     if (optimisticState) setPlayState(optimisticState);
-    await saveCachedSnapshot(optimistic);
-    const queueId = await queueMutation(mutation);
     setAuthorMessage("SAVING...");
-    try {      const result = await submitProjectMutation(authorToken, mutation);
-      await removeQueuedMutation(queueId);
+
+    const result = await persistAuthorMutation({
+      persistence: cloudflareProjectPersistence,
+      authorization: authorToken,
+      mutation,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: before,
+    });
+
+    if (result.status === "saved") {
       setSnapshot(result.snapshot);
       const savedState = optimisticState ? reconcilePlayState(result.snapshot, optimisticState) : null;
       if (savedState) setPlayState(savedState);
-      await saveCachedSnapshot(result.snapshot);
       const changedCurrentNode = operations.some((operation) =>
         operation.type === "node.upsert" && operation.node.id === playState?.currentNodeId,
       );
@@ -384,26 +391,27 @@ export default function App() {
       }
       if (closeAfterSave) workSurface.close();
       setAuthorMessage(`SAVED R${result.snapshot.revision}.`);
-    } catch (error) {
-      const conflict = error instanceof Error && error.message.includes("another device");
-      if (conflict) {
-        await removeQueuedMutation(queueId);
-        setSnapshot(before);
-        if (beforeState) setPlayState(beforeState);
-        const fresh = await fetchProjectSnapshot().catch(() => null);
-        if (fresh) {
-          setSnapshot(fresh);
-          if (beforeState) setPlayState(reconcilePlayState(fresh, beforeState));
-          await saveCachedSnapshot(fresh);
-        }
-        setAuthorMessage("NEWER REVISION FOUND. SYNCHRONIZED; REVIEW AND SAVE AGAIN.");
-      } else {
-        setSnapshot(optimistic);
-        await saveCachedSnapshot(optimistic);
-        if (closeAfterSave) workSurface.close();
-        setAuthorMessage("SAVED LOCALLY; D1 SYNC QUEUED.");
-      }
+      return result;
     }
+
+    if (result.status === "queued") {
+      if (closeAfterSave) workSurface.close();
+      setAuthorMessage("SAVED LOCALLY; SERVER SYNC QUEUED.");
+      return result;
+    }
+
+    if (result.status === "conflict") {
+      const synchronized = result.snapshot ?? before;
+      setSnapshot(synchronized);
+      if (beforeState) setPlayState(reconcilePlayState(synchronized, beforeState));
+      setAuthorMessage("NEWER REVISION FOUND. SYNCHRONIZED; REVIEW AND SAVE AGAIN.");
+      return result;
+    }
+
+    setSnapshot(before);
+    if (beforeState) setPlayState(beforeState);
+    setAuthorMessage("SAVE FAILED. CHANGES ARE STILL OPEN; TRY AGAIN.");
+    return result;
   };
 
   const downloadBackup = async () => {
@@ -543,7 +551,8 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close(); setAuthorMessage("LOCATION LOADED.");
   };
-  const applyInventoryState = (state: PlayState) => {    if (!snapshot || !playState) return;
+  const applyInventoryState = (state: PlayState) => {
+    if (!snapshot || !playState) return;
     const transitioned = state.traversal.length > playState.traversal.length;
     setPlayState(state);
     if (!transitioned) return;
@@ -574,12 +583,8 @@ export default function App() {
 
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : UNIVERSE_DRIVE_PROMPT;
-  const dialogueAuthoring = panel?.type === "interaction";
-  const workSurfaceOpen = Boolean(panel && !dialogueAuthoring);
   const editorOpen = Boolean(panel);
   const authorExperience = authorMode && authorView;
-  const closeEditor = workSurface.close;
-  const leaveCurrentSurface = workSurface.canBack ? workSurface.back : workSurface.close;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
   const authorToolGroups = buildAuthorToolGroups({
@@ -595,7 +600,7 @@ export default function App() {
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) typewriter.completeImmediately();
   }}>
-    <div className={`dos-terminal${dialogueAuthoring ? " dialogue-authoring-active" : ""}`}>
+    <div className="dos-terminal">
       <div
         ref={terminalHistoryRef}
         className="terminal-history"
@@ -617,7 +622,6 @@ export default function App() {
         </div>
       </div>
 
-      {typewriter.complete && dialogueAuthoring ? <div className="prompt-line prompt-line-paused" aria-hidden="true"><span>{UNIVERSE_DRIVE_PROMPT}</span><span className="dos-cursor" /></div> : null}
       {typewriter.complete && !pendingDestinationNodeId && !panel ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
@@ -630,7 +634,7 @@ export default function App() {
         ariaLabel={requestingKey ? "Author key" : "Universe command"}
       /> : null}
 
-      <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
+      <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && currentInputs.length && !panel ? <AuthorInputSurface
           choices={currentInputs}
           onChoose={playAuthorInput}
@@ -638,7 +642,7 @@ export default function App() {
           onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
         /> : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !dialogueAuthoring && !panel ? <AuthorHome
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
@@ -664,18 +668,21 @@ export default function App() {
           authorMode={authorExperience}
           authorToken={authorToken}
           persist={persist}
-          leaveCurrentSurface={leaveCurrentSurface}
+          leaveCurrentSurface={workSurface.requestBack}
+          setWorkspaceDirty={workSurface.setCurrentDirty}
           pushPanel={workSurface.pushPanel}
           onInventoryState={applyInventoryState}
           onInventoryOutput={showInventoryResponse}
           onEvents={handleEffectEvents}
           onSnapshot={applyCanonicalSnapshot}
           onRestore={restoreBookmark}
+          leaveConfirmation={workSurface.leaveConfirmation}
+          onConfirmLeave={workSurface.confirmLeave}
+          onCancelLeave={workSurface.cancelLeave}
         />
       </div>
     </div>
-    {editorOpen && workSurface.canBack ? <button className="work-surface-back" type="button" aria-label="Back to previous Author workspace" onPointerDown={(event) => event.stopPropagation()} onClick={workSurface.back}>[←]</button> : null}
-    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close editor and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={closeEditor}>[X]</button> : null}
+    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author workspace and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={workSurface.requestClose}>[X]</button> : null}
     <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       workSurface.close();
