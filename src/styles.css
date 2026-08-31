@@ -151,8 +151,10 @@ button:disabled { opacity: .45; cursor: default; }
 .alias-strip { width: 100%; padding: .3em 0; border-top: 1px dotted var(--dos-line); }
 .alias-strip > div { display: flex; max-height: 3.2em; overflow: auto; flex-wrap: wrap; gap: .45em .75em; align-items: center; padding-top: .4em; }
 
-.player-choice-surface { display: grid; max-height: 6em; overflow-y: auto; gap: .15em; margin: 0 0 .65em; padding: 0; }
+.player-choice-scroll { display: grid; grid-template-rows: minmax(0, 1fr) auto; max-height: min(18em, 100%); margin: 0 0 .65em; }
+.player-choice-surface { min-height: 0; display: grid; overflow-y: auto; overscroll-behavior: contain; gap: .15em; margin: 0; padding: 0; -webkit-overflow-scrolling: touch; }
 .player-choice-surface button { min-height: 1em; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.choice-scroll-cue { justify-self: end; min-width: 2.75em; min-height: 2.25em; padding: 0; border: 0; background: #000; color: var(--dos-muted); font: inherit; cursor: pointer; }
 
 .author-panel, .inventory-surface {
   position: relative; margin-top: 1em; padding: .75em; border: 1px solid var(--dos-line); background: #000; color: var(--dos-text);
@@ -284,6 +286,7 @@ button:disabled { opacity: .45; cursor: default; }
 .synth-steps button { min-height: 2em; }
 .synth-steps select { padding: 0; }
 .bookmark-create { display: grid; grid-template-columns: 1fr auto; gap: .5em; }
+.workspace-empty { display: block; padding: .45em; background: #050505; color: var(--dos-muted); }
 .revisions { max-height: 15em; overflow: auto; }
 
 .command-line { position: relative; }
@@ -362,6 +365,7 @@ button:disabled { opacity: .45; cursor: default; }
   .bookmark-create { grid-template-columns: 1fr; }
   .current-inputs { grid-template-columns: 1fr; }
   .time-change-setting { grid-template-columns: 1fr 1fr; }
+  .player-choice-scroll { max-height: calc(100% - .25em); }
   .player-choice-surface button { min-height: 2.75em; }
   .inventory-definition-list > div { align-items: flex-start; flex-direction: column; }
   .event-art { inset: 4%; }

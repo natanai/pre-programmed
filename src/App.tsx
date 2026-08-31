@@ -30,6 +30,7 @@ import { applyOperations } from "./game/mutations";
 import {
   createEmptyPlayState,
   reconcilePlayState,
+  resumeAuthorBookmark,
   type AuthorBookmark,
   type GameNode,
   type Interaction,
@@ -57,7 +58,7 @@ type Panel =
   | { type: "structure" }
   | { type: "assets" }
   | { type: "synth" }
-  | { type: "workspace" }
+  | { type: "workspace"; view?: "locations" | "history" }
   | { type: "item"; item?: ItemDefinition }
   | null;
 
@@ -456,7 +457,8 @@ export default function App() {
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
     if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
     if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
-    if (authorMode && authorView && ["/history", "/locations", "/bookmark", "history", "locations"].includes(normalized)) { setPanel({ type: "workspace" }); return; }
+    if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
+    if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 
     const currentState = advanceTimedVariables(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
@@ -508,11 +510,11 @@ export default function App() {
   const focusTerminal = () => { if (!panel && !inventoryOpen) terminalInputRef.current?.focus(); };
   const restoreBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
-    const state = reconcilePlayState(snapshot, bookmark.playState);
+    const state = resumeAuthorBookmark(snapshot, bookmark);
     setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
     if (node) showNode(snapshot, node, state);
-    setPanel(null); setAuthorMessage("LOCATION RESTORED.");
+    setPanel(null); setAuthorMessage("LOCATION LOADED.");
   };
   const applyInventoryState = (state: PlayState) => {
     if (!snapshot || !playState) return;
@@ -589,10 +591,10 @@ export default function App() {
       ><span>{promptLabel}</span><span>{mirroredCommand}</span><span className="dos-cursor" aria-hidden="true" /><input ref={terminalInputRef} className="terminal-input" type={requestingKey ? "password" : "text"} value={command} onChange={(event) => { setCommand(event.target.value); if (event.target.value) setChoiceMenuOpen(false); }} autoCapitalize="none" autoComplete="off" autoCorrect="off" spellCheck={false} autoFocus enterKeyHint="send" aria-label={requestingKey ? "Author key" : "Universe command"} /></form> : null}
 
       <div className={`terminal-lower${workSurfaceOpen ? " terminal-lower-expanded" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
-        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <div className="player-choice-surface" aria-label="Available choices">
-          {immediateChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
-          {choiceMenuOpen ? promptChoices.map((interaction) => <button type="button" key={interaction.id} onClick={() => choosePlayerInput(interaction)}>{interaction.wording || interaction.aliases[0]}</button>) : null}
-        </div> : null}
+        {typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && (immediateChoices.length || (choiceMenuOpen && promptChoices.length)) && !panel && !inventoryOpen ? <PlayerChoiceSurface
+          choices={[...immediateChoices, ...(choiceMenuOpen ? promptChoices : [])]}
+          onChoose={choosePlayerInput}
+        /> : null}
 
         {dialogueAuthoring ? <div className="dialogue-authoring-popover">
           {panel?.type === "interaction" ? <InteractionEditor snapshot={snapshot} playState={playState} initial={panel.interaction} initialCommand={panel.command} fallback={panel.fallback} onSave={persist} onCancel={() => setPanel(null)} /> : null}
@@ -605,7 +607,7 @@ export default function App() {
             <span>USER INPUTS FROM HERE</span>
             <div>{currentInputs.map((interaction) => <button type="button" className={notationForInput(interaction) === "[D]" ? "draft-input" : ""} key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction })}><strong>{notationForInput(interaction)}</strong> {interaction.wording || interaction.aliases[0] || "untitled"}</button>)}{!currentInputs.length ? <span className="muted">none yet</span> : null}</div>
           </div>
-          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
+          <details className="author-more-tools"><summary>[MORE TOOLS]</summary><div className="author-toolbar"><button type="button" onClick={() => setPanel({ type: "structure" })}>[STRUCTURE]</button><button type="button" onClick={() => setPanel({ type: "definitions" })}>[STATE + PEOPLE]</button><button type="button" onClick={() => setInventoryOpen(true)}>[INVENTORY]</button><button type="button" onClick={() => setPanel({ type: "assets" })}>[ASSETS]</button><button type="button" onClick={() => setPanel({ type: "synth" })}>[SOUND]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "locations" })}>[LOCATIONS]</button><button type="button" onClick={() => setPanel({ type: "workspace", view: "history" })}>[HISTORY]</button><button type="button" onClick={() => void downloadBackup()}>[BACKUP]</button></div></details>
         </div> : null}
         {unhandledCommand && authorExperience && !panel && !inventoryOpen ? <div className="unhandled-tools">
           <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
@@ -620,7 +622,7 @@ export default function App() {
         {panel?.type === "structure" ? <StructureNavigator snapshot={snapshot} playState={playState} onOpenNode={(nodeId) => { const node = snapshot.nodes.find((candidate) => candidate.id === nodeId); if (node) setPanel({ type: "node", node }); }} onEditInteraction={(interaction) => setPanel({ type: "interaction", interaction })} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "assets" ? <AssetExplorer snapshot={snapshot} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "synth" ? <SynthPanel snapshot={snapshot} onSave={persist} onClose={() => setPanel(null)} /> : null}
-        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
+        {panel?.type === "workspace" ? <WorkspacePanel token={authorToken} snapshot={snapshot} playState={playState} initialView={panel.view} onSave={persist} onSnapshot={applyCanonicalSnapshot} onRestore={restoreBookmark} onClose={() => setPanel(null)} /> : null}
         {panel?.type === "item" ? <ItemEditor snapshot={snapshot} initial={panel.item} onSave={persist} onCancel={() => setPanel(null)} /> : null}
       </div>
     </div>
@@ -634,6 +636,37 @@ export default function App() {
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
+}
+
+function PlayerChoiceSurface({ choices, onChoose }: { choices: Interaction[]; onChoose: (interaction: Interaction) => void }) {
+  const surfaceRef = useRef<HTMLDivElement>(null);
+  const [hasMoreBelow, setHasMoreBelow] = useState(false);
+  const choiceKey = choices.map((choice) => choice.id).join(":");
+  const measure = () => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    setHasMoreBelow(surface.scrollTop + surface.clientHeight < surface.scrollHeight - 2);
+  };
+
+  useLayoutEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return;
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(surface);
+    window.addEventListener("resize", measure);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [choiceKey]);
+
+  return <div className="player-choice-scroll">
+    <div ref={surfaceRef} className="player-choice-surface" aria-label="Available choices" onScroll={measure}>
+      {choices.map((interaction) => <button type="button" key={interaction.id} onClick={() => onChoose(interaction)}>{interaction.wording || interaction.aliases[0]}</button>)}
+    </div>
+    {hasMoreBelow ? <button type="button" className="choice-scroll-cue" aria-label="Show more choices" onClick={() => surfaceRef.current?.scrollBy({ top: Math.max(44, surfaceRef.current.clientHeight * .8), behavior: "auto" })}>↓</button> : null}
+  </div>;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {

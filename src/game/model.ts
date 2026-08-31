@@ -303,6 +303,20 @@ export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, 
   };
 }
 
+export function resumeAuthorBookmark(snapshot: ProjectSnapshot, bookmark: AuthorBookmark, now = Date.now()): PlayState {
+  const savedAt = Date.parse(bookmark.createdAt);
+  const elapsedAtSave = Number.isFinite(savedAt)
+    ? Math.max(0, savedAt - bookmark.playState.sessionStartedAt)
+    : 0;
+  return reconcilePlayState(snapshot, {
+    ...structuredClone(bookmark.playState),
+    currentNodeId: bookmark.nodeId,
+    traversal: [...bookmark.traversal],
+    sessionStartedAt: now - elapsedAtSave,
+    variableTimeUpdatedAt: now,
+  }, now);
+}
+
 export function nextNodeNumber(snapshot: ProjectSnapshot) {
   return snapshot.nodes.reduce((maximum, node) => Math.max(maximum, node.nodeNumber), 0) + 1;
 }
