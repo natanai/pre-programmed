@@ -11,7 +11,9 @@ export type AuthorPanelRoute =
   | { type: "assets" }
   | { type: "synth" }
   | { type: "workspace"; view?: "locations" | "history" }
-  | { type: "item"; item?: ItemDefinition };
+  | { type: "item"; item?: ItemDefinition }
+  /** Generic extension route so new modules do not expand this central union. */
+  | { type: "feature"; feature: string; workspace: string; data?: Record<string, string> };
 
 type WorkSurfaceEntry = {
   id: string;
