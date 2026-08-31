@@ -14,18 +14,20 @@ export type AuthorPersistResult =
   | { status: "saved"; snapshot: ProjectSnapshot }
   | { status: "queued"; snapshot: ProjectSnapshot }
   | { status: "conflict"; snapshot: ProjectSnapshot | null }
-  | { status: "failed"; snapshot: ProjectSnapshot };
+  | { status: "failed"; snapshot: ProjectSnapshot | null };
 
 export async function persistAuthorMutation({
   persistence,
   authorization,
   mutation,
   optimisticSnapshot,
+  previousSnapshot,
 }: {
   persistence: ProjectPersistence;
   authorization: string;
   mutation: ProjectMutation;
   optimisticSnapshot: ProjectSnapshot;
+  previousSnapshot: ProjectSnapshot;
 }): Promise<AuthorPersistResult> {
   await saveCachedSnapshot(optimisticSnapshot);
   const queued = await queueMutation(mutation);
@@ -40,6 +42,7 @@ export async function persistAuthorMutation({
       if (queued.stored) await removeQueuedMutation(queued.id);
       const snapshot = await persistence.readProject().catch(() => null);
       if (snapshot) await saveCachedSnapshot(snapshot);
+      else await saveCachedSnapshot(previousSnapshot);
       return { status: "conflict", snapshot };
     }
 
@@ -47,7 +50,10 @@ export async function persistAuthorMutation({
       return { status: "queued", snapshot: optimisticSnapshot };
     }
 
-    return { status: "failed", snapshot: optimisticSnapshot };
+    // Neither the hosted store nor the mutation queue accepted this edit. Do
+    // not leave an optimistic snapshot in browser cache that cannot be replayed.
+    await saveCachedSnapshot(previousSnapshot);
+    return { status: "failed", snapshot: previousSnapshot };
   }
 }
 
