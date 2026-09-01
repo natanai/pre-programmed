@@ -21,8 +21,7 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
-import { ASSET_MANIFEST } from "./generated/assetManifest";
-import { type EffectEvent } from "./game/effects";
+import { effectEventsForTextCue, presentEffectEvents, type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
 import { interpolateText } from "./game/interpolation";
 import { applyOperations } from "./game/mutations";
@@ -43,7 +42,6 @@ import {
 import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
-import { playSynthSound } from "./game/synth";
 import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./features/commands/applicationCatalog";
@@ -73,12 +71,6 @@ function terminalChoiceForInteraction(interaction: Interaction): TerminalCommand
     id: interaction.id,
     text: interaction.aliases[0] || interaction.wording,
   };
-}
-
-function usesInlineArt(assetPath: string) {
-  const runtimePath = `/${assetPath.replace(/^\/+/, "")}`;
-  const dimensions = ASSET_MANIFEST.find((asset) => asset.runtimePath === runtimePath)?.dimensions;
-  return Boolean(dimensions && dimensions.width <= 32 && dimensions.height <= 32);
 }
 
 function delayForPosition(performance: TextPerformance, position: number, speedMultiplier: number) {
@@ -403,24 +395,24 @@ export default function App() {
   };
 
   const handleEffectEvents = (events: EffectEvent[], anchorLineId?: string) => {
-    for (const event of events) {
-      if (event.type === "notification") {
-        const id = crypto.randomUUID();
-        setNotifications((items) => [...items, { id, text: event.text, anchorLineId }]);
-        window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
-      } else if (event.type === "synth" && snapshot) {
-        const sound = snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);
-        if (sound) void playSynthSound(sound);
-      } else if (event.type === "audio") {
-        void new Audio(assetUrl(event.assetPath)).play().catch(() => undefined);
-      } else if (event.type === "art") {
-        if (usesInlineArt(event.assetPath)) {
-          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: event.assetPath }]);
-        } else {
-          setEventArt(assetUrl(event.assetPath));
-        }
-      }
-    }
+    if (!snapshot || !events.length) return;
+    presentEffectEvents(events, {
+      snapshot,
+      anchorLineId,
+      surface: {
+        notify(text, anchoredLineId) {
+          const id = crypto.randomUUID();
+          setNotifications((items) => [...items, { id, text, anchorLineId: anchoredLineId }]);
+          window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
+        },
+        appendInlineAsset(assetPath) {
+          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: assetPath }]);
+        },
+        showOverlayAsset(assetPath) {
+          setEventArt(assetUrl(assetPath));
+        },
+      },
+    });
   };
 
   const presentRuntimeExecution = (
@@ -460,9 +452,7 @@ export default function App() {
   useEffect(() => {
     for (const cue of activePerformance.cues) {
       if (cue.start > typewriter.count || firedCueIds.current.has(cue.id)) continue;
-      if (cue.type === "synth" && typeof cue.value === "string") handleEffectEvents([{ type: "synth", synthId: cue.value }]);
-      if (cue.type === "audio" && typeof cue.value === "string") handleEffectEvents([{ type: "audio", assetPath: cue.value }]);
-      if (cue.type === "sprite" && typeof cue.value === "string") handleEffectEvents([{ type: "art", assetPath: cue.value }]);
+      handleEffectEvents(effectEventsForTextCue(cue));
       firedCueIds.current.add(cue.id);
     }
   }, [typewriter.count, activePerformance]);
