@@ -4,7 +4,7 @@ import type {
   ProjectSnapshot,
   RevisionSummary,
 } from "../game/model";
-import { cloudflareProjectPersistence } from "../platform/persistence/cloudflareProjectPersistence";
+import { configuredProjectPersistence } from "../platform/persistence/configuredProjectPersistence";
 import { ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
 export { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
@@ -18,7 +18,7 @@ export function authorLoginErrorMessage(error: unknown) {
 }
 
 export async function fetchProjectSnapshot() {
-  return cloudflareProjectPersistence.readProject();
+  return configuredProjectPersistence.readProject();
 }
 
 function abortError() {
@@ -66,7 +66,7 @@ export async function waitForProjectSnapshot(options: {
 }
 
 export async function submitProjectMutation(token: string, mutation: ProjectMutation) {
-  const snapshot = await cloudflareProjectPersistence.writeProject(mutation, { authorization: token });
+  const snapshot = await configuredProjectPersistence.writeProject(mutation, { authorization: token });
   return { snapshot };
 }
 

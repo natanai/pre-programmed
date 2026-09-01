@@ -1,18 +1,21 @@
 # Modular Engine + Author Suite Roadmap
 
-This is the durable roadmap for turning Pre-Programmed into a replaceable, cloneable text-game engine while keeping one authentic Author system across mobile and desktop.
+This is the durable roadmap for turning Pre-Programmed into a replaceable, portable text-game engine while keeping one authentic Author system across mobile and desktop.
 
 ## Product goals
 
 1. **Replaceable while prototyping** — features can be removed or rewritten without repairing unrelated systems.
 2. **One Author system** — desktop and mobile share state, navigation, editors, mutations, validation, persistence, and save semantics; only presentation changes.
-3. **Clone/fork → connect infrastructure → author a complete game** — ordinary game creation should not require editing engine source.
+3. **Hosted portability** — fork/clone → connect infrastructure → author a complete game without ordinary engine-source edits.
+4. **Local portability** — the engine must also be able to run directly on a user's own machine without requiring Cloudflare as the permanent storage/runtime platform.
 
 ## Architecture rule
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
 
 Explicit composition roots are good. Compatibility layers are transitional and shrink-only.
+
+Platform-specific services follow the same rule: Cloudflare is one platform adapter, not the definition of project persistence or Author behavior.
 
 ## Current estimate — about 82%
 
@@ -29,6 +32,9 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Generic floating notifications are core-owned; Media owns synth/audio/art behavior.
 - Optional feature search documents, advanced text cues, Author workspaces, and Author shortcuts contribute through generic boundaries.
 - Unmatched-input Author drafting is feature-contributed; App no longer constructs Narrative draft interactions itself.
+- Narrative's contextual Author input surface is feature-contributed rather than directly imported by App.
+- Author tool context is feature-neutral; Narrative derives its own current-node/fallback/interaction-notation state.
+- State definitions and Narrative Structure navigation now use generic feature routes rather than expanding the central Author route union.
 - Targetless application capabilities are composed at a neutral engine boundary rather than being owned by Commands.
 - Worker persistence is feature-owned; `worker/projectStore.ts` is primarily orchestration.
 - Runtime schema initialization composes immutable historical migrations with future feature migration contributions through `worker/db/schema.ts`; the obsolete second migration runner has been removed.
@@ -40,6 +46,7 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Desktop/mobile breakpoint changes use CSS over one stable Author component/navigation tree; there is no breakpoint-specific editor state implementation.
 - Production deployment has successfully generated its Wrangler configuration from the reusable template plus the existing Worker's deployed D1 binding, then deployed and passed a real live project-snapshot check.
 - Installation-specific `wrangler.jsonc` is local/ignored state rather than reusable engine source.
+- Mutable project storage is already expressed through the platform-neutral `ProjectPersistence` contract; hosted Cloudflare storage is an implementation of that contract rather than the contract itself.
 
 ## Prototype verification policy
 
@@ -57,9 +64,9 @@ Do **not** repeat the Inventory deletion probe just because it is possible. Re-r
 
 ## Highest-value remaining work
 
-### 1. Prove a literal clean installation
+### 1. Prove a literal clean hosted installation
 
-The repo-side portability architecture is now installation-neutral. The remaining acceptance gap is empirical rather than architectural.
+The repo-side hosted portability architecture is now installation-neutral. The remaining acceptance gap is empirical rather than architectural.
 
 Run one real fresh fork or clone through the complete path:
 
@@ -74,9 +81,40 @@ Run one real fresh fork or clone through the complete path:
 
 That run should also confirm that the installation guidance around GitHub variables/secrets is sufficiently clear without source edits.
 
-Do not add more portability abstraction merely because the clean-install acceptance run has not happened yet. Fix only concrete friction exposed by that run.
+Do not add more hosted-portability abstraction merely because the clean-install acceptance run has not happened yet. Fix only concrete friction exposed by that run.
 
-### 2. Keep shrinking real compatibility behavior
+### 2. Establish a real local-machine distribution
+
+Local mode is a product requirement, but it should reuse engine/Author contracts rather than fork the application.
+
+Already suitable for reuse:
+
+- `ProjectPersistence` exposes storage-independent `readProject` / `writeProject` operations;
+- revision conflicts have a platform-independent error contract;
+- local stores may ignore hosted authorization context;
+- project models, mutations, feature registries, editors, validation, and play state do not need a second local implementation.
+
+Remaining hosted assumptions to isolate before a true local distribution:
+
+- choose project persistence through a platform composition point rather than selecting Cloudflare throughout the client;
+- isolate Author authentication/session behavior so a local installation can use an appropriate local trust model;
+- isolate backup/history/undo transport from Cloudflare HTTP routes where those capabilities should exist locally;
+- decide on a local persistence implementation only when packaging work begins (for example a local SQLite/file-backed process or desktop bridge), instead of prematurely embedding a browser-specific filesystem API into core code.
+
+Local acceptance test:
+
+1. clone/download the engine on a machine with no Cloudflare account configured;
+2. start the supported local distribution;
+3. load or initialize a project;
+4. enter Author mode under the local trust model;
+5. author and save an edit;
+6. close the application/process completely;
+7. reopen it and confirm the same project and edit persist;
+8. ordinary game authoring requires no engine-source changes.
+
+Cloudflare may remain the hosted reference adapter. Local mode must not require a separate Author UI, separate game model, or parallel feature implementation.
+
+### 3. Keep shrinking real compatibility behavior
 
 Delete compatibility code when its consumers are gone; do not reorganize harmless one-line facades merely to improve file-count aesthetics.
 
@@ -84,13 +122,15 @@ Completed cleanup includes obsolete Worker bootstrap/per-node mutation routes, t
 
 Remaining one-line `src/game/*` and `src/components/*` facades are not duplicate implementations. Migrate or delete them when their consumers are naturally touched rather than launching a flag-day import rewrite.
 
-### 3. Reduce App only where ownership becomes clearer
+### 4. Reduce App only where ownership becomes clearer
 
 `App.tsx` remains the main frontend meeting point, but refactoring it is not a goal by itself.
 
-Recent work removed direct Narrative draft construction and Commands-owned application-capability resolution from App. Continue moving behavior only when doing so creates a clear stable contract or makes a feature independently replaceable. Avoid generic render registries or hooks that exist only to make App shorter.
+Recent work removed direct Narrative draft construction, the Narrative contextual input surface, hardcoded State/Structure shortcuts, and Commands-owned application-capability resolution from App. Continue moving behavior only when doing so creates a clear stable contract, improves platform portability, or makes a feature independently replaceable. Avoid generic render registries or hooks that exist only to make App shorter.
 
-### 4. Finish shared Author presentation polish
+The remaining `node` and `interaction` Author route shapes carry editor payloads and should not be converted mechanically. Prefer stable feature-owned identifiers/data if they can migrate cleanly; do not introduce object registries or serialization workarounds merely to delete two union variants.
+
+### 5. Finish shared Author presentation polish
 
 The single-system approach is proven. Remaining work is mostly presentation quality and real-client confirmation:
 
@@ -100,7 +140,7 @@ The single-system approach is proven. Remaining work is mostly presentation qual
 
 Do not create separate desktop/mobile editor implementations.
 
-### 5. Let tests migrate with features
+### 6. Let tests migrate with features
 
 Existing centralized tests are transitional. Do not launch a repo-wide test relocation project solely for tidiness.
 
@@ -128,7 +168,7 @@ For desktop/mobile Author work:
 4. both produce the same mutation/persistence semantics;
 5. layout differences do not change authored-data meaning.
 
-## Clone/fork acceptance test
+## Hosted clone/fork acceptance test
 
 A new developer should be able to:
 
@@ -153,12 +193,16 @@ A new developer should be able to:
 - `src/game/model.ts` became a pure compatibility facade; UUID/node-number behavior moved to their actual owners.
 - Worker project-settings validation stopped directly depending on Commands and now composes through the validation catalog.
 - App stopped constructing Narrative draft interactions for unmatched Author input and stopped resolving application capabilities through Commands.
+- Narrative's current-input Author surface moved behind the feature manifest; obsolete duplicate unhandled-input authoring UI was deleted.
+- Author tool context became feature-neutral, with Narrative deriving its own current-node/fallback state and owning its interaction notation helper.
+- State definitions and Narrative Structure navigation/terminal aliases moved behind generic feature routes, shrinking the central Author route union and hardcoded App shortcuts.
 - Application capability contracts/catalogs moved to the neutral engine application boundary.
 - Fork/clone setup stopped relying on draft D1 auto-provisioning as the primary path: new installs now explicitly create D1 and persist its binding identity before Worker deployment.
 - Cloudflare D1 control-plane lookup was deliberately tested and rejected because the current deployment token lacks that permission; the probe failed before deployment and was removed.
 - Worker version-detail metadata was proven to expose the deployed `DB` binding with the existing Worker deployment permission.
 - Production then deployed successfully from a generated Wrangler config whose Worker/D1 identity matched the former tracked production config, followed by a successful live project-snapshot check.
 - Installation-specific `wrangler.jsonc` was removed from reusable tracked source and made local/ignored state.
+- Local-machine operation was added as an explicit product goal. Existing project persistence contracts were confirmed to be suitable for a future local storage adapter; remaining hosted assumptions were identified as platform/session concerns rather than reasons to fork the engine.
 
 ### 2026-08-31
 
