@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
 import {
+  renderAuthorFeaturePlaySurfaces,
   resolveAuthorFeatureTerminalShortcut,
   resolveAuthorUnhandledInputMutation,
 } from "./author/features/registry";
@@ -54,7 +55,6 @@ import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { compileTextNotation } from "./game/textNotation";
-import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
 import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -134,7 +134,6 @@ export default function App() {
   const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
-  const [unhandledCommand, setUnhandledCommand] = useState("");
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
   const [eventArt, setEventArt] = useState("");
   const terminalComposerRef = useRef<TerminalCommandComposerHandle>(null);
@@ -470,7 +469,7 @@ export default function App() {
     historyPinnedToPresentRef.current = true;
     scrollHistoryToPresent();
     const normalized = value.trim().toLowerCase();
-    setCommand(""); setAuthorMessage(""); setUnhandledCommand("");
+    setCommand(""); setAuthorMessage("");
 
     if (requestingKey) {
       try {
@@ -546,7 +545,7 @@ export default function App() {
       setActiveText("");
       setActiveNodeId(undefined);
       setActiveSpeakerId(null);
-      if (authorMode && authorView) { setUnhandledCommand(value); setAuthorMessage(`UNHANDLED: ${parsed.reason}.`); }
+      if (authorMode && authorView) setAuthorMessage(`UNHANDLED: ${parsed.reason}.`);
       return;
     }
 
@@ -559,11 +558,6 @@ export default function App() {
       execution.outcome?.responseCharactersPerSecond ?? 18,
       execution.outcome?.speakerId ?? null,
     );
-  };
-
-  const playAuthorInput = (interaction: Interaction) => {
-    const value = interaction.aliases[0] || interaction.wording;
-    if (value) void handleTerminalValue(value);
   };
 
   const restoreBookmark = (bookmark: AuthorBookmark) => {
@@ -659,12 +653,14 @@ export default function App() {
       /> : null}
 
       <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && currentInputs.length && !panel ? <AuthorInputSurface
-          choices={currentInputs}
-          onChoose={playAuthorInput}
-          notationForChoice={notationForInput}
-          onEdit={(interaction) => setPanel({ type: "interaction", interaction })}
-        /> : null}
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel
+          ? renderAuthorFeaturePlaySurfaces({
+            snapshot,
+            playState,
+            pushPanel: workSurface.pushPanel,
+            submitInput: (input) => { void handleTerminalValue(input); },
+          })
+          : null}
 
         {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
@@ -678,11 +674,6 @@ export default function App() {
           onEditInvalid={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}
           onOpenTools={() => setPanel({ type: "tools" })}
         /> : null}
-        {unhandledCommand && authorExperience && !panel ? <div className="unhandled-tools">
-          <span>USER JUST INPUT: <strong>“{unhandledCommand}”</strong></span><span>NO RESPONSE IS AUTHORED.</span>
-          <button type="button" onClick={() => setPanel({ type: "interaction", command: unhandledCommand })}>[WRITE WHAT THEY SEE]</button>
-          <details className="alias-strip"><summary>[USE AS AN ALIAS]</summary><div>{currentInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => setPanel({ type: "interaction", interaction: { ...structuredClone(interaction), aliases: [...interaction.aliases, unhandledCommand] } })}>[{interaction.wording || interaction.aliases[0]}]</button>)}{!currentInputs.length ? <span>no current user inputs</span> : null}</div></details>
-        </div> : null}
 
         <AuthorWorkspaceHost
           panel={panel}
@@ -712,7 +703,6 @@ export default function App() {
     <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       workSurface.close();
-      setUnhandledCommand("");
       setAuthorMessage("");
     }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
