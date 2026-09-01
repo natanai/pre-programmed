@@ -46,6 +46,7 @@ import { executeInteraction } from "./game/runtime";
 import { playSynthSound } from "./game/synth";
 import { compileTextNotation } from "./game/textNotation";
 import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
+import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./features/commands/applicationCatalog";
 import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
 import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
@@ -515,7 +516,6 @@ export default function App() {
     if (normalized === "admin") { if (authorMode) { setAuthorView(true); setAuthorMessage(""); } else setRequestingKey(true); return; }
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
-    if (normalized === "inventory" || normalized === "inv") { setPanel({ type: "inventory" }); return; }
     if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
     if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
@@ -541,11 +541,19 @@ export default function App() {
 
     if (parsed.invocation) {
       if (!parsed.invocation.target) {
+        const capability = APPLICATION_COMMAND_CAPABILITY_BY_OPERATION[parsed.invocation.operation];
         setPlayState(commandState);
         setActiveText("");
         setActiveNodeId(undefined);
-        if (authorMode && authorView) {
-          setAuthorMessage(`COMMAND ${parsed.invocation.operation} MATCHED, BUT NO GLOBAL HANDLER EXISTS YET.`);
+        if (capability?.action.type === "open-workspace") {
+          setPanel({
+            type: "feature",
+            feature: capability.action.feature,
+            workspace: capability.action.workspace,
+            data: capability.action.data,
+          });
+        } else if (authorMode && authorView) {
+          setAuthorMessage(`COMMAND ${parsed.invocation.operation} MATCHED, BUT NO APPLICATION CAPABILITY HANDLES IT.`);
         }
         return;
       }
