@@ -4,9 +4,6 @@ name: Verify prototype
 # Production deployment remains the only automatic workflow on main.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - author-task-runtime
 
 permissions:
   contents: read
