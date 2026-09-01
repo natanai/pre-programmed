@@ -1,15 +1,17 @@
 import { useState } from "react";
 import type { Effect, ProjectSnapshot } from "../game/model";
+import type { AuthorResourceTools } from "./resources/types";
 import { EFFECT_AUTHOR_ADAPTERS, EFFECT_AUTHOR_ADAPTER_BY_TYPE } from "./rules/catalog";
 import type { EffectAuthorAdapter } from "./rules/types";
 import "./effectsEditor.css";
 
 type EffectsScreen = "list" | "choose" | "edit";
 
-export function EffectsEditor({ effects, onChange, snapshot }: {
+export function EffectsEditor({ effects, onChange, snapshot, resources }: {
   effects: Effect[];
   onChange: (effects: Effect[]) => void;
   snapshot: ProjectSnapshot;
+  resources: AuthorResourceTools;
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
@@ -75,7 +77,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
         {EFFECT_AUTHOR_ADAPTERS.map((option) => <option value={option.type} key={option.type}>{option.label}</option>)}
       </select></label>
       <div className="focused-effect-fields">
-        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot })}
+        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot, resources })}
       </div>
       <button type="button" className="effect-remove" onClick={removeSelected}>[REMOVE EFFECT]</button>
     </div>;
