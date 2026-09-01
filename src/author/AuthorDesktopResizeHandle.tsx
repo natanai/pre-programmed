@@ -95,11 +95,15 @@ export function AuthorDesktopResizeHandle() {
     const root = document.documentElement;
     if (desktopActive) root.style.setProperty(WIDTH_PROPERTY, `${width}px`);
     else root.style.removeProperty(WIDTH_PROPERTY);
-    return () => root.style.removeProperty(WIDTH_PROPERTY);
+    return () => {
+      root.style.removeProperty(WIDTH_PROPERTY);
+    };
   }, [desktopActive, width]);
 
-  useEffect(() => () => {
-    delete document.documentElement.dataset.authorResizing;
+  useEffect(() => {
+    return () => {
+      delete document.documentElement.dataset.authorResizing;
+    };
   }, []);
 
   const finishDrag = (event: PointerEvent<HTMLDivElement>) => {
