@@ -8,17 +8,14 @@ export function node(id: string, nodeNumber: number, ending = false): GameNode {
 export function interaction(id: string, sourceNodeId: string, destinationNodeId: string | null, aliases = [id]): Interaction {
   return {
     id, sourceNodeId, wording: id, choiceVisibility: "prompt", aliases, tags: [], notes: "",
-    outcomes: [{
-      id: `${id}-outcome`, order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "",
-      speakerId: null, effects: [], disposition: destinationNodeId ? "transition" : "stay", destinationNodeId,
-    }],
+    outcomes: [{ id: `${id}-outcome`, order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "", speakerId: null, effects: [], disposition: destinationNodeId ? "transition" : "stay", destinationNodeId }],
   };
 }
 
 export function project(overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
     schemaVersion: 12, revision: 0, startNodeId: "a", settings: structuredClone(DEFAULT_PROJECT_SETTINGS),
-    nodes: [node("a", 1)], interactions: [], entities: [], variables: [], computedValues: [], items: [], synthSounds: [],
+    nodes: [node("a", 1)], interactions: [], entities: [], variables: [], computedValues: [], synthSounds: [],
     ...overrides,
   };
 }

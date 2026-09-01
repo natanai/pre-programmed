@@ -8,7 +8,6 @@ import {
   notificationEffectAdapter,
   runtimeStateConditionAdapter,
 } from "./coreAdapters";
-import { hasItemConditionAdapter, lacksItemConditionAdapter, giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter } from "../../features/inventory/author/ruleAdapters";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "../../features/media/author/ruleAdapters";
 import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "../../features/narrative/author/ruleAdapters";
 import {
@@ -26,8 +25,6 @@ export const CONDITION_AUTHOR_ADAPTERS: readonly ConditionAuthorAdapter[] = [
   allConditionAdapter,
   anyConditionAdapter,
   notConditionAdapter,
-  hasItemConditionAdapter,
-  lacksItemConditionAdapter,
   flagConditionAdapter,
   variableConditionAdapter,
   attemptConditionAdapter,
@@ -41,9 +38,6 @@ export const EFFECT_AUTHOR_ADAPTERS: readonly EffectAuthorAdapter[] = [
   setValueEffectAdapter,
   incrementEffectAdapter,
   decrementEffectAdapter,
-  giveItemEffectAdapter,
-  removeItemEffectAdapter,
-  setItemStateEffectAdapter,
   interactionVisibilityEffectAdapter,
   notificationEffectAdapter,
   synthEffectAdapter,

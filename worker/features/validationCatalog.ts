@@ -1,4 +1,3 @@
-import { inventoryMutationValidator } from "./inventoryValidation";
 import { mediaMutationValidator } from "./mediaValidation";
 import { narrativeMutationValidator } from "./narrativeValidation";
 import { stateMutationValidator } from "./stateValidation";
@@ -9,7 +8,6 @@ export const WORKER_MUTATION_VALIDATORS: readonly WorkerMutationValidator[] = [
   narrativeMutationValidator,
   worldMutationValidator,
   stateMutationValidator,
-  inventoryMutationValidator,
   mediaMutationValidator,
 ];
 
