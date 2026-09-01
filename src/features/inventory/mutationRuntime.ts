@@ -6,6 +6,25 @@ const upsertItem: MutationHandler = (snapshot, operation) => {
   snapshot.items = upsertById(snapshot.items, operation.item);
 };
 
+const upsertBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.upsert") return;
+  snapshot.bodyBackgrounds = upsertById(snapshot.bodyBackgrounds, operation.background);
+};
+
+const deleteBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.delete") return;
+  snapshot.bodyBackgrounds = snapshot.bodyBackgrounds.filter((background) => background.id !== operation.id);
+  if (snapshot.startingBodyBackgroundId === operation.id) snapshot.startingBodyBackgroundId = null;
+};
+
+const setStartingBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.starting") return;
+  snapshot.startingBodyBackgroundId = operation.id;
+};
+
 export const INVENTORY_MUTATION_HANDLERS: Readonly<Record<string, MutationHandler>> = {
   "item.upsert": upsertItem,
+  "bodyBackground.upsert": upsertBodyBackground,
+  "bodyBackground.delete": deleteBodyBackground,
+  "bodyBackground.starting": setStartingBodyBackground,
 };
