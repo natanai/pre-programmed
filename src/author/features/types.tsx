@@ -37,6 +37,14 @@ export type AuthorWorkspaceContext = {
   onRestore: (bookmark: AuthorBookmark) => void;
 };
 
+/** Context for feature-owned controls shown directly beside live play in Author mode. */
+export type AuthorPlaySurfaceContext = {
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  pushPanel: (route: AuthorPanelRoute) => void;
+  submitInput: (input: string) => void;
+};
+
 export type AuthorProjectSettingsSection = {
   id: string;
   label: string;
@@ -66,6 +74,8 @@ export type AuthorFeatureManifest = {
   terminalShortcuts?: readonly AuthorTerminalShortcut[];
   /** Optional owner for converting an unmatched player input into an Author mutation. */
   buildUnhandledInputMutation?: (sourceNodeId: string, input: string) => AuthorUnhandledInputMutation | null;
+  /** Optional contextual Author controls rendered beside the live play surface. */
+  renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
   /** Return a workspace for routes owned by this feature, otherwise null. */
   renderWorkspace?: (route: AuthorPanelRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };
