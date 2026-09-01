@@ -1,6 +1,7 @@
 import { initializeCommandsPlayState } from "../../features/commands/playState";
 import {
   initializeInventoryPlayState,
+  reconcileInventoryPlayState,
   reconcileInventoryPlayStateAfterProjectChange,
 } from "../../features/inventory/playState";
 import { initializeNarrativePlayState } from "../../features/narrative/playState";
@@ -25,7 +26,9 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
 
 /** Reconcile durable play state through the features that currently require it. */
 export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, now = Date.now()): PlayState {
-  return reconcileStatePlayState(snapshot, state, now);
+  let nextState = reconcileStatePlayState(snapshot, state, now);
+  nextState = reconcileInventoryPlayState(snapshot, nextState);
+  return nextState;
 }
 
 /**
