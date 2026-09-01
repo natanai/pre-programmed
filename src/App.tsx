@@ -21,6 +21,12 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
+import {
+  advanceProjectClocks,
+  hasActiveProjectClock,
+  projectClockScheduleKey,
+  resetProjectClocks,
+} from "./engine/runtime/projectClock";
 import { effectEventsForTextCue, presentEffectEvents, type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
 import { interpolateText } from "./game/interpolation";
@@ -43,7 +49,6 @@ import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { compileTextNotation } from "./game/textNotation";
-import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./features/commands/applicationCatalog";
 import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
@@ -158,18 +163,18 @@ export default function App() {
   const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
   const immediateTerminalChoices = immediateChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
   const promptTerminalChoices = promptChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
-  const timedVariables = snapshot ? timedVariableKey(snapshot) : "[]";
+  const projectClockSchedule = snapshot ? projectClockScheduleKey(snapshot) : "[]";
 
   useEffect(() => {
     if (!snapshot) return;
     const now = Date.now();
-    setPlayState((state) => state ? { ...state, variableTimeUpdatedAt: now } : state);
-    if (timedVariables === "[]") return;
+    setPlayState((state) => state ? resetProjectClocks(snapshot, state, now) : state);
+    if (!hasActiveProjectClock(snapshot)) return;
     const timer = window.setInterval(() => {
-      setPlayState((state) => state ? advanceTimedVariables(snapshot, state, Date.now()) : state);
+      setPlayState((state) => state ? advanceProjectClocks(snapshot, state, Date.now()) : state);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [timedVariables]);
+  }, [projectClockSchedule]);
 
   useEffect(() => {
     if (!typewriter.complete || pendingDestinationNodeId || panel) return;
@@ -482,7 +487,7 @@ export default function App() {
     if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
     if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 
-    const currentState = advanceTimedVariables(snapshot, playState, Date.now());
+    const currentState = advanceProjectClocks(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
