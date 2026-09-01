@@ -7,11 +7,13 @@ import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
 import "./inventoryAuthor.css";
 
+const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
+
 function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetPath: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: ["inspect", "use", "move", "remove"], tags: [], initialState: {}, hooks: [],
+    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], tags: [], initialState: {}, hooks: [],
   };
 }
 
@@ -22,10 +24,26 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
-  const [draft, setDraft] = useState(() => structuredClone(initial ?? emptyItem()));
+  const [draft, setDraft] = useState(() => ({
+    ...structuredClone(initial ?? emptyItem()),
+    equipmentSlotKeys: [...(initial?.equipmentSlotKeys ?? [])],
+  }));
   const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
+  const slotOptions = useMemo(() => {
+    const slots = new Map<string, Set<string>>();
+    for (const bodyType of snapshot.bodyBackgrounds ?? []) {
+      for (const slot of bodyType.slots ?? []) {
+        const labels = slots.get(slot.key) ?? new Set<string>();
+        labels.add(slot.name || slot.key);
+        slots.set(slot.key, labels);
+      }
+    }
+    return [...slots.entries()]
+      .map(([key, labels]) => ({ key, label: [...labels].join(" / ") }))
+      .sort((left, right) => left.label.localeCompare(right.label) || left.key.localeCompare(right.key));
+  }, [snapshot.bodyBackgrounds]);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -36,6 +54,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
     if (!draft.name.trim()) return;
     const item = {
       ...draft,
+      equipmentSlotKeys: [...(draft.equipmentSlotKeys ?? [])],
       key: resolveAuthorKey({
         override: draft.key,
         source: draft.name,
@@ -82,8 +101,29 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
       </section>
 
       <section className="item-editor-section">
+        <h3>EQUIPMENT</h3>
+        <p className="field-help">Enable the <strong>equip</strong> operation below to let this item use body slots. Leaving every slot unchecked allows any slot on the current body type; checking slots restricts the item to those stable slot keys.</p>
+        {slotOptions.length ? <div className="equipment-slot-compatibility">
+          <button type="button" aria-pressed={(draft.equipmentSlotKeys ?? []).length === 0} onClick={() => setDraft({ ...draft, equipmentSlotKeys: [] })}>[ANY SLOT]</button>
+          {slotOptions.map((slot) => <label className="check-label" key={slot.key}>
+            <input
+              type="checkbox"
+              checked={(draft.equipmentSlotKeys ?? []).includes(slot.key)}
+              onChange={(event) => setDraft({
+                ...draft,
+                equipmentSlotKeys: event.target.checked
+                  ? [...(draft.equipmentSlotKeys ?? []), slot.key]
+                  : (draft.equipmentSlotKeys ?? []).filter((key) => key !== slot.key),
+              })}
+            />
+            {slot.label} <small>{slot.key}</small>
+          </label>)}
+        </div> : <p className="field-help">No body slots are authored yet. This item will be compatible with future slots unless you later restrict it.</p>}
+      </section>
+
+      <section className="item-editor-section">
         <h3>PLAYER BEHAVIOR</h3>
-        <OperationHooksEditor snapshot={snapshot} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? ["inspect", "use", "move", "remove"], hooks: draft.hooks ?? [] }}
+        <OperationHooksEditor snapshot={snapshot} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </section>
     </div>

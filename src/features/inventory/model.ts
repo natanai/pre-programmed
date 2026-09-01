@@ -15,6 +15,8 @@ export type ItemDefinition = {
   startingQuantity: number;
   interactable: boolean;
   operations: OperationId[];
+  /** Empty/missing means the item may equip to any authored body-slot key. */
+  equipmentSlotKeys?: string[];
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];
@@ -26,12 +28,34 @@ export type InventoryEntry = {
   quantity: number;
   x: number;
   y: number;
+  /** Stable slot key occupied on the current body type, or null when carried only. */
+  equippedSlotKey?: string | null;
   state: Record<string, Value>;
 };
 
-/** Inventory-owned visual definition for the body/equipment surface. */
-export type BodyBackgroundDefinition = {
+export type BodySlotDefinition = {
+  id: string;
+  /** Stable across body types when equipment should carry between forms. */
+  key: string;
+  name: string;
+  /** Percentage coordinates within the body canvas. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Inventory-owned body/equipment layout. Historical persistence calls these
+ * "body backgrounds"; at runtime each definition is a complete body type.
+ */
+export type BodyTypeDefinition = {
   id: string;
   name: string;
   assetPath: string;
+  /** Missing only on legacy snapshots created before body slots existed. */
+  slots?: BodySlotDefinition[];
 };
+
+/** Source-compatible name retained while historical schema identifiers remain immutable. */
+export type BodyBackgroundDefinition = BodyTypeDefinition;

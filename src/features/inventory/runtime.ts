@@ -1,11 +1,68 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import type { InventoryEntry, ItemDefinition } from "./model";
+import type { BodySlotDefinition, InventoryEntry, ItemDefinition } from "./model";
 
 export const INVENTORY_COLUMNS = 10;
 export const INVENTORY_ROWS = 6;
 
 function itemForEntry(snapshot: ProjectSnapshot, entry: InventoryEntry) {
   return snapshot.items.find((item) => item.id === entry.itemId);
+}
+
+export function activeBodyType(snapshot: ProjectSnapshot, state: PlayState) {
+  return (snapshot.bodyBackgrounds ?? []).find((bodyType) => bodyType.id === state.bodyBackgroundId);
+}
+
+export function activeBodySlots(snapshot: ProjectSnapshot, state: PlayState): BodySlotDefinition[] {
+  return activeBodyType(snapshot, state)?.slots ?? [];
+}
+
+export function itemCanEquipToSlot(item: ItemDefinition, slot: BodySlotDefinition) {
+  const allowedKeys = item.equipmentSlotKeys ?? [];
+  return allowedKeys.length === 0 || allowedKeys.includes(slot.key);
+}
+
+export function compatibleBodySlots(snapshot: ProjectSnapshot, state: PlayState, item: ItemDefinition) {
+  return activeBodySlots(snapshot, state).filter((slot) => itemCanEquipToSlot(item, slot));
+}
+
+export function equipInventoryEntry(
+  snapshot: ProjectSnapshot,
+  state: PlayState,
+  instanceId: string,
+  slotKey: string,
+): PlayState {
+  const entry = state.inventory.find((candidate) => candidate.instanceId === instanceId);
+  const item = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
+  const slot = activeBodySlots(snapshot, state).find((candidate) => candidate.key === slotKey);
+  if (!entry || !item || !slot || !itemCanEquipToSlot(item, slot)) return state;
+  return {
+    ...state,
+    inventory: state.inventory.map((candidate) => {
+      if (candidate.instanceId === instanceId) return { ...candidate, equippedSlotKey: slot.key };
+      if (candidate.equippedSlotKey === slot.key) return { ...candidate, equippedSlotKey: null };
+      return candidate;
+    }),
+  };
+}
+
+export function unequipInventoryEntry(state: PlayState, instanceId: string): PlayState {
+  return {
+    ...state,
+    inventory: state.inventory.map((candidate) => candidate.instanceId === instanceId
+      ? { ...candidate, equippedSlotKey: null }
+      : candidate),
+  };
+}
+
+/** Remove equipment assignments whose stable slot key no longer exists on the current body type. */
+export function reconcileEquippedItems(snapshot: ProjectSnapshot, state: PlayState): PlayState {
+  const slotKeys = new Set(activeBodySlots(snapshot, state).map((slot) => slot.key));
+  return {
+    ...state,
+    inventory: (state.inventory ?? []).map((entry) => entry.equippedSlotKey && !slotKeys.has(entry.equippedSlotKey)
+      ? { ...entry, equippedSlotKey: null }
+      : entry),
+  };
 }
 
 export function occupiedCells(
@@ -85,6 +142,7 @@ export function addInventoryItem(
       itemId: item.id,
       quantity: accepted,
       ...placement,
+      equippedSlotKey: null,
       state: { ...item.initialState },
     });
     remaining -= accepted;

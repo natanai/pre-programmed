@@ -9,7 +9,7 @@ export const inventoryAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "inventory",
       label: "INVENTORY",
-      description: "Inspect inventory and author item definitions.",
+      description: "Author items, body types, equipment slots, and inventory behavior.",
       onSelect: () => context.pushPanel({ type: "feature", feature: "inventory", workspace: "inventory" }),
     },
   },

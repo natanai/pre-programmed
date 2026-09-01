@@ -1,15 +1,46 @@
-import type { OperationId } from "../operations/model";
+import type { OperationArguments, OperationId } from "../operations/model";
 import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
-import { canPlaceItem } from "./runtime";
+import {
+  canPlaceItem,
+  compatibleBodySlots,
+  equipInventoryEntry,
+  unequipInventoryEntry,
+} from "./runtime";
 
 export const INVENTORY_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
   { value: "inspect", label: "inspect" },
   { value: "use", label: "use" },
   { value: "move", label: "move" },
   { value: "remove", label: "remove" },
+  { value: "equip", label: "equip" },
+  { value: "unequip", label: "unequip" },
 ];
 
 const DEFAULT_ITEM_OPERATIONS: OperationId[] = INVENTORY_OPERATION_DEFINITIONS.map((definition) => definition.value);
+
+function requestedSlotKey(argumentsValue?: OperationArguments) {
+  const argument = argumentsValue?.slot;
+  return argument?.kind === "text" ? argument.value : "";
+}
+
+function equipResult(
+  snapshot: Parameters<NonNullable<OperationTargetAdapter["defaultOperation"]>>[0]["snapshot"],
+  state: Parameters<NonNullable<OperationTargetAdapter["defaultOperation"]>>[0]["state"],
+  instanceId: string,
+  slotKey: string,
+) {
+  const entry = state.inventory.find((candidate) => candidate.instanceId === instanceId);
+  const item = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
+  if (!entry || !item) return { accepted: false, state };
+  const slots = compatibleBodySlots(snapshot, state, item);
+  const slot = slotKey ? slots.find((candidate) => candidate.key === slotKey) : slots.length === 1 ? slots[0] : undefined;
+  if (!slot) return { accepted: false, state };
+  return {
+    accepted: true,
+    state: equipInventoryEntry(snapshot, state, instanceId, slot.key),
+    responseText: `Equipped to ${slot.name}.`,
+  };
+}
 
 export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
   kind: "item",
@@ -26,7 +57,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       hooks: definition.hooks ?? [],
     };
   },
-  applySuccessfulHook({ snapshot, state, target, operation, placement }) {
+  applySuccessfulHook({ snapshot, state, target, operation, arguments: argumentsValue, placement }) {
     const entry = state.inventory.find((candidate) => candidate.instanceId === target.id);
     const item = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
     if (!entry || !item) return { accepted: false, state };
@@ -44,6 +75,14 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       };
     }
 
+    if (operation === "equip") {
+      return equipResult(snapshot, state, entry.instanceId, requestedSlotKey(argumentsValue));
+    }
+
+    if (operation === "unequip") {
+      return { accepted: true, state: unequipInventoryEntry(state, entry.instanceId) };
+    }
+
     if (operation === "remove") {
       return {
         accepted: true,
@@ -53,7 +92,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
 
     return { accepted: true, state };
   },
-  defaultOperation({ snapshot, state, target, operation, placement }) {
+  defaultOperation({ snapshot, state, target, operation, arguments: argumentsValue, placement }) {
     const entry = state.inventory.find((candidate) => candidate.instanceId === target.id);
     const item = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
     if (!entry || !item) return { accepted: false, state };
@@ -73,6 +112,15 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
             : candidate),
         } : state,
       };
+    }
+
+    if (operation === "equip") {
+      return equipResult(snapshot, state, entry.instanceId, requestedSlotKey(argumentsValue));
+    }
+
+    if (operation === "unequip") {
+      if (!entry.equippedSlotKey) return { accepted: false, state };
+      return { accepted: true, responseText: "Unequipped.", state: unequipInventoryEntry(state, entry.instanceId) };
     }
 
     if (operation === "remove" && item.removable) {

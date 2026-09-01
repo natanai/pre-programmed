@@ -1,6 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { Inventory } from "../ui/Inventory";
-import { BodyBackgroundEditor } from "./BodyBackgroundEditor";
+import { BodyTypeEditor } from "./BodyBackgroundEditor";
 import { ItemEditor } from "./ItemEditor";
 import { inventoryAuthorTools } from "./tools";
 
@@ -26,16 +26,16 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
         feature: "inventory",
         workspace: "item",
       })}
-      onEditBodyBackground={(background) => context.pushPanel({
+      onEditBodyBackground={(bodyType) => context.pushPanel({
         type: "feature",
         feature: "inventory",
-        workspace: "body-background",
-        data: { backgroundId: background.id },
+        workspace: "body-type",
+        data: { bodyTypeId: bodyType.id },
       })}
       onCreateBodyBackground={() => context.pushPanel({
         type: "feature",
         feature: "inventory",
-        workspace: "body-background",
+        workspace: "body-type",
       })}
       onSave={async (operations, description) => {
         await context.persist(operations, description);
@@ -56,13 +56,13 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       />;
     }
 
-    if (route.type === "feature" && route.feature === "inventory" && route.workspace === "body-background") {
-      const background = route.data?.backgroundId
-        ? (context.snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.backgroundId)
+    if (route.type === "feature" && route.feature === "inventory" && route.workspace === "body-type") {
+      const bodyType = route.data?.bodyTypeId
+        ? (context.snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId)
         : undefined;
-      return <BodyBackgroundEditor
+      return <BodyTypeEditor
         snapshot={context.snapshot}
-        initial={background}
+        initial={bodyType}
         onSave={(operations, description) => context.persist(operations, description)}
         onCancel={context.leaveCurrentSurface}
         setWorkspaceDirty={context.setWorkspaceDirty}
