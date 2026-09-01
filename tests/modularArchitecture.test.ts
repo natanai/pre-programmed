@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MUTATION_HANDLERS } from "../src/engine/project/mutationCatalog";
 import {
@@ -42,5 +43,16 @@ describe("modular architecture composition roots", () => {
     const restore = workerFeaturesForRestore().map((feature) => feature.id);
     expect(reset.indexOf("narrative")).toBeLessThan(reset.indexOf("world"));
     expect(restore.indexOf("world")).toBeLessThan(restore.indexOf("narrative"));
+  });
+
+  it("keeps optional Inventory and Media workspace routes out of central Author navigation", () => {
+    const navigationSource = readFileSync(
+      new URL("../src/author/workSurfaceNavigation.ts", import.meta.url),
+      "utf8",
+    );
+    for (const legacyRoute of ["inventory", "item", "assets", "synth"]) {
+      expect(navigationSource).not.toContain(`type: \"${legacyRoute}\"`);
+    }
+    expect(navigationSource).toContain('type: "feature"');
   });
 });
