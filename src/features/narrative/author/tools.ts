@@ -21,7 +21,12 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => {
         id: "edit-node",
         label: "EDIT NODE",
         description: "Text, speaker, location, tags, and presentation.",
-        onSelect: () => context.pushPanel({ type: "node", node: currentNode }),
+        onSelect: () => context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "node",
+          data: { nodeId: currentNode.id },
+        }),
       },
     },
     {
@@ -33,7 +38,11 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => {
         id: "add-input",
         label: "ADD VALID INPUT",
         description: "Manual form; typing a new command at U:\\> is faster.",
-        onSelect: () => context.pushPanel({ type: "interaction" }),
+        onSelect: () => context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "interaction",
+        }),
       },
     },
     {
@@ -46,7 +55,15 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => {
         label: fallbackInput ? `${fallbackNotation} INVALID INPUT` : "ADD INVALID INPUT",
         description: "What happens when player text does not match a valid input.",
         tone: fallbackNotation === "[D]" ? "draft" : "normal",
-        onSelect: () => context.pushPanel({ type: "interaction", interaction: fallbackInput, fallback: true }),
+        onSelect: () => context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "interaction",
+          data: {
+            ...(fallbackInput ? { interactionId: fallbackInput.id } : {}),
+            fallback: "true",
+          },
+        }),
       },
     },
     {
@@ -58,7 +75,7 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => {
         id: "structure",
         label: "STRUCTURE",
         description: "Browse nodes, links, and authored interactions.",
-        onSelect: () => context.pushPanel({ type: "feature", feature: "narrative", workspace: "structure" }),
+        onSelect: () => context.pushTask({ type: "feature", feature: "narrative", workspace: "structure" }),
       },
     },
   ];
