@@ -13,16 +13,105 @@ import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
 import "./definitionsPanel.css";
 
 type Mode = "variables" | "computed" | "entities";
+export type StateAuthorResourceKind = "variable" | "number-variable" | "flag" | "computed" | "character" | "location";
 
-export function DefinitionsPanel({ snapshot, onSave }: {
+function normalizedVariable(item: VariableDefinition): VariableDefinition {
+  return {
+    ...structuredClone(item),
+    interactable: item.interactable ?? false,
+    operations: item.operations ?? [],
+    hooks: item.hooks ?? [],
+    timeRate: item.timeRate ?? 0,
+    timeUnit: item.timeUnit ?? "second",
+  };
+}
+
+function newVariable(valueType: VariableDefinition["valueType"] = "number"): VariableDefinition {
+  return {
+    id: crypto.randomUUID(),
+    key: "",
+    label: "",
+    valueType,
+    initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "",
+    showInStatus: false,
+    interactable: false,
+    operations: [],
+    hooks: [],
+    timeRate: 0,
+    timeUnit: "second",
+  };
+}
+
+function normalizedComputed(item: ComputedDefinition): ComputedDefinition {
+  return {
+    ...structuredClone(item),
+    interactable: item.interactable ?? false,
+    operations: item.operations ?? [],
+    hooks: item.hooks ?? [],
+  };
+}
+
+function newComputed(): ComputedDefinition {
+  return {
+    id: crypto.randomUUID(), key: "", label: "", source: "elapsed_seconds", format: "integer",
+    showInStatus: false, interactable: false, operations: [], hooks: [],
+  };
+}
+
+function normalizedEntity(item: EntityDefinition): EntityDefinition {
+  return {
+    ...structuredClone(item),
+    interactable: item.interactable ?? false,
+    operations: item.operations ?? [],
+    hooks: item.hooks ?? [],
+  };
+}
+
+function newEntity(type: EntityDefinition["type"]): EntityDefinition {
+  return {
+    id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [],
+    interactable: false, operations: [], hooks: [],
+  };
+}
+
+function modeForResource(kind?: StateAuthorResourceKind): Mode {
+  if (kind === "computed") return "computed";
+  if (kind === "character" || kind === "location") return "entities";
+  return "variables";
+}
+
+function variableTypeForResource(kind?: StateAuthorResourceKind): VariableDefinition["valueType"] | undefined {
+  if (kind === "flag") return "boolean";
+  if (kind === "number-variable") return "number";
+  return undefined;
+}
+
+export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, resourceId }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
+  resourceKind?: StateAuthorResourceKind;
+  resourceId?: string;
 }) {
-  const [mode, setMode] = useState<Mode>("variables");
-  const [variable, setVariable] = useState<VariableDefinition | null>(null);
-  const [computed, setComputed] = useState<ComputedDefinition | null>(null);
-  const [entity, setEntity] = useState<EntityDefinition | null>(null);
+  const resourceMode = Boolean(resourceKind);
+  const lockedVariableType = variableTypeForResource(resourceKind);
+  const lockedEntityType = resourceKind === "character" || resourceKind === "location" ? resourceKind : undefined;
+  const [mode, setMode] = useState<Mode>(() => modeForResource(resourceKind));
+  const [variable, setVariable] = useState<VariableDefinition | null>(() => {
+    if (!resourceKind || !["variable", "number-variable", "flag"].includes(resourceKind)) return null;
+    const existing = resourceId ? snapshot.variables.find((item) => item.id === resourceId) : undefined;
+    return existing ? normalizedVariable(existing) : newVariable(lockedVariableType ?? "number");
+  });
+  const [computed, setComputed] = useState<ComputedDefinition | null>(() => {
+    if (resourceKind !== "computed") return null;
+    const existing = resourceId ? snapshot.computedValues.find((item) => item.id === resourceId) : undefined;
+    return existing ? normalizedComputed(existing) : newComputed();
+  });
+  const [entity, setEntity] = useState<EntityDefinition | null>(() => {
+    if (resourceKind !== "character" && resourceKind !== "location") return null;
+    const existing = resourceId ? snapshot.entities.find((item) => item.id === resourceId) : undefined;
+    return existing ? normalizedEntity(existing) : newEntity(resourceKind);
+  });
   const [saving, setSaving] = useState(false);
   const editing = Boolean(variable || computed || entity);
   const selectedId = variable?.id ?? computed?.id ?? entity?.id;
@@ -36,42 +125,26 @@ export function DefinitionsPanel({ snapshot, onSave }: {
   const openVariable = (item: VariableDefinition) => {
     resetEditor();
     setMode("variables");
-    setVariable({
-      ...structuredClone(item),
-      interactable: item.interactable ?? false,
-      operations: item.operations ?? [],
-      hooks: item.hooks ?? [],
-      timeRate: item.timeRate ?? 0,
-      timeUnit: item.timeUnit ?? "second",
-    });
+    setVariable(normalizedVariable(item));
   };
 
   const openComputed = (item: ComputedDefinition) => {
     resetEditor();
     setMode("computed");
-    setComputed({
-      ...structuredClone(item),
-      interactable: item.interactable ?? false,
-      operations: item.operations ?? [],
-      hooks: item.hooks ?? [],
-    });
+    setComputed(normalizedComputed(item));
   };
 
   const openEntity = (item: EntityDefinition) => {
     resetEditor();
     setMode("entities");
-    setEntity({
-      ...structuredClone(item),
-      interactable: item.interactable ?? false,
-      operations: item.operations ?? [],
-      hooks: item.hooks ?? [],
-    });
+    setEntity(normalizedEntity(item));
   };
 
   const saveVariable = async () => {
     if (!variable?.label.trim()) return;
     const definition = {
       ...variable,
+      valueType: lockedVariableType ?? variable.valueType,
       key: resolveAuthorKey({
         override: variable.key,
         source: variable.label,
@@ -108,6 +181,7 @@ export function DefinitionsPanel({ snapshot, onSave }: {
     if (!entity?.name.trim()) return;
     const savedEntity = {
       ...entity,
+      type: lockedEntityType ?? entity.type,
       key: resolveAuthorKey({
         override: entity.key,
         source: entity.name,
@@ -131,14 +205,15 @@ export function DefinitionsPanel({ snapshot, onSave }: {
         : "STATE + PEOPLE";
 
   const backLabel = mode === "variables" ? "VARIABLES" : mode === "computed" ? "COMPUTED" : "PEOPLE + PLACES";
+  const cancelEditor = resourceMode ? onClose : resetEditor;
 
-  return <section className="author-panel author-panel-frame definitions-panel" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className={`author-panel author-panel-frame definitions-panel${resourceMode ? " is-resource-task" : ""}`} onPointerDown={(event) => event.stopPropagation()}>
     <header>
       <span>{title}</span>
-      {editing ? <span className="definition-header-context">STATE + PEOPLE</span> : null}
+      {editing && !resourceMode ? <span className="definition-header-context">STATE + PEOPLE</span> : null}
     </header>
     <div className={`author-panel-body definitions-panel-body${editing ? " is-editing" : ""}`}>
-      <div className="definitions-master-pane">
+      {!resourceMode ? <div className="definitions-master-pane">
         <DefinitionIndex
           snapshot={snapshot}
           mode={mode}
@@ -147,21 +222,21 @@ export function DefinitionsPanel({ snapshot, onSave }: {
           onVariable={openVariable}
           onComputed={openComputed}
           onEntity={openEntity}
-          onNewVariable={() => openVariable({ id: crypto.randomUUID(), key: "", label: "", valueType: "number", initialValue: 0, showInStatus: false, interactable: false, operations: [], hooks: [], timeRate: 0, timeUnit: "second" })}
-          onNewComputed={() => openComputed({ id: crypto.randomUUID(), key: "", label: "", source: "elapsed_seconds", format: "integer", showInStatus: false, interactable: false, operations: [], hooks: [] })}
-          onNewEntity={(type) => openEntity({ id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [], interactable: false, operations: [], hooks: [] })}
+          onNewVariable={() => openVariable(newVariable())}
+          onNewComputed={() => openComputed(newComputed())}
+          onNewEntity={(type) => openEntity(newEntity(type))}
         />
-      </div>
+      </div> : null}
       {editing ? <div className="definitions-detail-pane">
-        <button type="button" className="definition-back" onClick={resetEditor}>[← {backLabel}]</button>
+        <button type="button" className="definition-back" onClick={cancelEditor}>[← {resourceMode ? "CANCEL" : backLabel}]</button>
         <div className="definition-detail-scroll">
-          {variable ? <VariableEditor variable={variable} snapshot={snapshot} onChange={setVariable} /> : null}
+          {variable ? <VariableEditor variable={variable} snapshot={snapshot} lockedValueType={lockedVariableType} onChange={setVariable} /> : null}
           {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
-          {entity ? <EntityEditor entity={entity} snapshot={snapshot} onChange={setEntity} /> : null}
+          {entity ? <EntityEditor entity={entity} snapshot={snapshot} lockedType={lockedEntityType} onChange={setEntity} /> : null}
         </div>
-        {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={resetEditor} /> : null}
-        {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={resetEditor} /> : null}
-        {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={resetEditor} /> : null}
+        {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={cancelEditor} /> : null}
+        {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={cancelEditor} /> : null}
+        {entity ? <EditorFooter saving={saving} onSave={() => void saveEntity()} onCancel={cancelEditor} /> : null}
       </div> : null}
     </div>
   </section>;
@@ -274,15 +349,20 @@ function DefinitionKind({ title, items, onOpen, selectedId, empty }: { title: st
   </section>;
 }
 
-function VariableEditor({ variable, snapshot, onChange }: { variable: VariableDefinition; snapshot: ProjectSnapshot; onChange: (value: VariableDefinition) => void }) {
+function VariableEditor({ variable, snapshot, lockedValueType, onChange }: {
+  variable: VariableDefinition;
+  snapshot: ProjectSnapshot;
+  lockedValueType?: VariableDefinition["valueType"];
+  onChange: (value: VariableDefinition) => void;
+}) {
   return <div className="definition-form focused-definition-form">
     <label>LABEL <input value={variable.label} onChange={(event) => onChange({ ...variable, label: event.target.value })} autoFocus /></label>
-    <label>TYPE <select value={variable.valueType} onChange={(event) => {
+    <label>TYPE <select disabled={Boolean(lockedValueType)} value={lockedValueType ?? variable.valueType} onChange={(event) => {
       const valueType = event.target.value as VariableDefinition["valueType"];
       onChange({ ...variable, valueType, initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "", timeRate: valueType === "number" ? variable.timeRate ?? 0 : 0 });
     }}><option value="number">number</option><option value="boolean">boolean / flag</option><option value="string">text / enum</option></select></label>
-    <label>INITIAL VALUE <InitialValueInput definition={variable} onChange={(initialValue) => onChange({ ...variable, initialValue })} /></label>
-    {variable.valueType === "number" ? <div className="time-change-setting">
+    <label>INITIAL VALUE <InitialValueInput definition={{ ...variable, valueType: lockedValueType ?? variable.valueType }} onChange={(initialValue) => onChange({ ...variable, initialValue })} /></label>
+    {(lockedValueType ?? variable.valueType) === "number" ? <div className="time-change-setting">
       <label>CHANGE OVER TIME (+/-) <input aria-label="Change over time amount" type="number" step="any" value={variable.timeRate ?? 0} onChange={(event) => onChange({ ...variable, timeRate: Number(event.target.value) })} /></label>
       <label>PER <select aria-label="Time change unit" value={variable.timeUnit ?? "second"} onChange={(event) => onChange({ ...variable, timeUnit: event.target.value as "second" | "minute" | "hour" })}><option value="second">second</option><option value="minute">minute</option><option value="hour">hour</option></select></label>
     </div> : null}
@@ -303,10 +383,15 @@ function ComputedEditor({ computed, snapshot, onChange }: { computed: ComputedDe
   </div>;
 }
 
-function EntityEditor({ entity, snapshot, onChange }: { entity: EntityDefinition; snapshot: ProjectSnapshot; onChange: (value: EntityDefinition) => void }) {
+function EntityEditor({ entity, snapshot, lockedType, onChange }: {
+  entity: EntityDefinition;
+  snapshot: ProjectSnapshot;
+  lockedType?: EntityDefinition["type"];
+  onChange: (value: EntityDefinition) => void;
+}) {
   return <div className="definition-form focused-definition-form">
     <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} autoFocus /></label>
-    <label>TYPE <select value={entity.type} onChange={(event) => onChange({ ...entity, type: event.target.value as EntityDefinition["type"] })}><option value="character">character</option><option value="location">location</option></select></label>
+    <label>TYPE <select disabled={Boolean(lockedType)} value={lockedType ?? entity.type} onChange={(event) => onChange({ ...entity, type: event.target.value as EntityDefinition["type"] })}><option value="character">character</option><option value="location">location</option></select></label>
     <label>DESCRIPTION <textarea rows={3} value={entity.description} onChange={(event) => onChange({ ...entity, description: event.target.value })} /></label>
     <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => onChange({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
     <OperationHooksEditor
