@@ -1,0 +1,59 @@
+/* Desktop presentation for the canonical Author system. No desktop-only editor state or behavior belongs here. */
+
+@media (min-width: 1000px) and (pointer: fine) {
+  :root {
+    --author-desktop-suite-width: clamp(22rem, 28vw, 30rem);
+    --author-desktop-suite-gap: clamp(1rem, 2vw, 2rem);
+  }
+
+  body:has(.author-home) .dos-screen,
+  body:has(.author-workspace-layer) .dos-screen {
+    padding-left: calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap));
+  }
+
+  body:has(.author-home) .terminal-lower {
+    position: fixed;
+    top: var(--terminal-viewport-top, 0px);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: var(--author-desktop-suite-width);
+    height: var(--terminal-viewport-height, 100dvh);
+    padding: max(16px, env(safe-area-inset-top)) 1rem max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 1px solid var(--dos-line);
+    background: #000;
+  }
+
+  body:has(.author-home) .terminal-lower > *,
+  body:has(.author-home) .author-home,
+  body:has(.author-home) .player-choice-scroll,
+  body:has(.author-home) .unhandled-tools {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body:has(.author-home) .author-home {
+    margin-top: 0;
+  }
+
+  .author-workspace-layer {
+    right: auto;
+    width: var(--author-desktop-suite-width);
+    border-right: 1px solid var(--dos-line);
+  }
+
+  body:has(.author-workspace-layer) .work-surface-close {
+    right: auto;
+    left: calc(var(--author-desktop-suite-width) - 3.5em);
+  }
+
+  .author-workspace-layer .form-grid,
+  .author-workspace-layer .node-meta-grid,
+  .author-workspace-layer .voice-settings,
+  .author-workspace-layer .time-change-setting,
+  .author-workspace-layer .inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
