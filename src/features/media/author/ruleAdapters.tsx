@@ -1,5 +1,5 @@
 import type { EffectAuthorAdapter } from "../../../author/rules/types";
-import { DefinitionSelect } from "../../../author/rules/controls";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 
 function AssetEffectSelect({ kind, value, onChange }: { kind: "audio" | "art"; value: string; onChange: (value: string) => void }) {
@@ -31,8 +31,8 @@ export const synthEffectAdapter: EffectAuthorAdapter = {
   summarize: (effect, snapshot) => effect.type === "synth"
     ? `Play synth: ${snapshot.synthSounds.find((sound) => sound.id === effect.synthId)?.label || "choose synth"}`
     : "Play synth",
-  render: ({ effect, onChange, snapshot }) => effect.type === "synth"
-    ? <DefinitionSelect value={effect.synthId} definitions={snapshot.synthSounds} valueMode="id" onChange={(synthId) => onChange({ ...effect, synthId })} />
+  render: ({ effect, onChange }) => effect.type === "synth"
+    ? <ReferenceField kind="synth-sound" value={effect.synthId} onChange={(synthId) => onChange({ ...effect, synthId })} />
     : null,
 };
 
