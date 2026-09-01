@@ -5,6 +5,10 @@ export type WorkerFeaturePersistence = {
   id: string;
   /** Future schema changes owned by this feature. Historical migrations remain immutable. */
   migrations?: readonly WorkerMigration[];
+  /** Lower values clear first. Use when foreign-key dependencies require reset ordering. */
+  resetOrder?: number;
+  /** Lower values restore first. Use when another feature references this feature's rows. */
+  restoreOrder?: number;
   /** Load this feature's flat project-data slice. */
   load(db: D1Database): Promise<Partial<ProjectSnapshot>>;
   /** Return statements when this feature owns the mutation, otherwise null. */
