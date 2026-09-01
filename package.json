@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate:assets": "node scripts/generate-asset-manifest.mjs",
+    "setup:installation": "node scripts/setup-installation.mjs",
     "predev": "npm run generate:assets",
     "dev": "vite",
     "prebuild": "npm run generate:assets",

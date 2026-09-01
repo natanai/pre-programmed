@@ -10,7 +10,7 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
       id: "assets",
       label: "ASSETS",
       description: "Browse detected repository art and audio.",
-      onSelect: () => context.pushPanel({ type: "assets" }),
+      onSelect: () => context.pushPanel({ type: "feature", feature: "media", workspace: "assets" }),
     },
   },
   {
@@ -22,7 +22,7 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
       id: "sound",
       label: "SOUND",
       description: "Create and edit synthesized sounds.",
-      onSelect: () => context.pushPanel({ type: "synth" }),
+      onSelect: () => context.pushPanel({ type: "feature", feature: "media", workspace: "synth" }),
     },
   },
 ];

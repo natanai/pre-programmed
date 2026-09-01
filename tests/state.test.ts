@@ -4,7 +4,7 @@ import { executeEffects } from "../src/game/effects";
 import { interpolateText } from "../src/game/interpolation";
 import { createEmptyPlayState, reconcilePlayState, resumeAuthorBookmark, type Interaction } from "../src/game/model";
 import { executeInteraction } from "../src/game/runtime";
-import { advanceTimedVariables } from "../src/game/timedVariables";
+import { advanceTimedVariables } from "../src/features/state/timedVariables";
 import { project } from "./fixtures";
 
 const snapshot = project({

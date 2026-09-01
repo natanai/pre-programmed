@@ -1,4 +1,14 @@
-export const API_ORIGIN = "https://pre-programmed.natanai.workers.dev";
+const configuredApiOrigin = import.meta.env.VITE_API_ORIGIN?.trim().replace(/\/+$/, "");
+
+/**
+ * Hosted API origin for this installation.
+ *
+ * VITE_API_ORIGIN lets forks/clones point the same engine build at their own
+ * Worker without editing application source. The fallback preserves the current
+ * production installation until setup/deployment configuration is fully moved
+ * out of the reusable engine defaults.
+ */
+export const API_ORIGIN = configuredApiOrigin || "https://pre-programmed.natanai.workers.dev";
 
 export function apiUrl(path: string) {
   if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname === "terminal.local") {

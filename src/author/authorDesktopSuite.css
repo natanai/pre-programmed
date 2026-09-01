@@ -1,0 +1,65 @@
+/* Desktop presentation for the canonical Author system. No desktop-only editor state or behavior belongs here. */
+
+@media (min-width: 1000px) and (pointer: fine) {
+  :root {
+    --author-desktop-suite-width: clamp(22rem, 28vw, 30rem);
+    --author-desktop-suite-gap: clamp(1rem, 2vw, 2rem);
+  }
+
+  html[data-author-experience="true"] .dos-screen {
+    padding-left: calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap));
+  }
+
+  /* The existing quick/current-node Author surface becomes the dock. Keeping
+   * this keyed to Author experience state rather than AuthorHome visibility
+   * prevents the game from jumping sideways while story text is playing. */
+  html[data-author-experience="true"] .terminal-lower {
+    position: fixed;
+    top: var(--terminal-viewport-top, 0px);
+    right: auto;
+    bottom: auto;
+    left: 0;
+    width: var(--author-desktop-suite-width);
+    height: var(--terminal-viewport-height, 100dvh);
+    padding: max(16px, env(safe-area-inset-top)) 1rem max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-right: 1px solid var(--dos-line);
+    background: #000;
+  }
+
+  html[data-author-experience="true"] .terminal-lower > *,
+  html[data-author-experience="true"] .author-home,
+  html[data-author-experience="true"] .player-choice-scroll,
+  html[data-author-experience="true"] .unhandled-tools {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  html[data-author-experience="true"] .author-home {
+    margin-top: 0;
+  }
+
+  /* AuthorWorkspaceHost is also used by player-facing workspaces such as
+   * Inventory, so dock geometry must remain explicitly scoped to Author mode. */
+  html[data-author-experience="true"] .author-workspace-layer {
+    right: auto;
+    width: var(--author-desktop-suite-width);
+    border-right: 1px solid var(--dos-line);
+  }
+
+  html[data-author-experience="true"] body:has(.author-workspace-layer) .work-surface-close {
+    right: auto;
+    left: calc(var(--author-desktop-suite-width) - 3.5em);
+  }
+
+  /* Existing multi-column editors collapse inside the narrower dock. Their
+   * components and data semantics are unchanged. */
+  html[data-author-experience="true"] .author-workspace-layer .form-grid,
+  html[data-author-experience="true"] .author-workspace-layer .node-meta-grid,
+  html[data-author-experience="true"] .author-workspace-layer .voice-settings,
+  html[data-author-experience="true"] .author-workspace-layer .time-change-setting,
+  html[data-author-experience="true"] .author-workspace-layer .inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

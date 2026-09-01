@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyTextExpression } from "../src/features/narrative/author/TextExpressionBar";
+import { applyTextExpression } from "../src/features/narrative/textExpression";
 
 describe("text expression authoring", () => {
   it("wraps an explicit selection without changing the words", () => {

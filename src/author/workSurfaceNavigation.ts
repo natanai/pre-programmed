@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { GameNode, Interaction, ItemDefinition } from "../game/model";
+import type { GameNode, Interaction } from "../game/model";
 
 export type AuthorPanelRoute =
   | { type: "node"; node: GameNode }
@@ -7,12 +7,8 @@ export type AuthorPanelRoute =
   | { type: "tools" }
   | { type: "definitions" }
   | { type: "structure" }
-  | { type: "inventory" }
-  | { type: "assets" }
-  | { type: "synth" }
   | { type: "workspace"; view?: "locations" | "history" }
-  | { type: "item"; item?: ItemDefinition }
-  /** Generic extension route so new modules do not expand this central union. */
+  /** Generic extension route so feature modules do not expand this central union. */
   | { type: "feature"; feature: string; workspace: string; data?: Record<string, string> };
 
 type WorkSurfaceEntry = {

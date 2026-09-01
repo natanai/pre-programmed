@@ -49,6 +49,14 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
   }, [settings, onTextSpeedMultiplierChange]);
 
   useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.authorExperience = String(showAuthorViewToggle && authorView);
+    return () => {
+      delete root.dataset.authorExperience;
+    };
+  }, [authorView, showAuthorViewToggle]);
+
+  useEffect(() => {
     if (!visible) setOpen(false);
   }, [visible]);
 

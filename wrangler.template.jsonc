@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "your-game-worker",
+  "compatibility_date": "2026-08-30",
+  "main": "./worker/index.ts",
+  "secrets": {
+    "required": ["ADMIN_KEY"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB"
+    }
+  ]
+}

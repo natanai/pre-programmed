@@ -21,15 +21,20 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
-import { ASSET_MANIFEST } from "./generated/assetManifest";
-import { type EffectEvent } from "./game/effects";
+import {
+  advanceProjectClocks,
+  hasActiveProjectClock,
+  projectClockScheduleKey,
+  resetProjectClocks,
+} from "./engine/runtime/projectClock";
+import { effectEventsForTextCue, presentEffectEvents, type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
-import { addNewDefaultItemsToPlayState } from "./game/inventory";
 import { interpolateText } from "./game/interpolation";
 import { applyOperations } from "./game/mutations";
 import {
   createEmptyPlayState,
   reconcilePlayState,
+  reconcilePlayStateAfterProjectChange,
   resumeAuthorBookmark,
   type AuthorBookmark,
   type GameNode,
@@ -43,9 +48,7 @@ import {
 import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
-import { playSynthSound } from "./game/synth";
 import { compileTextNotation } from "./game/textNotation";
-import { advanceTimedVariables, timedVariableKey } from "./game/timedVariables";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./features/commands/applicationCatalog";
 import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
@@ -73,12 +76,6 @@ function terminalChoiceForInteraction(interaction: Interaction): TerminalCommand
     id: interaction.id,
     text: interaction.aliases[0] || interaction.wording,
   };
-}
-
-function usesInlineArt(assetPath: string) {
-  const runtimePath = `/${assetPath.replace(/^\/+/, "")}`;
-  const dimensions = ASSET_MANIFEST.find((asset) => asset.runtimePath === runtimePath)?.dimensions;
-  return Boolean(dimensions && dimensions.width <= 32 && dimensions.height <= 32);
 }
 
 function delayForPosition(performance: TextPerformance, position: number, speedMultiplier: number) {
@@ -166,18 +163,18 @@ export default function App() {
   const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
   const immediateTerminalChoices = immediateChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
   const promptTerminalChoices = promptChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
-  const timedVariables = snapshot ? timedVariableKey(snapshot) : "[]";
+  const projectClockSchedule = snapshot ? projectClockScheduleKey(snapshot) : "[]";
 
   useEffect(() => {
     if (!snapshot) return;
     const now = Date.now();
-    setPlayState((state) => state ? { ...state, variableTimeUpdatedAt: now } : state);
-    if (timedVariables === "[]") return;
+    setPlayState((state) => state ? resetProjectClocks(snapshot, state, now) : state);
+    if (!hasActiveProjectClock(snapshot)) return;
     const timer = window.setInterval(() => {
-      setPlayState((state) => state ? advanceTimedVariables(snapshot, state, Date.now()) : state);
+      setPlayState((state) => state ? advanceProjectClocks(snapshot, state, Date.now()) : state);
     }, 1000);
     return () => window.clearInterval(timer);
-  }, [timedVariables]);
+  }, [projectClockSchedule]);
 
   useEffect(() => {
     if (!typewriter.complete || pendingDestinationNodeId || panel) return;
@@ -325,7 +322,7 @@ export default function App() {
     const beforeState = playState;
     const optimistic = applyOperations(snapshot, operations);
     const optimisticState = playState
-      ? addNewDefaultItemsToPlayState(snapshot, optimistic, reconcilePlayState(optimistic, playState))
+      ? reconcilePlayStateAfterProjectChange(snapshot, optimistic, playState)
       : null;
     const mutation: ProjectMutation = { expectedRevision: snapshot.revision, description, operations };
     setSnapshot(optimistic);
@@ -403,24 +400,24 @@ export default function App() {
   };
 
   const handleEffectEvents = (events: EffectEvent[], anchorLineId?: string) => {
-    for (const event of events) {
-      if (event.type === "notification") {
-        const id = crypto.randomUUID();
-        setNotifications((items) => [...items, { id, text: event.text, anchorLineId }]);
-        window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
-      } else if (event.type === "synth" && snapshot) {
-        const sound = snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);
-        if (sound) void playSynthSound(sound);
-      } else if (event.type === "audio") {
-        void new Audio(assetUrl(event.assetPath)).play().catch(() => undefined);
-      } else if (event.type === "art") {
-        if (usesInlineArt(event.assetPath)) {
-          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: event.assetPath }]);
-        } else {
-          setEventArt(assetUrl(event.assetPath));
-        }
-      }
-    }
+    if (!snapshot || !events.length) return;
+    presentEffectEvents(events, {
+      snapshot,
+      anchorLineId,
+      surface: {
+        notify(text, anchoredLineId) {
+          const id = crypto.randomUUID();
+          setNotifications((items) => [...items, { id, text, anchorLineId: anchoredLineId }]);
+          window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
+        },
+        appendInlineAsset(assetPath) {
+          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: assetPath }]);
+        },
+        showOverlayAsset(assetPath) {
+          setEventArt(assetUrl(assetPath));
+        },
+      },
+    });
   };
 
   const presentRuntimeExecution = (
@@ -460,9 +457,7 @@ export default function App() {
   useEffect(() => {
     for (const cue of activePerformance.cues) {
       if (cue.start > typewriter.count || firedCueIds.current.has(cue.id)) continue;
-      if (cue.type === "synth" && typeof cue.value === "string") handleEffectEvents([{ type: "synth", synthId: cue.value }]);
-      if (cue.type === "audio" && typeof cue.value === "string") handleEffectEvents([{ type: "audio", assetPath: cue.value }]);
-      if (cue.type === "sprite" && typeof cue.value === "string") handleEffectEvents([{ type: "art", assetPath: cue.value }]);
+      handleEffectEvents(effectEventsForTextCue(cue));
       firedCueIds.current.add(cue.id);
     }
   }, [typewriter.count, activePerformance]);
@@ -487,12 +482,12 @@ export default function App() {
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
     if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
-    if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "assets" }); return; }
-    if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "synth" }); return; }
+    if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "feature", feature: "media", workspace: "assets" }); return; }
+    if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "feature", feature: "media", workspace: "synth" }); return; }
     if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
     if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 
-    const currentState = advanceTimedVariables(snapshot, playState, Date.now());
+    const currentState = advanceProjectClocks(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
@@ -572,7 +567,7 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close(); setAuthorMessage("LOCATION LOADED.");
   };
-  const applyInventoryState = (state: PlayState) => {
+  const applyWorkspaceState = (state: PlayState) => {
     if (!snapshot || !playState) return;
     const transitioned = state.traversal.length > playState.traversal.length;
     setPlayState(state);
@@ -581,7 +576,7 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close();
   };
-  const showInventoryResponse = (text: string) => {
+  const showWorkspaceOutput = (text: string) => {
     historyPinnedToPresentRef.current = true;
     appendActive();
     setActiveText("");
@@ -693,9 +688,11 @@ export default function App() {
           leaveCurrentSurface={workSurface.requestBack}
           setWorkspaceDirty={workSurface.setCurrentDirty}
           pushPanel={workSurface.pushPanel}
-          onInventoryState={applyInventoryState}
-          onInventoryOutput={showInventoryResponse}
-          onEvents={handleEffectEvents}
+          runtime={{
+            updateState: applyWorkspaceState,
+            output: showWorkspaceOutput,
+            events: handleEffectEvents,
+          }}
           onSnapshot={applyCanonicalSnapshot}
           onRestore={restoreBookmark}
           leaveConfirmation={workSurface.leaveConfirmation}

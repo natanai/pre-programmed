@@ -1,0 +1,218 @@
+import type { GameNode, Interaction } from "../../src/features/narrative/model";
+import { parseJson } from "../db/json";
+import type { WorkerFeaturePersistence } from "./types";
+
+function groupRows<T>(rows: T[], key: (row: T) => string) {
+  const groups = new Map<string, T[]>();
+  for (const row of rows) groups.set(key(row), [...(groups.get(key(row)) ?? []), row]);
+  return groups;
+}
+
+type NodeRow = {
+  id: string;
+  node_number: number;
+  text: string;
+  characters_per_second: number;
+  ending: number | null;
+  tags_json: string | null;
+  performance_json: string | null;
+  character_id: string | null;
+  location_id: string | null;
+};
+
+type InteractionRow = {
+  id: string;
+  source_node_id: string;
+  wording: string;
+  match_mode: Interaction["matchMode"];
+  choice_visibility: Interaction["choiceVisibility"];
+  tags_json: string;
+  notes: string;
+};
+
+type AliasRow = { interaction_id: string; alias: string; order_index: number };
+
+type OutcomeRow = {
+  id: string;
+  interaction_id: string;
+  order_index: number;
+  label: string;
+  author_status: Interaction["outcomes"][number]["authorStatus"];
+  condition_json: string;
+  response_text: string;
+  response_speaker_id: string | null;
+  response_characters_per_second: number;
+  effects_json: string;
+  disposition: "stay" | "transition";
+  destination_node_id: string | null;
+};
+
+export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
+  id: "narrative",
+
+  async load(db) {
+    const [meta, nodes, interactions, aliases, outcomes] = await Promise.all([
+      db.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").first<{ start_node_id: string }>(),
+      db.prepare(
+        `SELECT n.id, n.node_number, n.text, n.characters_per_second,
+                d.ending, d.tags_json, d.performance_json, c.character_id, c.location_id
+           FROM nodes n
+           LEFT JOIN node_details d ON d.node_id = n.id
+           LEFT JOIN node_context c ON c.node_id = n.id
+          ORDER BY n.node_number`,
+      ).all<NodeRow>(),
+      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
+        .all<InteractionRow>(),
+      db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
+        .all<AliasRow>(),
+      db.prepare(
+        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_speaker_id,
+                response_characters_per_second, effects_json, disposition, destination_node_id
+           FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
+      ).all<OutcomeRow>(),
+    ]);
+
+    if (!meta) throw new Error("Project has not been initialized.");
+    const aliasGroups = groupRows(aliases.results, (row) => row.interaction_id);
+    const outcomeGroups = groupRows(outcomes.results, (row) => row.interaction_id);
+
+    return {
+      startNodeId: meta.start_node_id,
+      nodes: nodes.results.map((row): GameNode => {
+        const performance = parseJson(row.performance_json, {
+          charactersPerSecond: row.characters_per_second,
+          cues: [],
+        });
+        return {
+          id: row.id,
+          nodeNumber: row.node_number,
+          text: row.text,
+          ending: Boolean(row.ending),
+          tags: parseJson(row.tags_json, []),
+          characterId: row.character_id,
+          locationId: row.location_id,
+          performance: {
+            charactersPerSecond: performance.charactersPerSecond ?? row.characters_per_second,
+            cues: performance.cues ?? [],
+          },
+        };
+      }),
+      interactions: interactions.results.map((row): Interaction => ({
+        id: row.id,
+        sourceNodeId: row.source_node_id,
+        wording: row.wording,
+        matchMode: row.match_mode ?? "command",
+        choiceVisibility: row.choice_visibility,
+        tags: parseJson(row.tags_json, []),
+        notes: row.notes,
+        aliases: (aliasGroups.get(row.id) ?? []).map((alias) => alias.alias),
+        outcomes: (outcomeGroups.get(row.id) ?? []).map((outcome) => ({
+          id: outcome.id,
+          order: outcome.order_index,
+          label: outcome.label,
+          authorStatus: outcome.author_status,
+          condition: parseJson(outcome.condition_json, { type: "always" }),
+          responseText: outcome.response_text,
+          speakerId: outcome.response_speaker_id,
+          responseCharactersPerSecond: outcome.response_characters_per_second,
+          effects: parseJson(outcome.effects_json, []),
+          disposition: outcome.disposition,
+          destinationNodeId: outcome.destination_node_id,
+        })),
+      })),
+    };
+  },
+
+  mutationStatements(db, operation) {
+    if (operation.type === "node.upsert") {
+      const node = operation.node;
+      return [
+        db.prepare(
+          `INSERT INTO nodes (id, node_number, text, characters_per_second, updated_at)
+           VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(id) DO UPDATE SET node_number=excluded.node_number, text=excluded.text,
+             characters_per_second=excluded.characters_per_second, updated_at=CURRENT_TIMESTAMP`,
+        ).bind(node.id, node.nodeNumber, node.text, node.performance.charactersPerSecond),
+        db.prepare(
+          `INSERT INTO node_details (node_id, ending, tags_json, performance_json)
+           VALUES (?, ?, ?, ?)
+           ON CONFLICT(node_id) DO UPDATE SET ending=excluded.ending, tags_json=excluded.tags_json,
+             performance_json=excluded.performance_json`,
+        ).bind(node.id, Number(node.ending), JSON.stringify(node.tags), JSON.stringify(node.performance)),
+        db.prepare(
+          `INSERT INTO node_context (node_id, character_id, location_id)
+           VALUES (?, ?, ?)
+           ON CONFLICT(node_id) DO UPDATE SET character_id=excluded.character_id,
+             location_id=excluded.location_id`,
+        ).bind(node.id, node.characterId, node.locationId),
+      ];
+    }
+
+    if (operation.type === "interaction.upsert") {
+      const value = operation.interaction;
+      return [
+        db.prepare(
+          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
+             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
+             notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
+        ).bind(
+          value.id,
+          value.sourceNodeId,
+          value.wording,
+          value.matchMode ?? "command",
+          value.choiceVisibility ?? "prompt",
+          JSON.stringify(value.tags),
+          value.notes,
+        ),
+        db.prepare("DELETE FROM interaction_aliases WHERE interaction_id = ?").bind(value.id),
+        db.prepare("DELETE FROM interaction_outcomes WHERE interaction_id = ?").bind(value.id),
+        ...value.aliases.map((alias, index) => db.prepare("INSERT INTO interaction_aliases (interaction_id, alias, order_index) VALUES (?, ?, ?)").bind(value.id, alias, index)),
+        ...value.outcomes.map((outcome) => db.prepare(
+          `INSERT INTO interaction_outcomes
+           (id, interaction_id, order_index, label, condition_json, response_text, response_speaker_id,
+            response_characters_per_second, effects_json, disposition, destination_node_id, author_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ).bind(
+          outcome.id,
+          value.id,
+          outcome.order,
+          outcome.label,
+          JSON.stringify(outcome.condition),
+          outcome.responseText,
+          outcome.speakerId ?? null,
+          outcome.responseCharactersPerSecond ?? 18,
+          JSON.stringify(outcome.effects),
+          outcome.disposition,
+          outcome.destinationNodeId,
+          outcome.authorStatus ?? "configured",
+        )),
+      ];
+    }
+
+    if (operation.type === "interaction.delete") {
+      return [db.prepare("DELETE FROM interactions WHERE id = ?").bind(operation.id)];
+    }
+
+    return null;
+  },
+
+  resetStatements(db) {
+    return [
+      db.prepare("DELETE FROM interaction_aliases"),
+      db.prepare("DELETE FROM interaction_outcomes"),
+      db.prepare("DELETE FROM interactions"),
+      db.prepare("DELETE FROM node_context"),
+      db.prepare("DELETE FROM node_details"),
+      db.prepare("DELETE FROM nodes WHERE id <> (SELECT start_node_id FROM project_meta WHERE id = 1)"),
+    ];
+  },
+
+  restoreOperations(snapshot) {
+    return [
+      ...snapshot.nodes.map((node) => ({ type: "node.upsert" as const, node })),
+      ...snapshot.interactions.map((interaction) => ({ type: "interaction.upsert" as const, interaction })),
+    ];
+  },
+};

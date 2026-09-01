@@ -1,15 +1,7 @@
+import type { TextCueType } from "../../engine/presentation/textCueTypes";
 import type { Condition, Effect } from "../../engine/rules/model";
 
-export type TextCueType =
-  | "pause"
-  | "speed"
-  | "wave"
-  | "shake"
-  | "blink"
-  | "instant"
-  | "synth"
-  | "audio"
-  | "sprite";
+export type { TextCueType } from "../../engine/presentation/textCueTypes";
 
 export type TextCue = {
   id: string;
