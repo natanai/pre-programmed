@@ -30,6 +30,35 @@ jobs:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
+      - name: Probe deployed Worker binding metadata
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
+          const workerName = config.name;
+          const endpoint = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${encodeURIComponent(workerName)}/versions?per_page=10`;
+          try {
+            const response = await fetch(endpoint, {
+              headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
+            });
+            if (!response.ok) {
+              console.log(`WORKER_VERSION_METADATA unavailable (${response.status})`);
+              process.exit(0);
+            }
+            const payload = await response.json();
+            const versions = Array.isArray(payload?.result) ? payload.result : [];
+            const binding = versions
+              .flatMap((version) => version?.resources?.bindings ?? [])
+              .find((candidate) => candidate?.type === "d1" && candidate?.name === "DB" && typeof candidate?.database_id === "string");
+            console.log(binding ? "WORKER_VERSION_D1_BINDING available" : "WORKER_VERSION_D1_BINDING not-found");
+          } catch {
+            console.log("WORKER_VERSION_METADATA unavailable (request-error)");
+          }
+          NODE
+
       - name: Deploy API Worker
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
