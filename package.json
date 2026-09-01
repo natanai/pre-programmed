@@ -6,6 +6,9 @@
   "scripts": {
     "generate:assets": "node scripts/generate-asset-manifest.mjs",
     "setup:installation": "node scripts/setup-installation.mjs",
+    "prelocal": "npm run generate:assets",
+    "local": "node scripts/run-local.mjs",
+    "verify:local": "node scripts/verify-local-runtime.mjs",
     "predev": "npm run generate:assets",
     "dev": "vite",
     "prebuild": "npm run generate:assets",
