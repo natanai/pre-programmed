@@ -1,3 +1,11 @@
+.inventory-play-workspace {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .inventory-author-actions {
   display: flex;
   flex-wrap: wrap;
@@ -12,26 +20,37 @@
   cursor: pointer;
 }
 
+/* Keep the original inventory as one primary unit; BODY is a sibling to its right. */
 .inventory-play-workspace .inventory-layout {
-  grid-template-areas: "body grid inspector";
-  grid-template-columns: minmax(10rem, .8fr) minmax(0, 2fr) minmax(12rem, 1fr);
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(14rem, .7fr);
+  gap: .75em;
+  align-items: start;
+}
+
+.inventory-primary-area {
+  display: grid;
+  grid-template-areas: "grid inspector";
+  grid-template-columns: minmax(300px, 1fr) minmax(13em, .45fr);
+  gap: .75em;
+  min-width: 0;
   align-items: stretch;
 }
 
-.inventory-play-workspace .inventory-grid {
+.inventory-primary-area .inventory-grid {
   grid-area: grid;
 }
 
-.inventory-play-workspace .inventory-inspector {
+.inventory-primary-area .inventory-inspector {
   grid-area: inspector;
 }
 
 .inventory-body-area {
-  grid-area: body;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   min-width: 0;
   min-height: 0;
+  align-self: start;
   border: 1px solid var(--dos-line);
   background: #000;
 }
@@ -59,7 +78,9 @@
   position: relative;
   display: grid;
   place-items: center;
-  min-height: 20rem;
+  width: 100%;
+  min-height: 18rem;
+  aspect-ratio: 3 / 4;
   overflow: hidden;
   background-color: #050505;
   background-position: center;
@@ -73,6 +94,7 @@
   content: "";
   position: absolute;
   inset: .4em;
+  z-index: 0;
   pointer-events: none;
   border: 1px dotted #292929;
 }
@@ -82,9 +104,100 @@
 }
 
 .inventory-body-canvas > span {
+  z-index: 1;
   max-width: 12em;
   padding: 1em;
   line-height: 1.2;
+}
+
+.inventory-body-slot {
+  position: absolute;
+  z-index: 2;
+  display: grid !important;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 !important;
+  overflow: hidden;
+  border: 1px dashed #777 !important;
+  background: rgb(0 0 0 / .18) !important;
+  color: var(--dos-muted) !important;
+  touch-action: manipulation;
+}
+
+.inventory-body-slot.can-equip {
+  border-color: var(--dos-bright) !important;
+  background: rgb(255 255 255 / .07) !important;
+}
+
+.inventory-body-slot.occupied {
+  border-style: solid !important;
+  color: var(--dos-bright) !important;
+}
+
+.inventory-body-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.inventory-body-slot strong {
+  font-weight: 400;
+}
+
+.inventory-body-slot small {
+  position: absolute;
+  right: 1px;
+  bottom: 1px;
+  left: 1px;
+  overflow: hidden;
+  padding: .15em .2em;
+  background: rgb(0 0 0 / .82);
+  color: var(--dos-bright);
+  font-size: .72em;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-item.equipped {
+  box-shadow: inset 0 0 0 1px var(--dos-bright);
+}
+
+.inventory-item > i {
+  position: absolute;
+  top: 1px;
+  left: 2px;
+  color: var(--dos-bright);
+  font-size: .75em;
+  font-style: normal;
+  text-shadow: 1px 1px #000;
+}
+
+.inventory-equipped-status {
+  color: var(--dos-warn);
+}
+
+.inventory-equip-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4em .65em;
+  margin: .65em 0;
+  padding-top: .5em;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.inventory-equip-choices > span,
+.inventory-equip-choices > small {
+  color: var(--dos-muted);
+}
+
+.inventory-equip-choices button[aria-pressed="true"] {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .2em;
 }
 
 .inventory-inspector-heading {
@@ -120,6 +233,7 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -368,22 +482,143 @@
   color: var(--dos-muted);
 }
 
-.body-background-preview {
+/* Body Type spatial Author editor */
+.body-type-layout-editor {
+  position: relative;
   display: grid;
   place-items: center;
-  width: min(100%, 26rem);
-  min-height: 18rem;
+  width: min(100%, 32rem);
   aspect-ratio: 3 / 4;
   overflow: hidden;
   border: 1px dotted var(--dos-line);
-  background: #050505;
+  background-color: #050505;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
   color: var(--dos-muted);
 }
 
-.body-background-preview img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+.body-type-layout-empty {
+  pointer-events: none;
+}
+
+.body-slot-editor-rect {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--dos-bright);
+  background: rgb(0 0 0 / .38);
+  color: var(--dos-bright);
+  cursor: move;
+  touch-action: none;
+  user-select: none;
+}
+
+.body-slot-editor-rect.active {
+  outline: 1px dotted var(--dos-bright);
+  outline-offset: 2px;
+}
+
+.body-slot-editor-rect > span {
+  max-width: 100%;
+  overflow: hidden;
+  padding: .15em;
+  font-size: .8em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.body-slot-resize-handle {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 2em;
+  height: 2em;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center;
+  border: 0 !important;
+  background: #000 !important;
+  color: var(--dos-bright) !important;
+  cursor: nwse-resize !important;
+  touch-action: none;
+}
+
+.body-slot-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5em .8em;
+}
+
+.body-slot-editor-toolbar small {
+  max-width: 42em;
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.body-slot-definition-list {
+  display: grid;
+  gap: .65em;
+}
+
+.body-slot-definition-row {
+  display: grid;
+  gap: .45em;
+  padding: .6em;
+  border: 1px solid var(--dos-line);
+}
+
+.body-slot-name-key,
+.body-slot-coordinate-grid {
+  display: grid;
+  gap: .5em;
+}
+
+.body-slot-name-key {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.body-slot-coordinate-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.body-slot-definition-row label {
+  margin: 0;
+}
+
+.body-slot-definition-row > small {
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.body-slot-definition-row > button {
+  width: fit-content;
+}
+
+.body-slot-error {
+  color: var(--dos-warn);
+}
+
+.equipment-slot-compatibility {
+  display: grid;
+  gap: .4em;
+  padding: .55em;
+  border: 1px dotted var(--dos-line);
+}
+
+.equipment-slot-compatibility > button {
+  width: fit-content;
+  margin-bottom: .25em;
+}
+
+.equipment-slot-compatibility small {
+  color: var(--dos-muted);
 }
 
 .item-editor-body {
@@ -412,9 +647,12 @@
 
 @media (max-width: 700px), (pointer: coarse) {
   .inventory-play-workspace .inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .inventory-primary-area {
     grid-template-areas:
       "inspector"
-      "body"
       "grid";
     grid-template-columns: minmax(0, 1fr);
   }
@@ -429,8 +667,13 @@
     border-color: var(--dos-bright);
   }
 
+  .inventory-body-area {
+    width: 100%;
+  }
+
   .inventory-body-canvas {
-    min-height: 42vh;
+    min-height: 0;
+    aspect-ratio: 3 / 4;
   }
 
   .inventory-inspector-heading button,
@@ -442,7 +685,10 @@
   .inventory-definition-search-control > input,
   .inventory-definition-search-control > button,
   .inventory-body-background-preview-button,
-  .body-background-starting select {
+  .body-background-starting select,
+  .inventory-equip-choices button,
+  .body-slot-editor-toolbar button,
+  .body-slot-definition-row button {
     min-height: 2.75em;
     font-size: max(16px, 1em);
   }
@@ -457,9 +703,14 @@
   }
 
   .inventory-definition-search-row,
-  .body-background-starting {
+  .body-background-starting,
+  .body-slot-name-key {
     grid-template-columns: 1fr;
     gap: .25em;
+  }
+
+  .body-slot-coordinate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .inventory-definition-search-row > label {
@@ -479,5 +730,9 @@
 
   .inventory-body-background-cards {
     grid-template-columns: 1fr;
+  }
+
+  .body-type-layout-editor {
+    width: 100%;
   }
 }
