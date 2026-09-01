@@ -6,7 +6,7 @@ import type {
   RevisionSummary,
 } from "../src/game/model";
 import { parseJson } from "./db/json";
-import { ensureSchema } from "./db/migrations";
+import { ensureSchema } from "./db/schema";
 import { WORKER_FEATURE_PERSISTENCE } from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
