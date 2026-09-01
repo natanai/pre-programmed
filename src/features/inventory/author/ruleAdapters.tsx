@@ -5,9 +5,9 @@ function itemLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summari
   return snapshot.items.find((item) => item.id === id)?.name || "choose item";
 }
 
-function bodyBackgroundLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], id: string) {
-  if (!id) return "no body background";
-  return (snapshot.bodyBackgrounds ?? []).find((background) => background.id === id)?.name || "choose body background";
+function bodyTypeLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], id: string) {
+  if (!id) return "no body type";
+  return (snapshot.bodyBackgrounds ?? []).find((bodyType) => bodyType.id === id)?.name || "choose body type";
 }
 
 export const hasItemConditionAdapter: ConditionAuthorAdapter = {
@@ -77,16 +77,16 @@ export const setItemStateEffectAdapter: EffectAuthorAdapter = {
 
 export const setBodyBackgroundEffectAdapter: EffectAuthorAdapter = {
   type: "set_body_background",
-  label: "set body background",
+  label: "set body type",
   create: () => ({ id: crypto.randomUUID(), type: "set_body_background", backgroundId: "" }),
   summarize: (effect, snapshot) => effect.type === "set_body_background"
-    ? `Body background → ${bodyBackgroundLabel(snapshot, effect.backgroundId)}`
-    : "Set body background",
+    ? `Body type → ${bodyTypeLabel(snapshot, effect.backgroundId)}`
+    : "Set body type",
   render: ({ effect, onChange, snapshot }) => effect.type === "set_body_background" ? <select
     value={effect.backgroundId}
     onChange={(event) => onChange({ ...effect, backgroundId: event.target.value })}
   >
     <option value="">none</option>
-    {(snapshot.bodyBackgrounds ?? []).map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
+    {(snapshot.bodyBackgrounds ?? []).map((bodyType) => <option value={bodyType.id} key={bodyType.id}>{bodyType.name}</option>)}
   </select> : null,
 };
