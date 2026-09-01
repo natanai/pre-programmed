@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
-import type { AuthorPanelRoute } from "../../../author/workSurfaceNavigation";
+import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
 import { COMMAND_REFERENCE_SOURCES, COMMAND_REFERENCE_SOURCE_BY_KIND } from "../referenceCatalog";
 import type { CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
@@ -58,15 +58,15 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
   const enabledSources = context.snapshot.settings.commands.referenceSources.filter((source) => source.enabled).length;
   const enabledCommands = context.snapshot.settings.commands.commands.filter((command) => command.enabled).length;
   return <div className="command-settings-overview">
-    <button type="button" onClick={() => context.pushPanel({ type: "feature", feature: "commands", workspace: "references" })}>
+    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "references" })}>
       <span><strong>REFERENCE SOURCES</strong><small>Choose what players can refer to and which words identify each target.</small></span>
       <span>{enabledSources}/{COMMAND_REFERENCE_SOURCES.length} ›</span>
     </button>
-    <button type="button" onClick={() => context.pushPanel({ type: "feature", feature: "commands", workspace: "grammar" })}>
+    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
       <span><strong>COMMAND GRAMMAR</strong><small>Define operations, aliases, argument slots, and accepted input shapes.</small></span>
       <span>{enabledCommands} ›</span>
     </button>
-    <button type="button" onClick={() => context.pushPanel({ type: "feature", feature: "commands", workspace: "capabilities" })}>
+    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "capabilities" })}>
       <span><strong>ENGINE CAPABILITIES</strong><small>Browse module-provided actions and create your own player-facing language for them.</small></span>
       <span>{APPLICATION_COMMAND_CAPABILITIES.length} ›</span>
     </button>
@@ -85,7 +85,7 @@ function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContex
       {COMMAND_REFERENCE_SOURCES.map((source) => {
         const setting = configured.find((candidate) => candidate.sourceKind === source.kind);
         const count = source.candidates(context.snapshot, context.playState).length;
-        return <button type="button" key={source.kind} onClick={() => context.pushPanel({
+        return <button type="button" key={source.kind} onClick={() => context.pushTask({
           type: "feature",
           feature: "commands",
           workspace: "reference-source",
@@ -163,7 +163,7 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
     <header><span>COMMAND GRAMMAR</span><span>{commands.length} COMMANDS</span></header>
     <div className="author-panel-body command-settings-list">
       <p className="command-settings-note">Commands are project-wide grammar. Local node interactions still handle exact scene-specific phrases.</p>
-      {commands.map((command) => <button type="button" key={command.id} onClick={() => context.pushPanel({
+      {commands.map((command) => <button type="button" key={command.id} onClick={() => context.pushTask({
         type: "feature",
         feature: "commands",
         workspace: "command",
@@ -174,7 +174,7 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
       </button>)}
       {!commands.length ? <div className="command-settings-empty">NO PROJECT COMMANDS YET.</div> : null}
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushPanel({
+    <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask({
       type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
     })}>[+ COMMAND]</button></div>
   </section>;
@@ -185,7 +185,7 @@ function CapabilitiesWorkspace({ context }: { context: AuthorWorkspaceContext })
     <header><span>ENGINE CAPABILITIES</span><span>{APPLICATION_COMMAND_CAPABILITIES.length}</span></header>
     <div className="author-panel-body command-settings-list">
       <p className="command-settings-note">Capabilities are actions supplied by engine modules. They have no mandatory player-facing words. Create a command, then choose whatever language fits this game.</p>
-      {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <button type="button" key={capability.operation} onClick={() => context.pushPanel({
+      {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <button type="button" key={capability.operation} onClick={() => context.pushTask({
         type: "feature",
         feature: "commands",
         workspace: "command",
@@ -274,7 +274,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
     const result = await persistCommands(context, commands, `Deleted command ${existing.label}`);
     if (result.status === "saved" || result.status === "queued") {
       context.setWorkspaceDirty(false);
-      context.leaveCurrentSurface();
+      context.leaveCurrentTask();
     }
   };
 
@@ -347,7 +347,7 @@ export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSec
   },
 ];
 
-export function renderCommandSettingsWorkspace(route: AuthorPanelRoute, context: AuthorWorkspaceContext) {
+export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "commands") return null;
   if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;
   if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
