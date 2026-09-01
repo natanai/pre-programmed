@@ -31,7 +31,7 @@ export function BodyBackgroundEditor({ snapshot, initial, onSave, onCancel, setW
     if (!name) return;
     const background = { ...draft, name };
     const operations: MutationOperation[] = [{ type: "bodyBackground.upsert", background }];
-    if (!initial && !snapshot.startingBodyBackgroundId && snapshot.bodyBackgrounds.length === 0) {
+    if (!initial && !snapshot.startingBodyBackgroundId && (snapshot.bodyBackgrounds ?? []).length === 0) {
       operations.push({ type: "bodyBackground.starting", id: background.id });
     }
     setDraft(background);
