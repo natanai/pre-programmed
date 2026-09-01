@@ -43,8 +43,9 @@ describe("D1 migration scripts", () => {
       const hookTable = database.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'operation_hooks'").get() as { sql: string } | undefined;
       const oldHookTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'item_operation_hooks'").get();
       const entityColumns = database.prepare("PRAGMA table_info(entity_definitions)").all() as Array<{ name: string }>;
+      const outcomeColumns = database.prepare("PRAGMA table_info(interaction_outcomes)").all() as Array<{ name: string }>;
 
-      expect(version.schema_version).toBe(11);
+      expect(version.schema_version).toBe(12);
       expect(hookTable?.sql).toContain("target_kind TEXT NOT NULL");
       expect(hookTable?.sql).not.toContain("target_kind IN");
       expect(oldHookTable).toBeUndefined();
@@ -52,6 +53,7 @@ describe("D1 migration scripts", () => {
         "operation_interactable",
         "operations_json",
       ]));
+      expect(outcomeColumns.map((column) => column.name)).toContain("response_speaker_id");
     } finally {
       database.close();
     }

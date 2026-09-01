@@ -68,6 +68,7 @@ type OutcomeRow = {
   author_status: Interaction["outcomes"][number]["authorStatus"];
   condition_json: string;
   response_text: string;
+  response_speaker_id: string | null;
   response_characters_per_second: number;
   effects_json: string;
   disposition: "stay" | "transition";
@@ -155,8 +156,8 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
       db.prepare(
-        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_characters_per_second,
-                effects_json, disposition, destination_node_id
+        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_speaker_id,
+                response_characters_per_second, effects_json, disposition, destination_node_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
       db.prepare(
@@ -197,7 +198,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   }));
 
   return {
-    schemaVersion: Math.max(11, meta.schema_version),
+    schemaVersion: Math.max(12, meta.schema_version),
     revision,
     startNodeId: meta.start_node_id,
     settings,
@@ -236,6 +237,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         authorStatus: outcome.author_status,
         condition: parseJson(outcome.condition_json, { type: "always" }),
         responseText: outcome.response_text,
+        speakerId: outcome.response_speaker_id,
         responseCharactersPerSecond: outcome.response_characters_per_second,
         effects: parseJson(outcome.effects_json, []),
         disposition: outcome.disposition,
@@ -398,9 +400,9 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
         ...value.aliases.map((alias, index) => db.prepare("INSERT INTO interaction_aliases (interaction_id, alias, order_index) VALUES (?, ?, ?)").bind(value.id, alias, index)),
         ...value.outcomes.map((outcome) => db.prepare(
           `INSERT INTO interaction_outcomes
-           (id, interaction_id, order_index, label, condition_json, response_text,
+           (id, interaction_id, order_index, label, condition_json, response_text, response_speaker_id,
             response_characters_per_second, effects_json, disposition, destination_node_id, author_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).bind(
           outcome.id,
           value.id,
@@ -408,6 +410,7 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
           outcome.label,
           JSON.stringify(outcome.condition),
           outcome.responseText,
+          outcome.speakerId ?? null,
           outcome.responseCharactersPerSecond ?? 18,
           JSON.stringify(outcome.effects),
           outcome.disposition,
