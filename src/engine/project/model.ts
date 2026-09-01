@@ -1,9 +1,14 @@
 import type { Value } from "../rules/model";
 import type { InventoryEntry, ItemDefinition } from "../../features/inventory/model";
+import type { InventoryMutationOperation } from "../../features/inventory/mutations";
 import type { SynthSound } from "../../features/media/model";
+import type { MediaMutationOperation } from "../../features/media/mutations";
 import type { GameNode, Interaction } from "../../features/narrative/model";
+import type { NarrativeMutationOperation } from "../../features/narrative/mutations";
 import type { ComputedDefinition, VariableDefinition } from "../../features/state/model";
+import type { StateMutationOperation } from "../../features/state/mutations";
 import type { EntityDefinition } from "../../features/world/model";
+import type { WorldMutationOperation } from "../../features/world/mutations";
 import type { ProjectSettings } from "./settings";
 
 export type ProjectSnapshot = {
@@ -51,18 +56,25 @@ export type RevisionSummary = {
   createdAt: string;
 };
 
-export type MutationOperation =
+/** Core-owned project mutation payloads. Feature payloads live beside features. */
+export type CoreProjectMutationOperation =
   | { type: "project.settings"; settings: ProjectSettings }
-  | { type: "node.upsert"; node: GameNode }
-  | { type: "interaction.upsert"; interaction: Interaction }
-  | { type: "interaction.delete"; id: string }
-  | { type: "entity.upsert"; entity: EntityDefinition }
-  | { type: "variable.upsert"; definition: VariableDefinition }
-  | { type: "computed.upsert"; definition: ComputedDefinition }
-  | { type: "item.upsert"; item: ItemDefinition }
-  | { type: "synth.upsert"; sound: SynthSound }
   | { type: "bookmark.upsert"; bookmark: AuthorBookmark }
   | { type: "bookmark.delete"; id: string };
+
+/**
+ * Explicit mutation composition root.
+ *
+ * Core owns revision/concurrency and composes installed feature mutation
+ * contracts; it no longer defines the payload shape of each feature mutation.
+ */
+export type MutationOperation =
+  | CoreProjectMutationOperation
+  | NarrativeMutationOperation
+  | WorldMutationOperation
+  | StateMutationOperation
+  | InventoryMutationOperation
+  | MediaMutationOperation;
 
 export type ProjectMutation = {
   expectedRevision: number;
