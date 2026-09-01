@@ -311,22 +311,30 @@ These settings live in the local browser, not in D1, because they are display/pl
 
 ## Working directly in the repo
 
-The parts you are most likely to care about are:
+The architecture is feature-first. The important paths are:
 
 ```text
-public/assets/             files you make for the game
-src/App.tsx                main live terminal / play-author shell
-src/components/            Author tools and UI surfaces
-src/game/                  parser, runtime, state, inventory, effects, graph logic
-src/data/                  API and browser persistence helpers
-worker/                    Cloudflare API Worker
-migrations/                D1 schema migrations
-scripts/                   small build helpers such as asset detection
-.github/workflows/deploy.yml
-                           the one production deployment workflow
+public/assets/             repository-managed images/audio/art
+src/App.tsx                live terminal/session composition shell
+src/features/              feature-owned vertical slices and Author implementations
+src/engine/                generic contracts plus explicit installed-feature composition roots
+src/author/                shared Author navigation/workspace/runtime composition
+src/data/                  API and browser-cache helpers
+src/platform/              host/platform adapters such as Cloudflare persistence
+src/game/                  shrink-only compatibility re-exports for older imports
+src/components/            small shared/compatibility UI surfaces
+worker/features/           feature-owned D1 persistence and mutation validation
+worker/db/                 canonical schema owner + immutable historical migration data
+worker/projectStore.ts     core D1/revision/bookmark orchestration
+scripts/                   installation/build helpers
+.github/workflows/         one automatic production deploy + opt-in prototype verification
 ```
 
-There is intentionally no large process/rules documentation layer around the prototype. The code and this practical README should be enough to orient yourself.
+The architecture rule is:
+
+> A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
+
+Read `docs/feature-boundaries.md` before substantial engine changes. `docs/modular-engine-roadmap.md` records remaining modularity work, and `docs/installation.md` is the supported fork/clone setup path.
 
 ## Running locally
 
@@ -337,7 +345,7 @@ npm run dev
 
 The asset manifest is generated automatically before development/build commands that need it.
 
-Useful commands if you specifically want them:
+Useful targeted commands:
 
 ```sh
 npm run build
@@ -346,7 +354,13 @@ npm run typecheck
 npm test
 ```
 
-Tests remain available as a development tool; they are not meant to turn every experimental edit into a heavy process.
+For an explicit full checkpoint:
+
+```sh
+npm run verify
+```
+
+Full verification is intentionally not an automatic tax on ordinary prototype branch updates.
 
 ## Production deployment
 
@@ -361,7 +375,7 @@ build GitHub Pages client
   ↓
 deploy Cloudflare API Worker
   ↓
-verify live API
+verify live API + project snapshot
   ↓
 publish GitHub Pages
 ```
