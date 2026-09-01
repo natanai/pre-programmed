@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { Condition, Effect, ProjectSnapshot } from "../../game/model";
+import type { AuthorResourceTools } from "../resources/types";
 
 export type RenderNestedCondition = (
   condition: Condition,
@@ -9,6 +10,7 @@ export type RenderNestedCondition = (
 export type ConditionAuthorContext = {
   condition: Condition;
   snapshot: ProjectSnapshot;
+  resources: AuthorResourceTools;
   onChange: (condition: Condition) => void;
   depth: number;
   renderNested: RenderNestedCondition;
@@ -24,6 +26,7 @@ export type ConditionAuthorAdapter = {
 export type EffectAuthorContext = {
   effect: Effect;
   snapshot: ProjectSnapshot;
+  resources: AuthorResourceTools;
   onChange: (effect: Effect) => void;
 };
 
