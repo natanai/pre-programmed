@@ -1,21 +1,20 @@
-import type { AuthorResourceTools } from "./types";
+import { useAuthorResourceTools } from "./context";
 import "./referenceField.css";
 
 export function ReferenceField({
   kind,
   value,
   onChange,
-  resources,
   placeholder,
   allowEmpty = true,
 }: {
   kind: string;
   value: string;
   onChange: (value: string) => void;
-  resources: AuthorResourceTools;
   placeholder?: string;
   allowEmpty?: boolean;
 }) {
+  const resources = useAuthorResourceTools();
   const options = resources.options(kind);
   const label = resources.label(kind);
   const selected = options.find((option) => option.value === value);
