@@ -10,7 +10,7 @@ export const stateAuthorTools: AuthorToolContributor = (context) => [
       id: "definitions",
       label: "STATE + PEOPLE",
       description: "Variables, computed values, characters, and locations.",
-      onSelect: () => context.pushPanel({ type: "definitions" }),
+      onSelect: () => context.pushPanel({ type: "feature", feature: "state", workspace: "definitions" }),
     },
   },
 ];
