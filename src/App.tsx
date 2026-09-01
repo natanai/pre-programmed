@@ -482,7 +482,6 @@ export default function App() {
     if (normalized === "admin") { if (authorMode) { setAuthorView(true); setAuthorMessage(""); } else setRequestingKey(true); return; }
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
-    if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
     if (authorMode && authorView) {
       const featureShortcut = resolveAuthorFeatureTerminalShortcut(normalized);
       if (featureShortcut) { setPanel(featureShortcut); return; }
