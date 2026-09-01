@@ -8,12 +8,12 @@ const upsertItem: MutationHandler = (snapshot, operation) => {
 
 const upsertBodyBackground: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "bodyBackground.upsert") return;
-  snapshot.bodyBackgrounds = upsertById(snapshot.bodyBackgrounds, operation.background);
+  snapshot.bodyBackgrounds = upsertById(snapshot.bodyBackgrounds ?? [], operation.background);
 };
 
 const deleteBodyBackground: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "bodyBackground.delete") return;
-  snapshot.bodyBackgrounds = snapshot.bodyBackgrounds.filter((background) => background.id !== operation.id);
+  snapshot.bodyBackgrounds = (snapshot.bodyBackgrounds ?? []).filter((background) => background.id !== operation.id);
   if (snapshot.startingBodyBackgroundId === operation.id) snapshot.startingBodyBackgroundId = null;
 };
 
