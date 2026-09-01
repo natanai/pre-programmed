@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 
 const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+const dataDirectory = process.env.PRE_PROGRAMMED_LOCAL_DATA_DIR?.trim() || ".wrangler/local-runtime";
 const children = new Set();
 let closing = false;
 
@@ -33,7 +34,7 @@ console.log([
   "Client: http://127.0.0.1:5173",
   "Local API: http://127.0.0.1:8787",
   "Author key: local",
-  "Local project data: .wrangler/local-runtime",
+  `Local project data: ${dataDirectory}`,
   "",
   "This local D1 is isolated from any hosted/production database.",
 ].join("\n"));
@@ -46,6 +47,6 @@ launch([
   "--port",
   "8787",
   "--persist-to",
-  ".wrangler/local-runtime",
+  dataDirectory,
 ]);
 launch(["vite", "--host", "127.0.0.1"]);
