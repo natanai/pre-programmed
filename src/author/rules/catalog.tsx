@@ -9,7 +9,6 @@ import {
   runtimeStateConditionAdapter,
 } from "./coreAdapters";
 import { hasItemConditionAdapter, lacksItemConditionAdapter, giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter } from "../../features/inventory/author/ruleAdapters";
-import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "../../features/media/author/ruleAdapters";
 import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "../../features/narrative/author/ruleAdapters";
 import {
   clearFlagEffectAdapter,
@@ -46,9 +45,6 @@ export const EFFECT_AUTHOR_ADAPTERS: readonly EffectAuthorAdapter[] = [
   setItemStateEffectAdapter,
   interactionVisibilityEffectAdapter,
   notificationEffectAdapter,
-  synthEffectAdapter,
-  audioEffectAdapter,
-  artEffectAdapter,
   transitionEffectAdapter,
 ];
 
