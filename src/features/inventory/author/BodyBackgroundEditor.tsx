@@ -23,7 +23,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 function emptyBodyType(): BodyBackgroundDefinition {
-  return { id: crypto.randomUUID(), name: "", assetPath: "", slots: [] };
+  return { id: crypto.randomUUID(), name: "", assetPath: "", slots: [], startingEquipment: [] };
 }
 
 export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
@@ -36,16 +36,28 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
   const [draft, setDraft] = useState(() => ({
     ...structuredClone(initial ?? emptyBodyType()),
     slots: [...(initial?.slots ?? [])],
+    startingEquipment: [...(initial?.startingEquipment ?? [])],
   }));
-  const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
+  const initiallyStarting = initial
+    ? snapshot.startingBodyBackgroundId === initial.id
+    : !snapshot.startingBodyBackgroundId && (snapshot.bodyBackgrounds ?? []).length === 0;
+  const [starting, setStarting] = useState(initiallyStarting);
+  const [baseline, setBaseline] = useState(() => JSON.stringify({ draft, starting: initiallyStarting }));
   const [saving, setSaving] = useState(false);
   const [gesture, setGesture] = useState<SlotGesture | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
-  const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
+  const dirty = useMemo(() => JSON.stringify({ draft, starting }) !== baseline, [baseline, draft, starting]);
   const slotKeysValid = useMemo(() => {
     const keys = draft.slots.map((slot) => slot.key.trim());
     return keys.every(Boolean) && new Set(keys).size === keys.length;
   }, [draft.slots]);
+  const startingEquipmentValid = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const assignment of draft.startingEquipment ?? []) {
+      counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
+    }
+    return [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
+  }, [draft.startingEquipment, snapshot.items]);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -90,10 +102,18 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
     };
   }, [gesture]);
 
-  const updateSlot = (id: string, patch: Partial<BodySlotDefinition>) => setDraft((current) => ({
-    ...current,
-    slots: current.slots.map((slot) => slot.id === id ? { ...slot, ...patch } : slot),
-  }));
+  const updateSlot = (id: string, patch: Partial<BodySlotDefinition>) => setDraft((current) => {
+    const previous = current.slots.find((slot) => slot.id === id);
+    return {
+      ...current,
+      slots: current.slots.map((slot) => slot.id === id ? { ...slot, ...patch } : slot),
+      startingEquipment: patch.key !== undefined && previous
+        ? (current.startingEquipment ?? []).map((assignment) => assignment.slotKey === previous.key
+          ? { ...assignment, slotKey: patch.key! }
+          : assignment)
+        : current.startingEquipment,
+    };
+  });
 
   const addSlot = () => {
     const number = draft.slots.length + 1;
@@ -120,10 +140,15 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
         key: slot.key.trim(),
         name: slot.name.trim() || slot.key.trim(),
       })),
+      startingEquipment: (draft.startingEquipment ?? []).filter((assignment) =>
+        draft.slots.some((slot) => slot.key.trim() === assignment.slotKey.trim()),
+      ).map((assignment) => ({ ...assignment, slotKey: assignment.slotKey.trim() })),
     };
     const operations: MutationOperation[] = [{ type: "bodyBackground.upsert", background: bodyType }];
-    if (!initial && !snapshot.startingBodyBackgroundId && (snapshot.bodyBackgrounds ?? []).length === 0) {
+    if (starting && snapshot.startingBodyBackgroundId !== bodyType.id) {
       operations.push({ type: "bodyBackground.starting", id: bodyType.id });
+    } else if (!starting && snapshot.startingBodyBackgroundId === bodyType.id) {
+      operations.push({ type: "bodyBackground.starting", id: null });
     }
     setDraft(bodyType);
     setSaving(true);
@@ -133,7 +158,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
         `${initial ? "Changed" : "Created"} body type ${bodyType.name}`,
       );
       if (result.status === "saved" || result.status === "queued") {
-        setBaseline(JSON.stringify(bodyType));
+        setBaseline(JSON.stringify({ draft: bodyType, starting }));
         setWorkspaceDirty(false);
       }
     } finally {
@@ -162,6 +187,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
         <h3>IDENTITY</h3>
         <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus /></label>
         <small>A body type can represent age, form, species, armor layout, transformation, or any other body configuration.</small>
+        <label className="check-label body-type-starting-toggle"><input type="checkbox" checked={starting} onChange={(event) => setStarting(event.target.checked)} /> START NEW PLAYTHROUGHS WITH THIS BODY TYPE</label>
       </section>
 
       <section className="item-editor-section">
@@ -217,15 +243,39 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
               <label>H <input type="number" min={4} max={100} step={0.5} value={Number(slot.height.toFixed(1))} onChange={(event) => updateSlot(slot.id, { height: clamp(Number(event.target.value), 4, 100 - slot.y) })} /></label>
             </div>
             <small>Reuse the same slot key on another body type if equipment should remain equipped when the body type changes.</small>
-            <button type="button" className="danger" onClick={() => setDraft({ ...draft, slots: draft.slots.filter((candidate) => candidate.id !== slot.id) })}>[REMOVE SLOT]</button>
+            <label>STARTING EQUIPMENT
+              <select
+                value={(draft.startingEquipment ?? []).find((assignment) => assignment.slotKey === slot.key)?.itemId ?? ""}
+                onChange={(event) => setDraft((current) => ({
+                  ...current,
+                  startingEquipment: [
+                    ...(current.startingEquipment ?? []).filter((assignment) => assignment.slotKey !== slot.key),
+                    ...(event.target.value ? [{ slotKey: slot.key, itemId: event.target.value }] : []),
+                  ],
+                }))}
+              >
+                <option value="">empty</option>
+                {snapshot.items.filter((item) =>
+                  (item.startingQuantity ?? 0) > 0
+                  && (!(item.equipmentSlotKeys ?? []).length || (item.equipmentSlotKeys ?? []).includes(slot.key)),
+                ).map((item) => <option value={item.id} key={item.id}>{item.name} · {item.startingQuantity} starting</option>)}
+              </select>
+              <small>Uses one instance from the item’s starting quantity in each new playthrough.</small>
+            </label>
+            <button type="button" className="danger" onClick={() => setDraft({
+              ...draft,
+              slots: draft.slots.filter((candidate) => candidate.id !== slot.id),
+              startingEquipment: (draft.startingEquipment ?? []).filter((assignment) => assignment.slotKey !== slot.key),
+            })}>[REMOVE SLOT]</button>
           </article>)}
           {!draft.slots.length ? <p className="field-help">No slots yet. Add only the slots that exist on this body type; another body type may have more or fewer.</p> : null}
         </div>
         {!slotKeysValid ? <p className="body-slot-error">Each slot needs a unique, non-empty slot key.</p> : null}
+        {!startingEquipmentValid ? <p className="body-slot-error">Starting equipment assignments exceed an item’s starting quantity. Increase that item’s starting quantity or clear a slot.</p> : null}
       </section>
     </div>
     <div className="author-actions author-panel-footer">
-      <button type="button" disabled={saving || !dirty || !draft.name.trim() || !slotKeysValid} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
+      <button type="button" disabled={saving || !dirty || !draft.name.trim() || !slotKeysValid || !startingEquipmentValid} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
       <button type="button" onClick={onCancel}>[CANCEL]</button>
       {initial ? <button type="button" className="danger" disabled={saving} onClick={() => void remove()}>[DELETE]</button> : null}
     </div>

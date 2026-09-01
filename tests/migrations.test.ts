@@ -1,6 +1,7 @@
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import { executeSqlScript, MIGRATION_SCRIPTS, splitSqlStatements } from "../worker/db/migrations";
+import { WORKER_FEATURE_PERSISTENCE } from "../worker/features/catalog";
 
 describe("D1 migration scripts", () => {
   it("keeps multi-line statements intact for D1 prepared execution", () => {
@@ -54,6 +55,28 @@ describe("D1 migration scripts", () => {
         "operations_json",
       ]));
       expect(outcomeColumns.map((column) => column.name)).toContain("response_speaker_id");
+    } finally {
+      database.close();
+    }
+  });
+
+  it("applies feature-owned inventory migrations through the current schema", () => {
+    const database = new DatabaseSync(":memory:");
+    try {
+      const migrations = [
+        ...MIGRATION_SCRIPTS,
+        ...WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.migrations ?? []),
+      ].sort((left, right) => left.id - right.id);
+      for (const migration of migrations) {
+        for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
+      }
+      const version = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
+      const itemColumns = database.prepare("PRAGMA table_info(item_definitions)").all() as Array<{ name: string }>;
+      const bodyColumns = database.prepare("PRAGMA table_info(inventory_body_backgrounds)").all() as Array<{ name: string }>;
+
+      expect(version.schema_version).toBe(15);
+      expect(itemColumns.map((column) => column.name)).toContain("equipped_storage");
+      expect(bodyColumns.map((column) => column.name)).toContain("starting_equipment_json");
     } finally {
       database.close();
     }
