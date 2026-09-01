@@ -1,7 +1,7 @@
-import type { ProjectMutation, ProjectSnapshot } from "../src/game/model";
+import type { ProjectMutation } from "../src/game/model";
 import { createAuthorToken, isAuthor } from "./auth";
 import { collectD1Backup } from "./backup";
-import { ensureSchema } from "./db/migrations";
+import { ensureSchema } from "./db/schema";
 import { json, withCors } from "./http";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
 import { validateMutationBody } from "./validation";
@@ -58,13 +58,6 @@ export async function handleApi(request: Request, env: Env) {
       return json({ error: "Project has not been initialized." }, { status: 503 });
     }
   }
-  if (url.pathname === "/api/project/bootstrap" && request.method === "GET") {
-    const snapshot = await getProjectSnapshot(env.DB);
-    return json({
-      startNode: snapshot.nodes.find((node) => node.id === snapshot.startNodeId),
-      revision: snapshot.revision,
-    });
-  }
   if (url.pathname === "/api/author/login" && request.method === "POST") return loginAuthor(request, env);
   if (url.pathname === "/api/author/check" && request.method === "POST") {
     return (await isAuthor(request, env)) ? new Response(null, { status: 204 }) : json({ error: "Unauthorized" }, { status: 401 });
@@ -76,41 +69,6 @@ export async function handleApi(request: Request, env: Env) {
 
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
-
-  const legacyNodeMatch = url.pathname.match(/^\/api\/author\/nodes\/([^/]+)$/);
-  if (legacyNodeMatch && request.method === "PATCH") {
-    const body: { text?: unknown; charactersPerSecond?: unknown } = await request
-      .json<{ text?: unknown; charactersPerSecond?: unknown }>()
-      .catch(() => ({}));
-    const snapshot = await getProjectSnapshot(env.DB);
-    const existing = snapshot.nodes.find((node) => node.id === decodeURIComponent(legacyNodeMatch[1]));
-    if (!existing) return json({ error: "Node not found" }, { status: 404 });
-    if (typeof body.text !== "string" || body.text.length > 10_000) {
-      return json({ error: "text must be a string no longer than 10,000 characters" }, { status: 400 });
-    }
-    const charactersPerSecond = typeof body.charactersPerSecond === "number"
-      ? Math.round(body.charactersPerSecond)
-      : existing.performance.charactersPerSecond;
-    if (charactersPerSecond < 1 || charactersPerSecond > 120) {
-      return json({ error: "charactersPerSecond must be between 1 and 120" }, { status: 400 });
-    }
-    const response = await applyMutation(env.DB, {
-      expectedRevision: snapshot.revision,
-      description: `Changed node #${existing.nodeNumber}`,
-      operations: [{
-        type: "node.upsert",
-        node: {
-          ...existing,
-          text: body.text,
-          performance: { ...existing.performance, charactersPerSecond },
-        },
-      }],
-    });
-    if (!response.ok) return response;
-    const result = await response.json<{ snapshot: ProjectSnapshot }>();
-    const node = result.snapshot.nodes.find((candidate) => candidate.id === existing.id);
-    return json({ node, revision: result.snapshot.revision });
-  }
 
   if (url.pathname === "/api/author/mutate" && request.method === "POST") {
     let body: unknown;
