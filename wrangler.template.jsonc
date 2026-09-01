@@ -5,10 +5,5 @@
   "main": "./worker/index.ts",
   "secrets": {
     "required": ["ADMIN_KEY"]
-  },
-  "d1_databases": [
-    {
-      "binding": "DB"
-    }
-  ]
+  }
 }

@@ -10,26 +10,37 @@ Install dependencies:
 npm install
 ```
 
-Then run:
+For a GitHub **fork**, run:
 
 ```sh
 npm run setup:installation
 ```
 
-The helper separates installation configuration from engine behavior. It prepares:
+The helper recognizes the upstream production configuration inherited by the fork and replaces it locally with identity-free installation settings.
+
+For a direct **clone of `natanai/pre-programmed`** that should become a separate game installation, run:
+
+```sh
+npm run setup:installation -- --new-installation
+```
+
+That explicit flag distinguishes a new clone from an existing checkout of the original production installation. It allows replacement of the inherited upstream configuration without using the broader `--force` escape hatch.
+
+The helper prepares:
 
 - a Worker name;
-- a portable `DB` D1 binding from `wrangler.template.jsonc`;
-- `.env.local` with the client API/base-path settings;
-- a Pages base path inferred from the fork's GitHub repository name when possible.
+- a new D1 database name;
+- an identity-free `wrangler.jsonc` based on `wrangler.template.jsonc`;
+- `.env.local` with client API/base-path settings;
+- a Pages base path inferred from the GitHub repository name when possible.
 
-### Fork safety
+It does **not** create Cloudflare resources by itself.
 
-A GitHub fork initially contains the upstream repository's live `wrangler.jsonc`. The setup helper recognizes that specific situation from the Git remote and replaces the inherited upstream installation configuration with portable settings.
+### Existing-installation safety
 
-After a checkout has its **own** D1 configuration, the helper refuses to overwrite it by default.
+After a checkout has its **own** D1 configuration, setup refuses to overwrite it by default.
 
-Only when replacing an existing installation intentionally should you use:
+Only when replacing an already configured installation intentionally should you use:
 
 ```sh
 npm run setup:installation -- --force
@@ -41,30 +52,39 @@ For non-interactive setup, these environment variables are supported:
 
 ```text
 PRE_PROGRAMMED_WORKER_NAME
+PRE_PROGRAMMED_D1_DATABASE_NAME
 PRE_PROGRAMMED_API_ORIGIN
 PRE_PROGRAMMED_REPOSITORY_NAME
 PRE_PROGRAMMED_BASE_PATH
 ```
 
-## 2. Connect Cloudflare
+## 2. Create this installation's D1 database
 
-Authenticate Wrangler for the Cloudflare account that should own the game.
+Authenticate Wrangler with the Cloudflare account that should own the game.
 
-The portable template starts with a draft D1 binding:
+The setup helper prints the exact command for the database name you chose. It has this form:
+
+```sh
+npx wrangler d1 create YOUR_DATABASE_NAME --binding DB --update-config
+```
+
+Cloudflare documents `wrangler d1 create` as the explicit D1 creation command. `--binding DB` assigns the binding expected by the Worker, and `--update-config` writes the newly created resource into `wrangler.jsonc`.
+
+After it succeeds, this installation's Wrangler configuration should contain a D1 entry with all three stable identifiers:
 
 ```json
 {
-  "binding": "DB"
+  "binding": "DB",
+  "database_name": "YOUR_DATABASE_NAME",
+  "database_id": "YOUR_DATABASE_UUID"
 }
 ```
 
-Current Wrangler can automatically provision draft resources during deployment. If automatic provisioning is unavailable or you prefer an explicit setup, create D1 directly:
+Do not copy another installation's database ID. The UUID written here must belong to the D1 database just created for this game.
 
-```sh
-npx wrangler d1 create YOUR_DATABASE_NAME
-```
+This explicit step is preferred over relying on Wrangler's experimental automatic provisioning of incomplete draft bindings.
 
-Then use the returned database name/ID in this installation's Wrangler configuration. Stable D1 bindings ultimately identify the database by name and ID.
+## 3. Configure Author access and deploy the Worker
 
 Configure the Worker secret:
 
@@ -72,13 +92,15 @@ Configure the Worker secret:
 ADMIN_KEY
 ```
 
-Then deploy the Worker:
+Then deploy:
 
 ```sh
 npx wrangler deploy
 ```
 
-## 3. Point the client at the Worker
+On first use, the Worker initializes its own schema through the canonical project schema/migration owner. No manual D1 table editing is required.
+
+## 4. Point the client at the Worker
 
 Once the Worker URL is known, set:
 
@@ -94,7 +116,7 @@ PRE_PROGRAMMED_API_ORIGIN
 
 The Pages base path is derived from the repository name automatically. `VITE_BASE_PATH` remains available for nonstandard deployments.
 
-## 4. Optional GitHub production deployment
+## 5. Optional GitHub production deployment
 
 The included production workflow expects:
 
@@ -108,9 +130,11 @@ Variable:
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
+The installation's committed/deployment Wrangler configuration must reference **its own** D1 database name and ID before GitHub Actions is used to deploy it.
+
 Production deployment on `main` is intentionally the only automatic workflow. Prototype branch work does not continuously run CI.
 
-## 5. Verify the installed engine
+## 6. Verify the installed engine
 
 A successful installation should satisfy these product checks:
 
@@ -128,7 +152,7 @@ These are configuration, not engine behavior:
 
 - Worker name;
 - Cloudflare account credentials;
-- D1 resource identity;
+- D1 database name and ID;
 - Author key;
 - hosted API origin;
 - GitHub Pages repository/base path.
@@ -137,8 +161,8 @@ Do not copy another installation's resource identity into a new game.
 
 ## What remains transitional
 
-The repo still keeps its current production Wrangler configuration checked in so the live prototype is not detached from its existing database. New forks no longer need to preserve that inherited configuration: `npm run setup:installation` resets it safely when the Git remote identifies a fork.
+The upstream repo still keeps its current production `wrangler.jsonc` checked in so the live prototype is not detached from its existing database. Forks and direct clones now have explicit setup paths that replace that inherited identity locally before they create their own D1 resource.
 
-A future cleanup may move the original production identity entirely outside reusable source control. That should only happen together with a proven deployment replacement path, not by risking the live authored database.
+The remaining portability cleanup is to externalize the original production D1 identity from reusable source control entirely. That requires a proven production deployment replacement for the existing database UUID; it should not be done by making the live Worker discover or provision a different database during deployment.
 
 After setup, nodes, interactions, characters, locations, variables, items, conditions, effects, commands, and other ordinary game systems should be authored through the engine rather than by editing application source.
