@@ -1,4 +1,4 @@
-import type { GameNode, Interaction } from "../../game/model";
+import type { PlayState, ProjectSnapshot } from "../../game/model";
 import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 
 export type AuthorToolDefinition = {
@@ -18,10 +18,8 @@ export type AuthorToolContribution = {
 };
 
 export type AuthorToolContext = {
-  currentNode: GameNode;
-  fallbackInput?: Interaction;
-  invalidDraft: boolean;
-  notationForInput: (interaction: Interaction) => string;
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
   pushPanel: (route: AuthorPanelRoute) => void;
   close: () => void;
   downloadBackup: () => Promise<void>;
