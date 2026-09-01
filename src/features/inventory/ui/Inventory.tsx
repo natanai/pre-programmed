@@ -7,6 +7,7 @@ import {
   INVENTORY_ROWS,
 } from "../../../game/inventory";
 import type {
+  BodyBackgroundDefinition,
   ItemDefinition,
   MutationOperation,
   OperationId,
@@ -18,7 +19,7 @@ import { executeOperation, formatOperationOutput, type OperationRequest } from "
 import { readComputedValue } from "../../../game/runtimeValues";
 import "../author/inventoryAuthor.css";
 
-type InventoryScreen = "play" | "definitions";
+type InventoryScreen = "play" | "definitions" | "body-backgrounds";
 
 export function Inventory({
   snapshot,
@@ -29,6 +30,8 @@ export function Inventory({
   onEvents,
   onEditItem,
   onCreateItem,
+  onEditBodyBackground,
+  onCreateBodyBackground,
   onSave,
   onClose: _onClose,
 }: {
@@ -40,6 +43,8 @@ export function Inventory({
   onEvents: (events: EffectEvent[]) => void;
   onEditItem: (item: ItemDefinition) => void;
   onCreateItem: () => void;
+  onEditBodyBackground: (background: BodyBackgroundDefinition) => void;
+  onCreateBodyBackground: () => void;
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onClose: () => void;
 }) {
@@ -57,6 +62,7 @@ export function Inventory({
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
   const selectedVariable = selected?.kind === "variable" ? snapshot.variables.find((item) => item.id === selected.id) : undefined;
   const selectedComputed = selected?.kind === "computed" ? snapshot.computedValues.find((item) => item.id === selected.id) : undefined;
+  const activeBodyBackground = snapshot.bodyBackgrounds.find((background) => background.id === state.bodyBackgroundId);
   const normalizedDefinitionQuery = definitionQuery.trim().toLowerCase();
   const visibleDefinitions = snapshot.items.filter((item) => !normalizedDefinitionQuery || [
     item.name,
@@ -132,6 +138,41 @@ export function Inventory({
     </div>
   </section>;
 
+  if (screen === "body-backgrounds" && authorMode) return <section className="inventory-surface inventory-definition-workspace" aria-label="Body backgrounds" onPointerDown={(event) => event.stopPropagation()}>
+    <header><span>BODY BACKGROUNDS</span></header>
+    <div className="inventory-definition-controls">
+      <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← INVENTORY]</button>
+      <div className="inventory-definition-help">The starting background is used for a new playthrough. Any authored trigger can switch the active background later.</div>
+      <label className="body-background-starting">STARTING BACKGROUND
+        <select value={snapshot.startingBodyBackgroundId ?? ""} onChange={(event) => void onSave([
+          { type: "bodyBackground.starting", id: event.target.value || null },
+        ], `Changed starting body background`)}>
+          <option value="">none</option>
+          {snapshot.bodyBackgrounds.map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
+        </select>
+      </label>
+    </div>
+    <div className="inventory-definition-scroll">
+      {snapshot.bodyBackgrounds.length ? <div className="inventory-body-background-cards">
+        {snapshot.bodyBackgrounds.map((background) => <article className="inventory-body-background-card" key={background.id}>
+          <button type="button" className="inventory-body-background-preview-button" onClick={() => onEditBodyBackground(background)}>
+            <span className="inventory-body-background-thumbnail" style={background.assetPath ? {
+              backgroundImage: `url("${assetUrl(background.assetPath)}")`,
+            } : undefined} aria-hidden="true" />
+            <span><strong>{background.name}</strong><small>{background.id === snapshot.startingBodyBackgroundId ? "starting background" : background.assetPath ? "image assigned" : "no image"}</small></span>
+            <span aria-hidden="true">›</span>
+          </button>
+          <div className="inventory-definition-actions">
+            <button type="button" onClick={() => onState({ ...state, bodyBackgroundId: background.id })}>[USE THIS RUN]</button>
+          </div>
+        </article>)}
+      </div> : <div className="inventory-definition-empty">NO BODY BACKGROUNDS YET. CREATE ONE FOR “BABY,” “CHILD,” “ADULT,” OR ANY OTHER VISUAL STATE YOUR GAME NEEDS.</div>}
+    </div>
+    <div className="inventory-definition-footer">
+      <button type="button" className="inventory-create-definition" onClick={onCreateBodyBackground}>[+ BODY BACKGROUND]</button>
+    </div>
+  </section>;
+
   return <section className="inventory-surface inventory-play-workspace" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>INVENTORY / STATUS</span></header>
     <div className="status-readout">
@@ -170,6 +211,17 @@ export function Inventory({
           {statusOperationButtons({ kind: "computed", id: selectedComputed.id }, selectedComputed.operations ?? [])}
         </> : <p className="inventory-inspector-help">Tap an item or interactive status line. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
       </aside>
+      <section className="inventory-body-area" aria-label="Body equipment area">
+        <div className="inventory-body-heading"><span>BODY</span><small>{activeBodyBackground?.name ?? "NO BACKGROUND"}</small></div>
+        <div
+          className={`inventory-body-canvas${activeBodyBackground?.assetPath ? " has-background" : ""}`}
+          style={activeBodyBackground?.assetPath ? {
+            backgroundImage: `url("${assetUrl(activeBodyBackground.assetPath)}")`,
+          } : undefined}
+        >
+          {!activeBodyBackground?.assetPath ? <span>{snapshot.bodyBackgrounds.length ? "NO ACTIVE BODY IMAGE" : "BODY BACKGROUND NOT CONFIGURED"}</span> : null}
+        </div>
+      </section>
       <div className="inventory-grid" style={{ "--columns": INVENTORY_COLUMNS, "--rows": INVENTORY_ROWS } as CSSProperties}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
@@ -201,6 +253,7 @@ export function Inventory({
     </div>
     {authorMode ? <div className="inventory-author-actions">
       <button type="button" onClick={() => setScreen("definitions")}>[ITEM DEFINITIONS]</button>
+      <button type="button" onClick={() => setScreen("body-backgrounds")}>[BODY BACKGROUNDS]</button>
       <button type="button" onClick={onCreateItem}>[+ ITEM]</button>
     </div> : null}
   </section>;
