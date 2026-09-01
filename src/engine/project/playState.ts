@@ -1,5 +1,8 @@
 import { initializeCommandsPlayState } from "../../features/commands/playState";
-import { initializeInventoryPlayState } from "../../features/inventory/playState";
+import {
+  initializeInventoryPlayState,
+  reconcileInventoryPlayStateAfterProjectChange,
+} from "../../features/inventory/playState";
 import { initializeNarrativePlayState } from "../../features/narrative/playState";
 import { initializeStatePlayState, reconcileStatePlayState } from "../../features/state/playState";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "./model";
@@ -23,6 +26,22 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
 /** Reconcile durable play state through the features that currently require it. */
 export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, now = Date.now()): PlayState {
   return reconcileStatePlayState(snapshot, state, now);
+}
+
+/**
+ * Reconcile feature-owned play state after authored project data changes.
+ * App/session code should call this composition root rather than naming the
+ * feature whose state needs repair or initialization.
+ */
+export function reconcilePlayStateAfterProjectChange(
+  previousSnapshot: ProjectSnapshot,
+  nextSnapshot: ProjectSnapshot,
+  state: PlayState,
+  now = Date.now(),
+): PlayState {
+  let nextState = reconcilePlayState(nextSnapshot, state, now);
+  nextState = reconcileInventoryPlayStateAfterProjectChange(previousSnapshot, nextSnapshot, nextState);
+  return nextState;
 }
 
 export function resumeAuthorBookmark(snapshot: ProjectSnapshot, bookmark: AuthorBookmark, now = Date.now()): PlayState {
