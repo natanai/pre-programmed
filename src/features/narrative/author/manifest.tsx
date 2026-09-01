@@ -8,9 +8,14 @@ import { notationForNarrativeInteraction } from "./notation";
 import { StructureNavigator } from "./StructureNavigator";
 import { narrativeAuthorTools } from "./tools";
 
+const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
+
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
   tools: narrativeAuthorTools,
+  terminalShortcuts: [
+    { commands: ["/structure", "structure"], route: STRUCTURE_ROUTE },
+  ],
   buildUnhandledInputMutation(sourceNodeId, input) {
     const interaction = createDraftInteraction(sourceNodeId, input.trim());
     return {
@@ -63,7 +68,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       onDirtyChange={context.setWorkspaceDirty}
     />;
 
-    if (route.type === "structure") return <StructureNavigator
+    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "structure") return <StructureNavigator
       snapshot={context.snapshot}
       playState={context.playState}
       onOpenNode={(nodeId) => {

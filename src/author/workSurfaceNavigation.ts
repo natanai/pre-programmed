@@ -5,7 +5,6 @@ export type AuthorPanelRoute =
   | { type: "node"; node: GameNode }
   | { type: "interaction"; interaction?: Interaction; command?: string; fallback?: boolean }
   | { type: "tools" }
-  | { type: "structure" }
   | { type: "workspace"; view?: "locations" | "history" }
   /** Generic extension route so feature modules do not expand this central union. */
   | { type: "feature"; feature: string; workspace: string; data?: Record<string, string> };
