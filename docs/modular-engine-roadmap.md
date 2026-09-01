@@ -36,25 +36,25 @@ A mature feature should be able to own, where applicable:
 
 Explicit composition roots are encouraged. Cross-feature implementation knowledge outside those roots is not.
 
-## Baseline completion estimate — 43%
+## Current completion estimate — 46%
 
-This percentage measures progress toward the three product goals above, not feature count or game completeness.
+This percentage measures progress toward the three product goals above, not feature count or game completeness. The starting estimate for this architecture pass was 43%.
 
-| Area | Weight | Baseline | Weighted contribution |
+| Area | Weight | Current | Weighted contribution |
 | --- | ---: | ---: | ---: |
 | Feature-oriented source ownership | 12% | 80% | 9.6% |
 | Runtime contribution architecture (rules/operations/commands) | 12% | 75% | 9.0% |
 | Author feature composition | 12% | 75% | 9.0% |
-| Responsive single-system Author shell | 12% | 20% | 2.4% |
+| Responsive single-system Author shell | 12% | 40% | 4.8% |
 | Feature-owned project/play-state slices | 14% | 20% | 2.8% |
 | Feature-owned mutations | 10% | 20% | 2.0% |
 | Feature-owned persistence/restore/validation | 12% | 15% | 1.8% |
 | Feature-owned migrations | 6% | 10% | 0.6% |
-| Clone/fork installation portability | 8% | 20% | 1.6% |
+| Clone/fork installation portability | 8% | 30% | 2.4% |
 | Boundary/deletion tests and guardrails | 2% | 10% | 0.2% |
-| **Total** | **100%** |  | **39.0%** |
+| **Total represented directly** | **100%** |  | **42.2%** |
 
-The rubric rounds upward to **43%** to credit the compatibility-facade migration and storage-independent persistence boundary already in place but not cleanly represented by a single row. Future updates should prefer the explicit weighted table and remove this adjustment once the rows capture those gains directly.
+The overall estimate is **46%** because the compatibility-facade migration and storage-independent persistence boundary already in place are real progress that is not cleanly represented by a single row. This adjustment should disappear as the remaining architecture is moved into explicit feature-owned contracts.
 
 ## Current strengths
 
@@ -65,6 +65,8 @@ The rubric rounds upward to **43%** to credit the compatibility-facade migration
 - Author workspace navigation/dirty-state ownership is separated from feature workspace rendering.
 - Mutable project persistence already has a storage-independent client interface.
 - `src/game/*` is increasingly a compatibility facade instead of the implementation owner.
+- Hosted API origin and GitHub Pages base path now have installation override points without changing the current production defaults.
+- Wide desktop Author mode has an initial docked presentation that reuses the canonical Author surfaces rather than introducing a second desktop editor system.
 
 ## Current blockers to true replacement
 
@@ -84,9 +86,9 @@ One migration implementation knows the schema history of all features.
 
 `App.tsx` still directly coordinates feature-specific runtime and Author behavior. It should trend toward session/application composition only.
 
-### Installation-specific source configuration
+### Installation-specific deployment configuration
 
-The repository currently contains a specific D1 database binding and a specific production Worker/API origin. Those are installation configuration, not engine behavior.
+The client now supports installation overrides, but the reusable repository still contains the current D1 binding and production deployment assumptions. Cloudflare/D1 provisioning and deployment verification are not yet bootstrap-able for a new clone.
 
 ## Delivery sequence
 
@@ -99,12 +101,13 @@ The repository currently contains a specific D1 database binding and a specific 
 
 ### Phase B — Single responsive Author shell
 
-- [ ] Introduce an Author experience/layout shell that can dock on wide/fine-pointer displays.
-- [ ] Keep the existing `useWorkSurfaceNavigation` stack as the single workspace/navigation owner.
-- [ ] Keep `AuthorWorkspaceHost` and feature manifests as the single workspace implementation path.
-- [ ] Desktop: dock Author UI to the left while the playable terminal remains visible and interactive on the right.
-- [ ] Mobile/coarse/narrow: retain focused full-screen Author workspace behavior.
-- [ ] Ensure resizing/reflow does not create a second editor state or save path.
+- [x] Introduce an Author experience/layout shell that can dock on wide/fine-pointer displays.
+- [x] Keep the existing `useWorkSurfaceNavigation` stack as the single workspace/navigation owner.
+- [x] Keep `AuthorWorkspaceHost` and feature manifests as the single workspace implementation path.
+- [x] Desktop: dock Author UI to the left while the playable terminal remains visible and interactive on the right.
+- [x] Mobile/coarse/narrow: retain focused full-screen Author workspace behavior.
+- [x] Avoid a second desktop editor state or save path; desktop differences are presentation-only.
+- [ ] Manually validate the dock across the major Author workspaces on a wide desktop browser.
 - [ ] Add regression tests for shared navigation/dirty-state behavior where practical.
 
 ### Phase C — Feature-owned project/play state
@@ -138,10 +141,12 @@ The repository currently contains a specific D1 database binding and a specific 
 
 ### Phase G — Clone/fork portability
 
-- [ ] Remove hard-coded production API origin from source behavior.
+- [x] Allow hosted API origin to be overridden without editing application source.
+- [x] Allow GitHub Pages/project base path to be overridden without editing Vite source.
+- [ ] Remove the current production API origin fallback once installation bootstrap owns it safely.
 - [ ] Remove installation-specific D1 database ID/name from reusable engine defaults.
 - [ ] Parameterize Worker/deploy verification configuration.
-- [ ] Provide an example/template installation configuration.
+- [ ] Provide a complete installation configuration template, beyond the current client `.env.example`.
 - [ ] Add setup/bootstrap command or guided documented flow for Cloudflare + D1 + Author key.
 - [ ] Ensure database schema initializes without authors manually editing SQL.
 
@@ -197,3 +202,8 @@ When architecture work lands, update:
 - Established the durable modular-engine roadmap and deletion-test standard.
 - Baseline completion estimate recorded at 43%.
 - Began work on `modular-engine-author-suite`, intentionally isolated from `main` until reviewed.
+- Added the initial wide-desktop left Author suite as a presentation of the same canonical Author surfaces used on mobile.
+- Added a stable Author-experience layout marker so the dock does not disappear while text is playing.
+- Scoped dock behavior so player-facing workspaces such as Inventory are not accidentally turned into Author panels.
+- Added `VITE_API_ORIGIN` and `VITE_BASE_PATH` installation override points while preserving the current deployment defaults.
+- Current architecture estimate updated to 46%.
