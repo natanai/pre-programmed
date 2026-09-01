@@ -12,6 +12,7 @@ describe("application command capabilities", () => {
 
     const starter = DEFAULT_COMMAND_PROJECT_SETTINGS.commands.find((command) => command.operation === "inventory.open");
     expect(starter?.patterns).toEqual(["inventory", "inv"]);
-    expect(capability.description.toLowerCase()).not.toContain("inv");
+    expect(capability).not.toHaveProperty("patterns");
+    expect(capability).not.toHaveProperty("aliases");
   });
 });
