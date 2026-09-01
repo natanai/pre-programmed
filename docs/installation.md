@@ -2,6 +2,8 @@
 
 The goal is simple: **fork/clone → connect your infrastructure → create the game in Author mode.** Ordinary game content should not require changes to engine source.
 
+The repository does not carry any installation's D1 database UUID. `wrangler.jsonc` is local installation state and is intentionally ignored by Git.
+
 ## 1. Fork or clone
 
 Install dependencies:
@@ -16,25 +18,25 @@ For a GitHub **fork**, run:
 npm run setup:installation
 ```
 
-The helper recognizes the upstream production configuration inherited by the fork and replaces it locally with identity-free installation settings.
-
 For a direct **clone of `natanai/pre-programmed`** that should become a separate game installation, run:
 
 ```sh
 npm run setup:installation -- --new-installation
 ```
 
-That explicit flag distinguishes a new clone from an existing checkout of the original production installation. It allows replacement of the inherited upstream configuration without using the broader `--force` escape hatch.
+The explicit flag keeps a direct upstream checkout from being mistaken for a new game installation. An existing checkout of the original production repository therefore cannot silently create replacement local infrastructure.
 
 The helper prepares:
 
 - a Worker name;
 - a new D1 database name;
-- an identity-free `wrangler.jsonc` based on `wrangler.template.jsonc`;
+- a local, ignored `wrangler.jsonc` based on `wrangler.template.jsonc`;
 - `.env.local` with client API/base-path settings;
 - a Pages base path inferred from the GitHub repository name when possible.
 
 It does **not** create Cloudflare resources by itself.
+
+For normal forks, the default Worker name is the repository name and the default D1 name is `<worker-name>-db`. A direct upstream clone uses a safer `my-...` Worker-name default so it cannot casually collide with the original installation.
 
 ### Existing-installation safety
 
@@ -45,8 +47,6 @@ Only when replacing an already configured installation intentionally should you 
 ```sh
 npm run setup:installation -- --force
 ```
-
-If the checkout has no readable GitHub `origin` (for example, a downloaded archive), the helper stays conservative and requires `--force` before replacing an existing D1 configuration.
 
 For non-interactive setup, these environment variables are supported:
 
@@ -68,9 +68,9 @@ The setup helper prints the exact command for the database name you chose. It ha
 npx wrangler d1 create YOUR_DATABASE_NAME --binding DB --update-config
 ```
 
-Cloudflare documents `wrangler d1 create` as the explicit D1 creation command. `--binding DB` assigns the binding expected by the Worker, and `--update-config` writes the newly created resource into `wrangler.jsonc`.
+`--binding DB` assigns the binding expected by the Worker, and `--update-config` writes the newly created database name and UUID into the local `wrangler.jsonc`.
 
-After it succeeds, this installation's Wrangler configuration should contain a D1 entry with all three stable identifiers:
+After it succeeds, the local configuration should contain:
 
 ```json
 {
@@ -80,11 +80,9 @@ After it succeeds, this installation's Wrangler configuration should contain a D
 }
 ```
 
-Do not copy another installation's database ID. The UUID written here must belong to the D1 database just created for this game.
+Do not copy another installation's database ID. That UUID belongs only to the D1 database created for this game, and the file containing it is not committed to reusable source.
 
-This explicit step is preferred over relying on Wrangler's experimental automatic provisioning of incomplete draft bindings.
-
-## 3. Configure Author access and deploy the Worker
+## 3. Configure Author access and deploy the Worker once locally
 
 Configure the Worker secret:
 
@@ -92,13 +90,15 @@ Configure the Worker secret:
 ADMIN_KEY
 ```
 
-Then deploy:
+Then deploy using the local installation config:
 
 ```sh
 npx wrangler deploy
 ```
 
-On first use, the Worker initializes its own schema through the canonical project schema/migration owner. No manual D1 table editing is required.
+This first deployment gives the Worker its D1 binding. On first use, the Worker initializes its own schema through the canonical project schema/migration owner. No manual D1 table editing is required.
+
+The first local deploy is also useful for later GitHub Actions deployment: the workflow can recover the D1 database ID from the already-deployed Worker's version metadata instead of storing that UUID in Git.
 
 ## 4. Point the client at the Worker
 
@@ -130,7 +130,27 @@ Variable:
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
-The installation's committed/deployment Wrangler configuration must reference **its own** D1 database name and ID before GitHub Actions is used to deploy it.
+The deployment workflow does **not** require a committed `wrangler.jsonc`. It creates a temporary `.wrangler.deploy.jsonc` from `wrangler.template.jsonc` for each production deployment.
+
+By default it derives the Worker name from the GitHub repository name and the D1 name as `<worker-name>-db`. If your installation uses different names, set these repository variables:
+
+```text
+PRE_PROGRAMMED_WORKER_NAME
+PRE_PROGRAMMED_D1_DATABASE_NAME
+```
+
+For the D1 UUID, the workflow supports two paths:
+
+1. If the Worker has already been deployed with its D1 binding, the workflow reads that Worker's version metadata and recovers the `DB` binding ID automatically.
+2. For an installation that must deploy through Actions before a Worker version exists, set:
+
+```text
+PRE_PROGRAMMED_D1_DATABASE_ID
+```
+
+The UUID is then installation configuration supplied by GitHub rather than reusable repository source.
+
+The Cloudflare API token must have the Worker permissions needed for deployment and for reading the deployed Worker version metadata. The normal Worker Scripts write/read permissions satisfy that path.
 
 Production deployment on `main` is intentionally the only automatic workflow. Prototype branch work does not continuously run CI.
 
@@ -144,11 +164,11 @@ A successful installation should satisfy these product checks:
 4. Author login succeeds.
 5. An Author edit can be saved and survives reload.
 
-The production deployment workflow performs the infrastructure-side health checks. The final Author login/save remains a real-client acceptance test because it verifies the complete installation rather than only infrastructure.
+The production deployment workflow performs the infrastructure-side health checks, including a real project-snapshot read after Worker deployment. The final Author login/save remains a real-client acceptance test because it verifies the complete installation rather than only infrastructure.
 
 ## What belongs to the installation
 
-These are configuration, not engine behavior:
+These are installation state, not engine behavior:
 
 - Worker name;
 - Cloudflare account credentials;
@@ -157,12 +177,19 @@ These are configuration, not engine behavior:
 - hosted API origin;
 - GitHub Pages repository/base path.
 
-Do not copy another installation's resource identity into a new game.
+The local `wrangler.jsonc`, `.env.local`, and generated deployment Wrangler config are therefore not canonical engine source.
 
-## What remains transitional
+## What remains to prove
 
-The upstream repo still keeps its current production `wrangler.jsonc` checked in so the live prototype is not detached from its existing database. Forks and direct clones now have explicit setup paths that replace that inherited identity locally before they create their own D1 resource.
+The repository path is now installation-neutral, but one literal clean-install acceptance run is still required before clone/fork portability should be called fully proven:
 
-The remaining portability cleanup is to externalize the original production D1 identity from reusable source control entirely. That requires a proven production deployment replacement for the existing database UUID; it should not be done by making the live Worker discover or provision a different database during deployment.
+1. create a fresh fork or clone;
+2. run setup;
+3. create its D1 database;
+4. deploy its Worker;
+5. load the client;
+6. enter Author mode;
+7. save an edit;
+8. reload and confirm that edit persisted.
 
 After setup, nodes, interactions, characters, locations, variables, items, conditions, effects, commands, and other ordinary game systems should be authored through the engine rather than by editing application source.
