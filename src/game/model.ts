@@ -1,6 +1,3 @@
-import { ALWAYS as ALWAYS_RULE, type Condition } from "../engine/rules/model";
-import type { ProjectSnapshot } from "../engine/project/model";
-
 /**
  * Compatibility facade for the prototype's existing imports.
  *
@@ -9,6 +6,7 @@ import type { ProjectSnapshot } from "../engine/project/model";
  */
 export * from "../engine/rules/model";
 export * from "../engine/project/model";
+export { makeId } from "../engine/project/id";
 export {
   createEmptyPlayState,
   reconcilePlayState,
@@ -18,16 +16,7 @@ export {
 export * from "../features/inventory/model";
 export * from "../features/media/model";
 export * from "../features/narrative/model";
+export { nextNodeNumber } from "../features/narrative/nodeNumber";
 export * from "../features/operations/model";
 export * from "../features/state/model";
 export * from "../features/world/model";
-
-export function nextNodeNumber(snapshot: ProjectSnapshot) {
-  return snapshot.nodes.reduce((maximum, node) => Math.max(maximum, node.nodeNumber), 0) + 1;
-}
-
-export function makeId() {
-  return crypto.randomUUID();
-}
-
-export const ALWAYS: Condition = ALWAYS_RULE;
