@@ -37,7 +37,9 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Media was physically removed on a temporary probe branch and the engine still passed typecheck, full tests, and build after removing only its explicit registrations/composition entries.
 - The same Author implementation has been exercised successfully on real desktop and mobile clients.
 - Desktop Author mode can remain open beside the playable game; mobile uses the focused presentation of the same workspaces.
-- The live production path has remained healthy through the architecture changes, including a real project-snapshot/D1 verification after Worker deployment.
+- Desktop/mobile breakpoint changes use CSS over one stable Author component/navigation tree; there is no breakpoint-specific editor state implementation.
+- Production deployment has successfully generated its Wrangler configuration from the reusable template plus the existing Worker's deployed D1 binding, then deployed and passed a real live project-snapshot check.
+- Installation-specific `wrangler.jsonc` is local/ignored state rather than reusable engine source.
 
 ## Prototype verification policy
 
@@ -55,28 +57,24 @@ Do **not** repeat the Inventory deletion probe just because it is possible. Re-r
 
 ## Highest-value remaining work
 
-### 1. Finish clone/fork portability
+### 1. Prove a literal clean installation
 
-This is now the largest gap relative to the product goal.
+The repo-side portability architecture is now installation-neutral. The remaining acceptance gap is empirical rather than architectural.
 
-A new developer should be able to fork/clone, connect their own Cloudflare resources, deploy, enter Author mode, and create a distinct game without ordinary source edits.
+Run one real fresh fork or clone through the complete path:
 
-The supported setup path now:
+1. setup;
+2. D1 creation;
+3. first Worker deploy;
+4. client/API configuration;
+5. GitHub production deployment if desired;
+6. Author login;
+7. save an edit;
+8. reload and confirm persistence.
 
-- detects and replaces upstream production identity inherited by a GitHub fork;
-- gives direct upstream clones an explicit `--new-installation` path rather than requiring generic `--force`;
-- creates an identity-free local Wrangler configuration;
-- chooses a distinct Worker and D1 database name;
-- directs the installer to explicitly create D1 with `wrangler d1 create ... --binding DB --update-config`, so the new database name and UUID are persisted before deployment instead of relying on experimental draft-resource provisioning.
+That run should also confirm that the installation guidance around GitHub variables/secrets is sufficiently clear without source edits.
 
-Still needed:
-
-- remove the original production D1 identity from reusable tracked configuration without breaking the live installation;
-- discover/write the deployed Worker origin more automatically where practical;
-- make GitHub Pages secret/variable setup straightforward when desired;
-- run one real fresh-fork or fresh-clone installation through D1 creation, deploy, Author login, save, and reload.
-
-The tracked production `wrangler.jsonc` is now the main thing preventing a completely installation-neutral checkout. Do not remove it until the existing production database UUID has a proven deployment-time source.
+Do not add more portability abstraction merely because the clean-install acceptance run has not happened yet. Fix only concrete friction exposed by that run.
 
 ### 2. Keep shrinking real compatibility behavior
 
@@ -94,10 +92,10 @@ Recent work removed direct Narrative draft construction and Commands-owned appli
 
 ### 4. Finish shared Author presentation polish
 
-The single-system approach is proven. Remaining work is mostly presentation quality:
+The single-system approach is proven. Remaining work is mostly presentation quality and real-client confirmation:
 
-- desktop button sizing/spacing/hierarchy;
-- breakpoint transition with unsaved editor state;
+- desktop button sizing/spacing/hierarchy based on actual screenshots/use rather than speculative restyling;
+- explicitly resize across the desktop/mobile breakpoint with an unsaved editor open and confirm the already-shared state remains intact;
 - continued keyboard/focus/scroll refinement from real-client use.
 
 Do not create separate desktop/mobile editor implementations.
@@ -157,6 +155,10 @@ A new developer should be able to:
 - App stopped constructing Narrative draft interactions for unmatched Author input and stopped resolving application capabilities through Commands.
 - Application capability contracts/catalogs moved to the neutral engine application boundary.
 - Fork/clone setup stopped relying on draft D1 auto-provisioning as the primary path: new installs now explicitly create D1 and persist its binding identity before Worker deployment.
+- Cloudflare D1 control-plane lookup was deliberately tested and rejected because the current deployment token lacks that permission; the probe failed before deployment and was removed.
+- Worker version-detail metadata was proven to expose the deployed `DB` binding with the existing Worker deployment permission.
+- Production then deployed successfully from a generated Wrangler config whose Worker/D1 identity matched the former tracked production config, followed by a successful live project-snapshot check.
+- Installation-specific `wrangler.jsonc` was removed from reusable tracked source and made local/ignored state.
 
 ### 2026-08-31
 
