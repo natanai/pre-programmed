@@ -69,10 +69,21 @@ const upstreamConfiguredCheckout = Boolean(
 const replacingKnownUpstreamConfiguration = inheritedUpstreamConfiguration
   || (upstreamConfiguredCheckout && newInstallation);
 
+if (originRepository === upstreamRepository && !configuredD1 && !newInstallation) {
+  console.error([
+    "This checkout points directly at the upstream production repository.",
+    "Its installation-specific Wrangler config is intentionally not stored in Git.",
+    "If this is a NEW CLONE that should become a separate game installation, rerun:",
+    "  npm run setup:installation -- --new-installation",
+    "If this is the existing production checkout, stop here rather than creating a replacement local installation by accident.",
+  ].join("\n"));
+  process.exit(2);
+}
+
 if (configuredD1 && !force && !replacingKnownUpstreamConfiguration) {
   if (upstreamConfiguredCheckout) {
     console.error([
-      "This checkout contains the upstream production D1 configuration.",
+      "This checkout already contains the upstream production D1 configuration locally.",
       "If this is a NEW CLONE that should become a separate game installation, rerun:",
       "  npm run setup:installation -- --new-installation",
       "If this is the existing production checkout, stop here so its D1 identity is preserved.",
@@ -88,16 +99,19 @@ if (configuredD1 && !force && !replacingKnownUpstreamConfiguration) {
 }
 
 if (inheritedUpstreamConfiguration) {
-  console.log("Detected the upstream installation configuration inherited by this fork; replacing it with new installation settings.");
+  console.log("Detected an older upstream installation configuration inherited by this fork; replacing it with new installation settings.");
 }
-if (upstreamConfiguredCheckout && newInstallation) {
-  console.log("Treating this upstream clone as a new installation; the inherited production configuration will be replaced locally.");
+if (originRepository === upstreamRepository && newInstallation) {
+  console.log("Treating this upstream clone as a new installation; local installation settings will be created without changing the upstream deployment identity.");
 }
 
 const template = parseJsonConfig(await readFile(templatePath, "utf8"), "wrangler.template.jsonc");
 const interactive = Boolean(input.isTTY && output.isTTY);
 const rl = interactive ? createInterface({ input, output }) : null;
 const inferredRepositoryName = originRepository.split("/").at(-1) || "pre-programmed";
+const defaultWorkerName = originRepository && originRepository !== upstreamRepository
+  ? inferredRepositoryName
+  : `my-${inferredRepositoryName}`;
 
 async function answer(envName, prompt, fallback = "") {
   const configured = process.env[envName]?.trim();
@@ -108,7 +122,7 @@ async function answer(envName, prompt, fallback = "") {
 }
 
 try {
-  const workerName = await answer("PRE_PROGRAMMED_WORKER_NAME", "Worker name", `my-${inferredRepositoryName}`);
+  const workerName = await answer("PRE_PROGRAMMED_WORKER_NAME", "Worker name", defaultWorkerName);
   const databaseName = await answer("PRE_PROGRAMMED_D1_DATABASE_NAME", "D1 database name", `${workerName}-db`);
   const apiOrigin = await answer("PRE_PROGRAMMED_API_ORIGIN", "Hosted Worker origin (optional until first deploy)", "");
   const repositoryName = await answer("PRE_PROGRAMMED_REPOSITORY_NAME", "GitHub repository name", inferredRepositoryName);
@@ -136,10 +150,11 @@ try {
     "Next:",
     "1. Authenticate Wrangler with the Cloudflare account that should own this game.",
     `2. Create and persist this installation's D1 binding: npx wrangler d1 create ${databaseArgument} --binding DB --update-config`,
-    "   Wrangler should add database_name and database_id to wrangler.jsonc.",
+    "   Wrangler should add database_name and database_id to the local, ignored wrangler.jsonc.",
     "3. Configure ADMIN_KEY for the Worker/deployment.",
-    "4. Run `npx wrangler deploy`.",
+    "4. Run `npx wrangler deploy` once locally so this Worker owns the D1 binding.",
     "5. Set PRE_PROGRAMMED_API_ORIGIN / VITE_API_ORIGIN once the Worker URL is known.",
+    "6. For GitHub Actions, set PRE_PROGRAMMED_WORKER_NAME and PRE_PROGRAMMED_D1_DATABASE_NAME if they differ from the repository-derived defaults.",
   ].join("\n"));
 } finally {
   rl?.close();
