@@ -1,6 +1,8 @@
 import { inventoryFeaturePersistence } from "./inventoryPersistence";
 import { mediaFeaturePersistence } from "./mediaPersistence";
+import { stateFeaturePersistence } from "./statePersistence";
 import type { WorkerFeaturePersistence } from "./types";
+import { worldFeaturePersistence } from "./worldPersistence";
 
 /**
  * Explicit Worker persistence composition root.
@@ -9,6 +11,8 @@ import type { WorkerFeaturePersistence } from "./types";
  * from the transitional central project store.
  */
 export const WORKER_FEATURE_PERSISTENCE: readonly WorkerFeaturePersistence[] = [
+  worldFeaturePersistence,
+  stateFeaturePersistence,
   inventoryFeaturePersistence,
   mediaFeaturePersistence,
 ];
