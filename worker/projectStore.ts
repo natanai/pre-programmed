@@ -134,7 +134,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         condition: parseJson(outcome.condition_json, { type: "always" }),
         responseText: outcome.response_text,
         speakerId: outcome.response_speaker_id,
-        responseCharactersPerSecond: outcome.response_characters_perSecond,
+        responseCharactersPerSecond: outcome.response_characters_per_second,
         effects: parseJson(outcome.effects_json, []),
         disposition: outcome.disposition,
         destinationNodeId: outcome.destination_node_id,
