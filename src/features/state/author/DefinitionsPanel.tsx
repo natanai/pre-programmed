@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
+import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type {
   ComputedDefinition,
   EntityDefinition,
@@ -86,10 +87,11 @@ function variableTypeForResource(kind?: StateAuthorResourceKind): VariableDefini
   return undefined;
 }
 
-export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, resourceId }: {
+export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty, resourceKind, resourceId }: {
   snapshot: ProjectSnapshot;
-  onSave: (operations: MutationOperation[], description: string) => Promise<void>;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onClose: () => void;
+  setWorkspaceDirty: (dirty: boolean) => void;
   resourceKind?: StateAuthorResourceKind;
   resourceId?: string;
 }) {
@@ -113,31 +115,49 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, reso
     return existing ? normalizedEntity(existing) : newEntity(resourceKind);
   });
   const [saving, setSaving] = useState(false);
+  const [baseline, setBaseline] = useState(() => JSON.stringify(variable ?? computed ?? entity));
   const editing = Boolean(variable || computed || entity);
   const selectedId = variable?.id ?? computed?.id ?? entity?.id;
+  const currentSignature = JSON.stringify(variable ?? computed ?? entity);
+  const dirty = editing && currentSignature !== baseline;
+
+  useEffect(() => {
+    setWorkspaceDirty(dirty);
+    return () => setWorkspaceDirty(false);
+  }, [dirty, setWorkspaceDirty]);
 
   const resetEditor = () => {
     setVariable(null);
     setComputed(null);
     setEntity(null);
+    setBaseline(JSON.stringify(null));
   };
 
   const openVariable = (item: VariableDefinition) => {
-    resetEditor();
+    const next = normalizedVariable(item);
+    setComputed(null);
+    setEntity(null);
     setMode("variables");
-    setVariable(normalizedVariable(item));
+    setVariable(next);
+    setBaseline(JSON.stringify(next));
   };
 
   const openComputed = (item: ComputedDefinition) => {
-    resetEditor();
+    const next = normalizedComputed(item);
+    setVariable(null);
+    setEntity(null);
     setMode("computed");
-    setComputed(normalizedComputed(item));
+    setComputed(next);
+    setBaseline(JSON.stringify(next));
   };
 
   const openEntity = (item: EntityDefinition) => {
-    resetEditor();
+    const next = normalizedEntity(item);
+    setVariable(null);
+    setComputed(null);
     setMode("entities");
-    setEntity(normalizedEntity(item));
+    setEntity(next);
+    setBaseline(JSON.stringify(next));
   };
 
   const saveVariable = async () => {
@@ -155,7 +175,11 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, reso
     setVariable(definition);
     setSaving(true);
     try {
-      await onSave([{ type: "variable.upsert", definition }], `Changed variable ${definition.label}`);
+      const result = await onSave([{ type: "variable.upsert", definition }], `Changed variable ${definition.label}`);
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(definition));
+        setWorkspaceDirty(false);
+      }
     } finally { setSaving(false); }
   };
 
@@ -173,7 +197,11 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, reso
     setComputed(definition);
     setSaving(true);
     try {
-      await onSave([{ type: "computed.upsert", definition }], `Changed computed value ${definition.label}`);
+      const result = await onSave([{ type: "computed.upsert", definition }], `Changed computed value ${definition.label}`);
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(definition));
+        setWorkspaceDirty(false);
+      }
     } finally { setSaving(false); }
   };
 
@@ -192,7 +220,11 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, resourceKind, reso
     setEntity(savedEntity);
     setSaving(true);
     try {
-      await onSave([{ type: "entity.upsert", entity: savedEntity }], `Changed ${savedEntity.type} ${savedEntity.name}`);
+      const result = await onSave([{ type: "entity.upsert", entity: savedEntity }], `Changed ${savedEntity.type} ${savedEntity.name}`);
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(savedEntity));
+        setWorkspaceDirty(false);
+      }
     } finally { setSaving(false); }
   };
 
