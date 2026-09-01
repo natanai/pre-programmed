@@ -52,16 +52,28 @@ jobs:
           node --input-type=module <<'NODE'
           const fallbackOrigin = "https://pre-programmed.natanai.workers.dev";
           const origin = (process.env.API_ORIGIN || fallbackOrigin).replace(/\/+$/, "");
-          const url = `${origin}/api/health`;
+          const healthUrl = `${origin}/api/health`;
+          let healthy = false;
           for (let attempt = 0; attempt < 12; attempt += 1) {
             try {
-              const response = await fetch(url, { cache: "no-store" });
+              const response = await fetch(healthUrl, { cache: "no-store" });
               const health = await response.json();
-              if (response.ok && health?.ok === true && health?.persistence === "d1" && health?.authorConfigured === true) process.exit(0);
+              if (response.ok && health?.ok === true && health?.persistence === "d1" && health?.authorConfigured === true) {
+                healthy = true;
+                break;
+              }
             } catch {}
             await new Promise((resolve) => setTimeout(resolve, 5000));
           }
-          process.exit(1);
+          if (!healthy) process.exit(1);
+
+          try {
+            const response = await fetch(`${origin}/api/project/snapshot`, { cache: "no-store" });
+            const snapshot = await response.json();
+            if (!response.ok || !Array.isArray(snapshot?.nodes) || typeof snapshot?.startNodeId !== "string") process.exit(1);
+          } catch {
+            process.exit(1);
+          }
           NODE
 
       - uses: actions/configure-pages@v5
