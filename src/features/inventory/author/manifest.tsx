@@ -7,7 +7,11 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
   id: "inventory",
   tools: inventoryAuthorTools,
   renderWorkspace(route, context) {
-    if (route.type === "inventory") return <Inventory
+    const inventoryRoute = route.type === "inventory" || (
+      route.type === "feature" && route.feature === "inventory" && route.workspace === "inventory"
+    );
+
+    if (inventoryRoute) return <Inventory
       snapshot={context.snapshot}
       state={context.playState}
       authorMode={context.authorMode}
