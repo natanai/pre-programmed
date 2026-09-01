@@ -1,3 +1,4 @@
+import { inventoryFeaturePersistence } from "./inventoryPersistence";
 import { mediaFeaturePersistence } from "./mediaPersistence";
 import type { WorkerFeaturePersistence } from "./types";
 
@@ -8,5 +9,6 @@ import type { WorkerFeaturePersistence } from "./types";
  * from the transitional central project store.
  */
 export const WORKER_FEATURE_PERSISTENCE: readonly WorkerFeaturePersistence[] = [
+  inventoryFeaturePersistence,
   mediaFeaturePersistence,
 ];
