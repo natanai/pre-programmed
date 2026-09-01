@@ -47,8 +47,8 @@ export type InteractionOutcome = {
   authorStatus: "draft" | "configured";
   condition: Condition;
   responseText: string;
-  /** Optional character voice for this response; null means unattributed/narration. */
-  speakerId: string | null;
+  /** Optional character voice for this response; missing/null means unattributed narration. */
+  speakerId?: string | null;
   responseCharactersPerSecond?: number;
   effects: Effect[];
   disposition: InteractionDisposition;
