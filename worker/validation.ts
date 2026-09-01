@@ -1,5 +1,7 @@
-import { commandsProjectSettingsValid } from "./features/commandsValidation";
-import { WORKER_MUTATION_VALIDATOR_BY_TYPE } from "./features/validationCatalog";
+import {
+  WORKER_MUTATION_VALIDATOR_BY_TYPE,
+  WORKER_PROJECT_SETTINGS_VALIDATORS,
+} from "./features/validationCatalog";
 import { object } from "./features/validationHelpers";
 
 const CORE_OPERATION_TYPES = new Set([
@@ -13,7 +15,7 @@ function projectSettingsValid(value: unknown) {
     && typeof value.terminalPrompt === "string"
     && value.terminalPrompt.length >= 1
     && value.terminalPrompt.length <= 32
-    && commandsProjectSettingsValid(value);
+    && WORKER_PROJECT_SETTINGS_VALIDATORS.every((validate) => validate(value));
 }
 
 export function validateMutationBody(value: unknown) {
