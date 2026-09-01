@@ -1,8 +1,6 @@
 import type { CommandsPlayStateSlice } from "../../features/commands/projectSlice";
 import type { InventoryMutationOperation } from "../../features/inventory/mutations";
 import type { InventoryPlayStateSlice, InventoryProjectSlice } from "../../features/inventory/projectSlice";
-import type { MediaMutationOperation } from "../../features/media/mutations";
-import type { MediaProjectSlice } from "../../features/media/projectSlice";
 import type { NarrativeMutationOperation } from "../../features/narrative/mutations";
 import type { NarrativePlayStateSlice, NarrativeProjectSlice } from "../../features/narrative/projectSlice";
 import type { StateMutationOperation } from "../../features/state/mutations";
@@ -26,8 +24,7 @@ export type ProjectSnapshot =
   & NarrativeProjectSlice
   & WorldProjectSlice
   & StateProjectSlice
-  & InventoryProjectSlice
-  & MediaProjectSlice;
+  & InventoryProjectSlice;
 
 export type CorePlayState = {
   sessionStartedAt: number;
@@ -78,8 +75,7 @@ export type MutationOperation =
   | NarrativeMutationOperation
   | WorldMutationOperation
   | StateMutationOperation
-  | InventoryMutationOperation
-  | MediaMutationOperation;
+  | InventoryMutationOperation;
 
 export type ProjectMutation = {
   expectedRevision: number;

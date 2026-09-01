@@ -1,5 +1,4 @@
 import { inventoryMutationValidator } from "./inventoryValidation";
-import { mediaMutationValidator } from "./mediaValidation";
 import { narrativeMutationValidator } from "./narrativeValidation";
 import { stateMutationValidator } from "./stateValidation";
 import type { WorkerMutationValidator } from "./validationTypes";
@@ -10,7 +9,6 @@ export const WORKER_MUTATION_VALIDATORS: readonly WorkerMutationValidator[] = [
   worldMutationValidator,
   stateMutationValidator,
   inventoryMutationValidator,
-  mediaMutationValidator,
 ];
 
 export const WORKER_MUTATION_VALIDATOR_BY_TYPE: Readonly<Record<string, WorkerMutationValidator>> =

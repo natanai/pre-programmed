@@ -1,5 +1,4 @@
 import { inventoryFeaturePersistence } from "./inventoryPersistence";
-import { mediaFeaturePersistence } from "./mediaPersistence";
 import { narrativeFeaturePersistence } from "./narrativePersistence";
 import { stateFeaturePersistence } from "./statePersistence";
 import type { WorkerFeaturePersistence } from "./types";
@@ -21,7 +20,6 @@ export const WORKER_FEATURE_PERSISTENCE: readonly WorkerFeaturePersistence[] = [
   { ...worldFeaturePersistence, resetOrder: 10, restoreOrder: 0 },
   { ...stateFeaturePersistence, resetOrder: 10, restoreOrder: 10 },
   { ...inventoryFeaturePersistence, resetOrder: 10, restoreOrder: 10 },
-  { ...mediaFeaturePersistence, resetOrder: 10, restoreOrder: 10 },
 ];
 
 export function workerFeaturesForReset() {

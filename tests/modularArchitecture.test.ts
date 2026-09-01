@@ -16,7 +16,6 @@ const FEATURE_MUTATIONS = [
   "variable.upsert",
   "computed.upsert",
   "item.upsert",
-  "synth.upsert",
 ] as const;
 
 describe("modular architecture composition roots", () => {
@@ -30,7 +29,6 @@ describe("modular architecture composition roots", () => {
       "world",
       "state",
       "inventory",
-      "media",
     ]);
   });
 

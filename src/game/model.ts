@@ -16,7 +16,6 @@ export {
   resumeAuthorBookmark,
 } from "../engine/project/playState";
 export * from "../features/inventory/model";
-export * from "../features/media/model";
 export * from "../features/narrative/model";
 export * from "../features/operations/model";
 export * from "../features/state/model";

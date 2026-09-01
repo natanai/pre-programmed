@@ -1,6 +1,5 @@
 import { commandsAuthorFeature } from "../../features/commands/author/manifest";
 import { inventoryAuthorFeature } from "../../features/inventory/author/manifest";
-import { mediaAuthorFeature } from "../../features/media/author/manifest";
 import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
@@ -19,7 +18,6 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
   stateAuthorFeature,
   inventoryAuthorFeature,
-  mediaAuthorFeature,
   commandsAuthorFeature,
   projectAuthorFeature,
 ];
