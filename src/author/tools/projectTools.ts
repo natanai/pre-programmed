@@ -10,7 +10,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "locations",
       label: "SAVED LOCATIONS",
       description: "Save or restore a play location while authoring.",
-      onSelect: () => context.pushPanel({ type: "workspace", view: "locations" }),
+      onSelect: () => context.pushTask({ type: "workspace", view: "locations" }),
     },
   },
   {
@@ -22,7 +22,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "settings",
       label: "ADVANCED SETTINGS",
       description: "Configure project-wide engine behavior, references, and terminal grammar.",
-      onSelect: () => context.pushPanel({ type: "feature", feature: "project", workspace: "settings" }),
+      onSelect: () => context.pushTask({ type: "feature", feature: "project", workspace: "settings" }),
     },
   },
   {
@@ -34,7 +34,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "history",
       label: "HISTORY",
       description: "Review revisions and project history.",
-      onSelect: () => context.pushPanel({ type: "workspace", view: "history" }),
+      onSelect: () => context.pushTask({ type: "workspace", view: "history" }),
     },
   },
   {
@@ -45,9 +45,9 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "backup",
       label: "BACKUP",
-      description: "Download a complete Cloudflare project backup.",
+      description: "Download a complete project backup.",
       onSelect: () => {
-        context.close();
+        context.closeAll();
         void context.downloadBackup();
       },
     },
