@@ -24,12 +24,12 @@ import { assetUrl } from "./data/assets";
 import { ASSET_MANIFEST } from "./generated/assetManifest";
 import { type EffectEvent } from "./game/effects";
 import { buildGraphIndex, notationForNode } from "./game/graph";
-import { addNewDefaultItemsToPlayState } from "./game/inventory";
 import { interpolateText } from "./game/interpolation";
 import { applyOperations } from "./game/mutations";
 import {
   createEmptyPlayState,
   reconcilePlayState,
+  reconcilePlayStateAfterProjectChange,
   resumeAuthorBookmark,
   type AuthorBookmark,
   type GameNode,
@@ -325,7 +325,7 @@ export default function App() {
     const beforeState = playState;
     const optimistic = applyOperations(snapshot, operations);
     const optimisticState = playState
-      ? addNewDefaultItemsToPlayState(snapshot, optimistic, reconcilePlayState(optimistic, playState))
+      ? reconcilePlayStateAfterProjectChange(snapshot, optimistic, playState)
       : null;
     const mutation: ProjectMutation = { expectedRevision: snapshot.revision, description, operations };
     setSnapshot(optimistic);
