@@ -1,5 +1,6 @@
 import { commandsProjectSettingsValid } from "./commandsValidation";
 import { inventoryMutationValidator } from "./inventoryValidation";
+import { validateNewInventoryReferences } from "./inventoryIntegrity";
 import { mediaMutationValidator } from "./mediaValidation";
 import { narrativeMutationValidator } from "./narrativeValidation";
 import { stateMutationValidator } from "./stateValidation";
@@ -22,3 +23,8 @@ export const WORKER_MUTATION_VALIDATOR_BY_TYPE: Readonly<Record<string, WorkerMu
 export const WORKER_PROJECT_SETTINGS_VALIDATORS: readonly ((value: unknown) => boolean)[] = [
   commandsProjectSettingsValid,
 ];
+
+/** Cross-feature references that can only be checked against a whole projected snapshot. */
+export const WORKER_PROJECT_INTEGRITY_VALIDATORS = [
+  validateNewInventoryReferences,
+] as const;

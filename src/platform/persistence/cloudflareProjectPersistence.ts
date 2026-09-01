@@ -1,5 +1,6 @@
 import {
   ProjectRevisionConflictError,
+  ProjectWriteRejectedError,
   type ProjectPersistence,
 } from "./projectPersistence";
 import type { ProjectMutation, ProjectSnapshot } from "../../engine/project/model";
@@ -27,6 +28,15 @@ export const cloudflareProjectPersistence: ProjectPersistence = {
     } catch (error) {
       if (error instanceof ApiError && error.status === 409) {
         throw new ProjectRevisionConflictError(error.message);
+      }
+      if (
+        error instanceof ApiError
+        && error.status >= 400
+        && error.status < 500
+        && error.status !== 408
+        && error.status !== 429
+      ) {
+        throw new ProjectWriteRejectedError(error.message);
       }
       throw error;
     }
