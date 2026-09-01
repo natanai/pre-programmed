@@ -1,5 +1,5 @@
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../features/types";
-import type { AuthorPanelRoute } from "../workSurfaceNavigation";
+import type { AuthorTaskRoute } from "../tasks/types";
 import "./projectSettings.css";
 
 export function ProjectSettingsWorkspace({
@@ -7,7 +7,7 @@ export function ProjectSettingsWorkspace({
   sections,
   context,
 }: {
-  route: Extract<AuthorPanelRoute, { type: "feature" }>;
+  route: Extract<AuthorTaskRoute, { type: "feature" }>;
   sections: readonly AuthorProjectSettingsSection[];
   context: AuthorWorkspaceContext;
 }) {
@@ -35,7 +35,7 @@ export function ProjectSettingsWorkspace({
         {ordered.map((section) => <button
           type="button"
           key={section.id}
-          onClick={() => context.pushPanel({
+          onClick={() => context.pushTask({
             type: "feature",
             feature: "project",
             workspace: "settings",
