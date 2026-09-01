@@ -1,9 +1,13 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { addInventoryItem, addNewDefaultItemsToPlayState } from "./runtime";
 
+function bodyBackgrounds(snapshot: ProjectSnapshot) {
+  return snapshot.bodyBackgrounds ?? [];
+}
+
 function validStartingBodyBackgroundId(snapshot: ProjectSnapshot) {
-  const id = snapshot.startingBodyBackgroundId;
-  return id && snapshot.bodyBackgrounds.some((background) => background.id === id) ? id : null;
+  const id = snapshot.startingBodyBackgroundId ?? null;
+  return id && bodyBackgrounds(snapshot).some((background) => background.id === id) ? id : null;
 }
 
 export function initializeInventoryPlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
@@ -22,7 +26,7 @@ export function initializeInventoryPlayState(snapshot: ProjectSnapshot, state: P
 export function reconcileInventoryPlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
   const selectedId = state.bodyBackgroundId ?? null;
   const selectedStillExists = selectedId
-    ? snapshot.bodyBackgrounds.some((background) => background.id === selectedId)
+    ? bodyBackgrounds(snapshot).some((background) => background.id === selectedId)
     : false;
   return {
     ...state,
