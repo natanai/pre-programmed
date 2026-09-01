@@ -156,6 +156,25 @@ Avoid:
 
 Compatibility code may be used deliberately during migration, but it must have one-way direction toward deletion.
 
+## 10. Verification must remain replaceable too
+
+Tests and CI are part of the architecture. They must not make an experimental feature harder to remove than the runtime does.
+
+During rapid prototyping:
+
+- production deployment on `main` is the only automatic workflow;
+- full typecheck/test/build verification is an explicit checkpoint, not a tax on every branch update;
+- prefer targeted checks while iterating and run the full `npm run verify` before a meaningful merge/deployment checkpoint;
+- feature-specific tests should live with or clearly belong to the feature and may be deleted or rewritten with that feature;
+- core tests should protect stable core contracts, not enumerate every feature currently installed;
+- do not add permanent tests whose primary purpose is to freeze today's feature roster, route list, mutation list, or UI implementation;
+- physical feature-deletion probes are temporary diagnostic branches, not permanent CI fixtures;
+- persistence integrity, migrations, authentication, backup/restore, and other data-safety boundaries may justify stronger long-lived tests because their failure can corrupt or strand authored work.
+
+Existing centralized feature tests are transitional. Move or simplify them when the owning feature is substantially changed rather than creating a separate migration project solely to rearrange tests.
+
+A failed test during an intentional prototype replacement is evidence to inspect, not proof that the old behavior must be preserved.
+
 ## Review question for every substantial change
 
 Before merging, ask:

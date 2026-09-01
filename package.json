@@ -15,7 +15,8 @@
     "pretypecheck": "npm run generate:assets",
     "typecheck": "tsc -b",
     "pretest": "npm run generate:assets",
-    "test": "vitest run"
+    "test": "vitest run",
+    "verify": "npm run generate:assets && tsc -b && vitest run && vite build"
   },
   "dependencies": {
     "react": "19.2.8",
