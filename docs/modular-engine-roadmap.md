@@ -1,220 +1,180 @@
 # Modular Engine + Author Suite Roadmap
 
-This document is the durable progress ledger for making Pre-Programmed a replaceable, cloneable text-game engine while preserving one authentic Author system across mobile and desktop.
+This is the durable progress ledger for making Pre-Programmed a replaceable, cloneable text-game engine while preserving one authentic Author system across mobile and desktop.
 
 ## Product goals
 
-1. **Replaceable engine systems while prototyping**
-   - Major features must be removable/rewriteable without patching unrelated systems.
-   - The deletion test is the architectural acceptance test: remove a feature directory and its registrations; the remaining engine should still compile and run without that capability.
-
-2. **One Author system, responsive presentation**
-   - Mobile and desktop must use the same Author navigation state, feature manifests, editors, persistence, validation, and save semantics.
-   - Desktop gets a dedicated docked left-hand Author suite while the game remains playable on the right.
-   - Mobile retains the focused/full-screen presentation of those same workspaces.
-   - No `MobileAuthor*` / `DesktopAuthor*` duplication of feature editors or behavior.
-
-3. **Clone/fork → connect infrastructure → author a complete game**
-   - Game creators should not need to edit engine source for ordinary game creation.
-   - Instance-specific Cloudflare/database/Worker configuration must not be hard-coded into engine source.
-   - After initial infrastructure setup, ordinary game content and configuration should be authored through Author mode.
+1. **Replaceable engine systems while prototyping** — a major feature should be removable/rewriteable without patching unrelated systems.
+2. **One Author system, responsive presentation** — desktop and mobile use the same navigation, editors, mutations, persistence, validation, and save semantics; only presentation changes.
+3. **Clone/fork → connect infrastructure → author a complete game** — ordinary game creation should happen through Author mode rather than source edits.
 
 ## Architectural rule
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
 
-A mature feature should be able to own, where applicable:
+A mature feature may own project data, play state, lifecycle, conditions/effects/operations, Author UI, mutations, persistence, validation, and future migrations. Explicit composition roots are encouraged.
 
-- project-data slice
-- play-state slice
-- initialization/reconciliation lifecycle
-- runtime conditions/effects/operations/capabilities
-- Author tools/workspaces/settings
-- persistence read/write/restore/export
-- validation
-- migrations
+## Current completion estimate — about 69%
 
-Explicit composition roots are encouraged. Cross-feature implementation knowledge outside those roots is not.
+This percentage estimates progress toward the architecture/product goals above, not game completeness. The baseline at the start of this pass was about 43%.
 
-## Current completion estimate — 48%
-
-This percentage measures progress toward the three product goals above, not feature count or game completeness. The starting estimate for this architecture pass was 43%.
-
-| Area | Weight | Current | Weighted contribution |
+| Area | Weight | Current | Weighted |
 | --- | ---: | ---: | ---: |
-| Feature-oriented source ownership | 12% | 80% | 9.6% |
-| Runtime contribution architecture (rules/operations/commands) | 12% | 75% | 9.0% |
+| Feature-oriented source ownership | 12% | 88% | 10.6% |
+| Runtime contribution architecture | 12% | 88% | 10.6% |
 | Author feature composition | 12% | 75% | 9.0% |
 | Responsive single-system Author shell | 12% | 40% | 4.8% |
-| Feature-owned project/play-state slices | 14% | 20% | 2.8% |
-| Feature-owned mutations | 10% | 20% | 2.0% |
-| Feature-owned persistence/restore/validation | 12% | 15% | 1.8% |
-| Feature-owned migrations | 6% | 10% | 0.6% |
+| Feature-owned project/play-state ownership | 14% | 60% | 8.4% |
+| Feature-owned mutations | 10% | 90% | 9.0% |
+| Feature persistence/restore/validation | 12% | 80% | 9.6% |
+| Feature-owned future migrations | 6% | 40% | 2.4% |
 | Clone/fork installation portability | 8% | 45% | 3.6% |
-| Boundary/deletion tests and guardrails | 2% | 45% | 0.9% |
-| **Total represented directly** | **100%** |  | **44.1%** |
+| Boundary/deletion guardrails | 2% | 50% | 1.0% |
+| **Total** | **100%** |  | **≈68.9%** |
 
-The overall estimate is **48%** because the compatibility-facade migration and storage-independent persistence boundary already in place are real progress that is not cleanly represented by a single row. This adjustment should disappear as the remaining architecture is moved into explicit feature-owned contracts.
+**Important:** this is architecture completion, not merge readiness. The branch has not yet been able to run `npm run typecheck` / `npm test` in this environment, and the desktop dock still needs real-browser validation. Merge readiness is therefore materially lower than 69% until verification passes.
 
-## Current strengths
+## What changed in this pass
 
-- Feature directories exist for Commands, Inventory, Media, Narrative, Operations, State, and World.
-- Effects and conditions are dispatched through contribution catalogs rather than a single feature-specific runtime switch.
-- Operation target behavior is adapter-driven.
-- Author tools/workspaces/settings are substantially manifest-driven.
-- Author workspace navigation/dirty-state ownership is separated from feature workspace rendering.
-- Mutable project persistence already has a storage-independent client interface.
-- `src/game/*` is increasingly a compatibility facade instead of the implementation owner and is now explicitly marked shrink-only.
-- Feature-boundary rules and the deletion-test standard are durable repo documentation rather than chat-only intent.
-- Hosted API origin and GitHub Pages base path have installation override points without changing the current production defaults.
-- A guarded installation helper and ID-free Wrangler template exist for fresh forks/clones.
-- Wide desktop Author mode has an initial docked presentation that reuses the canonical Author surfaces rather than introducing a second desktop editor system.
+### Feature boundaries and compatibility
 
-## Current blockers to true replacement
+- [x] Durable feature-boundary rules exist in `docs/feature-boundaries.md`.
+- [x] `src/game/*` is explicitly shrink-only compatibility architecture.
+- [x] The old `src/game/model.ts` lost real Inventory/State initialization behavior and now re-exports the canonical engine lifecycle.
+- [x] Architecture regression tests were added for composition roots and persistence dependency ordering.
+- [ ] Run those tests and add true feature-deletion checks.
 
-### Aggregate project model
+### Project/play-state ownership
 
-`ProjectSnapshot`, `PlayState`, and `MutationOperation` still enumerate feature internals. Removing Inventory, State, Narrative, Media, or World therefore changes core types.
+- [x] Narrative owns its project/play-state field slices.
+- [x] Inventory owns its project/play-state field slices.
+- [x] State owns its project/play-state field slices.
+- [x] World owns its project-data slice.
+- [x] Media owns its project-data slice.
+- [x] Commands owns its play-state slice.
+- [x] `ProjectSnapshot` and `PlayState` are composed from feature-owned slices while retaining the existing flat runtime shape for compatibility.
+- [x] Narrative, State, Inventory, and Commands own their play-state initialization/reconciliation contributions.
+- [ ] Further reduce core/project-settings knowledge of feature-specific configuration, especially Commands settings.
+- [ ] Prove deletion of an optional feature with a build/test run.
 
-### Central Worker project store
+### Rules and mutations
 
-The Worker project store currently understands tables, row formats, serialization, mutations, and restore behavior for many features. It is the largest blast-radius multiplier for future rewrites.
+- [x] Feature leaf condition/effect payload types moved beside Inventory, State, Narrative, and Media.
+- [x] Engine Rules now owns recursive/generic condition composition rather than feature leaf semantics.
+- [x] Feature mutation payload types moved beside Narrative, World, State, Inventory, and Media.
+- [x] Optimistic mutation application dispatches through feature-owned handlers instead of a central feature switch.
+- [x] Revision/concurrency remains core-owned.
 
-### Central migration ownership
+### Worker persistence
 
-One migration implementation knows the schema history of all features.
+- [x] Added one `WorkerFeaturePersistence` contract.
+- [x] Narrative owns node/interaction/start-node D1 loading, mutation SQL, reset, and restore contributions.
+- [x] World owns entity D1 loading, mutation SQL, hooks, reset, and restore contributions.
+- [x] State owns variable/computed D1 loading, mutation SQL, hooks, reset, and restore contributions.
+- [x] Inventory owns item D1 loading, mutation SQL, hooks, reset, and restore contributions.
+- [x] Media owns synth D1 loading, mutation SQL, reset, and restore contributions.
+- [x] `worker/projectStore.ts` is now a core orchestrator rather than a feature SQL warehouse.
+- [x] Reset and restore order are separate explicit composition concerns so foreign-key dependencies are deterministic.
+- [x] Bookmarks restore after Narrative nodes so their node foreign keys are valid.
+- [ ] Build/test the refactored Worker against fixtures and undo/restore behavior.
 
-### Application shell coupling
+### Worker validation and migrations
 
-`App.tsx` still directly coordinates feature-specific runtime and Author behavior. It should trend toward session/application composition only.
+- [x] Core mutation validation now owns the generic envelope/project settings only.
+- [x] Narrative, World, State, Inventory, and Media own their mutation payload validation.
+- [x] Existing migration history 1–12 is retained unchanged as historical schema fact.
+- [x] Added a canonical schema runner that composes historical migrations with future feature-owned migration contributions.
+- [x] Duplicate migration IDs are rejected.
+- [ ] Add the first real post-12 feature migration through the contribution path when one is needed.
+- [ ] Eventually separate immutable historical migration data from its old legacy runner to remove duplicate runner code.
 
-### Installation bootstrap is incomplete
+### Single responsive Author system
 
-The client, build, template, and guarded setup helper now support separate installations, but Cloudflare authentication/resource verification, automatic Worker-origin discovery, GitHub secret/variable setup, and end-to-end Author-save verification are not yet a unified bootstrap flow.
+- [x] Added an initial wide/fine-pointer desktop left Author suite.
+- [x] Desktop reuses the same `AuthorHome`, `AuthorInputSurface`, `useWorkSurfaceNavigation`, feature manifests, `AuthorWorkspaceHost`, mutation path, and persistence path as mobile.
+- [x] No desktop-specific editor tree or save semantics were introduced.
+- [x] Author-mode layout state is stable while text is playing.
+- [x] Player-facing workspaces such as Inventory are excluded from Author docking.
+- [ ] Manually validate all major Author workspaces on a wide desktop browser.
+- [ ] Validate narrow desktop/tablet breakpoint behavior.
+- [ ] Tune dock width/hierarchy after actual use rather than creating a second UI implementation.
 
-## Delivery sequence
+### Clone/fork portability
 
-### Phase A — Guardrails + ownership contract
+- [x] Hosted API origin can be overridden with `VITE_API_ORIGIN`.
+- [x] Pages base path can be overridden with `VITE_BASE_PATH` and the production workflow derives repository-name base paths.
+- [x] Deployment verification can use an installation-specific API origin.
+- [x] Added an ID-free `wrangler.template.jsonc` with a draft D1 `DB` binding.
+- [x] Added guarded `npm run setup:installation`; it refuses to overwrite an already-configured D1 installation unless explicitly forced.
+- [x] Added transitional installation documentation.
+- [ ] Move the live installation-specific D1 identity out of reusable defaults without risking the current production database.
+- [ ] Integrate Cloudflare authentication/resource verification into setup.
+- [ ] Discover/write the Worker origin automatically after first deploy.
+- [ ] Guide or automate GitHub secret/variable setup.
+- [ ] Run the complete fresh-fork test through successful Author login/save.
 
-- [x] Create this durable roadmap/progress ledger.
-- [x] Document the architectural boundary/deletion-test strategy.
-- [x] Mark compatibility facades as shrink-only: no new responsibilities may be added there.
-- [x] Document composition-root exceptions to the no-cross-feature-import rule.
-- [ ] Add automated boundary/deletion checks once current transitional dependencies can be expressed without institutionalizing them.
+## Remaining major architectural blockers
 
-### Phase B — Single responsive Author shell
+### 1. Verification
 
-- [x] Introduce an Author experience/layout shell that can dock on wide/fine-pointer displays.
-- [x] Keep the existing `useWorkSurfaceNavigation` stack as the single workspace/navigation owner.
-- [x] Keep `AuthorWorkspaceHost` and feature manifests as the single workspace implementation path.
-- [x] Desktop: dock Author UI to the left while the playable terminal remains visible and interactive on the right.
-- [x] Mobile/coarse/narrow: retain focused full-screen Author workspace behavior.
-- [x] Avoid a second desktop editor state or save path; desktop differences are presentation-only.
-- [ ] Manually validate the dock across the major Author workspaces on a wide desktop browser.
-- [ ] Add regression tests for shared navigation/dirty-state behavior where practical.
+This branch is intentionally still draft. The current environment could not resolve `github.com` for a local clone, so TypeScript/tests have not actually executed here. Do not merge based only on static review.
 
-### Phase C — Feature-owned project/play state
+### 2. `App.tsx` still knows too much
 
-- [ ] Define composable feature project-data slice contracts.
-- [ ] Define composable feature play-state slice/lifecycle contracts.
-- [ ] Move Inventory data/state ownership first as a proving feature.
-- [ ] Repeat for State, Narrative, World, Media, Commands as appropriate.
-- [ ] Reduce core ProjectSnapshot/PlayState knowledge to stable engine/session metadata plus composed feature state.
+`App.tsx` remains the main frontend pressure point: project/session loading, feature runtime orchestration, Author session behavior, presentation, and several feature-specific integrations still meet there. The next frontend architecture pass should reduce it toward application/session composition rather than feature implementation.
 
-### Phase D — Feature-owned mutations
+### 3. Project settings still have feature coupling
 
-- [ ] Keep revision/concurrency envelope in core.
-- [ ] Move feature mutation payload definitions beside features.
-- [ ] Dispatch optimistic client mutations through registered feature mutation handlers.
-- [ ] Remove feature-specific mutation enumeration from the central core contract.
+Commands configuration is still structurally embedded in core `ProjectSettings`. Project-settings contributions exist in Author UI, but the durable model/persistence shape should eventually follow the same feature-slice ownership rule.
 
-### Phase E — Feature persistence slices
+### 4. Installation bootstrap is transitional
 
-- [ ] Introduce Worker-side feature persistence contribution contract.
-- [ ] Move one feature's read/write/restore implementation out of central `projectStore.ts` as proof.
-- [ ] Compose project snapshots from registered persistence slices.
-- [ ] Compose mutation persistence from registered handlers.
-- [ ] Continue until central project store contains orchestration rather than feature schema knowledge.
+A new developer has a much clearer supported path now, but setup is not yet “connect Cloudflare and everything is verified automatically.”
 
-### Phase F — Feature validation + migrations
+### 5. Actual deletion tests have not run
 
-- [ ] One deterministic validation runner, feature-owned validators.
-- [ ] One deterministic migration runner, feature-owned migration contributions.
-- [ ] Preserve revision/backup/restore guarantees through the transition.
+The acceptance standard remains:
 
-### Phase G — Clone/fork portability
+1. remove an optional feature implementation;
+2. remove only its explicit registrations/composition entries;
+3. do not repair unrelated feature internals;
+4. build/typecheck still passes;
+5. a project not using that feature still boots and plays.
 
-- [x] Allow hosted API origin to be overridden without editing application source.
-- [x] Allow GitHub Pages/project base path to be overridden without editing Vite source.
-- [x] Make Pages deployment derive the repository base path automatically.
-- [x] Allow deploy/API verification to use an installation-specific API origin.
-- [x] Provide an ID-free Wrangler template suitable for a new installation/draft D1 binding.
-- [x] Add a guarded `npm run setup:installation` helper that will not overwrite an existing configured D1 installation by default.
-- [ ] Remove the current production API-origin fallback once installation bootstrap owns it safely.
-- [ ] Move the live installation-specific D1 identity out of reusable engine defaults without risking the existing deployment.
-- [ ] Integrate Cloudflare authentication/resource provisioning/verification into setup.
-- [ ] Discover/write the hosted Worker origin automatically after deployment.
-- [ ] Guide or automate GitHub secret/variable setup for GitHub Pages deployment.
-- [ ] Verify end-to-end that a fresh installation can enter Author mode and save.
+## Author authenticity test
 
-### Phase H — Retire transitional architecture
+For any desktop/mobile Author work:
 
-- [ ] Shrink and remove `src/game/*` compatibility facades as imports migrate.
-- [ ] Reduce `App.tsx` to application/session orchestration and composition.
-- [ ] Run deletion tests for each optional feature.
-- [ ] Update completion rubric to 100% only when the deletion and clone/fork tests actually pass.
+1. open the same project on mobile and desktop;
+2. navigate to the same workspace;
+3. both must render through the same feature workspace implementation;
+4. both must produce the same mutation/persistence semantics;
+5. layout differences must not change authored-data meaning.
 
-## Acceptance tests
-
-### Feature deletion test
-
-For each optional major feature:
-
-1. Remove its feature implementation directory.
-2. Remove its explicit composition registrations.
-3. Do not edit unrelated feature internals.
-4. Typecheck/build must still succeed.
-5. A project that does not use that feature must still boot and play.
-
-### Author authenticity test
-
-1. Open the same project on mobile and desktop.
-2. Navigate to the same Author workspace.
-3. Both surfaces must render through the same feature manifest/workspace component and persistence path.
-4. A saved edit on either presentation must produce the same project mutation and runtime result.
-5. Layout differences alone must not alter authored data semantics.
-
-### Clone/fork test
+## Clone/fork acceptance test
 
 A new developer should be able to:
 
 1. clone/fork the repository;
-2. connect their own Cloudflare account/D1/Worker credentials using documented setup;
+2. connect their own Cloudflare/D1/Worker credentials using supported setup;
 3. deploy an initialized engine;
 4. enter Author mode;
-5. author a distinct complete game without editing application source for ordinary game content.
-
-## Progress update convention
-
-When architecture work lands, update:
-
-- the relevant checkbox(es);
-- the weighted completion rubric if the change materially changes replaceability/portability;
-- a short dated note below.
+5. author a distinct complete game without editing application source for ordinary content.
 
 ## Change log
 
-### 2026-08-31
+### 2026-08-31 — architecture pass on `modular-engine-author-suite`
 
-- Established the durable modular-engine roadmap and deletion-test standard.
-- Baseline completion estimate recorded at 43%.
-- Began work on `modular-engine-author-suite`, intentionally isolated from `main` until reviewed.
-- Added the initial wide-desktop left Author suite as a presentation of the same canonical Author surfaces used on mobile.
-- Added a stable Author-experience layout marker so the dock does not disappear while text is playing.
-- Scoped dock behavior so player-facing workspaces such as Inventory are not accidentally turned into Author panels.
-- Added durable feature-boundary rules and a source-local shrink-only warning for `src/game/*` compatibility facades.
-- Added `VITE_API_ORIGIN` and `VITE_BASE_PATH` installation override points while preserving the current deployment defaults.
-- Made GitHub Pages derive its base path from the fork/repository name and let deployment verification use the installation API origin.
-- Added an ID-free `wrangler.template.jsonc` using a draft D1 binding for reusable installations.
-- Added a guarded `npm run setup:installation` helper and transitional installation guide.
-- Current architecture estimate updated to 48%.
+- Started at an estimated 43% architectural completion.
+- Created the durable roadmap and boundary rules.
+- Added the shared responsive desktop Author dock presentation.
+- Added portable API/base-path configuration, Wrangler template, guarded setup helper, and installation guide.
+- Moved feature project/play-state, rule payload, and mutation ownership out of central contracts while preserving source-compatible runtime shapes.
+- Moved optimistic mutation behavior behind feature handlers.
+- Moved Narrative/World/State/Inventory/Media D1 persistence behind one Worker feature contribution contract.
+- Reduced `worker/projectStore.ts` to core orchestration.
+- Moved feature mutation validation behind feature validators.
+- Added future feature migration contributions while retaining migration history 1–12 unchanged.
+- Added explicit reset/restore dependency ordering and corrected bookmark/node restore ordering.
+- Added modular architecture regression tests.
+- Current estimate: about **69% architecture completion**, pending verification.
