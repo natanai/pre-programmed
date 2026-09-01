@@ -143,6 +143,9 @@ export function validateMutationBody(value: unknown) {
         if (outcomes.includes(candidate) && candidate.responseCharactersPerSecond !== undefined && (!Number.isInteger(candidate.responseCharactersPerSecond) || (candidate.responseCharactersPerSecond as number) < 1 || (candidate.responseCharactersPerSecond as number) > 120)) {
           return "Response text speed must be an integer from 1 to 120.";
         }
+        if (outcomes.includes(candidate) && candidate.speakerId !== undefined && candidate.speakerId !== null && (typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128)) {
+          return "Interaction response speaker is invalid.";
+        }
         if (hooks.includes(candidate) && (!operationIdValid(candidate.operation) || typeof candidate.success !== "boolean")) {
           return "An operation hook is invalid.";
         }
