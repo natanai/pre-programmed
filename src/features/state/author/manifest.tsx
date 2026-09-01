@@ -81,7 +81,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       resourceId={route.data?.resourceId}
       onSave={async (operations, description) => {
         const result = await context.persist(operations, description);
-        if (!resourceKind || (result.status !== "saved" && result.status !== "queued")) return;
+        if (!resourceKind || (result.status !== "saved" && result.status !== "queued")) return result;
         const variableOperation = operations.find((operation) => operation.type === "variable.upsert");
         if (variableOperation?.type === "variable.upsert") {
           context.completeTask({
@@ -91,7 +91,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
             value: variableOperation.definition.key,
             label: variableOperation.definition.label || variableOperation.definition.key,
           });
-          return;
+          return result;
         }
         const computedOperation = operations.find((operation) => operation.type === "computed.upsert");
         if (computedOperation?.type === "computed.upsert") {
@@ -102,16 +102,19 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
             value: computedOperation.definition.key,
             label: computedOperation.definition.label || computedOperation.definition.key,
           });
-          return;
+          return result;
         }
         const entityOperation = operations.find((operation) => operation.type === "entity.upsert");
-        if (entityOperation?.type === "entity.upsert") context.completeTask({
-          type: "resource",
-          kind: entityOperation.entity.type,
-          id: entityOperation.entity.id,
-          value: entityOperation.entity.id,
-          label: entityOperation.entity.name || entityOperation.entity.key,
-        });
+        if (entityOperation?.type === "entity.upsert") {
+          context.completeTask({
+            type: "resource",
+            kind: entityOperation.entity.type,
+            id: entityOperation.entity.id,
+            value: entityOperation.entity.id,
+            label: entityOperation.entity.name || entityOperation.entity.key,
+          });
+        }
+        return result;
       }}
       onClose={context.leaveCurrentTask}
     />;
