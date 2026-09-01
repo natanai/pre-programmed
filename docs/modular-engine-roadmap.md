@@ -18,7 +18,7 @@ Explicit composition roots are good. Compatibility layers are transitional and s
 
 This is architecture/product completion, not game-content completion. The starting estimate for this modularization pass was about 43%.
 
-The exact percentage is less important than the remaining acceptance criteria. Do not increase architecture complexity merely to move the number.
+The estimate remains intentionally conservative. The exact percentage is less important than the remaining acceptance criteria; do not increase architecture complexity merely to move the number.
 
 ## What is now proven
 
@@ -28,12 +28,16 @@ The exact percentage is less important than the remaining acceptance criteria. D
 - State timing and project-change reconciliation reach App through generic lifecycle contracts rather than feature-specific App behavior.
 - Generic floating notifications are core-owned; Media owns synth/audio/art behavior.
 - Optional feature search documents, advanced text cues, Author workspaces, and Author shortcuts contribute through generic boundaries.
+- Unmatched-input Author drafting is feature-contributed; App no longer constructs Narrative draft interactions itself.
+- Targetless application capabilities are composed at a neutral engine boundary rather than being owned by Commands.
 - Worker persistence is feature-owned; `worker/projectStore.ts` is primarily orchestration.
-- Runtime schema initialization composes immutable historical migrations with future feature migration contributions through `worker/db/schema.ts`.
+- Runtime schema initialization composes immutable historical migrations with future feature migration contributions through `worker/db/schema.ts`; the obsolete second migration runner has been removed.
+- Worker mutation validation is feature-composed, including feature-owned project-settings validation.
+- `src/game/model.ts` is now a pure shrink-only compatibility facade rather than an implementation owner.
 - Media was physically removed on a temporary probe branch and the engine still passed typecheck, full tests, and build after removing only its explicit registrations/composition entries.
 - The same Author implementation has been exercised successfully on real desktop and mobile clients.
 - Desktop Author mode can remain open beside the playable game; mobile uses the focused presentation of the same workspaces.
-- The live production path has remained healthy through the architecture changes.
+- The live production path has remained healthy through the architecture changes, including a real project-snapshot/D1 verification after Worker deployment.
 
 ## Prototype verification policy
 
@@ -59,28 +63,28 @@ A new developer should be able to fork/clone, connect their own Cloudflare resou
 
 Still needed:
 
-- remove the current production D1 identity from reusable defaults without breaking the live installation;
+- remove the current production D1 identity from reusable tracked configuration without breaking the live installation;
 - make Cloudflare authentication/resource setup explicit and verifiable;
 - provision or attach D1 cleanly and retain the resulting binding identity;
 - discover/write the deployed Worker origin;
 - make GitHub Pages secret/variable setup straightforward when desired;
 - run one real fresh-fork installation through Author login and save.
 
-`wrangler.template.jsonc` and `npm run setup:installation` are transitional scaffolding, not the finished experience.
+`wrangler.template.jsonc` and `npm run setup:installation` are useful scaffolding, but the tracked production `wrangler.jsonc` still prevents a completely installation-neutral clone.
 
 ### 2. Keep shrinking real compatibility behavior
 
 Delete compatibility code when its consumers are gone; do not reorganize harmless one-line facades merely to improve file-count aesthetics.
 
-Recent cleanup removed obsolete Worker bootstrap/per-node mutation routes and moved the remaining API path to the canonical schema owner.
+Completed cleanup includes obsolete Worker bootstrap/per-node mutation routes, the duplicate migration runner, feature-roster verification assumptions, and several central compatibility responsibilities.
 
-The historical migrations file still contains an obsolete duplicate runner below the immutable migrations. Production no longer needs that runner; split/remove it when that file is next materially touched.
+Remaining one-line `src/game/*` and `src/components/*` facades are not duplicate implementations. Migrate or delete them when their consumers are naturally touched rather than launching a flag-day import rewrite.
 
 ### 3. Reduce App only where ownership becomes clearer
 
 `App.tsx` remains the main frontend meeting point, but refactoring it is not a goal by itself.
 
-Move behavior out only when doing so creates a clearer stable contract or makes a feature independently replaceable. Avoid abstraction churn.
+Recent work removed direct Narrative draft construction and Commands-owned application-capability resolution from App. Continue moving behavior only when doing so creates a clear stable contract or makes a feature independently replaceable. Avoid generic render registries or hooks that exist only to make App shorter.
 
 ### 4. Finish shared Author presentation polish
 
@@ -138,9 +142,14 @@ A new developer should be able to:
 - Desktop terminal dropdown focus bug found in client testing and fixed.
 - Media physical deletion exposed and then removed hidden coupling in notification ownership, global search, Narrative cue authoring, and Author routing.
 - Media deletion then passed typecheck/tests/build with unrelated shared systems untouched.
-- Automatic PR validation was removed; full verification became an explicit checkpoint and the feature-roster architecture test was deleted.
+- Automatic PR validation was removed; full verification became an explicit checkpoint and feature-roster architecture tests/default assertions were removed.
 - Verification ownership rules were added to `docs/feature-boundaries.md`.
 - Worker API compatibility cleanup removed obsolete bootstrap/per-node routes and standardized on the canonical schema owner.
+- The historical migrations file became data/helper-only; the obsolete duplicate runtime migration owner was deleted and the live project-snapshot check remained green.
+- `src/game/model.ts` became a pure compatibility facade; UUID/node-number behavior moved to its actual owners.
+- Worker project-settings validation stopped directly depending on Commands and now composes through the validation catalog.
+- App stopped constructing Narrative draft interactions for unmatched Author input and stopped resolving application capabilities through Commands.
+- Application capability contracts/catalogs moved to the neutral engine application boundary.
 
 ### 2026-08-31
 
