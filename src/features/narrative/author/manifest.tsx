@@ -13,6 +13,25 @@ const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "str
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
   tools: narrativeAuthorTools,
+  resources: [
+    {
+      kind: "node",
+      label: "Node",
+      pluralLabel: "Nodes",
+      list: (snapshot) => snapshot.nodes.map((node) => ({
+        id: node.id,
+        value: node.id,
+        label: `Node #${node.nodeNumber}`,
+        detail: node.text.trim().slice(0, 80),
+      })),
+      editRoute: (resource) => ({
+        type: "feature",
+        feature: "narrative",
+        workspace: "node",
+        data: { nodeId: resource.id },
+      }),
+    },
+  ],
   terminalShortcuts: [
     { commands: ["/structure", "structure"], route: STRUCTURE_ROUTE },
   ],
@@ -41,42 +60,68 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         interaction,
         graph,
       )}
-      onEdit={(interaction) => context.pushPanel({ type: "interaction", interaction })}
+      onEdit={(interaction) => context.pushTask({
+        type: "feature",
+        feature: "narrative",
+        workspace: "interaction",
+        data: { interactionId: interaction.id },
+      })}
     />;
   },
   renderWorkspace(route, context) {
-    if (route.type === "interaction") {
+    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "interaction") {
+      const initial = route.data?.interactionId
+        ? context.snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId)
+        : undefined;
+      const fallback = route.data?.fallback === "true";
       return <div className="dialogue-authoring-popover">
         <InteractionEditor
           snapshot={context.snapshot}
           playState={context.playState}
-          initial={route.interaction}
-          initialCommand={route.command}
-          fallback={route.fallback}
-          onSave={(operations, description) => context.persist(operations, description, true)}
-          onCancel={context.leaveCurrentSurface}
+          initial={initial}
+          initialCommand={route.data?.command ?? ""}
+          fallback={fallback}
+          onSave={async (operations, description) => {
+            const result = await context.persist(operations, description);
+            if (result.status === "saved" || result.status === "queued") context.completeTask({ type: "saved" });
+            return result;
+          }}
+          onCancel={context.leaveCurrentTask}
           onDirtyChange={context.setWorkspaceDirty}
         />
       </div>;
     }
 
-    if (route.type === "node") return <NodeEditor
-      node={route.node}
-      snapshot={context.snapshot}
-      onSave={context.persist}
-      onCancel={context.leaveCurrentSurface}
-      onDirtyChange={context.setWorkspaceDirty}
-    />;
+    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "node") {
+      const node = route.data?.nodeId
+        ? context.snapshot.nodes.find((candidate) => candidate.id === route.data?.nodeId)
+        : undefined;
+      if (!node) return null;
+      return <NodeEditor
+        node={node}
+        snapshot={context.snapshot}
+        onSave={context.persist}
+        onCancel={context.leaveCurrentTask}
+        onDirtyChange={context.setWorkspaceDirty}
+      />;
+    }
 
     if (route.type === "feature" && route.feature === "narrative" && route.workspace === "structure") return <StructureNavigator
       snapshot={context.snapshot}
       playState={context.playState}
-      onOpenNode={(nodeId) => {
-        const node = context.snapshot.nodes.find((candidate) => candidate.id === nodeId);
-        if (node) context.pushPanel({ type: "node", node });
-      }}
-      onEditInteraction={(interaction) => context.pushPanel({ type: "interaction", interaction })}
-      onClose={context.leaveCurrentSurface}
+      onOpenNode={(nodeId) => context.pushTask({
+        type: "feature",
+        feature: "narrative",
+        workspace: "node",
+        data: { nodeId },
+      })}
+      onEditInteraction={(interaction) => context.pushTask({
+        type: "feature",
+        feature: "narrative",
+        workspace: "interaction",
+        data: { interactionId: interaction.id },
+      })}
+      onClose={context.leaveCurrentTask}
     />;
 
     return null;
