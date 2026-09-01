@@ -7,7 +7,11 @@ import type {
 } from "../src/game/model";
 import { parseJson } from "./db/json";
 import { ensureSchema } from "./db/schema";
-import { WORKER_FEATURE_PERSISTENCE } from "./features/catalog";
+import {
+  WORKER_FEATURE_PERSISTENCE,
+  workerFeaturesForReset,
+  workerFeaturesForRestore,
+} from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
 
@@ -107,11 +111,11 @@ export async function applyMutation(db: D1Database, mutation: ProjectMutation) {
 
 function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks: AuthorBookmark[]): D1PreparedStatement[] {
   const coreDeletes = [db.prepare("DELETE FROM bookmarks")];
-  const featureDeletes = WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.resetStatements(db));
+  const featureDeletes = workerFeaturesForReset().flatMap((feature) => feature.resetStatements(db));
   const operations: MutationOperation[] = [
     { type: "project.settings", settings: snapshot.settings },
     ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
-    ...WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.restoreOperations(snapshot)),
+    ...workerFeaturesForRestore().flatMap((feature) => feature.restoreOperations(snapshot)),
   ];
   return [...coreDeletes, ...featureDeletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
 }
