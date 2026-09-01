@@ -20,6 +20,21 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
     return result.token;
   },
 
+  async downloadBackup(authorization) {
+    const response = await fetch(apiUrl("/api/author/backup"), {
+      headers: { Authorization: `Bearer ${authorization}` },
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw Object.assign(new Error(detail || `Backup failed (${response.status}).`), { status: response.status });
+    }
+    return {
+      blob: await response.blob(),
+      filename: response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1]
+        ?? `pre-programmed-backup-${Date.now()}.json`,
+    };
+  },
+
   async readWorkspace(authorization) {
     return readJson<AuthorWorkspaceSnapshot>(await fetch(apiUrl("/api/author/workspace"), {
       headers: { Authorization: `Bearer ${authorization}` },
