@@ -46,15 +46,23 @@ export function aliasesForUserInput(userInputText: string, aliases: string[]) {
   });
 }
 
-function normalizedInteraction(initial: Interaction | undefined, sourceNodeId: string, command: string, fallback: boolean) {
+function normalizedInteraction(
+  initial: Interaction | undefined,
+  sourceNodeId: string,
+  command: string,
+  fallback: boolean,
+  defaultSpeakerId: string | null,
+) {
+  const creating = !initial;
   const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
   value.matchMode ??= fallback ? "fallback" : "command";
   value.choiceVisibility ??= fallback ? "typed" : "prompt";
   value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => ({
     ...outcome,
     authorStatus: outcome.authorStatus ?? "configured",
+    speakerId: outcome.speakerId ?? (creating ? defaultSpeakerId : null),
     responseCharactersPerSecond: outcome.responseCharactersPerSecond ?? 18,
-  })) : [createDraftOutcome()];
+  })) : [{ ...createDraftOutcome(), speakerId: defaultSpeakerId }];
   return value;
 }
 
@@ -84,6 +92,11 @@ function responseSnippet(outcome: InteractionOutcome) {
   if (text) return text.length > 72 ? `${text.slice(0, 69)}...` : text;
   if (outcome.effects.length) return `${outcome.effects.length} effect${outcome.effects.length === 1 ? "" : "s"}, no response text`;
   return "No response yet";
+}
+
+function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
+  if (!outcome.speakerId) return "Narration";
+  return snapshot.entities.find((entity) => entity.type === "character" && entity.id === outcome.speakerId)?.name ?? "Unknown speaker";
 }
 
 function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
@@ -118,7 +131,8 @@ export function InteractionEditor({
   onDirtyChange: (dirty: boolean) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode));
+  const sourceSpeakerId = snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.characterId ?? null;
+  const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode, sourceSpeakerId));
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify({ draft, newNodeText: {} }));
   const [screen, setScreen] = useState<EditorScreen>({ type: "overview" });
@@ -133,9 +147,6 @@ export function InteractionEditor({
     return () => onDirtyChange(false);
   }, [draftSignature, savedSignature, onDirtyChange]);
 
-  const updateOutcome = (id: string, next: InteractionOutcome) =>
-    setDraft((current) => ({ ...current, outcomes: current.outcomes.map((item) => item.id === id ? next : item) }));
-
   const configureOutcome = (id: string, change: (outcome: InteractionOutcome) => InteractionOutcome) => {
     setDraft((current) => ({
       ...current,
@@ -146,7 +157,7 @@ export function InteractionEditor({
   };
 
   const addResponseDraft = () => {
-    const outcome = createDraftOutcome(draft.outcomes.length);
+    const outcome = { ...createDraftOutcome(draft.outcomes.length), speakerId: sourceSpeakerId };
     setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
     setScreen({ type: "response", outcomeId: outcome.id });
   };
@@ -289,6 +300,7 @@ export function InteractionEditor({
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
         onText={(responseText) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responseText }))}
+        onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
         onOpen={(type) => setScreen({ type, outcomeId: selectedOutcome.id })}
         onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
         onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
@@ -366,7 +378,7 @@ function InteractionOverview({
           <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
           <span className="response-summary-content">
             <strong>{index + 1}. {responseSnippet(outcome)}</strong>
-            <small>WHEN: {conditionSummary(outcome.condition)} · AFTER: {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
+            <small>SPEAKER: {responseSpeakerLabel(snapshot, outcome)} · WHEN: {conditionSummary(outcome.condition)} · AFTER: {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
           </span>
           <span aria-hidden="true">›</span>
         </button>)}
@@ -423,13 +435,14 @@ function InputSettings({ draft, fallbackMode, onChange }: {
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, onOpen, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, onSpeaker, onOpen, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   index: number;
   total: number;
   notation: string;
   onText: (text: string) => void;
+  onSpeaker: (speakerId: string | null) => void;
   onOpen: (screen: "when" | "after" | "effects" | "author-details") => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
@@ -437,16 +450,25 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
     <section className="guided-section response-writing-section">
-      <h3>RESPONSE TEXT</h3>
-      <ValueMentionField
-        snapshot={snapshot}
-        multiline
-        rows={5}
-        autoFocus
-        ariaLabel={`Response text ${index + 1}`}
-        value={outcome.responseText}
-        onValueChange={onText}
-      />
+      <h3>RESPONSE</h3>
+      <label>SPEAKER
+        <select value={outcome.speakerId ?? ""} onChange={(event) => onSpeaker(event.target.value || null)}>
+          <option value="">none / narration</option>
+          {snapshot.entities.filter((entity) => entity.type === "character").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}
+        </select>
+        <small>The selected character's name is shown with this response in play.</small>
+      </label>
+      <label>RESPONSE TEXT
+        <ValueMentionField
+          snapshot={snapshot}
+          multiline
+          rows={5}
+          autoFocus
+          ariaLabel={`Response text ${index + 1}`}
+          value={outcome.responseText}
+          onValueChange={onText}
+        />
+      </label>
       <TextRulesReference />
     </section>
     <section className="guided-section guided-drill-list">
