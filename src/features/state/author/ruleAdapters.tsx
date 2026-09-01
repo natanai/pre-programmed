@@ -1,6 +1,7 @@
 import type { Value } from "../../../game/model";
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
-import { ComparisonSelect, DefinitionSelect } from "../../../author/rules/controls";
+import { ComparisonSelect } from "../../../author/rules/controls";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 
 function parseValue(value: string, sample: Value): Value {
   if (typeof sample === "number") return Number(value);
@@ -16,13 +17,10 @@ export const flagConditionAdapter: ConditionAuthorAdapter = {
   type: "flag",
   label: "flag",
   create: () => ({ type: "flag", key: "", value: true }),
-  render: ({ condition, onChange, snapshot }) => {
+  render: ({ condition, onChange }) => {
     if (condition.type !== "flag") return null;
     return <>
-      <select value={condition.key} onChange={(event) => onChange({ ...condition, key: event.target.value })}>
-        <option value="">choose flag</option>
-        {snapshot.variables.filter((item) => item.valueType === "boolean").map((item) => <option value={item.key} key={item.id}>{item.label}</option>)}
-      </select>
+      <ReferenceField kind="flag" value={condition.key} onChange={(key) => onChange({ ...condition, key })} />
       <select value={String(condition.value)} onChange={(event) => onChange({ ...condition, value: event.target.value === "true" })}>
         <option value="true">is true</option><option value="false">is false</option>
       </select>
@@ -37,13 +35,10 @@ export const variableConditionAdapter: ConditionAuthorAdapter = {
   render: ({ condition, onChange, snapshot }) => {
     if (condition.type !== "variable") return null;
     return <>
-      <select value={condition.key} onChange={(event) => {
-        const definition = snapshot.variables.find((item) => item.key === event.target.value);
-        onChange({ ...condition, key: event.target.value, value: definition?.initialValue ?? 0 });
-      }}>
-        <option value="">choose value</option>
-        {snapshot.variables.map((item) => <option value={item.key} key={item.id}>{item.label}</option>)}
-      </select>
+      <ReferenceField kind="variable" value={condition.key} onChange={(key) => {
+        const definition = snapshot.variables.find((item) => item.key === key);
+        onChange({ ...condition, key, value: definition?.initialValue ?? 0 });
+      }} />
       <ComparisonSelect value={condition.operator} onChange={(operator) => onChange({ ...condition, operator })} />
       <input aria-label="Comparison value" value={String(condition.value ?? "")} onChange={(event) => onChange({ ...condition, value: parseValue(event.target.value, condition.value) })} />
     </>;
@@ -55,8 +50,8 @@ export const setFlagEffectAdapter: EffectAuthorAdapter = {
   label: "set flag",
   create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "" }),
   summarize: (effect, snapshot) => effect.type === "set_flag" ? `Set ${variableLabel(snapshot, effect.key)} true` : "Set flag",
-  render: ({ effect, onChange, snapshot }) => effect.type === "set_flag"
-    ? <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "boolean")} onChange={(key) => onChange({ ...effect, key })} />
+  render: ({ effect, onChange }) => effect.type === "set_flag"
+    ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
     : null,
 };
 
@@ -65,8 +60,8 @@ export const clearFlagEffectAdapter: EffectAuthorAdapter = {
   label: "clear flag",
   create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "" }),
   summarize: (effect, snapshot) => effect.type === "clear_flag" ? `Set ${variableLabel(snapshot, effect.key)} false` : "Clear flag",
-  render: ({ effect, onChange, snapshot }) => effect.type === "clear_flag"
-    ? <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "boolean")} onChange={(key) => onChange({ ...effect, key })} />
+  render: ({ effect, onChange }) => effect.type === "clear_flag"
+    ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
     : null,
 };
 
@@ -79,7 +74,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
     if (effect.type !== "set_value") return null;
     const definition = snapshot.variables.find((item) => item.key === effect.key);
     return <>
-      <DefinitionSelect value={effect.key} definitions={snapshot.variables} onChange={(key) => {
+      <ReferenceField kind="variable" value={effect.key} onChange={(key) => {
         const next = snapshot.variables.find((item) => item.key === key);
         onChange({ ...effect, key, value: next?.initialValue ?? "" });
       }} />
@@ -95,8 +90,8 @@ export const incrementEffectAdapter: EffectAuthorAdapter = {
   label: "increment",
   create: () => ({ id: crypto.randomUUID(), type: "increment", key: "", amount: 1 }),
   summarize: (effect, snapshot) => effect.type === "increment" ? `Increase ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Increment",
-  render: ({ effect, onChange, snapshot }) => effect.type === "increment" ? <>
-    <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "number")} onChange={(key) => onChange({ ...effect, key })} />
+  render: ({ effect, onChange }) => effect.type === "increment" ? <>
+    <ReferenceField kind="number-variable" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
     <input type="number" value={effect.amount} onChange={(event) => onChange({ ...effect, amount: Number(event.target.value) })} />
   </> : null,
 };
@@ -106,8 +101,8 @@ export const decrementEffectAdapter: EffectAuthorAdapter = {
   label: "decrement",
   create: () => ({ id: crypto.randomUUID(), type: "decrement", key: "", amount: 1 }),
   summarize: (effect, snapshot) => effect.type === "decrement" ? `Decrease ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Decrement",
-  render: ({ effect, onChange, snapshot }) => effect.type === "decrement" ? <>
-    <DefinitionSelect value={effect.key} definitions={snapshot.variables.filter((item) => item.valueType === "number")} onChange={(key) => onChange({ ...effect, key })} />
+  render: ({ effect, onChange }) => effect.type === "decrement" ? <>
+    <ReferenceField kind="number-variable" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
     <input type="number" value={effect.amount} onChange={(event) => onChange({ ...effect, amount: Number(event.target.value) })} />
   </> : null,
 };
