@@ -15,6 +15,9 @@ export type CoreCondition =
   | { type: "attempt"; eventKey?: string; operator: ComparisonOperator; value: number }
   | { type: "state"; field: "currentNodeId" | "lastCommand"; operator: "eq" | "neq"; value: string };
 
+/** Core-owned presentation effects that are meaningful without an optional feature. */
+export type CoreEffect = { id: string; type: "notification"; text: string };
+
 /**
  * Explicit condition composition root. Leaf condition payloads live beside the
  * feature that owns their semantics; Engine Rules owns recursive composition.
@@ -30,6 +33,7 @@ export type Condition =
  * that owns their runtime semantics.
  */
 export type Effect =
+  | CoreEffect
   | StateEffect
   | InventoryEffect
   | NarrativeEffect

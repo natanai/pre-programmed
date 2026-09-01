@@ -9,4 +9,6 @@ export const CORE_CONDITIONS = [
   { type: "state", label: "state field" },
 ] as const satisfies readonly RuleDescriptor[];
 
-export const CORE_EFFECTS = [] as const satisfies readonly RuleDescriptor[];
+export const CORE_EFFECTS = [
+  { type: "notification", label: "floating notification" },
+] as const satisfies readonly RuleDescriptor[];

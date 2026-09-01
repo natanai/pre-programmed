@@ -12,9 +12,6 @@ function usesInlineArt(assetPath: string) {
 /** Media owns the browser meaning of Media-generated effect events. */
 export const presentMediaEffectEvent: EffectEventPresenter = (event, context) => {
   switch (event.type) {
-    case "notification":
-      context.surface.notify(event.text, context.anchorLineId);
-      return true;
     case "synth": {
       const sound = context.snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);
       if (sound) void playSynthSound(sound);

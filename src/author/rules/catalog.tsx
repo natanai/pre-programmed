@@ -5,10 +5,11 @@ import {
   anyConditionAdapter,
   attemptConditionAdapter,
   notConditionAdapter,
+  notificationEffectAdapter,
   runtimeStateConditionAdapter,
 } from "./coreAdapters";
 import { hasItemConditionAdapter, lacksItemConditionAdapter, giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter } from "../../features/inventory/author/ruleAdapters";
-import { audioEffectAdapter, artEffectAdapter, notificationEffectAdapter, synthEffectAdapter } from "../../features/media/author/ruleAdapters";
+import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "../../features/media/author/ruleAdapters";
 import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "../../features/narrative/author/ruleAdapters";
 import {
   clearFlagEffectAdapter,
