@@ -117,6 +117,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
         return result;
       }}
       onClose={context.leaveCurrentTask}
+      setWorkspaceDirty={context.setWorkspaceDirty}
     />;
   },
 };
