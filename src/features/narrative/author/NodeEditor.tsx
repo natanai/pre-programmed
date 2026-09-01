@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import {
   FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE,
   FEATURE_TEXT_CUE_AUTHOR_ADAPTERS,
@@ -140,8 +141,8 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: 
 
       {screen === "context" ? <div className="node-focused-form">
         <h3>WHO / WHERE IS THIS TEXT?</h3>
-        <label>CHARACTER / SPEAKER <select value={draft.characterId ?? ""} onChange={(event) => setDraft({ ...draft, characterId: event.target.value || null })}><option value="">none</option>{snapshot.entities.filter((entity) => entity.type === "character").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label>
-        <label>LOCATION <select value={draft.locationId ?? ""} onChange={(event) => setDraft({ ...draft, locationId: event.target.value || null })}><option value="">none</option>{snapshot.entities.filter((entity) => entity.type === "location").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}</select></label>
+        <label>CHARACTER / SPEAKER <ReferenceField kind="character" value={draft.characterId ?? ""} onChange={(characterId) => setDraft({ ...draft, characterId: characterId || null })} placeholder="none" /></label>
+        <label>LOCATION <ReferenceField kind="location" value={draft.locationId ?? ""} onChange={(locationId) => setDraft({ ...draft, locationId: locationId || null })} placeholder="none" /></label>
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
       </div> : null}
 
