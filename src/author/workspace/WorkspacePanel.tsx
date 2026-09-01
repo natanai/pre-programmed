@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { fetchAuthorWorkspace, undoLastRevision } from "../../data/api";
+import { advanceProjectClocks } from "../../engine/runtime/projectClock";
 import type {
   AuthorBookmark,
   MutationOperation,
@@ -7,7 +8,6 @@ import type {
   ProjectSnapshot,
   RevisionSummary,
 } from "../../game/model";
-import { advanceTimedVariables } from "../../game/timedVariables";
 import "./workspacePanel.css";
 
 export function WorkspacePanel({ token, snapshot, playState, initialView = "locations", onSave, onSnapshot, onRestore }: {
@@ -63,7 +63,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
     try {
       const savedAt = Date.now();
       const label = note.trim();
-      const savedState = advanceTimedVariables(snapshot, playState, savedAt);
+      const savedState = advanceProjectClocks(snapshot, playState, savedAt);
       const bookmark: AuthorBookmark = {
         id: crypto.randomUUID(), nodeId: savedState.currentNodeId, traversal: savedState.traversal,
         playState: savedState, note: label, createdAt: new Date(savedAt).toISOString(),
