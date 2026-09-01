@@ -5,7 +5,11 @@ import { narrativeAuthorFeature } from "../../features/narrative/author/manifest
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import { projectAuthorFeature } from "./projectManifest";
-import type { AuthorFeatureManifest, AuthorWorkspaceContext } from "./types";
+import type {
+  AuthorFeatureManifest,
+  AuthorUnhandledInputMutation,
+  AuthorWorkspaceContext,
+} from "./types";
 import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 
 /**
@@ -28,6 +32,17 @@ export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorPan
   for (const feature of AUTHOR_FEATURES) {
     const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));
     if (shortcut) return shortcut.route;
+  }
+  return null;
+}
+
+export function resolveAuthorUnhandledInputMutation(
+  sourceNodeId: string,
+  input: string,
+): AuthorUnhandledInputMutation | null {
+  for (const feature of AUTHOR_FEATURES) {
+    const mutation = feature.buildUnhandledInputMutation?.(sourceNodeId, input);
+    if (mutation) return mutation;
   }
   return null;
 }
