@@ -399,7 +399,7 @@ function VariableEditor({ variable, snapshot, lockedValueType, onChange }: {
       <label>PER <select aria-label="Time change unit" value={variable.timeUnit ?? "second"} onChange={(event) => onChange({ ...variable, timeUnit: event.target.value as "second" | "minute" | "hour" })}><option value="second">second</option><option value="minute">minute</option><option value="hour">hour</option></select></label>
     </div> : null}
     <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => onChange({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>
-    {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => onChange({ ...variable, ...capability })} /> : null}
+    {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} targetKind="state.variable" capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => onChange({ ...variable, ...capability })} /> : null}
     <GeneratedKeyField source={variable.label} value={variable.key} onChange={(key) => onChange({ ...variable, key })} />
   </div>;
 }
@@ -410,7 +410,7 @@ function ComputedEditor({ computed, snapshot, onChange }: { computed: ComputedDe
     <label>SAFE RUNTIME SOURCE <select value={computed.source} onChange={(event) => onChange({ ...computed, source: event.target.value as ComputedDefinition["source"] })}><option value="elapsed_seconds">elapsed client-session seconds</option><option value="commands_entered">commands entered</option><option value="inventory_slots_used">inventory slots used</option><option value="visited_nodes">distinct visited nodes</option></select></label>
     <label>FORMAT <select value={computed.format} onChange={(event) => onChange({ ...computed, format: event.target.value as ComputedDefinition["format"] })}><option value="raw">raw</option><option value="integer">rounded integer</option><option value="seconds">seconds with unit</option></select></label>
     <label className="check-label"><input type="checkbox" checked={computed.showInStatus} onChange={(event) => onChange({ ...computed, showInStatus: event.target.checked })} /> show in inventory/status</label>
-    {computed.showInStatus ? <OperationHooksEditor snapshot={snapshot} capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => onChange({ ...computed, ...capability })} /> : null}
+    {computed.showInStatus ? <OperationHooksEditor snapshot={snapshot} targetKind="state.computed" capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => onChange({ ...computed, ...capability })} /> : null}
     <GeneratedKeyField source={computed.label} value={computed.key} onChange={(key) => onChange({ ...computed, key })} />
   </div>;
 }
@@ -428,6 +428,7 @@ function EntityEditor({ entity, snapshot, lockedType, onChange }: {
     <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => onChange({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
     <OperationHooksEditor
       snapshot={snapshot}
+      targetKind={(lockedType ?? entity.type) === "character" ? "world.character" : "world.location"}
       capability={{
         interactable: entity.interactable ?? false,
         operations: entity.operations ?? [],

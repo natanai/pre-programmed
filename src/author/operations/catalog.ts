@@ -3,17 +3,29 @@ import { INVENTORY_OPERATION_DEFINITIONS } from "../../features/inventory/operat
 import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
 
 /**
- * Compose module-provided operation capabilities with project-authored command
- * operation IDs. The hook editor therefore never needs a central verb list:
- * defining a command operation makes that operation available to targets.
+ * Compose module-provided operation capabilities with project-authored,
+ * targeted command operation IDs. Targetless application commands and
+ * commands aimed at another semantic target never leak into this catalog.
+ * The hook editor therefore needs neither a central verb list nor UI-level
+ * exclusions for particular commands.
  */
-export function authorOperationDefinitions(snapshot: ProjectSnapshot): readonly AuthorOperationDefinition[] {
-  const definitions: AuthorOperationDefinition[] = [
-    ...INVENTORY_OPERATION_DEFINITIONS,
-    ...snapshot.settings.commands.commands.map((command) => ({
+export function authorOperationDefinitions(
+  snapshot: ProjectSnapshot,
+  targetKind: string,
+): readonly AuthorOperationDefinition[] {
+  const authoredCommandDefinitions = snapshot.settings.commands.commands.flatMap((command) => {
+    if (!command.targetSlot) return [];
+    const targetSlot = command.slots.find((slot) => slot.name === command.targetSlot);
+    if (!targetSlot || targetSlot.sourceKind !== targetKind) return [];
+    return [{
       value: command.operation,
       label: command.label || command.operation,
-    })),
+      targetKinds: [targetSlot.sourceKind],
+    } satisfies AuthorOperationDefinition];
+  });
+  const definitions: AuthorOperationDefinition[] = [
+    ...INVENTORY_OPERATION_DEFINITIONS.filter((definition) => definition.targetKinds.includes(targetKind)),
+    ...authoredCommandDefinitions,
   ];
   const seen = new Set<string>();
   return definitions.filter((definition) => {

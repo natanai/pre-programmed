@@ -57,21 +57,23 @@ function hookSnippet(hook: OperationHook) {
   return "No response yet";
 }
 
-function operationDefinitionsFor(snapshot: ProjectSnapshot, current?: OperationId) {
-  const definitions = authorOperationDefinitions(snapshot);
+function operationDefinitionsFor(snapshot: ProjectSnapshot, targetKind: string, current?: OperationId) {
+  const definitions = authorOperationDefinitions(snapshot, targetKind);
   if (!current || definitions.some((definition) => definition.value === current)) return definitions;
-  return [...definitions, { value: current, label: current }];
+  return [...definitions, { value: current, label: current, targetKinds: [targetKind] }];
 }
 
-export function OperationHooksEditor({ capability, snapshot, onChange }: {
+export function OperationHooksEditor({ capability, snapshot, targetKind, onChange }: {
   capability: OperationCapabilityDraft;
   snapshot: ProjectSnapshot;
+  /** Semantic author target kind, e.g. inventory.item or world.character. */
+  targetKind: string;
   onChange: (capability: OperationCapabilityDraft) => void;
 }) {
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
-  const operationDefinitions = authorOperationDefinitions(snapshot);
+  const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
@@ -167,7 +169,7 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
         </> : null}
       </> : selectedHook ? <>
         <button type="button" className="operation-hook-back" onClick={back}>[{screen === "hook" ? "← BACK TO RESPONSES" : "← BACK TO RESPONSE"}]</button>
-        {screen === "hook" ? <HookWorkspace hook={selectedHook} snapshot={snapshot}
+        {screen === "hook" ? <HookWorkspace hook={selectedHook} snapshot={snapshot} targetKind={targetKind}
           onChange={(hook) => replaceHook(selectedHook.id, hook)}
           onOperationChange={(operation) => setHookOperation(selectedHook.id, operation)}
           onOpenWhen={() => setScreen("when")}
@@ -182,16 +184,17 @@ export function OperationHooksEditor({ capability, snapshot, onChange }: {
   </details>;
 }
 
-function HookWorkspace({ hook, snapshot, onChange, onOperationChange, onOpenWhen, onOpenEffects, onRemove }: {
+function HookWorkspace({ hook, snapshot, targetKind, onChange, onOperationChange, onOpenWhen, onOpenEffects, onRemove }: {
   hook: OperationHook;
   snapshot: ProjectSnapshot;
+  targetKind: string;
   onChange: (hook: OperationHook) => void;
   onOperationChange: (operation: OperationId) => void;
   onOpenWhen: () => void;
   onOpenEffects: () => void;
   onRemove: () => void;
 }) {
-  const operationDefinitions = operationDefinitionsFor(snapshot, hook.operation);
+  const operationDefinitions = operationDefinitionsFor(snapshot, targetKind, hook.operation);
   return <div className="operation-hook-workspace">
     <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value)}>
       {operationDefinitions.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
