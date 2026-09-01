@@ -1,4 +1,5 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { createDraftInteraction } from "../drafts";
 import { InteractionEditor } from "./InteractionEditor";
 import { NodeEditor } from "./NodeEditor";
 import { StructureNavigator } from "./StructureNavigator";
@@ -7,6 +8,13 @@ import { narrativeAuthorTools } from "./tools";
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
   tools: narrativeAuthorTools,
+  buildUnhandledInputMutation(sourceNodeId, input) {
+    const interaction = createDraftInteraction(sourceNodeId, input.trim());
+    return {
+      operations: [{ type: "interaction.upsert", interaction }],
+      description: `Created draft user input ${interaction.wording}`,
+    };
+  },
   renderWorkspace(route, context) {
     if (route.type === "interaction") {
       return <div className="dialogue-authoring-popover">

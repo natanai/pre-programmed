@@ -1,9 +1,10 @@
-import { INVENTORY_APPLICATION_COMMAND_CAPABILITIES } from "../inventory/applicationCommand";
-import type { ApplicationCommandCapability } from "./applicationCapability";
+import { INVENTORY_APPLICATION_COMMAND_CAPABILITIES } from "../../features/inventory/applicationCommand";
+import type { ApplicationCommandCapability } from "./capability";
 
 /**
  * Explicit composition root for targetless application capabilities.
- * New modules contribute stable operation IDs here; authored project grammar
+ *
+ * Features contribute stable operation IDs here. Authored project grammar
  * decides which player-facing words, if any, expose those capabilities.
  */
 export const APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCommandCapability[] = [

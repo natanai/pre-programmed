@@ -50,6 +50,11 @@ export type AuthorTerminalShortcut = {
   route: AuthorPanelRoute;
 };
 
+export type AuthorUnhandledInputMutation = {
+  operations: MutationOperation[];
+  description: string;
+};
+
 export type AuthorFeatureManifest = {
   /** Stable feature identifier used only by the Author composition root. */
   id: string;
@@ -59,6 +64,8 @@ export type AuthorFeatureManifest = {
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */
   terminalShortcuts?: readonly AuthorTerminalShortcut[];
+  /** Optional owner for converting an unmatched player input into an Author mutation. */
+  buildUnhandledInputMutation?: (sourceNodeId: string, input: string) => AuthorUnhandledInputMutation | null;
   /** Return a workspace for routes owned by this feature, otherwise null. */
   renderWorkspace?: (route: AuthorPanelRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };

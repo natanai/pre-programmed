@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
-import { resolveAuthorFeatureTerminalShortcut } from "./author/features/registry";
+import {
+  resolveAuthorFeatureTerminalShortcut,
+  resolveAuthorUnhandledInputMutation,
+} from "./author/features/registry";
 import {
   flushQueuedAuthorMutations,
   persistAuthorMutation,
@@ -22,6 +25,7 @@ import {
   saveCachedSnapshot,
 } from "./data/localProject";
 import { assetUrl } from "./data/assets";
+import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./engine/application/catalog";
 import {
   advanceProjectClocks,
   hasActiveProjectClock,
@@ -50,8 +54,6 @@ import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { compileTextNotation } from "./game/textNotation";
-import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./features/commands/applicationCatalog";
-import { createDraftInteraction } from "./features/narrative/drafts";
 import { AuthorInputSurface } from "./features/narrative/author/AuthorInputSurface";
 import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
 import {
@@ -496,10 +498,12 @@ export default function App() {
     setParserResult(parsed);
 
     if (!parsed.interaction && !parsed.invocation && authorMode && authorView) {
-      const interaction = createDraftInteraction(currentState.currentNodeId, value.trim());
-      setParserResult(null);
-      await persist([{ type: "interaction.upsert", interaction }], `Created draft user input ${interaction.wording}`);
-      return;
+      const mutation = resolveAuthorUnhandledInputMutation(currentState.currentNodeId, value.trim());
+      if (mutation) {
+        setParserResult(null);
+        await persist(mutation.operations, mutation.description);
+        return;
+      }
     }
 
     appendActive();

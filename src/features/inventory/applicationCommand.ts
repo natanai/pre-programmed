@@ -1,4 +1,4 @@
-import type { ApplicationCommandCapability } from "../commands/applicationCapability";
+import type { ApplicationCommandCapability } from "../../engine/application/capability";
 
 export const INVENTORY_APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCommandCapability[] = [
   {
