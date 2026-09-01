@@ -1,17 +1,15 @@
 import { useState } from "react";
 import type { Effect, ProjectSnapshot } from "../game/model";
-import type { AuthorResourceTools } from "./resources/types";
 import { EFFECT_AUTHOR_ADAPTERS, EFFECT_AUTHOR_ADAPTER_BY_TYPE } from "./rules/catalog";
 import type { EffectAuthorAdapter } from "./rules/types";
 import "./effectsEditor.css";
 
 type EffectsScreen = "list" | "choose" | "edit";
 
-export function EffectsEditor({ effects, onChange, snapshot, resources }: {
+export function EffectsEditor({ effects, onChange, snapshot }: {
   effects: Effect[];
   onChange: (effects: Effect[]) => void;
   snapshot: ProjectSnapshot;
-  resources: AuthorResourceTools;
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
@@ -77,7 +75,7 @@ export function EffectsEditor({ effects, onChange, snapshot, resources }: {
         {EFFECT_AUTHOR_ADAPTERS.map((option) => <option value={option.type} key={option.type}>{option.label}</option>)}
       </select></label>
       <div className="focused-effect-fields">
-        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot, resources })}
+        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot })}
       </div>
       <button type="button" className="effect-remove" onClick={removeSelected}>[REMOVE EFFECT]</button>
     </div>;
@@ -98,7 +96,7 @@ export function EffectsEditor({ effects, onChange, snapshot, resources }: {
             <button type="button" onClick={() => move(index, -1)} aria-label={`Move effect ${index + 1} up`}>[↑]</button>
             <button type="button" onClick={() => move(index, 1)} aria-label={`Move effect ${index + 1} down`}>[↓]</button>
           </div>
-        </div>;
+        </div> : null;
       })}
     </div> : <div className="effects-empty">No effects configured.</div>}
     <button type="button" className="effect-add" onClick={() => setScreen("choose")}>[+ EFFECT]</button>
