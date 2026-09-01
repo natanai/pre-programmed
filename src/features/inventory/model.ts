@@ -15,8 +15,8 @@ export type ItemDefinition = {
   startingQuantity: number;
   interactable: boolean;
   operations: OperationId[];
-  /** Empty means the item may equip to any authored body-slot key. */
-  equipmentSlotKeys: string[];
+  /** Empty/missing means the item may equip to any authored body-slot key. */
+  equipmentSlotKeys?: string[];
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];
@@ -53,7 +53,8 @@ export type BodyTypeDefinition = {
   id: string;
   name: string;
   assetPath: string;
-  slots: BodySlotDefinition[];
+  /** Missing only on legacy snapshots created before body slots existed. */
+  slots?: BodySlotDefinition[];
 };
 
 /** Source-compatible name retained while historical schema identifiers remain immutable. */
