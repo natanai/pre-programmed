@@ -1,5 +1,8 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { buildGraphIndex, notationForNode } from "../../../game/graph";
+import type { Interaction } from "../../../game/model";
 import { createDraftInteraction } from "../drafts";
+import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
 import { NodeEditor } from "./NodeEditor";
 import { StructureNavigator } from "./StructureNavigator";
@@ -14,6 +17,35 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       operations: [{ type: "interaction.upsert", interaction }],
       description: `Created draft user input ${interaction.wording}`,
     };
+  },
+  renderPlaySurface(context) {
+    const currentInputs = context.snapshot.interactions.filter((interaction) =>
+      interaction.sourceNodeId === context.playState.currentNodeId
+      && (interaction.matchMode ?? "command") === "command");
+    if (!currentInputs.length) return null;
+    const graph = buildGraphIndex(context.snapshot);
+    const notationForChoice = (interaction: Interaction) => {
+      if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
+      const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
+      if (!first) return "[D]";
+      if (first.disposition === "stay" || !first.destinationNodeId) return "[H]";
+      return notationForNode(
+        context.snapshot,
+        graph,
+        context.playState.currentNodeId,
+        context.playState.traversal,
+        first.destinationNodeId,
+      ).join("") || "[A1]";
+    };
+    return <AuthorInputSurface
+      choices={currentInputs}
+      onChoose={(interaction) => {
+        const input = interaction.aliases[0] || interaction.wording;
+        if (input) context.submitInput(input);
+      }}
+      notationForChoice={notationForChoice}
+      onEdit={(interaction) => context.pushPanel({ type: "interaction", interaction })}
+    />;
   },
   renderWorkspace(route, context) {
     if (route.type === "interaction") {
