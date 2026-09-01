@@ -1,6 +1,6 @@
 import type { AuthorPlatform, AuthorWorkspaceSnapshot } from "../author/authorPlatform";
 import type { ProjectSnapshot } from "../../engine/project/model";
-import { apiUrl, readJson } from "./http";
+import { ApiError, apiUrl, readJson } from "./http";
 
 export const cloudflareAuthorPlatform: AuthorPlatform = {
   async checkSession(authorization) {
@@ -26,7 +26,7 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
     });
     if (!response.ok) {
       const detail = await response.text();
-      throw Object.assign(new Error(detail || `Backup failed (${response.status}).`), { status: response.status });
+      throw new ApiError(response.status, detail || `Backup failed (${response.status}).`);
     }
     return {
       blob: await response.blob(),
