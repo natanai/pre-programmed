@@ -1,6 +1,5 @@
 import type { EffectAuthorAdapter } from "../../../author/rules/types";
 import { DefinitionSelect } from "../../../author/rules/controls";
-import { ValueMentionField } from "../../../author/ValueMentionField";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 
 function AssetEffectSelect({ kind, value, onChange }: { kind: "audio" | "art"; value: string; onChange: (value: string) => void }) {
@@ -24,18 +23,6 @@ function assetName(path: string) {
   const clean = path.replace(/^\/+/, "");
   return clean.split("/").pop() || "choose asset";
 }
-
-export const notificationEffectAdapter: EffectAuthorAdapter = {
-  type: "notification",
-  label: "floating notification",
-  create: () => ({ id: crypto.randomUUID(), type: "notification", text: "" }),
-  summarize: (effect) => effect.type === "notification"
-    ? `Notify: ${effect.text.trim() ? `“${effect.text.trim().slice(0, 48)}${effect.text.trim().length > 48 ? "..." : ""}”` : "write text"}`
-    : "Floating notification",
-  render: ({ effect, onChange, snapshot }) => effect.type === "notification"
-    ? <div className="effect-notification"><ValueMentionField snapshot={snapshot} value={effect.text} onValueChange={(text) => onChange({ ...effect, text })} placeholder="notification text" /></div>
-    : null,
-};
 
 export const synthEffectAdapter: EffectAuthorAdapter = {
   type: "synth",

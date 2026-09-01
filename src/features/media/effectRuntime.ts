@@ -1,10 +1,5 @@
 import { unchangedEffect, type EffectHandler } from "../../engine/rules/effectRuntime";
 
-const notification: EffectHandler = (effect, _snapshot, state) => {
-  if (effect.type !== "notification") return unchangedEffect(state);
-  return { state, events: [{ type: "notification", text: effect.text }] };
-};
-
 const synth: EffectHandler = (effect, _snapshot, state) => {
   if (effect.type !== "synth") return unchangedEffect(state);
   return { state, events: [{ type: "synth", synthId: effect.synthId }] };
@@ -21,7 +16,6 @@ const art: EffectHandler = (effect, _snapshot, state) => {
 };
 
 export const MEDIA_EFFECT_HANDLERS: Readonly<Record<string, EffectHandler>> = {
-  notification,
   synth,
   audio,
   art,

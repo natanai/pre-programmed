@@ -14,25 +14,25 @@ This is the durable progress ledger for making Pre-Programmed a replaceable, clo
 
 A mature feature may own project data, play state, lifecycle, conditions/effects/operations, Author UI, mutations, persistence, validation, presentation contributions, and future migrations. Explicit composition roots are encouraged.
 
-## Current completion estimate — about 77%
+## Current completion estimate — about 82%
 
 This percentage estimates progress toward the architecture/product goals above, not game completeness. The baseline at the start of this pass was about 43%.
 
 | Area | Weight | Current | Weighted |
 | --- | ---: | ---: | ---: |
-| Feature-oriented source ownership | 12% | 92% | 11.04% |
-| Runtime contribution architecture | 12% | 95% | 11.40% |
-| Author feature composition | 12% | 88% | 10.56% |
-| Responsive single-system Author shell | 12% | 45% | 5.40% |
-| Feature-owned project/play-state ownership | 14% | 75% | 10.50% |
+| Feature-oriented source ownership | 12% | 94% | 11.28% |
+| Runtime contribution architecture | 12% | 97% | 11.64% |
+| Author feature composition | 12% | 93% | 11.16% |
+| Responsive single-system Author shell | 12% | 72% | 8.64% |
+| Feature-owned project/play-state ownership | 14% | 78% | 10.92% |
 | Feature-owned mutations | 10% | 90% | 9.00% |
 | Feature persistence/restore/validation | 12% | 90% | 10.80% |
 | Feature-owned future migrations | 6% | 50% | 3.00% |
 | Clone/fork installation portability | 8% | 45% | 3.60% |
-| Boundary/deletion guardrails | 2% | 85% | 1.70% |
-| **Total** | **100%** |  | **77.00%** |
+| Boundary/deletion guardrails | 2% | 100% | 2.00% |
+| **Total** | **100%** |  | **82.04%** |
 
-The working estimate is therefore **about 77% architecture completion**. Code-side merge readiness is substantially higher than architectural completion: GitHub Actions passes dependency installation, TypeScript typecheck, the full Vitest suite, and production build. The responsive Author shell now needs real-client use, so the current branch is intended to merge as a **client-validation checkpoint**, not as a declaration that modularity or installation work is finished.
+The working estimate is therefore **about 82% architecture completion**. The architecture branch passes dependency installation, TypeScript typecheck, the full Vitest suite, and production build. The shared Author system has now also been exercised successfully on real desktop and mobile clients. Remaining Author work is primarily desktop visual polish and further breakpoint/interaction refinement rather than proving that the responsive single-system approach works.
 
 ## What changed in this pass
 
@@ -45,7 +45,8 @@ The working estimate is therefore **about 77% architecture completion**. Code-si
 - [x] Added a branch-safe GitHub Actions validation workflow that never deploys or uses production secrets.
 - [x] GitHub CI passes typecheck, the full test suite, and production build on the architecture branch.
 - [x] Optional Inventory/Media Author workspaces route through generic feature routes rather than expanding central navigation types.
-- [ ] Add true compile/build feature-deletion checks.
+- [x] Physically removed Media on a throwaway probe and passed typecheck, full tests, and build after removing only its explicit feature/composition registrations.
+- [ ] Repeat the deletion probe with a harder stateful feature such as Inventory to test the same boundary rule across more vertical-slice responsibilities.
 
 ### Project/play-state ownership
 
@@ -60,7 +61,7 @@ The working estimate is therefore **about 77% architecture completion**. Code-si
 - [x] Commands owns its project-settings defaults/normalization and Worker validation while the persisted `settings.commands` shape remains unchanged.
 - [x] Project-change reconciliation is generic at the application boundary rather than App calling Inventory lifecycle behavior directly.
 - [x] Timed State progression contributes through a generic project-clock composition root; App and saved-location UI no longer know State timer semantics.
-- [ ] Prove physical deletion of an optional feature with a build/test run.
+- [x] Proved physical deletion of the optional Media project slice with a complete CI build/test run.
 
 ### Rules, presentation, and mutations
 
@@ -69,8 +70,10 @@ The working estimate is therefore **about 77% architecture completion**. Code-si
 - [x] Feature mutation payload types moved beside Narrative, World, State, Inventory, and Media.
 - [x] Optimistic mutation application dispatches through feature-owned handlers instead of a central feature switch.
 - [x] Revision/concurrency remains core-owned.
-- [x] Media owns its effect-event payloads and browser presentation semantics for notifications, synth, audio, and art.
-- [x] Media-owned text-performance cue extensions are composed through a generic cue-event boundary instead of Narrative hardcoding Media behavior.
+- [x] Generic floating notifications are core-owned because Narrative and Operations can emit/interpolate them without Media.
+- [x] Media owns synth/audio/art effect-event payloads and browser presentation semantics.
+- [x] Media-owned text-performance cue extensions are composed through generic cue-event and Author cue-adapter boundaries instead of Narrative hardcoding Media behavior.
+- [x] Optional feature search documents enter global Author search through an explicit contribution catalog.
 - [x] Browser-only presentation composition lives outside Engine/Worker compilation.
 
 ### Worker persistence
@@ -106,10 +109,11 @@ The working estimate is therefore **about 77% architecture completion**. Code-si
 - [x] Player-facing workspaces such as Inventory are excluded from Author docking.
 - [x] Shared Author workspace runtime callbacks are generic rather than Inventory-named.
 - [x] Inventory and Media workspace navigation is feature-manifest driven.
-- [ ] Validate all major Author workspaces on the live wide desktop client.
-- [ ] Validate mobile/narrow/coarse-pointer behavior on the live client.
-- [ ] Validate breakpoint transitions, scrolling, keyboard/focus, and unsaved-change navigation in real browsers.
-- [ ] Tune dock width/hierarchy from actual use rather than creating a second UI implementation.
+- [x] Major Author workspaces were exercised successfully on the live wide desktop client.
+- [x] Mobile/narrow/coarse-pointer Author behavior was exercised successfully on a real mobile client.
+- [x] A confusing desktop terminal focus bug found during client testing was repaired by preserving input focus across the options dropdown.
+- [ ] Do a dedicated breakpoint/resizing pass with unsaved editor state across the transition threshold.
+- [ ] Tune desktop button sizing, spacing, and hierarchy based on the live-client visual feedback.
 
 ### Clone/fork portability
 
@@ -126,43 +130,41 @@ The working estimate is therefore **about 77% architecture completion**. Code-si
 - [ ] Guide or automate GitHub secret/variable setup.
 - [ ] Run the complete fresh-fork test through successful Author login/save.
 
-## Client-validation checkpoint
+## Client-validation result
 
-The architecture branch is suitable to merge to `main` for real-client testing when its final validation run is green and the PR remains mergeable. This merge is specifically intended to answer the browser questions that static validation cannot answer.
+The responsive architecture is now proven viable on real desktop and mobile clients. The live pass confirmed that the same Author workspaces remain usable in both presentations and that ordinary author/save/play flows work. The primary remaining desktop feedback is visual: button sizing and spacing are inconsistent in places, but no major workspace was unusable.
 
-The live test should focus on:
+The client pass also exposed one terminal-focus mismatch: closing the command-options dropdown visually left the custom underscore caret in place while browser focus remained on the toggle. That has been fixed and re-tested successfully.
 
-1. desktop Author docking and simultaneous play/authoring;
-2. mobile Author continuity and full-screen workspace behavior;
-3. breakpoint/resizing behavior without switching to a second Author implementation;
-4. scroll, focus, keyboard, Back/X, and unsaved-change behavior;
-5. feature workspaces such as Inventory, Assets, Sound, State/Definitions, Structure, History, Nodes, and Interactions;
-6. save/reload persistence and continued play after authored changes;
-7. obvious performance regressions, layout jumps, or lost input state.
+## Remaining architecture work
 
-## Remaining architecture work after client validation
+### 1. Repeat deletion testing with a harder feature
 
-### 1. Use client feedback to finish the responsive Author shell
-
-Browser validation is now a product-development input rather than a reason to keep the code isolated indefinitely. Desktop/mobile findings should be fixed in the shared presentation layer and shared workspace components, not by creating separate implementations.
+Media is now a proven deletion case. Inventory is the next useful stress test because it spans project data, play state, reconciliation, conditions/effects, operations, Author UI, persistence, validation, and search. Any failures there will expose a broader class of residual coupling than Media could.
 
 ### 2. Continue reducing `App.tsx`
 
-`App.tsx` remains the main frontend pressure point. Media presentation, State timing, Inventory project-change reconciliation, and Inventory-specific workspace callbacks have been removed from its responsibilities, but session loading, runtime presentation, Author session behavior, and Narrative/Commands application orchestration still meet there.
+`App.tsx` remains the main frontend pressure point. Media presentation, State timing, Inventory project-change reconciliation, Inventory-specific workspace callbacks, and Media terminal shortcuts have been removed from its responsibilities, but session loading, runtime presentation, Author session behavior, and Narrative/Commands application orchestration still meet there.
 
-### 3. Installation bootstrap remains transitional
+### 3. Finish responsive Author visual polish
+
+The shared desktop/mobile implementation works. Next UI work should normalize desktop button sizing/spacing and test breakpoint transitions without introducing a second desktop implementation.
+
+### 4. Installation bootstrap remains transitional
 
 A new developer has a much clearer supported path now, but setup is not yet “connect Cloudflare and everything is verified automatically.”
 
-### 4. Run an actual feature-deletion build
+## Feature-deletion acceptance test
 
-The acceptance standard remains:
+The acceptance standard is now exercised in CI:
 
 1. remove an optional feature implementation;
 2. remove only its explicit registrations/composition entries;
 3. do not repair unrelated feature internals;
-4. build/typecheck still passes;
-5. a project not using that feature still boots and plays.
+4. typecheck, full tests, and build still pass;
+5. shared application code does not retain dead feature-specific entry points.
+
+Media passes this standard. Inventory is the next stress test.
 
 ## Author authenticity test
 
@@ -185,6 +187,18 @@ A new developer should be able to:
 5. author a distinct complete game without editing application source for ordinary content.
 
 ## Change log
+
+### 2026-09-01 — client validation and physical feature-deletion pass
+
+- Exercised the shared Author system successfully on real desktop and mobile clients.
+- Fixed and re-tested desktop terminal focus preservation when toggling available command options.
+- Ran a real physical Media deletion probe instead of relying on static architecture inspection.
+- The first probe exposed hidden Media coupling in notification ownership, global search, Narrative cue authoring, and an omitted Author rule catalog registration.
+- Corrected notification to core ownership while keeping synth/audio/art in Media.
+- Added feature-contributed global search documents and feature-contributed advanced text-cue Author controls.
+- Moved `/assets` and `/sounds` Author aliases out of App and into the Media feature manifest.
+- Re-ran physical deletion with Narrative, Operations, global search, NodeEditor, and App left untouched; typecheck, full tests, and build all passed.
+- Advanced the working estimate to about **82% architecture completion**.
 
 ### 2026-08-31 — architecture and client-validation pass on `modular-engine-author-suite`
 

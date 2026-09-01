@@ -3,7 +3,6 @@ import type { RuleDescriptor } from "../../engine/rules/descriptor";
 export const MEDIA_CONDITIONS = [] as const satisfies readonly RuleDescriptor[];
 
 export const MEDIA_EFFECTS = [
-  { type: "notification", label: "floating notification" },
   { type: "synth", label: "play synth" },
   { type: "audio", label: "play repo audio" },
   { type: "art", label: "show sprite/art" },

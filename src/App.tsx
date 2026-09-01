@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
+import { resolveAuthorFeatureTerminalShortcut } from "./author/features/registry";
 import {
   flushQueuedAuthorMutations,
   persistAuthorMutation,
@@ -482,8 +483,10 @@ export default function App() {
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
     if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
     if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
-    if (authorMode && authorView && ["/assets", "assets"].includes(normalized)) { setPanel({ type: "feature", feature: "media", workspace: "assets" }); return; }
-    if (authorMode && authorView && ["/sounds", "sounds"].includes(normalized)) { setPanel({ type: "feature", feature: "media", workspace: "synth" }); return; }
+    if (authorMode && authorView) {
+      const featureShortcut = resolveAuthorFeatureTerminalShortcut(normalized);
+      if (featureShortcut) { setPanel(featureShortcut); return; }
+    }
     if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
     if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 

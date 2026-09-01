@@ -1,23 +1,17 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
 import { normalizeCommand } from "../../features/narrative/parser";
+import { AUTHOR_SEARCH_DOCUMENT_CONTRIBUTIONS } from "./searchCatalog";
+import type { SearchDocument, SearchKind } from "./types";
 
-export type SearchKind = "node" | "interaction" | "character" | "location" | "item" | "variable" | "computed" | "synth";
-
-export type SearchDocument = {
-  id: string;
-  kind: SearchKind;
-  label: string;
-  searchText: string;
-  nodeId?: string;
-};
+export type { SearchDocument, SearchKind } from "./types";
 
 export type SearchResult = SearchDocument & {
   score: number;
   notation: string[];
 };
 
-/** Cross-feature Author search index; no single gameplay feature owns it. */
+/** Cross-feature Author search index; optional feature documents enter through contributions. */
 export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
   return [
     ...snapshot.nodes.map((node) => {
@@ -91,12 +85,7 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
       label: definition.label,
       searchText: `${definition.key} ${definition.label} ${definition.source}`,
     })),
-    ...snapshot.synthSounds.map((sound) => ({
-      id: sound.id,
-      kind: "synth" as const,
-      label: sound.label,
-      searchText: `${sound.key} ${sound.label}`,
-    })),
+    ...AUTHOR_SEARCH_DOCUMENT_CONTRIBUTIONS.flatMap((contribution) => contribution(snapshot)),
   ];
 }
 
