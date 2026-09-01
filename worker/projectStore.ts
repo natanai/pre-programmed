@@ -11,21 +11,13 @@ import type {
   ProjectMutation,
   ProjectSnapshot,
   RevisionSummary,
-  SynthSound,
   VariableDefinition,
 } from "../src/game/model";
+import { parseJson } from "./db/json";
 import { ensureSchema } from "./db/migrations";
+import { WORKER_FEATURE_PERSISTENCE } from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
-
-function parseJson<T>(value: string | null | undefined, fallback: T): T {
-  if (!value) return fallback;
-  try {
-    return JSON.parse(value) as T;
-  } catch {
-    return fallback;
-  }
-}
 
 function groupRows<T>(rows: T[], key: (row: T) => string) {
   const groups = new Map<string, T[]>();
@@ -134,11 +126,10 @@ type HookRow = {
   effects_json: string;
   success: number;
 };
-type SynthRow = { id: string; key: string; label: string; recipe_json: string };
 
 export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapshot> {
   await ensureSchema(db);
-  const [meta, settings, nodes, interactions, aliases, outcomes, entities, variables, computed, items, hooks, synths, revision] =
+  const [meta, settings, nodes, interactions, aliases, outcomes, entities, variables, computed, items, hooks, featureSlices, revision] =
     await Promise.all([
       db.prepare("SELECT schema_version, start_node_id FROM project_meta WHERE id = 1")
         .first<{ schema_version: number; start_node_id: string }>(),
@@ -179,7 +170,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         `SELECT id, target_kind, target_id, operation, order_index, condition_json, response_text,
                 effects_json, success FROM operation_hooks ORDER BY target_kind, target_id, operation, order_index, id`,
       ).all<HookRow>(),
-      db.prepare("SELECT id, key, label, recipe_json FROM synth_sounds ORDER BY key").all<SynthRow>(),
+      Promise.all(WORKER_FEATURE_PERSISTENCE.map((feature) => feature.load(db))),
       currentRevision(db),
     ]);
 
@@ -196,6 +187,7 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
     effects: parseJson(hook.effects_json, []),
     success: Boolean(hook.success),
   }));
+  const contributedProject = Object.assign({}, ...featureSlices) as Partial<ProjectSnapshot>;
 
   return {
     schemaVersion: Math.max(12, meta.schema_version),
@@ -297,17 +289,8 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       initialState: parseJson(row.initial_state_json, {}),
       hooks: hooksFor("item", row.id),
     })),
-    synthSounds: synths.results.map((row): SynthSound => ({
-      ...parseJson<Omit<SynthSound, "id" | "key" | "label">>(row.recipe_json, {
-        tempo: 120,
-        loop: false,
-        voices: [],
-      }),
-      id: row.id,
-      key: row.key,
-      label: row.label,
-    })),
-  };
+    ...contributedProject,
+  } as ProjectSnapshot;
 }
 
 export async function getBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
@@ -351,6 +334,11 @@ function hookStatements(
 }
 
 function operationStatements(db: D1Database, operation: MutationOperation): D1PreparedStatement[] {
+  for (const feature of WORKER_FEATURE_PERSISTENCE) {
+    const statements = feature.mutationStatements(db, operation);
+    if (statements) return statements;
+  }
+
   switch (operation.type) {
     case "project.settings":
       return projectSettingsStatements(db, operation.settings);
@@ -501,16 +489,6 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
         ...hookStatements(db, "item", item.id, item.hooks),
       ];
     }
-    case "synth.upsert": {
-      const sound = operation.sound;
-      const { id: _id, key: _key, label: _label, ...recipe } = sound;
-      return [db.prepare(
-        `INSERT INTO synth_sounds (id, key, label, recipe_json, updated_at)
-         VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(id) DO UPDATE SET key=excluded.key, label=excluded.label,
-           recipe_json=excluded.recipe_json, updated_at=CURRENT_TIMESTAMP`,
-      ).bind(sound.id, sound.key, sound.label, JSON.stringify(recipe))];
-    }
     case "bookmark.upsert": {
       const bookmark = operation.bookmark;
       return [db.prepare(
@@ -522,6 +500,8 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
     }
     case "bookmark.delete":
       return [db.prepare("DELETE FROM bookmarks WHERE id = ?").bind(operation.id)];
+    default:
+      return [];
   }
 }
 
@@ -555,13 +535,13 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
     "DELETE FROM item_definitions",
     "DELETE FROM variable_definitions",
     "DELETE FROM computed_definitions",
-    "DELETE FROM synth_sounds",
     "DELETE FROM bookmarks",
     "DELETE FROM node_context",
     "DELETE FROM node_details",
     "DELETE FROM nodes WHERE id <> (SELECT start_node_id FROM project_meta WHERE id = 1)",
     "DELETE FROM entity_definitions",
   ].map((sql) => db.prepare(sql));
+  const featureDeletes = WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.resetStatements(db));
   const operations: MutationOperation[] = [
     { type: "project.settings", settings: snapshot.settings },
     ...snapshot.entities.map((entity) => ({ type: "entity.upsert" as const, entity })),
@@ -570,10 +550,10 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
     ...snapshot.variables.map((definition) => ({ type: "variable.upsert" as const, definition })),
     ...snapshot.computedValues.map((definition) => ({ type: "computed.upsert" as const, definition })),
     ...snapshot.items.map((item) => ({ type: "item.upsert" as const, item })),
-    ...snapshot.synthSounds.map((sound) => ({ type: "synth.upsert" as const, sound })),
     ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
+    ...WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.restoreOperations(snapshot)),
   ];
-  return [...deletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
+  return [...deletes, ...featureDeletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
 }
 
 export async function undo(db: D1Database, expectedRevision: number) {
