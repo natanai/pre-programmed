@@ -7,13 +7,13 @@ import type {
   ProjectSnapshot,
 } from "../../game/model";
 import type { AuthorPersistResult } from "../persistence/authorProjectPersistence";
+import type { AuthorResourceProvider, AuthorResourceTools } from "../resources/types";
+import type { AuthorTaskCompletion, AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorToolContributor } from "../tools/types";
-import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 
 export type AuthorPersist = (
   operations: MutationOperation[],
   description: string,
-  closeAfterSave?: boolean,
 ) => Promise<AuthorPersistResult>;
 
 /** Runtime presentation capabilities available to any feature workspace. */
@@ -24,14 +24,17 @@ export type AuthorRuntimeSurface = {
 };
 
 export type AuthorWorkspaceContext = {
+  taskId: string;
   snapshot: ProjectSnapshot;
   playState: PlayState;
   authorMode: boolean;
   authorToken: string;
   persist: AuthorPersist;
-  leaveCurrentSurface: () => void;
+  completeTask: (result?: AuthorTaskResult) => void;
+  leaveCurrentTask: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
-  pushPanel: (route: AuthorPanelRoute) => void;
+  pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
+  resources: AuthorResourceTools;
   runtime: AuthorRuntimeSurface;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
   onRestore: (bookmark: AuthorBookmark) => void;
@@ -41,7 +44,7 @@ export type AuthorWorkspaceContext = {
 export type AuthorPlaySurfaceContext = {
   snapshot: ProjectSnapshot;
   playState: PlayState;
-  pushPanel: (route: AuthorPanelRoute) => void;
+  pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
   submitInput: (input: string) => void;
 };
 
@@ -55,7 +58,7 @@ export type AuthorProjectSettingsSection = {
 
 export type AuthorTerminalShortcut = {
   commands: readonly string[];
-  route: AuthorPanelRoute;
+  route: AuthorTaskRoute;
 };
 
 export type AuthorUnhandledInputMutation = {
@@ -68,6 +71,8 @@ export type AuthorFeatureManifest = {
   id: string;
   /** Optional navigation contributions for the Author tool index. */
   tools?: AuthorToolContributor;
+  /** Resources this feature owns and can create/edit from reference fields. */
+  resources?: readonly AuthorResourceProvider[];
   /** Optional advanced project settings owned by this module. */
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */
@@ -77,5 +82,5 @@ export type AuthorFeatureManifest = {
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
   /** Return a workspace for routes owned by this feature, otherwise null. */
-  renderWorkspace?: (route: AuthorPanelRoute, context: AuthorWorkspaceContext) => ReactNode | null;
+  renderWorkspace?: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };
