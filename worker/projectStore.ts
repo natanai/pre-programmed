@@ -4,7 +4,6 @@ import type {
   EntityDefinition,
   GameNode,
   Interaction,
-  ItemDefinition,
   MutationOperation,
   OperationHook,
   OperationId,
@@ -98,23 +97,6 @@ type ComputedRow = {
   operation_interactable: number;
   operations_json: string;
 };
-type ItemRow = {
-  id: string;
-  key: string;
-  name: string;
-  description: string;
-  asset_path: string;
-  width: number;
-  height: number;
-  stackable: number;
-  max_stack: number;
-  removable: number;
-  starting_quantity: number;
-  operation_interactable: number;
-  operations_json: string;
-  tags_json: string;
-  initial_state_json: string;
-};
 type HookRow = {
   id: string;
   target_kind: string;
@@ -129,7 +111,7 @@ type HookRow = {
 
 export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapshot> {
   await ensureSchema(db);
-  const [meta, settings, nodes, interactions, aliases, outcomes, entities, variables, computed, items, hooks, featureSlices, revision] =
+  const [meta, settings, nodes, interactions, aliases, outcomes, entities, variables, computed, hooks, featureSlices, revision] =
     await Promise.all([
       db.prepare("SELECT schema_version, start_node_id FROM project_meta WHERE id = 1")
         .first<{ schema_version: number; start_node_id: string }>(),
@@ -161,14 +143,10 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
         "SELECT id, key, label, source, format, show_in_status, operation_interactable, operations_json FROM computed_definitions ORDER BY key",
       ).all<ComputedRow>(),
       db.prepare(
-        `SELECT id, key, name, description, asset_path, width, height, stackable,
-                max_stack, removable, starting_quantity, operation_interactable, operations_json,
-                tags_json, initial_state_json
-           FROM item_definitions ORDER BY key`,
-      ).all<ItemRow>(),
-      db.prepare(
         `SELECT id, target_kind, target_id, operation, order_index, condition_json, response_text,
-                effects_json, success FROM operation_hooks ORDER BY target_kind, target_id, operation, order_index, id`,
+                effects_json, success FROM operation_hooks
+          WHERE target_kind <> 'item'
+          ORDER BY target_kind, target_id, operation, order_index, id`,
       ).all<HookRow>(),
       Promise.all(WORKER_FEATURE_PERSISTENCE.map((feature) => feature.load(db))),
       currentRevision(db),
@@ -270,24 +248,6 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
       interactable: Boolean(row.operation_interactable),
       operations: parseJson(row.operations_json, []),
       hooks: hooksFor("computed", row.id),
-    })),
-    items: items.results.map((row): ItemDefinition => ({
-      id: row.id,
-      key: row.key,
-      name: row.name,
-      description: row.description,
-      assetPath: row.asset_path,
-      width: row.width,
-      height: row.height,
-      stackable: Boolean(row.stackable),
-      maxStack: row.max_stack,
-      removable: Boolean(row.removable),
-      startingQuantity: row.starting_quantity,
-      interactable: Boolean(row.operation_interactable),
-      operations: parseJson(row.operations_json, ["inspect", "use", "move", "remove"]),
-      tags: parseJson(row.tags_json, []),
-      initialState: parseJson(row.initial_state_json, {}),
-      hooks: hooksFor("item", row.id),
     })),
     ...contributedProject,
   } as ProjectSnapshot;
@@ -464,31 +424,6 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
         Number(value.interactable ?? false), JSON.stringify(value.operations ?? []),
       ), ...hookStatements(db, "computed", value.id, value.hooks)];
     }
-    case "item.upsert": {
-      const item = operation.item;
-      return [
-        db.prepare(
-          `INSERT INTO item_definitions
-           (id, key, name, description, asset_path, width, height, stackable, max_stack,
-            removable, starting_quantity, operation_interactable, operations_json,
-            tags_json, initial_state_json, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(id) DO UPDATE SET key=excluded.key, name=excluded.name,
-             description=excluded.description, asset_path=excluded.asset_path, width=excluded.width,
-             height=excluded.height, stackable=excluded.stackable, max_stack=excluded.max_stack,
-             removable=excluded.removable, starting_quantity=excluded.starting_quantity,
-             operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
-             tags_json=excluded.tags_json,
-             initial_state_json=excluded.initial_state_json, updated_at=CURRENT_TIMESTAMP`,
-        ).bind(
-          item.id, item.key, item.name, item.description, item.assetPath, item.width, item.height,
-          Number(item.stackable), item.maxStack, Number(item.removable), item.startingQuantity ?? 0,
-          Number(item.interactable ?? true), JSON.stringify(item.operations ?? ["inspect", "use", "move", "remove"]),
-          JSON.stringify(item.tags), JSON.stringify(item.initialState),
-        ),
-        ...hookStatements(db, "item", item.id, item.hooks),
-      ];
-    }
     case "bookmark.upsert": {
       const bookmark = operation.bookmark;
       return [db.prepare(
@@ -531,8 +466,7 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
     "DELETE FROM interaction_aliases",
     "DELETE FROM interaction_outcomes",
     "DELETE FROM interactions",
-    "DELETE FROM operation_hooks",
-    "DELETE FROM item_definitions",
+    "DELETE FROM operation_hooks WHERE target_kind <> 'item'",
     "DELETE FROM variable_definitions",
     "DELETE FROM computed_definitions",
     "DELETE FROM bookmarks",
@@ -549,7 +483,6 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
     ...snapshot.interactions.map((interaction) => ({ type: "interaction.upsert" as const, interaction })),
     ...snapshot.variables.map((definition) => ({ type: "variable.upsert" as const, definition })),
     ...snapshot.computedValues.map((definition) => ({ type: "computed.upsert" as const, definition })),
-    ...snapshot.items.map((item) => ({ type: "item.upsert" as const, item })),
     ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
     ...WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.restoreOperations(snapshot)),
   ];
