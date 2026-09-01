@@ -1,7 +1,5 @@
-import {
-  EMPTY_COMMAND_PROJECT_SETTINGS,
-  type CommandProjectSettings,
-} from "../../features/commands/model";
+import { DEFAULT_COMMAND_PROJECT_SETTINGS } from "../../features/commands/defaultCatalog";
+import type { CommandProjectSettings } from "../../features/commands/model";
 import type { ProjectSnapshot } from "./model";
 
 export type ProjectSettings = {
@@ -13,7 +11,7 @@ export type ProjectSettings = {
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   terminalPrompt: "U:\\>",
-  commands: structuredClone(EMPTY_COMMAND_PROJECT_SETTINGS),
+  commands: structuredClone(DEFAULT_COMMAND_PROJECT_SETTINGS),
 };
 
 function stringArray(value: unknown) {
@@ -24,10 +22,15 @@ function stringArray(value: unknown) {
  * Read old/partial persisted settings without requiring a data migration for
  * every future optional setting. Unknown feature configuration is ignored by
  * this version rather than becoming runtime behavior accidentally.
+ *
+ * A project that predates Commands entirely receives the feature-contributed
+ * starter grammar. Once a `commands` object exists, even an intentionally empty
+ * one, it is treated as explicit author data and is never silently repaired.
  */
 export function normalizeProjectSettings(value: unknown): ProjectSettings {
   const root = value && typeof value === "object" ? value as Record<string, unknown> : {};
-  const commandsValue = root.commands && typeof root.commands === "object"
+  const hasCommands = Boolean(root.commands && typeof root.commands === "object");
+  const commandsValue = hasCommands
     ? root.commands as Record<string, unknown>
     : {};
 
@@ -78,7 +81,9 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
     terminalPrompt: typeof root.terminalPrompt === "string" && root.terminalPrompt.trim()
       ? root.terminalPrompt.slice(0, 32)
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
-    commands: { referenceSources, commands },
+    commands: hasCommands
+      ? { referenceSources, commands }
+      : structuredClone(DEFAULT_PROJECT_SETTINGS.commands),
   };
 }
 
