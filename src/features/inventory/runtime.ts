@@ -8,6 +8,11 @@ function itemForEntry(snapshot: ProjectSnapshot, entry: InventoryEntry) {
   return snapshot.items.find((item) => item.id === entry.itemId);
 }
 
+export function entryOccupiesInventoryGrid(snapshot: ProjectSnapshot, entry: InventoryEntry) {
+  const item = itemForEntry(snapshot, entry);
+  return !entry.equippedSlotKey || item?.equippedStorage !== "slot";
+}
+
 export function activeBodyType(snapshot: ProjectSnapshot, state: PlayState) {
   return (snapshot.bodyBackgrounds ?? []).find((bodyType) => bodyType.id === state.bodyBackgroundId);
 }
@@ -35,21 +40,43 @@ export function equipInventoryEntry(
   const item = snapshot.items.find((candidate) => candidate.id === entry?.itemId);
   const slot = activeBodySlots(snapshot, state).find((candidate) => candidate.key === slotKey);
   if (!entry || !item || !slot || !itemCanEquipToSlot(item, slot)) return state;
-  return {
-    ...state,
-    inventory: state.inventory.map((candidate) => {
-      if (candidate.instanceId === instanceId) return { ...candidate, equippedSlotKey: slot.key };
-      if (candidate.equippedSlotKey === slot.key) return { ...candidate, equippedSlotKey: null };
-      return candidate;
-    }),
-  };
+  const displaced = state.inventory.find((candidate) => candidate.instanceId !== instanceId && candidate.equippedSlotKey === slot.key);
+  let inventory = state.inventory.map((candidate) => candidate.instanceId === instanceId
+    ? { ...candidate, equippedSlotKey: slot.key }
+    : candidate);
+
+  if (displaced) {
+    const displacedItem = itemForEntry(snapshot, displaced);
+    if (!displacedItem) return state;
+    let placement = { x: displaced.x, y: displaced.y };
+    if (!canPlaceItem(snapshot, inventory, displacedItem, placement.x, placement.y, displaced.instanceId)) {
+      const fallbackPlacement = findFirstPlacementInEntries(snapshot, inventory, displacedItem);
+      if (!fallbackPlacement) return state;
+      placement = fallbackPlacement;
+    }
+    inventory = inventory.map((candidate) => candidate.instanceId === displaced.instanceId
+      ? { ...candidate, ...placement, equippedSlotKey: null }
+      : candidate);
+  }
+
+  return { ...state, inventory };
 }
 
-export function unequipInventoryEntry(state: PlayState, instanceId: string): PlayState {
+export function unequipInventoryEntry(snapshot: ProjectSnapshot, state: PlayState, instanceId: string): PlayState {
+  const entry = state.inventory.find((candidate) => candidate.instanceId === instanceId);
+  if (!entry?.equippedSlotKey) return state;
+  const item = itemForEntry(snapshot, entry);
+  if (!item) return state;
+  let placement = { x: entry.x, y: entry.y };
+  if (!canPlaceItem(snapshot, state.inventory, item, placement.x, placement.y, entry.instanceId)) {
+    const fallbackPlacement = findFirstPlacementInEntries(snapshot, state.inventory, item);
+    if (!fallbackPlacement) return state;
+    placement = fallbackPlacement;
+  }
   return {
     ...state,
     inventory: state.inventory.map((candidate) => candidate.instanceId === instanceId
-      ? { ...candidate, equippedSlotKey: null }
+      ? { ...candidate, ...placement, equippedSlotKey: null }
       : candidate),
   };
 }
@@ -57,12 +84,22 @@ export function unequipInventoryEntry(state: PlayState, instanceId: string): Pla
 /** Remove equipment assignments whose stable slot key no longer exists on the current body type. */
 export function reconcileEquippedItems(snapshot: ProjectSnapshot, state: PlayState): PlayState {
   const slotKeys = new Set(activeBodySlots(snapshot, state).map((slot) => slot.key));
-  return {
-    ...state,
-    inventory: (state.inventory ?? []).map((entry) => entry.equippedSlotKey && !slotKeys.has(entry.equippedSlotKey)
-      ? { ...entry, equippedSlotKey: null }
-      : entry),
-  };
+  let nextState = state;
+  for (const entry of state.inventory ?? []) {
+    if (entry.equippedSlotKey && !slotKeys.has(entry.equippedSlotKey)) {
+      nextState = unequipInventoryEntry(snapshot, nextState, entry.instanceId);
+    }
+  }
+  return nextState;
+}
+
+/** Change body type atomically; refuse if displaced slot-carried items cannot return to the grid. */
+export function setActiveBodyType(snapshot: ProjectSnapshot, state: PlayState, bodyTypeId: string | null): PlayState {
+  if (bodyTypeId && !(snapshot.bodyBackgrounds ?? []).some((bodyType) => bodyType.id === bodyTypeId)) return state;
+  const candidate = reconcileEquippedItems(snapshot, { ...state, bodyBackgroundId: bodyTypeId });
+  const validSlotKeys = new Set(activeBodySlots(snapshot, candidate).map((slot) => slot.key));
+  const hasInvalidEquipment = candidate.inventory.some((entry) => entry.equippedSlotKey && !validSlotKeys.has(entry.equippedSlotKey));
+  return hasInvalidEquipment ? state : candidate;
 }
 
 export function occupiedCells(
@@ -73,6 +110,7 @@ export function occupiedCells(
   const occupied = new Set<string>();
   for (const entry of entries) {
     if (entry.instanceId === ignoreInstanceId) continue;
+    if (!entryOccupiesInventoryGrid(snapshot, entry)) continue;
     const item = itemForEntry(snapshot, entry);
     if (!item) continue;
     for (let y = entry.y; y < entry.y + item.height; y += 1) {
@@ -103,9 +141,13 @@ export function canPlaceItem(
 }
 
 export function findFirstPlacement(snapshot: ProjectSnapshot, state: PlayState, item: ItemDefinition) {
+  return findFirstPlacementInEntries(snapshot, state.inventory, item);
+}
+
+function findFirstPlacementInEntries(snapshot: ProjectSnapshot, entries: InventoryEntry[], item: ItemDefinition) {
   for (let y = 0; y < INVENTORY_ROWS; y += 1) {
     for (let x = 0; x < INVENTORY_COLUMNS; x += 1) {
-      if (canPlaceItem(snapshot, state.inventory, item, x, y)) return { x, y };
+      if (canPlaceItem(snapshot, entries, item, x, y)) return { x, y };
     }
   }
   return null;
@@ -124,7 +166,7 @@ export function addInventoryItem(
 
   if (item.stackable) {
     for (const entry of inventory) {
-      if (entry.itemId !== item.id || entry.quantity >= item.maxStack) continue;
+      if (entry.itemId !== item.id || entry.equippedSlotKey || entry.quantity >= item.maxStack) continue;
       const accepted = Math.min(remaining, item.maxStack - entry.quantity);
       entry.quantity += accepted;
       remaining -= accepted;
@@ -148,6 +190,42 @@ export function addInventoryItem(
     remaining -= accepted;
   }
   return { ...state, inventory };
+}
+
+export function createStartingInventory(snapshot: ProjectSnapshot, state: PlayState): PlayState {
+  const bodyType = activeBodyType(snapshot, state);
+  const remaining = new Map(snapshot.items.map((item) => [item.id, Math.max(0, item.startingQuantity ?? 0)]));
+  let nextState = { ...state, inventory: [] as InventoryEntry[] };
+  const occupiedSlots = new Set<string>();
+
+  for (const assignment of bodyType?.startingEquipment ?? []) {
+    const item = snapshot.items.find((candidate) => candidate.id === assignment.itemId);
+    const slot = bodyType?.slots?.find((candidate) => candidate.key === assignment.slotKey);
+    const available = remaining.get(assignment.itemId) ?? 0;
+    if (!item || !slot || available < 1 || occupiedSlots.has(slot.key) || !itemCanEquipToSlot(item, slot)) continue;
+    const placement = item.equippedStorage === "slot"
+      ? { x: 0, y: 0 }
+      : findFirstPlacement(snapshot, nextState, item);
+    if (!placement) continue;
+    nextState = {
+      ...nextState,
+      inventory: [...nextState.inventory, {
+        instanceId: crypto.randomUUID(),
+        itemId: item.id,
+        quantity: 1,
+        ...placement,
+        equippedSlotKey: slot.key,
+        state: { ...item.initialState },
+      }],
+    };
+    remaining.set(item.id, available - 1);
+    occupiedSlots.add(slot.key);
+  }
+
+  for (const item of snapshot.items) {
+    nextState = addInventoryItem(snapshot, nextState, item.id, remaining.get(item.id) ?? 0);
+  }
+  return nextState;
 }
 
 export function addNewDefaultItemsToPlayState(

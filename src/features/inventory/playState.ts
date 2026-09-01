@@ -1,5 +1,5 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { addInventoryItem, addNewDefaultItemsToPlayState, reconcileEquippedItems } from "./runtime";
+import { addNewDefaultItemsToPlayState, createStartingInventory, reconcileEquippedItems } from "./runtime";
 
 function bodyTypes(snapshot: ProjectSnapshot) {
   return snapshot.bodyBackgrounds ?? [];
@@ -16,10 +16,7 @@ export function initializeInventoryPlayState(snapshot: ProjectSnapshot, state: P
     inventory: [],
     bodyBackgroundId: validStartingBodyTypeId(snapshot),
   };
-  for (const item of snapshot.items) {
-    nextState = addInventoryItem(snapshot, nextState, item.id, item.startingQuantity ?? 0);
-  }
-  return reconcileEquippedItems(snapshot, nextState);
+  return reconcileEquippedItems(snapshot, createStartingInventory(snapshot, nextState));
 }
 
 /** Normalize Inventory state loaded from older bookmarks/saves or changed project data. */

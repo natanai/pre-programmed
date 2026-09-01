@@ -17,9 +17,16 @@ export type ItemDefinition = {
   operations: OperationId[];
   /** Empty/missing means the item may equip to any authored body-slot key. */
   equipmentSlotKeys?: string[];
+  /** Whether an equipped instance still occupies the inventory grid. */
+  equippedStorage?: "inventory" | "slot";
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];
+};
+
+export type StartingEquipmentDefinition = {
+  slotKey: string;
+  itemId: string;
 };
 
 export type InventoryEntry = {
@@ -55,6 +62,8 @@ export type BodyTypeDefinition = {
   assetPath: string;
   /** Missing only on legacy snapshots created before body slots existed. */
   slots?: BodySlotDefinition[];
+  /** Equipment drawn from authored starting quantities for a new playthrough. */
+  startingEquipment?: StartingEquipmentDefinition[];
 };
 
 /** Source-compatible name retained while historical schema identifiers remain immutable. */

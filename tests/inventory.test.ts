@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { addInventoryItem, canPlaceItem } from "../src/game/inventory";
+import { addInventoryItem, canPlaceItem, entryOccupiesInventoryGrid } from "../src/game/inventory";
 import { createEmptyPlayState, reconcilePlayStateAfterProjectChange, type ItemDefinition } from "../src/game/model";
 import { attemptOperation, executeOperation, formatOperationOutput } from "../src/game/operations";
 import { project } from "./fixtures";
@@ -60,5 +60,101 @@ describe("inventory engine", () => {
     const tapResult = attemptOperation(snapshot, state, request);
     expect(dragResult.state.inventory[0]).toMatchObject({ x: 3, y: 2 });
     expect(tapResult.state.inventory[0]).toMatchObject({ x: 3, y: 2 });
+  });
+
+  it("starts with the authored body type and equips loadout instances from starting quantity", () => {
+    const wearable: ItemDefinition = {
+      ...item,
+      id: "glove",
+      key: "glove",
+      name: "Glove",
+      startingQuantity: 2,
+      operations: ["inspect", "equip", "unequip"],
+      equipmentSlotKeys: ["hand"],
+      equippedStorage: "slot",
+    };
+    const loadoutSnapshot = project({
+      items: [wearable],
+      startingBodyBackgroundId: "adult",
+      bodyBackgrounds: [{
+        id: "adult",
+        name: "Adult",
+        assetPath: "",
+        slots: [{ id: "hand-slot", key: "hand", name: "Hand", x: 10, y: 10, width: 20, height: 20 }],
+        startingEquipment: [{ slotKey: "hand", itemId: wearable.id }],
+      }],
+    });
+
+    const state = createEmptyPlayState(loadoutSnapshot);
+    expect(state.bodyBackgroundId).toBe("adult");
+    expect(state.inventory).toHaveLength(2);
+    expect(state.inventory.reduce((total, entry) => total + entry.quantity, 0)).toBe(2);
+    expect(state.inventory.filter((entry) => entry.equippedSlotKey === "hand")).toHaveLength(1);
+  });
+
+  it("lets slot-carried equipment free grid capacity and refuses unsafe unequip", () => {
+    const wearable: ItemDefinition = {
+      ...item,
+      id: "cyber-leg",
+      key: "cyber_leg",
+      name: "Cyber Leg",
+      width: 1,
+      height: 1,
+      startingQuantity: 1,
+      operations: ["inspect", "equip", "unequip"],
+      equipmentSlotKeys: ["leg"],
+      equippedStorage: "slot",
+    };
+    const blocker: ItemDefinition = {
+      ...item,
+      id: "full-grid",
+      key: "full_grid",
+      name: "Full Grid",
+      width: 10,
+      height: 6,
+      startingQuantity: 1,
+    };
+    const fullSnapshot = project({
+      items: [wearable, blocker],
+      startingBodyBackgroundId: "body",
+      bodyBackgrounds: [{
+        id: "body",
+        name: "Body",
+        assetPath: "",
+        slots: [{ id: "leg-slot", key: "leg", name: "Leg", x: 10, y: 10, width: 20, height: 20 }],
+        startingEquipment: [{ slotKey: "leg", itemId: wearable.id }],
+      }],
+    });
+    const state = createEmptyPlayState(fullSnapshot);
+    const equipped = state.inventory.find((entry) => entry.itemId === wearable.id)!;
+    expect(entryOccupiesInventoryGrid(fullSnapshot, equipped)).toBe(false);
+    expect(state.inventory.some((entry) => entry.itemId === blocker.id)).toBe(true);
+
+    const result = executeOperation(fullSnapshot, state, {
+      operation: "unequip",
+      target: { kind: "item", id: equipped.instanceId },
+    });
+    expect(result.accepted).toBe(false);
+    expect(result.responseText).toBe("No inventory space to unequip.");
+    expect(result.state.inventory.find((entry) => entry.instanceId === equipped.instanceId)?.equippedSlotKey).toBe("leg");
+  });
+
+  it("does not retrofit a newly authored starting loadout onto an existing playthrough", () => {
+    const wearable = { ...item, startingQuantity: 1, operations: ["inspect", "equip", "unequip"] as const };
+    const body = {
+      id: "body",
+      name: "Body",
+      assetPath: "",
+      slots: [{ id: "hand-slot", key: "hand", name: "Hand", x: 10, y: 10, width: 20, height: 20 }],
+    };
+    const previous = project({ items: [wearable], bodyBackgrounds: [body], startingBodyBackgroundId: "body" });
+    const next = project({
+      items: [wearable],
+      bodyBackgrounds: [{ ...body, startingEquipment: [{ slotKey: "hand", itemId: wearable.id }] }],
+      startingBodyBackgroundId: "body",
+    });
+    const current = createEmptyPlayState(previous);
+    const reconciled = reconcilePlayStateAfterProjectChange(previous, next, current);
+    expect(reconciled.inventory[0].equippedSlotKey).toBeNull();
   });
 });

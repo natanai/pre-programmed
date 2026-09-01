@@ -30,6 +30,18 @@ function validBodySlots(value: unknown) {
   return true;
 }
 
+function validStartingEquipment(value: unknown) {
+  if (!Array.isArray(value)) return false;
+  const slotKeys = new Set<string>();
+  for (const assignment of value) {
+    if (!object(assignment)) return false;
+    if (typeof assignment.slotKey !== "string" || !assignment.slotKey.trim() || slotKeys.has(assignment.slotKey)) return false;
+    if (typeof assignment.itemId !== "string" || !assignment.itemId) return false;
+    slotKeys.add(assignment.slotKey);
+  }
+  return true;
+}
+
 export const inventoryMutationValidator: WorkerMutationValidator = {
   types: ["item.upsert", "bodyBackground.upsert", "bodyBackground.delete", "bodyBackground.starting"],
   validate(operation) {
@@ -44,6 +56,9 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       if (item.equipmentSlotKeys !== undefined && !validStringArray(item.equipmentSlotKeys)) {
         return "Item equipment slot keys are invalid.";
       }
+      if (item.equippedStorage !== undefined && item.equippedStorage !== "inventory" && item.equippedStorage !== "slot") {
+        return "Item equipped storage policy is invalid.";
+      }
       return validateOperationCapabilities(item) ?? validateHooks(item);
     }
 
@@ -53,6 +68,9 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       if (typeof operation.background.name !== "string" || !operation.background.name.trim()) return "Body type name is required.";
       if (typeof operation.background.assetPath !== "string") return "Body type asset path is invalid.";
       if (operation.background.slots !== undefined && !validBodySlots(operation.background.slots)) return "Body type slots are invalid.";
+      if (operation.background.startingEquipment !== undefined && !validStartingEquipment(operation.background.startingEquipment)) {
+        return "Body type starting equipment is invalid.";
+      }
       return null;
     }
 

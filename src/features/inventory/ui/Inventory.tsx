@@ -4,10 +4,11 @@ import { type EffectEvent } from "../../../game/effects";
 import {
   addInventoryItem,
   compatibleBodySlots,
+  entryOccupiesInventoryGrid,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
   itemCanEquipToSlot,
-  reconcileEquippedItems,
+  setActiveBodyType,
 } from "../../../game/inventory";
 import type {
   BodyBackgroundDefinition,
@@ -75,6 +76,9 @@ export function Inventory({
     item.description,
     item.tags.join(" "),
   ].some((value) => value.toLowerCase().includes(normalizedDefinitionQuery)));
+  const minimumStartingQuantity = (itemId: string) => Math.max(0, ...bodyTypes.map((bodyType) =>
+    (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === itemId).length,
+  ));
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
@@ -105,7 +109,7 @@ export function Inventory({
     <header><span>ITEM DEFINITIONS</span></header>
     <div className="inventory-definition-controls">
       <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← INVENTORY]</button>
-      <div className="inventory-definition-help">Default quantity is added to every new playthrough. “Add to this run” changes only the current play state.</div>
+      <div className="inventory-definition-help">Starting quantity is the total added to every new playthrough, including instances equipped by the starting body type. “Add to this run” changes only the current play state.</div>
       <div className="inventory-definition-search-row">
         <label htmlFor="inventory-definition-search">FIND</label>
         <div className="inventory-definition-search-control">
@@ -133,7 +137,7 @@ export function Inventory({
           <div className="inventory-definition-actions">
             <span>DEFAULT</span>
             <button type="button" aria-label={`Decrease starting ${item.name}`} onClick={() => void onSave([
-              { type: "item.upsert", item: { ...item, startingQuantity: Math.max(0, (item.startingQuantity ?? 0) - 1) } },
+              { type: "item.upsert", item: { ...item, startingQuantity: Math.max(minimumStartingQuantity(item.id), (item.startingQuantity ?? 0) - 1) } },
             ], `Changed starting ${item.name}`)}>[-]</button>
             <strong>{item.startingQuantity ?? 0}</strong>
             <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void onSave([
@@ -153,9 +157,9 @@ export function Inventory({
     <header><span>BODY TYPES</span></header>
     <div className="inventory-definition-controls">
       <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← INVENTORY]</button>
-      <div className="inventory-definition-help">Each body type owns its background and slot layout. Triggers can switch the active body type during play; matching slot keys preserve equipment across the change.</div>
+      <div className="inventory-definition-help">Choose the body type used by new playthroughs, then open that body type to assign starting equipment to its slots. Triggers can switch the active body type during play; matching slot keys preserve equipment.</div>
       <label className="body-background-starting">STARTING BODY TYPE
-        <select value={snapshot.startingBodyBackgroundId ?? ""} onChange={(event) => void onSave([
+        <select aria-label="Starting body type for new playthroughs" value={snapshot.startingBodyBackgroundId ?? ""} onChange={(event) => void onSave([
           { type: "bodyBackground.starting", id: event.target.value || null },
         ], "Changed starting body type")}>
           <option value="">none</option>
@@ -174,7 +178,7 @@ export function Inventory({
             <span aria-hidden="true">›</span>
           </button>
           <div className="inventory-definition-actions">
-            <button type="button" onClick={() => onState(reconcileEquippedItems(snapshot, { ...state, bodyBackgroundId: bodyType.id }))}>[USE THIS RUN]</button>
+            <button type="button" onClick={() => onState(setActiveBodyType(snapshot, state, bodyType.id))}>[USE THIS RUN]</button>
           </div>
         </article>)}
       </div> : <div className="inventory-definition-empty">NO BODY TYPES YET. A BODY TYPE CAN REPRESENT BABY, CHILD, ADULT, A TRANSFORMATION, OR ANY OTHER SLOT LAYOUT YOUR GAME NEEDS.</div>}
@@ -261,7 +265,7 @@ export function Inventory({
             const y = Math.floor(index / INVENTORY_COLUMNS);
             return <button type="button" className="inventory-cell" key={index} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => moveSelected(x, y)} />;
           })}
-          {state.inventory.map((entry) => {
+          {state.inventory.filter((entry) => entryOccupiesInventoryGrid(snapshot, entry)).map((entry) => {
             const item = snapshot.items.find((candidate) => candidate.id === entry.itemId);
             if (!item) return null;
             const moveEnabled = (item.interactable ?? true) && (item.operations ?? DEFAULT_ITEM_OPERATIONS).includes("move");

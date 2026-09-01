@@ -13,7 +13,8 @@ function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetPath: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], tags: [], initialState: {}, hooks: [],
+    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], equippedStorage: "inventory",
+    tags: [], initialState: {}, hooks: [],
   };
 }
 
@@ -27,6 +28,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
   const [draft, setDraft] = useState(() => ({
     ...structuredClone(initial ?? emptyItem()),
     equipmentSlotKeys: [...(initial?.equipmentSlotKeys ?? [])],
+    equippedStorage: initial?.equippedStorage ?? "inventory",
   }));
   const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
@@ -44,6 +46,9 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
       .map(([key, labels]) => ({ key, label: [...labels].join(" / ") }))
       .sort((left, right) => left.label.localeCompare(right.label) || left.key.localeCompare(right.key));
   }, [snapshot.bodyBackgrounds]);
+  const minimumStartingQuantity = useMemo(() => Math.max(0, ...(snapshot.bodyBackgrounds ?? []).map((bodyType) =>
+    (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
+  )), [draft.id, snapshot.bodyBackgrounds]);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -96,13 +101,20 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
           <label className="check-label"><input type="checkbox" checked={draft.stackable} onChange={(event) => setDraft({ ...draft, stackable: event.target.checked })} /> stackable</label>
           <label>MAX STACK <input type="number" min={1} value={draft.maxStack} onChange={(event) => setDraft({ ...draft, maxStack: Number(event.target.value) })} /></label>
           <label className="check-label"><input type="checkbox" checked={draft.removable} onChange={(event) => setDraft({ ...draft, removable: event.target.checked })} /> removal succeeds without a hook</label>
-          <label>DEFAULT QUANTITY <input type="number" min={0} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(0, Math.floor(Number(event.target.value))) })} /><small>Placed in every new playthrough.</small></label>
+          <label>STARTING QUANTITY <input type="number" min={minimumStartingQuantity} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(minimumStartingQuantity, Math.floor(Number(event.target.value))) })} /><small>Total in every new playthrough, including any starting equipped instances.{minimumStartingQuantity ? ` At least ${minimumStartingQuantity} required by body-type loadouts.` : ""}</small></label>
         </div>
       </section>
 
       <section className="item-editor-section">
         <h3>EQUIPMENT</h3>
         <p className="field-help">Enable the <strong>equip</strong> operation below to let this item use body slots. Leaving every slot unchecked allows any slot on the current body type; checking slots restricts the item to those stable slot keys.</p>
+        <label>EQUIPPED STORAGE
+          <select value={draft.equippedStorage ?? "inventory"} onChange={(event) => setDraft({ ...draft, equippedStorage: event.target.value as "inventory" | "slot" })}>
+            <option value="inventory">stays in general inventory</option>
+            <option value="slot">body slot only</option>
+          </select>
+          <small>“Body slot only” frees its grid space while equipped. Unequipping requires enough free grid space.</small>
+        </label>
         {slotOptions.length ? <div className="equipment-slot-compatibility">
           <button type="button" aria-pressed={(draft.equipmentSlotKeys ?? []).length === 0} onClick={() => setDraft({ ...draft, equipmentSlotKeys: [] })}>[ANY SLOT]</button>
           {slotOptions.map((slot) => <label className="check-label" key={slot.key}>
