@@ -28,3 +28,10 @@ export type InventoryEntry = {
   y: number;
   state: Record<string, Value>;
 };
+
+/** Inventory-owned visual definition for the body/equipment surface. */
+export type BodyBackgroundDefinition = {
+  id: string;
+  name: string;
+  assetPath: string;
+};
