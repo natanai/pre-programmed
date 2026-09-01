@@ -1,5 +1,5 @@
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
-import { DefinitionSelect } from "../../../author/rules/controls";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 
 function itemLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], id: string) {
   return snapshot.items.find((item) => item.id === id)?.name || "choose item";
@@ -14,13 +14,10 @@ export const hasItemConditionAdapter: ConditionAuthorAdapter = {
   type: "has_item",
   label: "has item",
   create: () => ({ type: "has_item", itemId: "", minimum: 1 }),
-  render: ({ condition, onChange, snapshot }) => {
+  render: ({ condition, onChange }) => {
     if (condition.type !== "has_item") return null;
     return <>
-      <select value={condition.itemId} onChange={(event) => onChange({ ...condition, itemId: event.target.value })}>
-        <option value="">choose item</option>
-        {snapshot.items.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
-      </select>
+      <ReferenceField kind="item" value={condition.itemId} onChange={(itemId) => onChange({ ...condition, itemId })} />
       <input aria-label="Minimum quantity" type="number" min={1} value={condition.minimum ?? 1} onChange={(event) => onChange({ ...condition, minimum: Number(event.target.value) })} />
     </>;
   },
@@ -30,13 +27,9 @@ export const lacksItemConditionAdapter: ConditionAuthorAdapter = {
   type: "lacks_item",
   label: "lacks item",
   create: () => ({ type: "lacks_item", itemId: "" }),
-  render: ({ condition, onChange, snapshot }) => {
-    if (condition.type !== "lacks_item") return null;
-    return <select value={condition.itemId} onChange={(event) => onChange({ ...condition, itemId: event.target.value })}>
-      <option value="">choose item</option>
-      {snapshot.items.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}
-    </select>;
-  },
+  render: ({ condition, onChange }) => condition.type === "lacks_item"
+    ? <ReferenceField kind="item" value={condition.itemId} onChange={(itemId) => onChange({ ...condition, itemId })} />
+    : null,
 };
 
 export const giveItemEffectAdapter: EffectAuthorAdapter = {
@@ -44,8 +37,8 @@ export const giveItemEffectAdapter: EffectAuthorAdapter = {
   label: "give item",
   create: () => ({ id: crypto.randomUUID(), type: "give_item", itemId: "", quantity: 1 }),
   summarize: (effect, snapshot) => effect.type === "give_item" ? `Give ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Give item",
-  render: ({ effect, onChange, snapshot }) => effect.type === "give_item" ? <>
-    <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
+  render: ({ effect, onChange }) => effect.type === "give_item" ? <>
+    <ReferenceField kind="item" value={effect.itemId} onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input type="number" min={1} value={effect.quantity} onChange={(event) => onChange({ ...effect, quantity: Number(event.target.value) })} />
   </> : null,
 };
@@ -55,8 +48,8 @@ export const removeItemEffectAdapter: EffectAuthorAdapter = {
   label: "remove item",
   create: () => ({ id: crypto.randomUUID(), type: "remove_item", itemId: "", quantity: 1 }),
   summarize: (effect, snapshot) => effect.type === "remove_item" ? `Remove ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Remove item",
-  render: ({ effect, onChange, snapshot }) => effect.type === "remove_item" ? <>
-    <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
+  render: ({ effect, onChange }) => effect.type === "remove_item" ? <>
+    <ReferenceField kind="item" value={effect.itemId} onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input type="number" min={1} value={effect.quantity} onChange={(event) => onChange({ ...effect, quantity: Number(event.target.value) })} />
   </> : null,
 };
@@ -68,8 +61,8 @@ export const setItemStateEffectAdapter: EffectAuthorAdapter = {
   summarize: (effect, snapshot) => effect.type === "set_item_state"
     ? `${itemLabel(snapshot, effect.itemId)} · ${effect.key || "state"} = ${String(effect.value ?? "")}`
     : "Change item state",
-  render: ({ effect, onChange, snapshot }) => effect.type === "set_item_state" ? <>
-    <DefinitionSelect value={effect.itemId} definitions={snapshot.items} valueMode="id" onChange={(itemId) => onChange({ ...effect, itemId })} />
+  render: ({ effect, onChange }) => effect.type === "set_item_state" ? <>
+    <ReferenceField kind="item" value={effect.itemId} onChange={(itemId) => onChange({ ...effect, itemId })} />
     <input placeholder="state key" value={effect.key} onChange={(event) => onChange({ ...effect, key: event.target.value })} />
     <input placeholder="value" value={String(effect.value ?? "")} onChange={(event) => onChange({ ...effect, value: event.target.value })} />
   </> : null,
@@ -82,11 +75,7 @@ export const setBodyBackgroundEffectAdapter: EffectAuthorAdapter = {
   summarize: (effect, snapshot) => effect.type === "set_body_background"
     ? `Body type → ${bodyTypeLabel(snapshot, effect.backgroundId)}`
     : "Set body type",
-  render: ({ effect, onChange, snapshot }) => effect.type === "set_body_background" ? <select
-    value={effect.backgroundId}
-    onChange={(event) => onChange({ ...effect, backgroundId: event.target.value })}
-  >
-    <option value="">none</option>
-    {(snapshot.bodyBackgrounds ?? []).map((bodyType) => <option value={bodyType.id} key={bodyType.id}>{bodyType.name}</option>)}
-  </select> : null,
+  render: ({ effect, onChange }) => effect.type === "set_body_background"
+    ? <ReferenceField kind="body-type" value={effect.backgroundId} onChange={(backgroundId) => onChange({ ...effect, backgroundId })} placeholder="none / choose body type" />
+    : null,
 };
