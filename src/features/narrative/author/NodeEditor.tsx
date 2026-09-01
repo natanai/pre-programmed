@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import {
+  FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE,
+  FEATURE_TEXT_CUE_AUTHOR_ADAPTERS,
+} from "../../../author/textCues/catalog";
 import type { GameNode, MutationOperation, ProjectSnapshot, TextCueType } from "../../../game/model";
 import { compileTextNotation } from "../../../game/textNotation";
-import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import { TextRulesReference } from "./TextRulesReference";
 import "./nodeEditor.css";
 
 type NodeScreen = "text" | "context" | "cues";
+
+const CORE_CUE_TYPES: readonly TextCueType[] = ["pause", "speed", "wave", "shake", "blink", "instant"];
 
 export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: {
   node: GameNode;
@@ -41,7 +46,12 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: 
   };
 
   const addCue = (type: TextCueType) => {
-    const value = type === "pause" ? 350 : type === "speed" ? 30 : "";
+    const featureAdapter = FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE[type];
+    const value = type === "pause"
+      ? 350
+      : type === "speed"
+        ? 30
+        : featureAdapter?.createValue?.(snapshot) ?? "";
     setDraft({
       ...draft,
       performance: {
@@ -53,6 +63,16 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: 
           end: selection.end,
           value,
         }],
+      },
+    });
+  };
+
+  const updateCueValue = (cueId: string, value: string | number | boolean | undefined) => {
+    setDraft({
+      ...draft,
+      performance: {
+        ...draft.performance,
+        cues: draft.performance.cues.map((item) => item.id === cueId ? { ...item, value } : item),
       },
     });
   };
@@ -74,6 +94,10 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: 
   const selectionLabel = selectionLength
     ? `${selectionLength} selected · ${selection.start}:${selection.end}`
     : `cursor ${selection.start}`;
+  const availableCueTypes: readonly TextCueType[] = [
+    ...CORE_CUE_TYPES,
+    ...FEATURE_TEXT_CUE_AUTHOR_ADAPTERS.map((adapter) => adapter.type),
+  ];
 
   return <section className="author-panel author-panel-frame node-editor focused-node-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="focused-node-header">
@@ -123,16 +147,18 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange }: 
 
       {screen === "cues" ? <div className="node-cue-workspace">
         <h3>ADVANCED CUES · {selectionLabel.toUpperCase()}</h3>
-        <p className="muted">Use inline text rules for ordinary rhythm and word delivery. Advanced cues are for precise positioned values, sound, synth, art, and legacy exact-value editing.</p>
-        <div className="cue-buttons">{(["pause", "speed", "wave", "shake", "blink", "instant", "synth", "audio", "sprite"] as TextCueType[]).map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
+        <p className="muted">Use inline text rules for ordinary rhythm and word delivery. Advanced cues provide precise positioned values plus any capabilities contributed by installed features.</p>
+        <div className="cue-buttons">{availableCueTypes.map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
         <div className="node-cue-list">
-          {draft.performance.cues.map((cue, index) => <div className="cue-row" key={cue.id}>
-            <span><strong>{index + 1}. {cue.type.toUpperCase()}</strong><small>{cue.start}:{cue.end}</small></span>
-            {(cue.type === "pause" || cue.type === "speed") ? <input aria-label={`${cue.type} value`} type="number" value={Number(cue.value ?? 0)} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.map((item) => item.id === cue.id ? { ...item, value: Number(event.target.value) } : item) } })} /> : null}
-            {cue.type === "synth" ? <select aria-label="Synth cue sound" value={String(cue.value ?? "")} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.map((item) => item.id === cue.id ? { ...item, value: event.target.value } : item) } })}><option value="">choose synth</option>{snapshot.synthSounds.map((sound) => <option key={sound.id} value={sound.id}>{sound.label}</option>)}</select> : null}
-            {(cue.type === "audio" || cue.type === "sprite") ? <select aria-label={`${cue.type} cue asset`} value={String(cue.value ?? "")} onChange={(event) => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.map((item) => item.id === cue.id ? { ...item, value: event.target.value } : item) } })}><option value="">choose asset</option>{ASSET_MANIFEST.filter((asset) => asset.runtimePath && (cue.type === "audio" ? asset.type === "audio" : asset.type === "image")).map((asset) => <option key={asset.path} value={asset.runtimePath!}>{asset.path}</option>)}</select> : null}
-            <button type="button" onClick={() => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.filter((_, itemIndex) => itemIndex !== index) } })}>[REMOVE]</button>
-          </div>)}
+          {draft.performance.cues.map((cue, index) => {
+            const featureAdapter = FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE[cue.type];
+            return <div className="cue-row" key={cue.id}>
+              <span><strong>{index + 1}. {cue.type.toUpperCase()}</strong><small>{cue.start}:{cue.end}</small></span>
+              {(cue.type === "pause" || cue.type === "speed") ? <input aria-label={`${cue.type} value`} type="number" value={Number(cue.value ?? 0)} onChange={(event) => updateCueValue(cue.id, Number(event.target.value))} /> : null}
+              {featureAdapter?.renderValue({ cue, snapshot, onValueChange: (value) => updateCueValue(cue.id, value) })}
+              <button type="button" onClick={() => setDraft({ ...draft, performance: { ...draft.performance, cues: draft.performance.cues.filter((_, itemIndex) => itemIndex !== index) } })}>[REMOVE]</button>
+            </div>;
+          })}
           {!draft.performance.cues.length ? <span className="muted">NO ADVANCED CUES CONFIGURED.</span> : null}
         </div>
         <div className="performance-preview"><PerformanceText node={draft} /></div>
