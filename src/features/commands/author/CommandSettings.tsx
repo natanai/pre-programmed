@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
 import type { AuthorPanelRoute } from "../../../author/workSurfaceNavigation";
-import { APPLICATION_COMMAND_CAPABILITIES } from "../applicationCatalog";
+import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
 import { COMMAND_REFERENCE_SOURCES, COMMAND_REFERENCE_SOURCE_BY_KIND } from "../referenceCatalog";
 import type { CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
 import "./commandSettings.css";
