@@ -48,7 +48,7 @@ jobs:
               process.exit(0);
             }
             const listPayload = await listResponse.json();
-            const versions = Array.isArray(listPayload?.result) ? listPayload.result : [];
+            const versions = Array.isArray(listPayload?.result?.items) ? listPayload.result.items : [];
             const versionId = versions.find((version) => typeof version?.id === "string")?.id;
             if (!versionId) {
               console.log("WORKER_VERSION_D1_BINDING not-found (no-version)");
