@@ -25,10 +25,6 @@ jobs:
           cache: npm
 
       - run: npm ci --no-audit --no-fund
-
-      - name: Verify local runtime acceptance
-        run: npm run verify:local
-
       - run: npm run build:pages
         env:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}

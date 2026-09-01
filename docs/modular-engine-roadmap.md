@@ -17,11 +17,11 @@ Explicit composition roots are good. Compatibility layers are transitional and s
 
 Platform-specific services follow the same rule: Cloudflare is one platform adapter, not the definition of project persistence or Author behavior.
 
-## Current estimate — about 82%
+## Current estimate — about 90%
 
 This is architecture/product completion, not game-content completion. The starting estimate for this modularization pass was about 43%.
 
-The estimate remains intentionally conservative. The exact percentage is less important than the remaining acceptance criteria; do not increase architecture complexity merely to move the number.
+The estimate remains intentionally conservative. The exact percentage is less important than the remaining acceptance criteria; do not increase architecture complexity merely to move the number. See `docs/engine-100-percent-acceptance.md` for the explicit definition of the remaining ~10%.
 
 ## What is now proven
 
@@ -34,7 +34,7 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Unmatched-input Author drafting is feature-contributed; App no longer constructs Narrative draft interactions itself.
 - Narrative's contextual Author input surface is feature-contributed rather than directly imported by App.
 - Author tool context is feature-neutral; Narrative derives its own current-node/fallback/interaction-notation state.
-- State definitions and Narrative Structure navigation now use generic feature routes rather than expanding the central Author route union.
+- State definitions and Narrative Structure navigation use generic feature routes rather than expanding the central Author route union.
 - Targetless application capabilities are composed at a neutral engine boundary rather than being owned by Commands.
 - Worker persistence is feature-owned; `worker/projectStore.ts` is primarily orchestration.
 - Runtime schema initialization composes immutable historical migrations with future feature migration contributions through `worker/db/schema.ts`; the obsolete second migration runner has been removed.
@@ -46,7 +46,12 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Desktop/mobile breakpoint changes use CSS over one stable Author component/navigation tree; there is no breakpoint-specific editor state implementation.
 - Production deployment has successfully generated its Wrangler configuration from the reusable template plus the existing Worker's deployed D1 binding, then deployed and passed a real live project-snapshot check.
 - Installation-specific `wrangler.jsonc` is local/ignored state rather than reusable engine source.
-- Mutable project storage is already expressed through the platform-neutral `ProjectPersistence` contract; hosted Cloudflare storage is an implementation of that contract rather than the contract itself.
+- Mutable project storage is expressed through the platform-neutral `ProjectPersistence` contract; hosted Cloudflare storage is an implementation of that contract rather than the contract itself.
+- Author workspace/history/undo services now compose through a platform-neutral `AuthorPlatform`; Cloudflare is the current hosted implementation.
+- A true local-machine runtime now exists: `npm run local` starts the same Worker, canonical D1 schema/migrations, Author API, and Vite client using local-only D1 state.
+- `npm run verify:local` has passed a full fresh local project → Author login → persisted mutation → complete shutdown → restart → same revision acceptance path twice on Linux CI.
+- Local runtime process-tree shutdown was corrected and re-proven without leaving Wrangler/workerd descendants for the runner to terminate.
+- Local D1 does not use `remote: true`; its data is isolated from hosted/production D1.
 
 ## Prototype verification policy
 
@@ -54,6 +59,7 @@ Verification must remain replaceable too.
 
 - **Production deployment on `main` is the only automatic workflow.**
 - Full verification is an explicit checkpoint through `npm run verify` / the manual Verify Prototype workflow.
+- Local-runtime acceptance is an explicit checkpoint through `npm run verify:local`; it is not an automatic tax on every production deploy.
 - Ordinary branch iteration should not create PRs merely to trigger CI.
 - Feature-specific tests may be deleted or rewritten with the feature they protect.
 - Core tests protect stable core/data-safety contracts; they must not freeze the current feature roster.
@@ -71,7 +77,7 @@ The repo-side hosted portability architecture is now installation-neutral. The r
 Run one real fresh fork or clone through the complete path:
 
 1. setup;
-2. D1 creation;
+2. its own D1 creation;
 3. first Worker deploy;
 4. client/API configuration;
 5. GitHub production deployment if desired;
@@ -79,58 +85,34 @@ Run one real fresh fork or clone through the complete path:
 7. save an edit;
 8. reload and confirm persistence.
 
-That run should also confirm that the installation guidance around GitHub variables/secrets is sufficiently clear without source edits.
+That run should also confirm that the installation guidance around GitHub variables/secrets is sufficiently clear without source edits. It must use a separate D1 and must never point at the existing production database.
 
 Do not add more hosted-portability abstraction merely because the clean-install acceptance run has not happened yet. Fix only concrete friction exposed by that run.
 
-### 2. Establish a real local-machine distribution
+### 2. Finish remaining core / platform ownership
 
-Local mode is a product requirement, but it should reuse engine/Author contracts rather than fork the application.
+Delete compatibility behavior when its consumers are gone; do not reorganize harmless one-line facades merely to improve file-count aesthetics.
 
-Already suitable for reuse:
+The remaining Narrative-specific central Author route shapes are `node` and `interaction`. They carry editor payloads and should not be converted mechanically. Prefer stable feature-owned identifiers/data if they migrate cleanly; do not introduce object registries or serialization workarounds merely to delete two union variants.
 
-- `ProjectPersistence` exposes storage-independent `readProject` / `writeProject` operations;
-- revision conflicts have a platform-independent error contract;
-- local stores may ignore hosted authorization context;
-- project models, mutations, feature registries, editors, validation, and play state do not need a second local implementation.
-
-Remaining hosted assumptions to isolate before a true local distribution:
-
-- choose project persistence through a platform composition point rather than selecting Cloudflare throughout the client;
-- isolate Author authentication/session behavior so a local installation can use an appropriate local trust model;
-- isolate backup/history/undo transport from Cloudflare HTTP routes where those capabilities should exist locally;
-- decide on a local persistence implementation only when packaging work begins (for example a local SQLite/file-backed process or desktop bridge), instead of prematurely embedding a browser-specific filesystem API into core code.
-
-Local acceptance test:
-
-1. clone/download the engine on a machine with no Cloudflare account configured;
-2. start the supported local distribution;
-3. load or initialize a project;
-4. enter Author mode under the local trust model;
-5. author and save an edit;
-6. close the application/process completely;
-7. reopen it and confirm the same project and edit persist;
-8. ordinary game authoring requires no engine-source changes.
-
-Cloudflare may remain the hosted reference adapter. Local mode must not require a separate Author UI, separate game model, or parallel feature implementation.
-
-### 3. Keep shrinking real compatibility behavior
-
-Delete compatibility code when its consumers are gone; do not reorganize harmless one-line facades merely to improve file-count aesthetics.
-
-Completed cleanup includes obsolete Worker bootstrap/per-node mutation routes, the duplicate migration runner, feature-roster verification assumptions, and several central compatibility responsibilities.
+`App.tsx` remains the main frontend meeting point, but refactoring it is not a goal by itself. Project persistence and Author workspace/history/undo now have platform composition roots; remaining direct hosted session/login/backup/save selection should move only where the resulting boundary is real and useful to both hosted and local operation.
 
 Remaining one-line `src/game/*` and `src/components/*` facades are not duplicate implementations. Migrate or delete them when their consumers are naturally touched rather than launching a flag-day import rewrite.
 
-### 4. Reduce App only where ownership becomes clearer
+### 3. Real-machine local acceptance
 
-`App.tsx` remains the main frontend meeting point, but refactoring it is not a goal by itself.
+The local architecture is no longer hypothetical. `npm run local` and `npm run verify:local` use the actual Worker/D1 implementation locally, not a second save engine.
 
-Recent work removed direct Narrative draft construction, the Narrative contextual input surface, hardcoded State/Structure shortcuts, and Commands-owned application-capability resolution from App. Continue moving behavior only when doing so creates a clear stable contract, improves platform portability, or makes a feature independently replaceable. Avoid generic render registries or hooks that exist only to make App shorter.
+Remaining local work is empirical:
 
-The remaining `node` and `interaction` Author route shapes carry editor payloads and should not be converted mechanically. Prefer stable feature-owned identifiers/data if they can migrate cleanly; do not introduce object registries or serialization workarounds merely to delete two union variants.
+- run the documented path on ordinary Windows and macOS machines as well as Linux;
+- confirm `npm install` → `npm run local` works without a Cloudflare account or credentials;
+- author manually through the browser UI, stop the local runtime, restart, and confirm the visible edit persists;
+- fix only concrete cross-platform/process/UX friction found by those runs.
 
-### 5. Finish shared Author presentation polish
+The browser IndexedDB cache remains a responsiveness/offline queue and is not promoted into a second canonical local store.
+
+### 4. Finish shared Author presentation polish
 
 The single-system approach is proven. Remaining work is mostly presentation quality and real-client confirmation:
 
@@ -140,7 +122,7 @@ The single-system approach is proven. Remaining work is mostly presentation qual
 
 Do not create separate desktop/mobile editor implementations.
 
-### 6. Let tests migrate with features
+### 5. Let tests migrate with features
 
 Existing centralized tests are transitional. Do not launch a repo-wide test relocation project solely for tidiness.
 
@@ -178,6 +160,21 @@ A new developer should be able to:
 4. enter Author mode;
 5. author and save a distinct game without editing application source for ordinary content.
 
+## Local-machine acceptance test
+
+A new developer/user should be able to:
+
+1. clone or download the repository;
+2. install dependencies;
+3. run `npm run local` without configuring a Cloudflare account;
+4. enter Author mode with the local trust model;
+5. save a project edit;
+6. fully stop the runtime;
+7. restart it and see the same edit;
+8. author ordinary game content without editing engine source.
+
+`npm run verify:local` already proves steps 3–7 programmatically on Linux CI. Human-machine acceptance remains for cross-platform ergonomics.
+
 ## Recent checkpoints
 
 ### 2026-09-01
@@ -202,7 +199,9 @@ A new developer should be able to:
 - Worker version-detail metadata was proven to expose the deployed `DB` binding with the existing Worker deployment permission.
 - Production then deployed successfully from a generated Wrangler config whose Worker/D1 identity matched the former tracked production config, followed by a successful live project-snapshot check.
 - Installation-specific `wrangler.jsonc` was removed from reusable tracked source and made local/ignored state.
-- Local-machine operation was added as an explicit product goal. Existing project persistence contracts were confirmed to be suitable for a future local storage adapter; remaining hosted assumptions were identified as platform/session concerns rather than reasons to fork the engine.
+- Project persistence and Author workspace/history/undo received explicit platform composition boundaries instead of treating Cloudflare as the engine contract.
+- `wrangler.local.jsonc`, `npm run local`, and local-only persisted D1 state established the first supported no-cloud local distribution using the same Worker and schema as hosted mode.
+- `npm run verify:local` proved starter initialization, Author login, a real mutation, full shutdown, restart, and persisted revision. The proof was repeated after process-tree shutdown was fixed; the second run left no Worker/Vite descendants requiring runner cleanup.
 
 ### 2026-08-31
 
