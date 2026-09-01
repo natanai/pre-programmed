@@ -5,6 +5,7 @@ import type {
   ProjectSnapshot,
   RevisionSummary,
 } from "../src/game/model";
+import { applyOperations } from "../src/engine/project/mutations";
 import { parseJson } from "./db/json";
 import { ensureSchema } from "./db/schema";
 import {
@@ -14,6 +15,7 @@ import {
 } from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
+import { WORKER_PROJECT_INTEGRITY_VALIDATORS } from "./features/validationCatalog";
 
 export async function currentRevision(db: D1Database) {
   const row = await db.prepare("SELECT COALESCE(MAX(revision), 0) AS revision FROM revisions")
@@ -95,6 +97,11 @@ export async function applyMutation(db: D1Database, mutation: ProjectMutation) {
       { error: "Project changed on another device. Synchronize before saving.", currentRevision: before.revision },
       { status: 409 },
     );
+  }
+  const projected = applyOperations(before, mutation.operations);
+  for (const validate of WORKER_PROJECT_INTEGRITY_VALIDATORS) {
+    const error = validate(before, projected);
+    if (error) return json({ error }, { status: 400 });
   }
   const beforeBookmarks = await getBookmarks(db);
   const statements = mutation.operations.flatMap((operation) => operationStatements(db, operation));

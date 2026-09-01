@@ -292,28 +292,38 @@ export default function App() {
   useEffect(() => {
     if (!authorToken) return;
     let cancelled = false;
+    const synchronizeQueue = async () => {
+      if (cancelled || flushingQueue.current) return;
+      flushingQueue.current = true;
+      try {
+        const { snapshot: project, flushedCount } = await flushQueuedAuthorMutations({
+          persistence: configuredProjectPersistence,
+          authorization: authorToken,
+        });
+        if (cancelled || !flushedCount || !project) return;
+        setSnapshot(project);
+        setPlayState((existing) => existing ? reconcilePlayState(project, existing) : createEmptyPlayState(project));
+        setAuthorMessage(`SYNCED ${flushedCount} LOCAL ${flushedCount === 1 ? "CHANGE" : "CHANGES"}. SAVED R${project.revision}.`);
+      } finally {
+        flushingQueue.current = false;
+      }
+    };
     void checkAuthorSession(authorToken)
       .then(async (valid) => {
         if (cancelled) return;
         if (!valid) { clearAuthorSession(); return; }
         setAuthorMode(true);
         setAuthorView(true);
-        if (flushingQueue.current) return;
-        flushingQueue.current = true;
-        try {
-          const { snapshot: project, flushedCount } = await flushQueuedAuthorMutations({
-            persistence: configuredProjectPersistence,
-            authorization: authorToken,
-          });
-          if (flushedCount) {
-            setSnapshot(project);
-            setPlayState((existing) => existing ? reconcilePlayState(project, existing) : createEmptyPlayState(project));
-          }
-        } finally {
-          flushingQueue.current = false;
-        }
+        await synchronizeQueue();
       }).catch(() => undefined);
-    return () => { cancelled = true; };
+    const onOnline = () => void synchronizeQueue().catch(() => undefined);
+    window.addEventListener("online", onOnline);
+    const retryTimer = window.setInterval(() => void synchronizeQueue().catch(() => undefined), 15_000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("online", onOnline);
+      window.clearInterval(retryTimer);
+    };
   }, [authorToken]);
 
   const persist = async (
@@ -356,7 +366,7 @@ export default function App() {
     }
 
     if (result.status === "queued") {
-      setAuthorMessage("SAVED LOCALLY; SERVER SYNC QUEUED.");
+      setAuthorMessage("SAVED ONLY IN THIS BROWSER; SERVER SYNC PENDING.");
       return result;
     }
 
@@ -370,7 +380,9 @@ export default function App() {
 
     setSnapshot(before);
     if (beforeState) setPlayState(beforeState);
-    setAuthorMessage("SAVE FAILED. CHANGES ARE STILL OPEN; TRY AGAIN.");
+    setAuthorMessage(result.message
+      ? `SAVE REJECTED: ${result.message}`
+      : "SAVE FAILED. CHANGES ARE STILL OPEN; TRY AGAIN.");
     return result;
   };
 

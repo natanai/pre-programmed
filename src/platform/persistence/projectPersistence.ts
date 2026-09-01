@@ -20,6 +20,18 @@ export class ProjectRevisionConflictError extends Error {
 }
 
 /**
+ * A durable store understood the mutation but refused it. Unlike a connection
+ * failure, retrying this payload later cannot make it valid, so callers must
+ * keep the editor open instead of placing the mutation in the offline queue.
+ */
+export class ProjectWriteRejectedError extends Error {
+  constructor(message = "The project store rejected this edit.") {
+    super(message);
+    this.name = "ProjectWriteRejectedError";
+  }
+}
+
+/**
  * Storage boundary for mutable authored project data.
  *
  * The engine/client depends on this contract rather than on D1 itself. The

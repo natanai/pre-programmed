@@ -2,8 +2,13 @@
 .command-settings-list,
 .command-reference-editor,
 .command-editor-body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   display: grid;
+  align-content: start;
   gap: .75rem;
+  overflow-wrap: anywhere;
 }
 
 .command-settings-overview > button,
@@ -15,7 +20,9 @@
   justify-content: space-between;
   gap: 1rem;
   padding: .8rem .9rem;
-  border: 1px solid var(--line);
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid var(--dos-line);
   background: transparent;
   color: inherit;
   text-align: left;
@@ -23,6 +30,7 @@
 
 .command-settings-overview > button span:first-child,
 .command-settings-list > button span:first-child {
+  flex: 1 1 auto;
   min-width: 0;
   display: grid;
   gap: .25rem;
@@ -31,15 +39,47 @@
 .command-settings-overview small,
 .command-settings-list small,
 .command-editor-body small {
-  color: var(--muted);
+  color: var(--dos-muted);
   white-space: normal;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.command-settings-overview > button > span:last-child,
+.command-settings-list > button > span:last-child {
+  flex: 0 0 auto;
+}
+
+.command-settings-guide {
+  display: grid;
+  gap: .55rem;
+  padding: .8rem;
+  border: 1px solid var(--dos-line);
+}
+
+.command-settings-guide p {
+  min-width: 0;
+  margin: 0;
+  display: grid;
+  gap: .15rem;
+  line-height: 1.3;
+}
+
+.command-settings-guide span {
+  color: var(--dos-muted);
+}
+
+.command-settings-create {
+  justify-content: flex-start !important;
+  min-height: 2.75rem !important;
+  color: var(--dos-bright) !important;
 }
 
 .command-settings-note {
   margin: 0;
-  color: var(--muted);
+  color: var(--dos-muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .command-settings-note code {
@@ -52,10 +92,14 @@
 }
 
 .command-settings-workspace .author-panel-body {
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .command-reference-editor h3,
@@ -85,7 +129,7 @@
 }
 
 .command-slot-editor {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--dos-line);
   padding-top: .8rem;
 }
 
@@ -94,10 +138,14 @@
   align-items: center;
 }
 
+.command-slot-source-warning {
+  grid-column: 1 / -1;
+}
+
 .command-delete-zone {
   margin-top: 1rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid var(--dos-line);
   display: flex;
   flex-wrap: wrap;
   gap: .7rem;
@@ -105,15 +153,37 @@
 }
 
 .command-settings-empty {
-  border: 1px dashed var(--line);
+  border: 1px dashed var(--dos-line);
   padding: 1rem;
-  color: var(--muted);
+  color: var(--dos-muted);
 }
 
 @media (max-width: 560px) {
+  .command-settings-workspace > header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    line-height: 1.2;
+  }
+
+  .command-settings-workspace > header > span {
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
   .command-settings-overview > button,
   .command-settings-list > button {
     min-height: 4.8rem;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: .45rem;
+  }
+
+  .command-settings-overview > button > span:last-child,
+  .command-settings-list > button > span:last-child {
+    margin-left: auto;
   }
 
   .command-slot-editor > label:not(:last-child) {
