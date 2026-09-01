@@ -1,6 +1,6 @@
 import type { AuthorPlatform, AuthorWorkspaceSnapshot } from "../author/authorPlatform";
 import type { ProjectSnapshot } from "../../engine/project/model";
-import { apiUrl, readJson } from "./http";
+import { ApiError, apiUrl, readJson } from "./http";
 
 export const cloudflareAuthorPlatform: AuthorPlatform = {
   async checkSession(authorization) {
@@ -18,6 +18,21 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
       body: JSON.stringify({ key }),
     }));
     return result.token;
+  },
+
+  async downloadBackup(authorization) {
+    const response = await fetch(apiUrl("/api/author/backup"), {
+      headers: { Authorization: `Bearer ${authorization}` },
+    });
+    if (!response.ok) {
+      const detail = await response.text();
+      throw new ApiError(response.status, detail || `Backup failed (${response.status}).`);
+    }
+    return {
+      blob: await response.blob(),
+      filename: response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1]
+        ?? `pre-programmed-backup-${Date.now()}.json`,
+    };
   },
 
   async readWorkspace(authorization) {

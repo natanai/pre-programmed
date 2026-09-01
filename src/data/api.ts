@@ -13,6 +13,22 @@ export function authorLoginErrorMessage(error: unknown) {
   return "AUTHOR LOGIN UNAVAILABLE.";
 }
 
+export function isAuthorSessionExpiredError(error: unknown) {
+  return error instanceof ApiError && error.status === 401;
+}
+
+export function checkAuthorSession(token: string) {
+  return configuredAuthorPlatform.checkSession(token);
+}
+
+export function loginAuthor(key: string) {
+  return configuredAuthorPlatform.login(key);
+}
+
+export function downloadAuthorBackup(token: string) {
+  return configuredAuthorPlatform.downloadBackup(token);
+}
+
 export async function fetchProjectSnapshot() {
   return configuredProjectPersistence.readProject();
 }
