@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { popActiveAuthorTask, setAuthorTaskDirtyState } from "./taskStack";
 import type {
   AuthorLeaveConfirmation,
   AuthorTaskCompletion,
@@ -16,81 +17,90 @@ function taskFor(route: AuthorTaskRoute): AuthorTaskEntry {
  *
  * Every entry is a stable task, not merely a navigation breadcrumb. The host
  * keeps task workspaces mounted while they are suspended so unsaved local
- * editor state survives nested creation/editing. Dirty state is addressed by
- * task id, and a child task may return a typed result to its parent.
+ * editor state survives nested creation/editing. Dirty state and completion
+ * are addressed by task id, so a suspended async task cannot alter or dismiss
+ * whichever child happens to be active later.
  */
 export function useAuthorTaskRuntime() {
   const [tasks, setTasks] = useState<AuthorTaskEntry[]>([]);
+  const tasksRef = useRef<AuthorTaskEntry[]>([]);
   const [leaveConfirmation, setLeaveConfirmation] = useState<AuthorLeaveConfirmation | null>(null);
   const completions = useRef(new Map<string, AuthorTaskCompletion>());
   const activeTask = tasks.at(-1) ?? null;
   const dirtyCount = tasks.filter((task) => task.dirty).length;
 
+  const commitTasks = useCallback((next: AuthorTaskEntry[]) => {
+    tasksRef.current = next;
+    setTasks(next);
+  }, []);
+
   const openTask = useCallback((route: AuthorTaskRoute) => {
     const task = taskFor(route);
     completions.current.clear();
     setLeaveConfirmation(null);
-    setTasks([task]);
+    commitTasks([task]);
     return task.id;
-  }, []);
+  }, [commitTasks]);
 
   const pushTask = useCallback((route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => {
     const task = taskFor(route);
     if (onComplete) completions.current.set(task.id, onComplete);
     setLeaveConfirmation(null);
-    setTasks((current) => [...current, task]);
+    commitTasks([...tasksRef.current, task]);
     return task.id;
-  }, []);
+  }, [commitTasks]);
 
-  const popTask = useCallback((result?: AuthorTaskResult) => {
+  const popTask = useCallback((expectedTaskId?: string, result?: AuthorTaskResult) => {
+    const next = popActiveAuthorTask(tasksRef.current, expectedTaskId);
+    if (!next.popped) return false;
+    const completion = completions.current.get(next.popped.id);
+    completions.current.delete(next.popped.id);
     setLeaveConfirmation(null);
-    setTasks((current) => {
-      const task = current.at(-1);
-      if (!task) return current;
-      const completion = completions.current.get(task.id);
-      completions.current.delete(task.id);
-      if (completion) queueMicrotask(() => completion(result));
-      return current.slice(0, -1);
-    });
-  }, []);
+    commitTasks(next.tasks);
+    if (completion) queueMicrotask(() => completion(result));
+    return true;
+  }, [commitTasks]);
 
-  const completeTask = useCallback((result?: AuthorTaskResult) => {
-    popTask(result);
+  const completeTask = useCallback((taskId: string, result?: AuthorTaskResult) => {
+    popTask(taskId, result);
   }, [popTask]);
 
   const closeAll = useCallback(() => {
     completions.current.clear();
     setLeaveConfirmation(null);
-    setTasks([]);
-  }, []);
+    commitTasks([]);
+  }, [commitTasks]);
 
   const setTaskDirty = useCallback((taskId: string, dirty: boolean) => {
-    setTasks((current) => current.map((task) => task.id === taskId ? { ...task, dirty } : task));
-  }, []);
+    const next = setAuthorTaskDirtyState(tasksRef.current, taskId, dirty);
+    if (next !== tasksRef.current) commitTasks(next);
+  }, [commitTasks]);
 
-  const requestBack = useCallback(() => {
-    if (!activeTask) return;
-    if (activeTask.dirty) {
-      setLeaveConfirmation({ action: "back", dirtyCount: 1 });
+  const requestBack = useCallback((taskId?: string) => {
+    const active = tasksRef.current.at(-1);
+    if (!active || (taskId && active.id !== taskId)) return;
+    if (active.dirty) {
+      setLeaveConfirmation({ action: "back", dirtyCount: 1, taskId: active.id });
       return;
     }
-    popTask();
-  }, [activeTask, popTask]);
+    popTask(active.id);
+  }, [popTask]);
 
   const requestClose = useCallback(() => {
-    if (!tasks.length) return;
-    if (dirtyCount) {
-      setLeaveConfirmation({ action: "close", dirtyCount });
+    const current = tasksRef.current;
+    if (!current.length) return;
+    const currentDirtyCount = current.filter((task) => task.dirty).length;
+    if (currentDirtyCount) {
+      setLeaveConfirmation({ action: "close", dirtyCount: currentDirtyCount });
       return;
     }
     closeAll();
-  }, [closeAll, dirtyCount, tasks.length]);
+  }, [closeAll]);
 
   const confirmLeave = useCallback(() => {
-    const action = leaveConfirmation?.action;
-    if (action === "back") popTask();
-    else if (action === "close") closeAll();
-  }, [closeAll, leaveConfirmation?.action, popTask]);
+    if (leaveConfirmation?.action === "back") popTask(leaveConfirmation.taskId);
+    else if (leaveConfirmation?.action === "close") closeAll();
+  }, [closeAll, leaveConfirmation, popTask]);
 
   const cancelLeave = useCallback(() => setLeaveConfirmation(null), []);
 

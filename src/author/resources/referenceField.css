@@ -1,25 +1,150 @@
 .author-reference-field {
   display: grid;
-  gap: 0.45rem;
+  gap: .4em;
   min-width: 0;
 }
 
-.author-reference-field > select {
+.author-reference-trigger {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65em;
+  width: 100%;
+  min-height: 2.75em;
+  padding: .45em .6em !important;
+  border: 1px solid var(--dos-line) !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  text-align: left;
+}
+
+.author-reference-trigger[aria-expanded="true"] {
+  border-color: var(--dos-text) !important;
+}
+
+.author-reference-kind {
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+
+.author-reference-value {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-bright);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.author-reference-value.is-empty {
+  color: var(--dos-muted);
+}
+
+.author-reference-chevron {
+  color: var(--dos-muted);
+}
+
+.author-reference-chooser {
+  display: grid;
+  gap: .55em;
+  min-width: 0;
+  padding: .65em;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.author-reference-chooser > header {
+  color: var(--dos-muted);
+}
+
+.author-reference-search {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .6em;
+}
+
+.author-reference-search > span {
+  color: var(--dos-muted);
+}
+
+.author-reference-search input {
   min-width: 0;
   width: 100%;
+}
+
+.author-reference-options {
+  display: grid;
+  max-height: 14em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-line);
+}
+
+.author-reference-options > button {
+  display: grid;
+  gap: .2em;
+  min-height: 2.75em;
+  padding: .45em .55em !important;
+  border: 0 !important;
+  border-bottom: 1px dotted var(--dos-line) !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  text-align: left;
+}
+
+.author-reference-options > button:last-of-type {
+  border-bottom: 0 !important;
+}
+
+.author-reference-options > button[aria-selected="true"] {
+  color: var(--dos-bright) !important;
+  box-shadow: inset .25em 0 0 var(--dos-text);
+}
+
+.author-reference-options small {
+  color: var(--dos-muted);
+}
+
+.author-reference-no-results {
+  padding: .7em;
+  color: var(--dos-muted);
 }
 
 .author-reference-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.35rem;
+  gap: .35em .75em;
 }
 
 .author-reference-actions button {
+  min-height: 2.5em;
+  padding: .3em .1em !important;
   white-space: nowrap;
 }
 
 .author-reference-empty {
-  opacity: 0.72;
+  color: var(--dos-muted);
   line-height: 1.35;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .author-reference-trigger,
+  .author-reference-options > button,
+  .author-reference-actions button {
+    min-height: 3em;
+    font-size: max(16px, 1em);
+  }
+
+  .author-reference-chooser {
+    padding: .55em;
+  }
+
+  .author-reference-options {
+    max-height: min(17em, 42dvh);
+  }
+
+  .author-reference-actions {
+    display: grid;
+  }
 }

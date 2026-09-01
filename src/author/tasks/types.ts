@@ -22,6 +22,7 @@ export type AuthorTaskEntry = {
 export type AuthorLeaveConfirmation = {
   action: "back" | "close";
   dirtyCount: number;
+  taskId?: string;
 };
 
 export type AuthorTaskCompletion = (result?: AuthorTaskResult) => void;

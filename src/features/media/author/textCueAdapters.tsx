@@ -1,3 +1,4 @@
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { TextCueAuthorAdapter } from "../../../author/textCues/types";
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 
@@ -5,14 +6,11 @@ const synth: TextCueAuthorAdapter = {
   type: "synth",
   label: "synth",
   createValue: () => "",
-  renderValue: ({ cue, snapshot, onValueChange }) => <select
-    aria-label="Synth cue sound"
+  renderValue: ({ cue, onValueChange }) => <ReferenceField
+    kind="synth-sound"
     value={String(cue.value ?? "")}
-    onChange={(event) => onValueChange(event.target.value)}
-  >
-    <option value="">choose synth</option>
-    {snapshot.synthSounds.map((sound) => <option key={sound.id} value={sound.id}>{sound.label}</option>)}
-  </select>,
+    onChange={onValueChange}
+  />,
 };
 
 function assetCue(type: "audio" | "sprite", assetType: "audio" | "image"): TextCueAuthorAdapter {

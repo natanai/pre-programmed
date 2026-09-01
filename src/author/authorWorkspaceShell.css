@@ -53,10 +53,18 @@
   overflow: hidden;
 }
 
-.author-workspace-content > .author-panel-frame,
-.author-workspace-content > .inventory-surface,
-.author-workspace-content > .dialogue-authoring-popover,
-.author-workspace-content > .dialogue-authoring-popover > .author-panel-frame {
+.author-task-surface {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.author-task-surface > .author-panel-frame,
+.author-task-surface > .inventory-surface,
+.author-task-surface > .dialogue-authoring-popover,
+.author-task-surface > .dialogue-authoring-popover > .author-panel-frame {
   width: 100%;
   height: 100%;
   max-width: none;
@@ -64,14 +72,19 @@
   margin: 0;
 }
 
-.author-workspace-content > .dialogue-authoring-popover {
+.author-task-surface > .dialogue-authoring-popover {
   min-height: 0;
   overflow: hidden;
 }
 
-.author-workspace-content > .author-panel,
-.author-workspace-content > .dialogue-authoring-popover > .author-panel {
+.author-task-surface > .author-panel,
+.author-task-surface > .dialogue-authoring-popover > .author-panel {
   margin: 0;
+}
+
+.author-task-depth {
+  margin-left: auto;
+  color: var(--dos-muted);
 }
 
 body:has(.author-workspace-layer) .work-surface-close {
@@ -164,9 +177,9 @@ body:has(.author-workspace-layer) .work-surface-close {
     display: grid;
   }
 
-  .author-workspace-content > .author-panel,
-  .author-workspace-content > .dialogue-authoring-popover > .author-panel,
-  .author-workspace-content > .inventory-surface {
+  .author-task-surface > .author-panel,
+  .author-task-surface > .dialogue-authoring-popover > .author-panel,
+  .author-task-surface > .inventory-surface {
     margin: 0;
     padding: .6em;
   }

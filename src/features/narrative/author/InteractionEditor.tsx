@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import {
   makeId,
@@ -452,10 +453,12 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
     <section className="guided-section response-writing-section">
       <h3>RESPONSE</h3>
       <label>SPEAKER
-        <select value={outcome.speakerId ?? ""} onChange={(event) => onSpeaker(event.target.value || null)}>
-          <option value="">none / narration</option>
-          {snapshot.entities.filter((entity) => entity.type === "character").map((entity) => <option key={entity.id} value={entity.id}>{entity.name}</option>)}
-        </select>
+        <ReferenceField
+          kind="character"
+          value={outcome.speakerId ?? ""}
+          onChange={(speakerId) => onSpeaker(speakerId || null)}
+          placeholder="none / narration"
+        />
         <small>The selected character's name is shown with this response in play.</small>
       </label>
       <label>RESPONSE TEXT
