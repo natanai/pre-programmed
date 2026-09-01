@@ -8,14 +8,6 @@ import { NodeEditor } from "./NodeEditor";
 import { StructureNavigator } from "./StructureNavigator";
 import { narrativeAuthorTools } from "./tools";
 
-function notationForInteraction(
-  interaction: Interaction,
-  snapshot: Parameters<typeof buildGraphIndex>[0],
-  playState: Parameters<typeof notationForNode>[3] extends never ? never : never,
-) {
-  return interaction;
-}
-
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
   tools: narrativeAuthorTools,
