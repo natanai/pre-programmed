@@ -39,20 +39,33 @@ jobs:
           import { readFileSync } from "node:fs";
           const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
           const workerName = config.name;
-          const endpoint = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${encodeURIComponent(workerName)}/versions?per_page=10`;
+          const root = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${encodeURIComponent(workerName)}/versions`;
+          const headers = { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` };
           try {
-            const response = await fetch(endpoint, {
-              headers: { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` },
-            });
-            if (!response.ok) {
-              console.log(`WORKER_VERSION_METADATA unavailable (${response.status})`);
+            const listResponse = await fetch(`${root}?per_page=10`, { headers });
+            if (!listResponse.ok) {
+              console.log(`WORKER_VERSION_METADATA unavailable (${listResponse.status})`);
               process.exit(0);
             }
-            const payload = await response.json();
-            const versions = Array.isArray(payload?.result) ? payload.result : [];
-            const binding = versions
-              .flatMap((version) => version?.resources?.bindings ?? [])
-              .find((candidate) => candidate?.type === "d1" && candidate?.name === "DB" && typeof candidate?.database_id === "string");
+            const listPayload = await listResponse.json();
+            const versions = Array.isArray(listPayload?.result) ? listPayload.result : [];
+            const versionId = versions.find((version) => typeof version?.id === "string")?.id;
+            if (!versionId) {
+              console.log("WORKER_VERSION_D1_BINDING not-found (no-version)");
+              process.exit(0);
+            }
+            const detailResponse = await fetch(`${root}/${encodeURIComponent(versionId)}`, { headers });
+            if (!detailResponse.ok) {
+              console.log(`WORKER_VERSION_DETAIL unavailable (${detailResponse.status})`);
+              process.exit(0);
+            }
+            const detailPayload = await detailResponse.json();
+            const bindings = detailPayload?.result?.resources?.bindings ?? [];
+            const binding = bindings.find((candidate) =>
+              candidate?.type === "d1"
+              && candidate?.name === "DB"
+              && typeof candidate?.database_id === "string"
+            );
             console.log(binding ? "WORKER_VERSION_D1_BINDING available" : "WORKER_VERSION_D1_BINDING not-found");
           } catch {
             console.log("WORKER_VERSION_METADATA unavailable (request-error)");
