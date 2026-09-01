@@ -1,4 +1,4 @@
-import type { AuthorPlatform } from "../author/authorPlatform";
+import type { AuthorPlatform, AuthorWorkspaceSnapshot } from "../author/authorPlatform";
 import type { ProjectSnapshot } from "../../engine/project/model";
 import { apiUrl, readJson } from "./http";
 
@@ -21,7 +21,7 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
   },
 
   async readWorkspace(authorization) {
-    return readJson(await fetch(apiUrl("/api/author/workspace"), {
+    return readJson<AuthorWorkspaceSnapshot>(await fetch(apiUrl("/api/author/workspace"), {
       headers: { Authorization: `Bearer ${authorization}` },
     }));
   },
