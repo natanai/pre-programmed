@@ -14,25 +14,25 @@ This is the durable progress ledger for making Pre-Programmed a replaceable, clo
 
 A mature feature may own project data, play state, lifecycle, conditions/effects/operations, Author UI, mutations, persistence, validation, and future migrations. Explicit composition roots are encouraged.
 
-## Current completion estimate — about 69%
+## Current completion estimate — about 72%
 
 This percentage estimates progress toward the architecture/product goals above, not game completeness. The baseline at the start of this pass was about 43%.
 
 | Area | Weight | Current | Weighted |
 | --- | ---: | ---: | ---: |
-| Feature-oriented source ownership | 12% | 88% | 10.6% |
-| Runtime contribution architecture | 12% | 88% | 10.6% |
+| Feature-oriented source ownership | 12% | 90% | 10.8% |
+| Runtime contribution architecture | 12% | 90% | 10.8% |
 | Author feature composition | 12% | 75% | 9.0% |
 | Responsive single-system Author shell | 12% | 40% | 4.8% |
-| Feature-owned project/play-state ownership | 14% | 60% | 8.4% |
+| Feature-owned project/play-state ownership | 14% | 70% | 9.8% |
 | Feature-owned mutations | 10% | 90% | 9.0% |
-| Feature persistence/restore/validation | 12% | 80% | 9.6% |
-| Feature-owned future migrations | 6% | 40% | 2.4% |
+| Feature persistence/restore/validation | 12% | 90% | 10.8% |
+| Feature-owned future migrations | 6% | 50% | 3.0% |
 | Clone/fork installation portability | 8% | 45% | 3.6% |
-| Boundary/deletion guardrails | 2% | 50% | 1.0% |
-| **Total** | **100%** |  | **≈68.9%** |
+| Boundary/deletion guardrails | 2% | 70% | 1.4% |
+| **Total** | **100%** |  | **≈72.9%** |
 
-**Important:** this is architecture completion, not merge readiness. The branch has not yet been able to run `npm run typecheck` / `npm test` in this environment, and the desktop dock still needs real-browser validation. Merge readiness is therefore materially lower than 69% until verification passes.
+The working estimate is therefore **about 72%**. Code-side merge readiness is now much higher than the previous checkpoint: GitHub Actions has successfully run dependency installation, `npm run typecheck`, the full Vitest suite, and `npm run build` on this branch. The desktop Author dock still needs real-browser validation before this PR should be treated as merge-ready.
 
 ## What changed in this pass
 
@@ -42,7 +42,9 @@ This percentage estimates progress toward the architecture/product goals above, 
 - [x] `src/game/*` is explicitly shrink-only compatibility architecture.
 - [x] The old `src/game/model.ts` lost real Inventory/State initialization behavior and now re-exports the canonical engine lifecycle.
 - [x] Architecture regression tests were added for composition roots and persistence dependency ordering.
-- [ ] Run those tests and add true feature-deletion checks.
+- [x] Added a branch-safe GitHub Actions validation workflow that never deploys or uses production secrets.
+- [x] GitHub CI now passes typecheck, the full test suite, and production build on the architecture branch.
+- [ ] Add true feature-deletion checks.
 
 ### Project/play-state ownership
 
@@ -54,7 +56,7 @@ This percentage estimates progress toward the architecture/product goals above, 
 - [x] Commands owns its play-state slice.
 - [x] `ProjectSnapshot` and `PlayState` are composed from feature-owned slices while retaining the existing flat runtime shape for compatibility.
 - [x] Narrative, State, Inventory, and Commands own their play-state initialization/reconciliation contributions.
-- [ ] Further reduce core/project-settings knowledge of feature-specific configuration, especially Commands settings.
+- [x] Commands now owns its project-settings defaults/normalization and Worker validation while the persisted `settings.commands` shape remains unchanged.
 - [ ] Prove deletion of an optional feature with a build/test run.
 
 ### Rules and mutations
@@ -76,12 +78,13 @@ This percentage estimates progress toward the architecture/product goals above, 
 - [x] `worker/projectStore.ts` is now a core orchestrator rather than a feature SQL warehouse.
 - [x] Reset and restore order are separate explicit composition concerns so foreign-key dependencies are deterministic.
 - [x] Bookmarks restore after Narrative nodes so their node foreign keys are valid.
-- [ ] Build/test the refactored Worker against fixtures and undo/restore behavior.
+- [x] Existing API/backup/migration tests pass after the persistence split.
 
 ### Worker validation and migrations
 
-- [x] Core mutation validation now owns the generic envelope/project settings only.
+- [x] Core mutation validation now owns the generic envelope and core settings only.
 - [x] Narrative, World, State, Inventory, and Media own their mutation payload validation.
+- [x] Commands owns validation of its project-settings slice.
 - [x] Existing migration history 1–12 is retained unchanged as historical schema fact.
 - [x] Added a canonical schema runner that composes historical migrations with future feature-owned migration contributions.
 - [x] Duplicate migration IDs are rejected.
@@ -115,23 +118,19 @@ This percentage estimates progress toward the architecture/product goals above, 
 
 ## Remaining major architectural blockers
 
-### 1. Verification
+### 1. Browser validation of the responsive Author shell
 
-This branch is intentionally still draft. The current environment could not resolve `github.com` for a local clone, so TypeScript/tests have not actually executed here. Do not merge based only on static review.
+The architecture branch now passes GitHub typecheck, tests, and production build. The major unverified part is presentation behavior: the dock needs real use on a wide desktop, narrow desktop/tablet, and mobile to confirm sizing, scrolling, hierarchy, and interaction with the live player terminal.
 
 ### 2. `App.tsx` still knows too much
 
 `App.tsx` remains the main frontend pressure point: project/session loading, feature runtime orchestration, Author session behavior, presentation, and several feature-specific integrations still meet there. The next frontend architecture pass should reduce it toward application/session composition rather than feature implementation.
 
-### 3. Project settings still have feature coupling
-
-Commands configuration is still structurally embedded in core `ProjectSettings`. Project-settings contributions exist in Author UI, but the durable model/persistence shape should eventually follow the same feature-slice ownership rule.
-
-### 4. Installation bootstrap is transitional
+### 3. Installation bootstrap is transitional
 
 A new developer has a much clearer supported path now, but setup is not yet “connect Cloudflare and everything is verified automatically.”
 
-### 5. Actual deletion tests have not run
+### 4. Actual deletion tests have not run
 
 The acceptance standard remains:
 
@@ -177,4 +176,8 @@ A new developer should be able to:
 - Added future feature migration contributions while retaining migration history 1–12 unchanged.
 - Added explicit reset/restore dependency ordering and corrected bookmark/node restore ordering.
 - Added modular architecture regression tests.
-- Current estimate: about **69% architecture completion**, pending verification.
+- Moved Commands project-settings normalization/defaulting and validation beside Commands.
+- Added non-deploying PR validation CI.
+- CI exposed two pre-existing broken tests on `main`; repaired the stale text-expression helper ownership/import and corrected a false-positive command-capability assertion.
+- Verified the branch with passing typecheck, full tests, and production build.
+- Current estimate: about **72% architecture completion**, pending browser validation and deletion/fresh-fork acceptance tests.
