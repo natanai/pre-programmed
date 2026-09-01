@@ -59,7 +59,14 @@ import { isSoftwareKeyboardOpen } from "./ui/viewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
-type TranscriptLine = { id: string; text: string; nodeId?: string; command?: boolean; artPath?: string };
+type TranscriptLine = {
+  id: string;
+  text: string;
+  nodeId?: string;
+  speakerId?: string | null;
+  command?: boolean;
+  artPath?: string;
+};
 
 function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
   return {
@@ -122,6 +129,7 @@ export default function App() {
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
+  const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
   const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
@@ -260,6 +268,7 @@ export default function App() {
     const compiled = compileTextNotation(interpolateText(node.text, { snapshot: project, state }), node.performance);
     setActiveText(compiled.text);
     setActiveNodeId(node.id);
+    setActiveSpeakerId(node.characterId);
     setActivePerformance(compiled.performance);
   };
 
@@ -271,9 +280,9 @@ export default function App() {
     const destination = snapshot.nodes.find((node) => node.id === pendingDestinationNodeId);
     setPendingDestinationNodeId(null);
     if (!destination) return;
-    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText }]);
+    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, speakerId: activeSpeakerId }]);
     showNode(snapshot, destination, playState);
-  }, [typewriter.complete, pendingDestinationNodeId, snapshot, playState, activeText]);
+  }, [typewriter.complete, pendingDestinationNodeId, snapshot, playState, activeText, activeSpeakerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -433,7 +442,12 @@ export default function App() {
 
   const appendActive = () => {
     if (!activeText) return;
-    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, nodeId: activeNodeId }]);
+    setTranscript((lines) => [...lines, {
+      id: crypto.randomUUID(),
+      text: activeText,
+      nodeId: activeNodeId,
+      speakerId: activeSpeakerId,
+    }]);
   };
 
   const handleEffectEvents = (events: EffectEvent[], anchorLineId?: string) => {
@@ -463,6 +477,7 @@ export default function App() {
     previousState: PlayState,
     commandLineId: string,
     charactersPerSecond = 18,
+    speakerId: string | null = null,
   ) => {
     setPlayState(execution.state);
     handleEffectEvents(execution.events, commandLineId);
@@ -476,6 +491,7 @@ export default function App() {
       const compiled = compileTextNotation(execution.responseText, { charactersPerSecond, cues: [] });
       setActiveText(compiled.text);
       setActiveNodeId(undefined);
+      setActiveSpeakerId(speakerId);
       setActivePerformance(compiled.performance);
       setPendingDestinationNodeId(destination?.id ?? null);
     } else if (destination) {
@@ -485,6 +501,7 @@ export default function App() {
       setPendingDestinationNodeId(null);
       setActiveText("");
       setActiveNodeId(undefined);
+      setActiveSpeakerId(null);
     }
   };
 
@@ -545,6 +562,7 @@ export default function App() {
         setPlayState(commandState);
         setActiveText("");
         setActiveNodeId(undefined);
+        setActiveSpeakerId(null);
         if (capability?.action.type === "open-workspace") {
           setPanel({
             type: "feature",
@@ -571,7 +589,9 @@ export default function App() {
 
     if (!parsed.interaction) {
       setPlayState(commandState);
-      setActiveText(""); setActiveNodeId(undefined);
+      setActiveText("");
+      setActiveNodeId(undefined);
+      setActiveSpeakerId(null);
       if (authorMode && authorView) { setUnhandledCommand(value); setAuthorMessage(`UNHANDLED: ${parsed.reason}.`); }
       return;
     }
@@ -583,6 +603,7 @@ export default function App() {
       commandState,
       commandLineId,
       execution.outcome?.responseCharactersPerSecond ?? 18,
+      execution.outcome?.speakerId ?? null,
     );
   };
 
@@ -613,6 +634,7 @@ export default function App() {
     appendActive();
     setActiveText("");
     setActiveNodeId(undefined);
+    setActiveSpeakerId(null);
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
     workSurface.close();
     window.requestAnimationFrame(scrollHistoryToPresent);
@@ -662,11 +684,11 @@ export default function App() {
         <div className="terminal-history-content">
           {transcript.map((line) => {
             if (line.artPath) return <div className="story-line" key={line.id} aria-hidden="true"><img src={assetUrl(line.artPath)} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
-            if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}>{line.text}</button>;
+            if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
-            return <div className={line.command ? "command-line" : "story-line"} key={line.id}>{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
+            return <div className={line.command ? "command-line" : "story-line"} key={line.id}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
           })}
-          {activeText ? authorExperience && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
+          {activeText ? authorExperience && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
         </div>
       </div>
 
@@ -740,6 +762,12 @@ export default function App() {
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
   </main>;
+}
+
+function SpeakerPrefix({ snapshot, speakerId }: { snapshot: ProjectSnapshot; speakerId?: string | null }) {
+  if (!speakerId) return null;
+  const speaker = snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId);
+  return speaker ? <span>{speaker.name}: </span> : null;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {
