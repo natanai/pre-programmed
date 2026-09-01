@@ -19,7 +19,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
       }}
       onSnapshot={context.onSnapshot}
       onRestore={context.onRestore}
-      onClose={context.leaveCurrentSurface}
+      onClose={context.leaveCurrentTask}
     />;
   },
 };
