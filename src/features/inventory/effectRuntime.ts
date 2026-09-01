@@ -26,8 +26,20 @@ const setItemState: EffectHandler = (effect, _snapshot, state) => {
   };
 };
 
+const setBodyBackground: EffectHandler = (effect, snapshot, state) => {
+  if (effect.type !== "set_body_background") return unchangedEffect(state);
+  if (effect.backgroundId && !snapshot.bodyBackgrounds.some((background) => background.id === effect.backgroundId)) {
+    return unchangedEffect(state);
+  }
+  return {
+    state: { ...state, bodyBackgroundId: effect.backgroundId || null },
+    events: [],
+  };
+};
+
 export const INVENTORY_EFFECT_HANDLERS: Readonly<Record<string, EffectHandler>> = {
   give_item: giveItem,
   remove_item: removeItem,
   set_item_state: setItemState,
+  set_body_background: setBodyBackground,
 };
