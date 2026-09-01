@@ -58,7 +58,7 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => {
         id: "structure",
         label: "STRUCTURE",
         description: "Browse nodes, links, and authored interactions.",
-        onSelect: () => context.pushPanel({ type: "structure" }),
+        onSelect: () => context.pushPanel({ type: "feature", feature: "narrative", workspace: "structure" }),
       },
     },
   ];
