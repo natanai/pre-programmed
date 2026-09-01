@@ -1,65 +1,43 @@
-# Installing Pre-Programmed as a New Game Engine Instance
+# Install Pre-Programmed as a New Game Engine Instance
 
-This is the transitional installation path while full one-command bootstrap is still being built.
+The goal is simple: **fork/clone → connect your infrastructure → create the game in Author mode.** Ordinary game content should not require changes to engine source.
 
-The target remains: clone/fork → connect infrastructure → do ordinary game creation in Author mode without editing engine source.
+## 1. Fork or clone
 
-## What is engine code vs installation configuration
-
-Engine code should be reusable across games.
-
-Installation-specific values include:
-
-- Worker name
-- Cloudflare account credentials
-- D1 database binding/resource
-- Author key
-- hosted API origin
-- GitHub Pages repository path
-
-Those values should not become feature/runtime logic.
-
-## Current production installation
-
-The repository's current `wrangler.jsonc` remains the live `natanai/pre-programmed` installation configuration for now. It still contains the existing production D1 identity so this architecture branch does not silently replace or detach the live database.
-
-Do not copy those resource IDs into a fork.
-
-## Starting a new installation
-
-### 1. Fork or clone the repository
-
-Install dependencies normally:
+Install dependencies:
 
 ```sh
 npm install
 ```
 
-### 2. Run the guarded installation helper
-
-For a fresh fork/clone:
+Then run:
 
 ```sh
 npm run setup:installation
 ```
 
-The helper:
+The helper separates installation configuration from engine behavior. It prepares:
 
-- starts from `wrangler.template.jsonc`;
-- chooses a Worker name;
-- keeps the D1 binding as a portable draft `DB` binding with no copied database ID;
-- writes local client installation values to ignored `.env.local`;
-- refuses to overwrite an already configured D1 installation by default.
+- a Worker name;
+- a portable `DB` D1 binding from `wrangler.template.jsonc`;
+- `.env.local` with the client API/base-path settings;
+- a Pages base path inferred from the fork's GitHub repository name when possible.
 
-This refusal is intentional protection for existing deployments. In a checkout that already contains a configured D1 binding, the command stops rather than replacing it.
+### Fork safety
 
-Only in a **new installation** where replacement is intentional may the guard be overridden:
+A GitHub fork initially contains the upstream repository's live `wrangler.jsonc`. The setup helper recognizes that specific situation from the Git remote and replaces the inherited upstream installation configuration with portable settings.
+
+After a checkout has its **own** D1 configuration, the helper refuses to overwrite it by default.
+
+Only when replacing an existing installation intentionally should you use:
 
 ```sh
 npm run setup:installation -- --force
 ```
 
-The setup helper also accepts environment variables for non-interactive use:
+If the checkout has no readable GitHub `origin` (for example, a downloaded archive), the helper stays conservative and requires `--force` before replacing an existing D1 configuration.
+
+For non-interactive setup, these environment variables are supported:
 
 ```text
 PRE_PROGRAMMED_WORKER_NAME
@@ -68,9 +46,11 @@ PRE_PROGRAMMED_REPOSITORY_NAME
 PRE_PROGRAMMED_BASE_PATH
 ```
 
-### 3. Let Wrangler provision/link D1
+## 2. Connect Cloudflare
 
-`wrangler.template.jsonc` contains the reusable Worker shape with a draft `DB` binding and no account-specific D1 ID:
+Authenticate Wrangler for the Cloudflare account that should own the game.
+
+The portable template starts with a draft D1 binding:
 
 ```json
 {
@@ -78,69 +58,87 @@ PRE_PROGRAMMED_BASE_PATH
 }
 ```
 
-Current Wrangler versions can automatically provision a D1 resource for this kind of draft binding during deployment, so reusable templates do not need to commit another installation's resource ID.
+Current Wrangler can automatically provision draft resources during deployment. If automatic provisioning is unavailable or you prefer an explicit setup, create D1 directly:
 
-### 4. Configure the Author secret
+```sh
+npx wrangler d1 create YOUR_DATABASE_NAME
+```
 
-The Worker expects `ADMIN_KEY`.
+Then use the returned database name/ID in this installation's Wrangler configuration. Stable D1 bindings ultimately identify the database by name and ID.
 
-For GitHub deployment, the existing workflow also expects these repository secrets:
+Configure the Worker secret:
 
-- `ADMIN_KEY`
-- `CLOUDFLARE_API_TOKEN`
-- `CLOUDFLARE_ACCOUNT_ID`
+```text
+ADMIN_KEY
+```
 
-Secrets belong in GitHub/Cloudflare configuration, not committed files.
+Then deploy the Worker:
 
-### 5. Point the client at the installation's Worker
+```sh
+npx wrangler deploy
+```
 
-The client supports:
+## 3. Point the client at the Worker
+
+Once the Worker URL is known, set:
 
 ```text
 VITE_API_ORIGIN
 ```
 
-For GitHub Actions, set the repository variable:
+For the included GitHub Pages deployment workflow, use the repository variable:
 
 ```text
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
-to the deployed Worker origin, for example:
+The Pages base path is derived from the repository name automatically. `VITE_BASE_PATH` remains available for nonstandard deployments.
+
+## 4. Optional GitHub production deployment
+
+The included production workflow expects:
 
 ```text
-https://your-worker.your-subdomain.workers.dev
+Secrets:
+ADMIN_KEY
+CLOUDFLARE_API_TOKEN
+CLOUDFLARE_ACCOUNT_ID
+
+Variable:
+PRE_PROGRAMMED_API_ORIGIN
 ```
 
-The deployment workflow passes that value to the Pages build and uses the same origin for its API health verification.
+Production deployment on `main` is intentionally the only automatic workflow. Prototype branch work does not continuously run CI.
 
-### 6. GitHub Pages base path
+## 5. Verify the installed engine
 
-The deployment workflow derives the Pages base path from the repository name automatically.
+A successful installation should satisfy these product checks:
 
-For nonstandard builds, the client also supports:
+1. `/api/health` reports a healthy D1-backed Worker with Author access configured.
+2. `/api/project/snapshot` returns an initialized project.
+3. The client loads that project.
+4. Author login succeeds.
+5. An Author edit can be saved and survives reload.
 
-```text
-VITE_BASE_PATH
-```
+The production deployment workflow performs the infrastructure-side health checks. The final Author login/save remains a real-client acceptance test because it verifies the complete installation rather than only infrastructure.
 
-`.env.example` documents both client-side override points.
+## What belongs to the installation
 
-## What still needs automation
+These are configuration, not engine behavior:
 
-This is not yet the final desired installation experience.
+- Worker name;
+- Cloudflare account credentials;
+- D1 resource identity;
+- Author key;
+- hosted API origin;
+- GitHub Pages repository/base path.
 
-The current helper prepares instance configuration but does not yet own the complete external-account workflow. The remaining bootstrap target is to:
+Do not copy another installation's resource identity into a new game.
 
-1. authenticate/confirm Cloudflare configuration;
-2. provision or attach D1 and verify the result;
-3. establish/discover the hosted Worker origin automatically;
-4. initialize/verify schema explicitly;
-5. guide or automate GitHub secret/variable setup when GitHub Pages deployment is desired;
-6. verify that Author mode can log in and save.
+## What remains transitional
 
-Until those steps are integrated, this document describes a supported transitional path rather than the definition of finished portability.
+The repo still keeps its current production Wrangler configuration checked in so the live prototype is not detached from its existing database. New forks no longer need to preserve that inherited configuration: `npm run setup:installation` resets it safely when the Git remote identifies a fork.
 
-## After installation
+A future cleanup may move the original production identity entirely outside reusable source control. That should only happen together with a proven deployment replacement path, not by risking the live authored database.
 
-Ordinary game creation should happen through Author mode rather than source edits: nodes, responses, characters, locations, variables, items, conditions, effects, commands, and other authored systems should remain project data unless a creator is intentionally developing the engine itself.
+After setup, nodes, interactions, characters, locations, variables, items, conditions, effects, commands, and other ordinary game systems should be authored through the engine rather than by editing application source.
