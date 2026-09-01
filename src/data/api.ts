@@ -1,11 +1,7 @@
-import type {
-  AuthorBookmark,
-  ProjectMutation,
-  ProjectSnapshot,
-  RevisionSummary,
-} from "../game/model";
+import type { ProjectMutation, ProjectSnapshot } from "../game/model";
+import { configuredAuthorPlatform } from "../platform/author/configuredAuthorPlatform";
+import { ApiError } from "../platform/cloudflare/http";
 import { configuredProjectPersistence } from "../platform/persistence/configuredProjectPersistence";
-import { ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
 export { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/http";
 
@@ -71,19 +67,9 @@ export async function submitProjectMutation(token: string, mutation: ProjectMuta
 }
 
 export async function fetchAuthorWorkspace(token: string) {
-  return readJson<{ revisions: RevisionSummary[]; bookmarks: AuthorBookmark[] }>(
-    await fetch(apiUrl("/api/author/workspace"), {
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  );
+  return configuredAuthorPlatform.readWorkspace(token);
 }
 
 export async function undoLastRevision(token: string, expectedRevision: number) {
-  return readJson<{ snapshot: ProjectSnapshot }>(
-    await fetch(apiUrl("/api/author/undo"), {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ expectedRevision }),
-    }),
-  );
+  return { snapshot: await configuredAuthorPlatform.undoLastRevision(token, expectedRevision) };
 }
