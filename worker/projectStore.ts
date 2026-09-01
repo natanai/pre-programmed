@@ -114,8 +114,8 @@ function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks:
   const featureDeletes = workerFeaturesForReset().flatMap((feature) => feature.resetStatements(db));
   const operations: MutationOperation[] = [
     { type: "project.settings", settings: snapshot.settings },
-    ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
     ...workerFeaturesForRestore().flatMap((feature) => feature.restoreOperations(snapshot)),
+    ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
   ];
   return [...coreDeletes, ...featureDeletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
 }
