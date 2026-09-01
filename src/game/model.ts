@@ -9,7 +9,12 @@ import type { ProjectSnapshot } from "../engine/project/model";
  */
 export * from "../engine/rules/model";
 export * from "../engine/project/model";
-export { createEmptyPlayState, reconcilePlayState, resumeAuthorBookmark } from "../engine/project/playState";
+export {
+  createEmptyPlayState,
+  reconcilePlayState,
+  reconcilePlayStateAfterProjectChange,
+  resumeAuthorBookmark,
+} from "../engine/project/playState";
 export * from "../features/inventory/model";
 export * from "../features/media/model";
 export * from "../features/narrative/model";
