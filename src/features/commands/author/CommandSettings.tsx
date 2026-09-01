@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
 import type { AuthorPanelRoute } from "../../../author/workSurfaceNavigation";
+import { APPLICATION_COMMAND_CAPABILITIES } from "../applicationCatalog";
 import { COMMAND_REFERENCE_SOURCES, COMMAND_REFERENCE_SOURCE_BY_KIND } from "../referenceCatalog";
 import type { CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
 import "./commandSettings.css";
@@ -64,6 +65,10 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
     <button type="button" onClick={() => context.pushPanel({ type: "feature", feature: "commands", workspace: "grammar" })}>
       <span><strong>COMMAND GRAMMAR</strong><small>Define operations, aliases, argument slots, and accepted input shapes.</small></span>
       <span>{enabledCommands} ›</span>
+    </button>
+    <button type="button" onClick={() => context.pushPanel({ type: "feature", feature: "commands", workspace: "capabilities" })}>
+      <span><strong>ENGINE CAPABILITIES</strong><small>Browse module-provided actions and create your own player-facing language for them.</small></span>
+      <span>{APPLICATION_COMMAND_CAPABILITIES.length} ›</span>
     </button>
     <p className="command-settings-note">
       No traditional adventure-game verbs are required. A location can be entered as <code>{"{location}"}</code>, <code>go {"{location}"}</code>, or any authored pattern.
@@ -167,7 +172,7 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
         <span><strong>{command.label || command.operation}</strong><small>{command.patterns.join(" · ") || "no patterns"}</small></span>
         <span>{command.enabled ? "ON" : "OFF"} ›</span>
       </button>)}
-      {!commands.length ? <div className="command-settings-empty">NO PROJECT COMMANDS YET. THE ENGINE ADDS NONE AUTOMATICALLY.</div> : null}
+      {!commands.length ? <div className="command-settings-empty">NO PROJECT COMMANDS YET.</div> : null}
     </div>
     <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushPanel({
       type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
@@ -175,12 +180,32 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
   </section>;
 }
 
-function CommandEditor({ context, commandId }: { context: AuthorWorkspaceContext; commandId: string }) {
+function CapabilitiesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
+  return <section className="author-panel author-panel-frame command-settings-workspace">
+    <header><span>ENGINE CAPABILITIES</span><span>{APPLICATION_COMMAND_CAPABILITIES.length}</span></header>
+    <div className="author-panel-body command-settings-list">
+      <p className="command-settings-note">Capabilities are actions supplied by engine modules. They have no mandatory player-facing words. Create a command, then choose whatever language fits this game.</p>
+      {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <button type="button" key={capability.operation} onClick={() => context.pushPanel({
+        type: "feature",
+        feature: "commands",
+        workspace: "command",
+        data: { commandId: "new", operation: capability.operation },
+      })}>
+        <span><strong>{capability.label}</strong><small>{capability.description}</small></span>
+        <span>{capability.operation} ›</span>
+      </button>)}
+      {!APPLICATION_COMMAND_CAPABILITIES.length ? <div className="command-settings-empty">NO APPLICATION CAPABILITIES ARE INSTALLED.</div> : null}
+    </div>
+  </section>;
+}
+
+function CommandEditor({ context, commandId, initialOperation = "" }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string }) {
   const existing = context.snapshot.settings.commands.commands.find((command) => command.id === commandId);
+  const capability = APPLICATION_COMMAND_CAPABILITIES.find((candidate) => candidate.operation === initialOperation);
   const initial: CommandDefinition = structuredClone(existing ?? {
     id: crypto.randomUUID(),
-    label: "",
-    operation: "",
+    label: capability?.label ?? "",
+    operation: initialOperation,
     enabled: true,
     patterns: [],
     slots: [],
@@ -189,7 +214,7 @@ function CommandEditor({ context, commandId }: { context: AuthorWorkspaceContext
   const [draft, setDraft] = useState(initial);
   const [patternsText, setPatternsText] = useState(initial.patterns.join("\n"));
   const [baseline, setBaseline] = useState(JSON.stringify(initial));
-  const [operationTouched, setOperationTouched] = useState(Boolean(existing));
+  const [operationTouched, setOperationTouched] = useState(Boolean(existing || initialOperation));
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const currentForDirty = { ...draft, patterns: patternLines(patternsText) };
@@ -275,8 +300,9 @@ function CommandEditor({ context, commandId }: { context: AuthorWorkspaceContext
       </label>
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enabled</label>
       <label>OPERATION ID
-        <input value={draft.operation} onChange={(event) => { setOperationTouched(true); setDraft({ ...draft, operation: event.target.value.toLowerCase() }); }} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
-        <small>Stable engine operation ID. Can be any authored/module ID such as examine, go, combat.attack.</small>
+        <input list="engine-capability-operation-ids" value={draft.operation} onChange={(event) => { setOperationTouched(true); setDraft({ ...draft, operation: event.target.value.toLowerCase() }); }} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
+        <datalist id="engine-capability-operation-ids">{APPLICATION_COMMAND_CAPABILITIES.map((candidate) => <option key={candidate.operation} value={candidate.operation}>{candidate.label}</option>)}</datalist>
+        <small>Stable engine operation ID. Use an installed capability or any authored/module ID such as examine, go, combat.attack.</small>
       </label>
       <label>PATTERNS · ONE PER LINE
         <textarea rows={5} value={patternsText} onChange={(event) => updatePatterns(event.target.value)} placeholder={"{location}\ngo {location}\nwalk to {location}"} />
@@ -295,10 +321,10 @@ function CommandEditor({ context, commandId }: { context: AuthorWorkspaceContext
         </label>)}
         <label>PRIMARY TARGET
           <select value={draft.targetSlot} onChange={(event) => setDraft({ ...draft, targetSlot: event.target.value })}>
-            <option value="">NONE / META COMMAND</option>
+            <option value="">NONE / APPLICATION OR META COMMAND</option>
             {draft.slots.filter((slot) => slot.sourceKind !== "text").map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
           </select>
-          <small>The resolved target that receives this operation. Other slots remain operation arguments.</small>
+          <small>The resolved target that receives this operation. With no target, an installed application capability can handle the operation.</small>
         </label>
       </div> : null}
       {existing ? <div className="command-delete-zone">
@@ -326,6 +352,7 @@ export function renderCommandSettingsWorkspace(route: AuthorPanelRoute, context:
   if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;
   if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
   if (route.workspace === "grammar") return <CommandGrammarWorkspace context={context} />;
-  if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} />;
+  if (route.workspace === "capabilities") return <CapabilitiesWorkspace context={context} />;
+  if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} />;
   return null;
 }
