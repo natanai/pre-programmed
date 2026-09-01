@@ -9,6 +9,7 @@ export function createDraftOutcome(order = 0, responseText = ""): InteractionOut
     authorStatus: "draft",
     condition: ALWAYS,
     responseText,
+    speakerId: null,
     responseCharactersPerSecond: 18,
     effects: [],
     disposition: "stay",
