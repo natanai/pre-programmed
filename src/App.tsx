@@ -10,9 +10,10 @@ import {
   persistAuthorMutation,
   type AuthorPersistResult,
 } from "./author/persistence/authorProjectPersistence";
+import { useAuthorTaskRuntime } from "./author/tasks/useAuthorTaskRuntime";
+import type { AuthorTaskRoute } from "./author/tasks/types";
 import { buildAuthorToolGroups } from "./author/tools/registry";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
-import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
   authorLoginErrorMessage,
@@ -124,9 +125,9 @@ export default function App() {
   const [authorMode, setAuthorMode] = useState(false);
   const [authorView, setAuthorView] = useState(true);
   const [authorMessage, setAuthorMessage] = useState("");
-  const workSurface = useWorkSurfaceNavigation();
-  const panel = workSurface.panel;
-  const setPanel = (next: AuthorPanelRoute | null) => next ? workSurface.openPanel(next) : workSurface.close();
+  const authorTasks = useAuthorTaskRuntime();
+  const panel = authorTasks.activeTask?.route ?? null;
+  const setPanel = (next: AuthorTaskRoute | null) => next ? authorTasks.openTask(next) : authorTasks.closeAll();
   const [transcript, setTranscript] = useState<TranscriptLine[]>([]);
   const [activeText, setActiveText] = useState("");
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
@@ -285,7 +286,7 @@ export default function App() {
     setAuthorToken("");
     setAuthorMode(false);
     setAuthorView(true);
-    workSurface.close();
+    authorTasks.closeAll();
   };
 
   useEffect(() => {
@@ -318,7 +319,6 @@ export default function App() {
   const persist = async (
     operations: MutationOperation[],
     description: string,
-    closeAfterSave = false,
   ): Promise<AuthorPersistResult> => {
     if (!snapshot || !authorToken) return { status: "failed", snapshot };
     const before = snapshot;
@@ -351,13 +351,11 @@ export default function App() {
         const changed = result.snapshot.nodes.find((node) => node.id === savedState.currentNodeId);
         if (changed) showNode(result.snapshot, changed, savedState);
       }
-      if (closeAfterSave) workSurface.close();
       setAuthorMessage(`SAVED R${result.snapshot.revision}.`);
       return result;
     }
 
     if (result.status === "queued") {
-      if (closeAfterSave) workSurface.close();
       setAuthorMessage("SAVED LOCALLY; SERVER SYNC QUEUED.");
       return result;
     }
@@ -568,7 +566,7 @@ export default function App() {
     setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
     if (node) showNode(snapshot, node, state);
-    workSurface.close(); setAuthorMessage("LOCATION LOADED.");
+    authorTasks.closeAll(); setAuthorMessage("LOCATION LOADED.");
   };
   const applyWorkspaceState = (state: PlayState) => {
     if (!snapshot || !playState) return;
@@ -577,7 +575,7 @@ export default function App() {
     if (!transitioned) return;
     const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
     if (node) showNode(snapshot, node, state);
-    workSurface.close();
+    authorTasks.closeAll();
   };
   const showWorkspaceOutput = (text: string) => {
     historyPinnedToPresentRef.current = true;
@@ -586,7 +584,7 @@ export default function App() {
     setActiveNodeId(undefined);
     setActiveSpeakerId(null);
     setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
-    workSurface.close();
+    authorTasks.closeAll();
     window.requestAnimationFrame(scrollHistoryToPresent);
   };
   const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
@@ -603,15 +601,15 @@ export default function App() {
 
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : snapshot.settings.terminalPrompt;
-  const editorOpen = Boolean(panel);
+  const editorOpen = authorTasks.hasTasks;
   const authorExperience = authorMode && authorView;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
   const authorToolGroups = buildAuthorToolGroups({
     snapshot,
     playState,
-    pushPanel: workSurface.pushPanel,
-    close: workSurface.close,
+    pushTask: authorTasks.pushTask,
+    closeAll: authorTasks.closeAll,
     downloadBackup,
   });
 
@@ -632,11 +630,11 @@ export default function App() {
         <div className="terminal-history-content">
           {transcript.map((line) => {
             if (line.artPath) return <div className="story-line" key={line.id} aria-hidden="true"><img src={assetUrl(line.artPath)} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
-            if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === line.nodeId); if (node) setPanel({ type: "node", node }); }}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}</button>;
+            if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); setPanel({ type: "feature", feature: "narrative", workspace: "node", data: { nodeId: line.nodeId! } }); }}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
           })}
-          {activeText ? authorExperience && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); const node = snapshot.nodes.find((candidate) => candidate.id === activeNodeId); if (node) setPanel({ type: "node", node }); }}><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
+          {activeText ? authorExperience && typewriter.complete && activeNodeId ? <button type="button" className="story-edit-target" onClick={(event) => { event.stopPropagation(); setPanel({ type: "feature", feature: "narrative", workspace: "node", data: { nodeId: activeNodeId } }); }}><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button> : <div className="story-line"><SpeakerPrefix snapshot={snapshot} speakerId={activeSpeakerId} /><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></div> : null}
         </div>
       </div>
 
@@ -657,7 +655,7 @@ export default function App() {
           ? renderAuthorFeaturePlaySurfaces({
             snapshot,
             playState,
-            pushPanel: workSurface.pushPanel,
+            pushTask: authorTasks.pushTask,
             submitInput: (input) => { void handleTerminalValue(input); },
           })
           : null}
@@ -670,22 +668,29 @@ export default function App() {
           invalidLabel={invalidLabel}
           invalidDraft={invalidDraft}
           message={authorMessage}
-          onEditNode={() => setPanel({ type: "node", node: currentNode })}
-          onEditInvalid={() => setPanel({ type: "interaction", interaction: fallbackInput, fallback: true })}
+          onEditNode={() => setPanel({ type: "feature", feature: "narrative", workspace: "node", data: { nodeId: currentNode.id } })}
+          onEditInvalid={() => setPanel({
+            type: "feature",
+            feature: "narrative",
+            workspace: "interaction",
+            data: { ...(fallbackInput ? { interactionId: fallbackInput.id } : {}), fallback: "true" },
+          })}
           onOpenTools={() => setPanel({ type: "tools" })}
         /> : null}
 
         <AuthorWorkspaceHost
-          panel={panel}
+          tasks={authorTasks.tasks}
+          activeTaskId={authorTasks.activeTaskId}
           toolGroups={authorToolGroups}
           snapshot={snapshot}
           playState={playState}
           authorMode={authorExperience}
           authorToken={authorToken}
           persist={persist}
-          leaveCurrentSurface={workSurface.requestBack}
-          setWorkspaceDirty={workSurface.setCurrentDirty}
-          pushPanel={workSurface.pushPanel}
+          completeTask={authorTasks.completeTask}
+          requestBack={authorTasks.requestBack}
+          setTaskDirty={authorTasks.setTaskDirty}
+          pushTask={authorTasks.pushTask}
           runtime={{
             updateState: applyWorkspaceState,
             output: showWorkspaceOutput,
@@ -693,16 +698,16 @@ export default function App() {
           }}
           onSnapshot={applyCanonicalSnapshot}
           onRestore={restoreBookmark}
-          leaveConfirmation={workSurface.leaveConfirmation}
-          onConfirmLeave={workSurface.confirmLeave}
-          onCancelLeave={workSurface.cancelLeave}
+          leaveConfirmation={authorTasks.leaveConfirmation}
+          onConfirmLeave={authorTasks.confirmLeave}
+          onCancelLeave={authorTasks.cancelLeave}
         />
       </div>
     </div>
-    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author workspace and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={workSurface.requestClose}>[X]</button> : null}
+    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author tasks and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={authorTasks.requestClose}>[X]</button> : null}
     <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
-      workSurface.close();
+      authorTasks.closeAll();
       setAuthorMessage("");
     }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
