@@ -483,7 +483,6 @@ export default function App() {
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
     if (authorMode && authorView && ["/structure", "structure"].includes(normalized)) { setPanel({ type: "structure" }); return; }
-    if (authorMode && authorView && ["/definitions", "definitions"].includes(normalized)) { setPanel({ type: "definitions" }); return; }
     if (authorMode && authorView) {
       const featureShortcut = resolveAuthorFeatureTerminalShortcut(normalized);
       if (featureShortcut) { setPanel(featureShortcut); return; }
