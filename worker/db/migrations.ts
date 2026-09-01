@@ -403,8 +403,6 @@ const migrations: Migration[] = [
 
 export const MIGRATION_SCRIPTS = migrations.map((migration) => ({ ...migration }));
 
-let ready: Promise<void> | null = null;
-
 export function splitSqlStatements(sql: string) {
   return sql
     .split(";")
@@ -416,35 +414,4 @@ export async function executeSqlScript(db: D1Database, sql: string) {
   for (const statement of splitSqlStatements(sql)) {
     await db.prepare(statement).run();
   }
-}
-
-async function migrate(db: D1Database) {
-  await db.prepare(`
-    CREATE TABLE IF NOT EXISTS schema_migrations (
-      id INTEGER PRIMARY KEY,
-      name TEXT NOT NULL,
-      applied_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `).run();
-
-  const applied = await db.prepare("SELECT id FROM schema_migrations ORDER BY id").all<{ id: number }>();
-  const appliedIds = new Set(applied.results.map((row) => row.id));
-
-  for (const migration of migrations) {
-    if (appliedIds.has(migration.id)) continue;
-    await executeSqlScript(db, migration.sql);
-    await db.prepare("INSERT INTO schema_migrations (id, name) VALUES (?, ?)")
-      .bind(migration.id, migration.name)
-      .run();
-  }
-}
-
-export function ensureSchema(db: D1Database) {
-  if (!ready) {
-    ready = migrate(db).catch((error) => {
-      ready = null;
-      throw error;
-    });
-  }
-  return ready;
 }
