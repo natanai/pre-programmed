@@ -6,12 +6,14 @@
     --author-desktop-suite-gap: clamp(1rem, 2vw, 2rem);
   }
 
-  body:has(.author-home) .dos-screen,
-  body:has(.author-workspace-layer) .dos-screen {
+  html[data-author-experience="true"] .dos-screen {
     padding-left: calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap));
   }
 
-  body:has(.author-home) .terminal-lower {
+  /* The existing quick/current-node Author surface becomes the dock. Keeping
+   * this keyed to Author experience state rather than AuthorHome visibility
+   * prevents the game from jumping sideways while story text is playing. */
+  html[data-author-experience="true"] .terminal-lower {
     position: fixed;
     top: var(--terminal-viewport-top, 0px);
     right: auto;
@@ -26,18 +28,20 @@
     background: #000;
   }
 
-  body:has(.author-home) .terminal-lower > *,
-  body:has(.author-home) .author-home,
-  body:has(.author-home) .player-choice-scroll,
-  body:has(.author-home) .unhandled-tools {
+  html[data-author-experience="true"] .terminal-lower > *,
+  html[data-author-experience="true"] .author-home,
+  html[data-author-experience="true"] .player-choice-scroll,
+  html[data-author-experience="true"] .unhandled-tools {
     width: 100%;
     max-width: 100%;
   }
 
-  body:has(.author-home) .author-home {
+  html[data-author-experience="true"] .author-home {
     margin-top: 0;
   }
 
+  /* AuthorWorkspaceHost is the same portal used on mobile. Wide desktop only
+   * changes its geometry so the live terminal remains usable beside it. */
   .author-workspace-layer {
     right: auto;
     width: var(--author-desktop-suite-width);
@@ -49,6 +53,8 @@
     left: calc(var(--author-desktop-suite-width) - 3.5em);
   }
 
+  /* Existing multi-column editors collapse inside the narrower dock. Their
+   * components and data semantics are unchanged. */
   .author-workspace-layer .form-grid,
   .author-workspace-layer .node-meta-grid,
   .author-workspace-layer .voice-settings,
