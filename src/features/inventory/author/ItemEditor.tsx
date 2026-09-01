@@ -123,7 +123,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
 
       <section className="item-editor-section">
         <h3>PLAYER BEHAVIOR</h3>
-        <OperationHooksEditor snapshot={snapshot} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+        <OperationHooksEditor snapshot={snapshot} targetKind="inventory.item" capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </section>
     </div>

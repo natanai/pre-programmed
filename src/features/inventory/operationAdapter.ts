@@ -8,12 +8,12 @@ import {
 } from "./runtime";
 
 export const INVENTORY_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
-  { value: "inspect", label: "inspect" },
-  { value: "use", label: "use" },
-  { value: "move", label: "move" },
-  { value: "remove", label: "remove" },
-  { value: "equip", label: "equip" },
-  { value: "unequip", label: "unequip" },
+  { value: "inspect", label: "inspect", targetKinds: ["inventory.item"] },
+  { value: "use", label: "use", targetKinds: ["inventory.item"] },
+  { value: "move", label: "move", targetKinds: ["inventory.item"] },
+  { value: "remove", label: "remove", targetKinds: ["inventory.item"] },
+  { value: "equip", label: "equip", targetKinds: ["inventory.item"] },
+  { value: "unequip", label: "unequip", targetKinds: ["inventory.item"] },
 ];
 
 const DEFAULT_ITEM_OPERATIONS: OperationId[] = INVENTORY_OPERATION_DEFINITIONS.map((definition) => definition.value);
