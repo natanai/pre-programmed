@@ -36,7 +36,7 @@ A mature feature should be able to own, where applicable:
 
 Explicit composition roots are encouraged. Cross-feature implementation knowledge outside those roots is not.
 
-## Current completion estimate — 46%
+## Current completion estimate — 48%
 
 This percentage measures progress toward the three product goals above, not feature count or game completeness. The starting estimate for this architecture pass was 43%.
 
@@ -50,11 +50,11 @@ This percentage measures progress toward the three product goals above, not feat
 | Feature-owned mutations | 10% | 20% | 2.0% |
 | Feature-owned persistence/restore/validation | 12% | 15% | 1.8% |
 | Feature-owned migrations | 6% | 10% | 0.6% |
-| Clone/fork installation portability | 8% | 30% | 2.4% |
-| Boundary/deletion tests and guardrails | 2% | 10% | 0.2% |
-| **Total represented directly** | **100%** |  | **42.2%** |
+| Clone/fork installation portability | 8% | 45% | 3.6% |
+| Boundary/deletion tests and guardrails | 2% | 45% | 0.9% |
+| **Total represented directly** | **100%** |  | **44.1%** |
 
-The overall estimate is **46%** because the compatibility-facade migration and storage-independent persistence boundary already in place are real progress that is not cleanly represented by a single row. This adjustment should disappear as the remaining architecture is moved into explicit feature-owned contracts.
+The overall estimate is **48%** because the compatibility-facade migration and storage-independent persistence boundary already in place are real progress that is not cleanly represented by a single row. This adjustment should disappear as the remaining architecture is moved into explicit feature-owned contracts.
 
 ## Current strengths
 
@@ -64,8 +64,10 @@ The overall estimate is **46%** because the compatibility-facade migration and s
 - Author tools/workspaces/settings are substantially manifest-driven.
 - Author workspace navigation/dirty-state ownership is separated from feature workspace rendering.
 - Mutable project persistence already has a storage-independent client interface.
-- `src/game/*` is increasingly a compatibility facade instead of the implementation owner.
-- Hosted API origin and GitHub Pages base path now have installation override points without changing the current production defaults.
+- `src/game/*` is increasingly a compatibility facade instead of the implementation owner and is now explicitly marked shrink-only.
+- Feature-boundary rules and the deletion-test standard are durable repo documentation rather than chat-only intent.
+- Hosted API origin and GitHub Pages base path have installation override points without changing the current production defaults.
+- A guarded installation helper and ID-free Wrangler template exist for fresh forks/clones.
 - Wide desktop Author mode has an initial docked presentation that reuses the canonical Author surfaces rather than introducing a second desktop editor system.
 
 ## Current blockers to true replacement
@@ -86,18 +88,19 @@ One migration implementation knows the schema history of all features.
 
 `App.tsx` still directly coordinates feature-specific runtime and Author behavior. It should trend toward session/application composition only.
 
-### Installation-specific deployment configuration
+### Installation bootstrap is incomplete
 
-The client now supports installation overrides, but the reusable repository still contains the current D1 binding and production deployment assumptions. Cloudflare/D1 provisioning and deployment verification are not yet bootstrap-able for a new clone.
+The client, build, template, and guarded setup helper now support separate installations, but Cloudflare authentication/resource verification, automatic Worker-origin discovery, GitHub secret/variable setup, and end-to-end Author-save verification are not yet a unified bootstrap flow.
 
 ## Delivery sequence
 
 ### Phase A — Guardrails + ownership contract
 
 - [x] Create this durable roadmap/progress ledger.
-- [ ] Add an architectural boundary/deletion-test strategy.
-- [ ] Mark compatibility facades as shrink-only: no new responsibilities may be added there.
-- [ ] Document composition-root exceptions to the no-cross-feature-import rule.
+- [x] Document the architectural boundary/deletion-test strategy.
+- [x] Mark compatibility facades as shrink-only: no new responsibilities may be added there.
+- [x] Document composition-root exceptions to the no-cross-feature-import rule.
+- [ ] Add automated boundary/deletion checks once current transitional dependencies can be expressed without institutionalizing them.
 
 ### Phase B — Single responsive Author shell
 
@@ -143,12 +146,16 @@ The client now supports installation overrides, but the reusable repository stil
 
 - [x] Allow hosted API origin to be overridden without editing application source.
 - [x] Allow GitHub Pages/project base path to be overridden without editing Vite source.
-- [ ] Remove the current production API origin fallback once installation bootstrap owns it safely.
-- [ ] Remove installation-specific D1 database ID/name from reusable engine defaults.
-- [ ] Parameterize Worker/deploy verification configuration.
-- [ ] Provide a complete installation configuration template, beyond the current client `.env.example`.
-- [ ] Add setup/bootstrap command or guided documented flow for Cloudflare + D1 + Author key.
-- [ ] Ensure database schema initializes without authors manually editing SQL.
+- [x] Make Pages deployment derive the repository base path automatically.
+- [x] Allow deploy/API verification to use an installation-specific API origin.
+- [x] Provide an ID-free Wrangler template suitable for a new installation/draft D1 binding.
+- [x] Add a guarded `npm run setup:installation` helper that will not overwrite an existing configured D1 installation by default.
+- [ ] Remove the current production API-origin fallback once installation bootstrap owns it safely.
+- [ ] Move the live installation-specific D1 identity out of reusable engine defaults without risking the existing deployment.
+- [ ] Integrate Cloudflare authentication/resource provisioning/verification into setup.
+- [ ] Discover/write the hosted Worker origin automatically after deployment.
+- [ ] Guide or automate GitHub secret/variable setup for GitHub Pages deployment.
+- [ ] Verify end-to-end that a fresh installation can enter Author mode and save.
 
 ### Phase H — Retire transitional architecture
 
@@ -205,5 +212,9 @@ When architecture work lands, update:
 - Added the initial wide-desktop left Author suite as a presentation of the same canonical Author surfaces used on mobile.
 - Added a stable Author-experience layout marker so the dock does not disappear while text is playing.
 - Scoped dock behavior so player-facing workspaces such as Inventory are not accidentally turned into Author panels.
+- Added durable feature-boundary rules and a source-local shrink-only warning for `src/game/*` compatibility facades.
 - Added `VITE_API_ORIGIN` and `VITE_BASE_PATH` installation override points while preserving the current deployment defaults.
-- Current architecture estimate updated to 46%.
+- Made GitHub Pages derive its base path from the fork/repository name and let deployment verification use the installation API origin.
+- Added an ID-free `wrangler.template.jsonc` using a draft D1 binding for reusable installations.
+- Added a guarded `npm run setup:installation` helper and transitional installation guide.
+- Current architecture estimate updated to 48%.
