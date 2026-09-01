@@ -15,10 +15,11 @@ import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { useWorkSurfaceNavigation, type AuthorPanelRoute } from "./author/workSurfaceNavigation";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
-  apiUrl,
   authorLoginErrorMessage,
-  fetchProjectSnapshot,
-  readJson,
+  checkAuthorSession,
+  downloadAuthorBackup,
+  isAuthorSessionExpiredError,
+  loginAuthor,
   waitForProjectSnapshot,
 } from "./data/api";
 import {
@@ -55,7 +56,7 @@ import { executeOperation } from "./game/operations";
 import { parseCommand, type ParserResult } from "./game/parser";
 import { executeInteraction } from "./game/runtime";
 import { compileTextNotation } from "./game/textNotation";
-import { cloudflareProjectPersistence } from "./platform/persistence/cloudflareProjectPersistence";
+import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
   type TerminalCommandChoice,
@@ -290,17 +291,17 @@ export default function App() {
   useEffect(() => {
     if (!authorToken) return;
     let cancelled = false;
-    void fetch(apiUrl("/api/author/check"), { method: "POST", headers: { Authorization: `Bearer ${authorToken}` } })
-      .then(async (response) => {
+    void checkAuthorSession(authorToken)
+      .then(async (valid) => {
         if (cancelled) return;
-        if (!response.ok) { clearAuthorSession(); return; }
+        if (!valid) { clearAuthorSession(); return; }
         setAuthorMode(true);
         setAuthorView(true);
         if (flushingQueue.current) return;
         flushingQueue.current = true;
         try {
           const { snapshot: project, flushedCount } = await flushQueuedAuthorMutations({
-            persistence: cloudflareProjectPersistence,
+            persistence: configuredProjectPersistence,
             authorization: authorToken,
           });
           if (flushedCount) {
@@ -332,7 +333,7 @@ export default function App() {
     setAuthorMessage("SAVING...");
 
     const result = await persistAuthorMutation({
-      persistence: cloudflareProjectPersistence,
+      persistence: configuredProjectPersistence,
       authorization: authorToken,
       mutation,
       optimisticSnapshot: optimistic,
@@ -379,16 +380,19 @@ export default function App() {
     if (!authorToken) return;
     setAuthorMessage("BACKING UP...");
     try {
-      const response = await fetch(apiUrl("/api/author/backup"), { headers: { Authorization: `Bearer ${authorToken}` } });
-      if (response.status === 401) { clearAuthorSession(); setAuthorMessage("AUTHOR SESSION EXPIRED."); return; }
-      if (!response.ok) throw new Error(await response.text());
-      const blob = await response.blob();
-      const filename = response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? `pre-programmed-backup-${Date.now()}.json`;
+      const { blob, filename } = await downloadAuthorBackup(authorToken);
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = objectUrl; link.download = filename; document.body.appendChild(link); link.click(); link.remove(); URL.revokeObjectURL(objectUrl);
       setAuthorMessage("BACKUP DOWNLOADED.");
-    } catch { setAuthorMessage("BACKUP FAILED."); }
+    } catch (error) {
+      if (isAuthorSessionExpiredError(error)) {
+        clearAuthorSession();
+        setAuthorMessage("AUTHOR SESSION EXPIRED.");
+        return;
+      }
+      setAuthorMessage("BACKUP FAILED.");
+    }
   };
 
   const appendActive = () => {
@@ -473,8 +477,8 @@ export default function App() {
 
     if (requestingKey) {
       try {
-        const result = await readJson<{ token: string }>(await fetch(apiUrl("/api/author/login"), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ key: value }) }));
-        sessionStorage.setItem(AUTHOR_TOKEN_KEY, result.token); setAuthorToken(result.token); setAuthorMode(true); setAuthorView(true); setRequestingKey(false); setAuthorMessage("");
+        const token = await loginAuthor(value);
+        sessionStorage.setItem(AUTHOR_TOKEN_KEY, token); setAuthorToken(token); setAuthorMode(true); setAuthorView(true); setRequestingKey(false); setAuthorMessage("");
       } catch (error) { setAuthorMessage(authorLoginErrorMessage(error)); }
       return;
     }
