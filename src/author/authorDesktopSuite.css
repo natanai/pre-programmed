@@ -40,26 +40,26 @@
     margin-top: 0;
   }
 
-  /* AuthorWorkspaceHost is the same portal used on mobile. Wide desktop only
-   * changes its geometry so the live terminal remains usable beside it. */
-  .author-workspace-layer {
+  /* AuthorWorkspaceHost is also used by player-facing workspaces such as
+   * Inventory, so dock geometry must remain explicitly scoped to Author mode. */
+  html[data-author-experience="true"] .author-workspace-layer {
     right: auto;
     width: var(--author-desktop-suite-width);
     border-right: 1px solid var(--dos-line);
   }
 
-  body:has(.author-workspace-layer) .work-surface-close {
+  html[data-author-experience="true"] body:has(.author-workspace-layer) .work-surface-close {
     right: auto;
     left: calc(var(--author-desktop-suite-width) - 3.5em);
   }
 
   /* Existing multi-column editors collapse inside the narrower dock. Their
    * components and data semantics are unchanged. */
-  .author-workspace-layer .form-grid,
-  .author-workspace-layer .node-meta-grid,
-  .author-workspace-layer .voice-settings,
-  .author-workspace-layer .time-change-setting,
-  .author-workspace-layer .inventory-layout {
+  html[data-author-experience="true"] .author-workspace-layer .form-grid,
+  html[data-author-experience="true"] .author-workspace-layer .node-meta-grid,
+  html[data-author-experience="true"] .author-workspace-layer .voice-settings,
+  html[data-author-experience="true"] .author-workspace-layer .time-change-setting,
+  html[data-author-experience="true"] .author-workspace-layer .inventory-layout {
     grid-template-columns: minmax(0, 1fr);
   }
 }
