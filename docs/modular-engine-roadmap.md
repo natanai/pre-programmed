@@ -61,16 +61,22 @@ This is now the largest gap relative to the product goal.
 
 A new developer should be able to fork/clone, connect their own Cloudflare resources, deploy, enter Author mode, and create a distinct game without ordinary source edits.
 
+The supported setup path now:
+
+- detects and replaces upstream production identity inherited by a GitHub fork;
+- gives direct upstream clones an explicit `--new-installation` path rather than requiring generic `--force`;
+- creates an identity-free local Wrangler configuration;
+- chooses a distinct Worker and D1 database name;
+- directs the installer to explicitly create D1 with `wrangler d1 create ... --binding DB --update-config`, so the new database name and UUID are persisted before deployment instead of relying on experimental draft-resource provisioning.
+
 Still needed:
 
-- remove the current production D1 identity from reusable tracked configuration without breaking the live installation;
-- make Cloudflare authentication/resource setup explicit and verifiable;
-- provision or attach D1 cleanly and retain the resulting binding identity;
-- discover/write the deployed Worker origin;
+- remove the original production D1 identity from reusable tracked configuration without breaking the live installation;
+- discover/write the deployed Worker origin more automatically where practical;
 - make GitHub Pages secret/variable setup straightforward when desired;
-- run one real fresh-fork installation through Author login and save.
+- run one real fresh-fork or fresh-clone installation through D1 creation, deploy, Author login, save, and reload.
 
-`wrangler.template.jsonc` and `npm run setup:installation` are useful scaffolding, but the tracked production `wrangler.jsonc` still prevents a completely installation-neutral clone.
+The tracked production `wrangler.jsonc` is now the main thing preventing a completely installation-neutral checkout. Do not remove it until the existing production database UUID has a proven deployment-time source.
 
 ### 2. Keep shrinking real compatibility behavior
 
@@ -146,10 +152,11 @@ A new developer should be able to:
 - Verification ownership rules were added to `docs/feature-boundaries.md`.
 - Worker API compatibility cleanup removed obsolete bootstrap/per-node routes and standardized on the canonical schema owner.
 - The historical migrations file became data/helper-only; the obsolete duplicate runtime migration owner was deleted and the live project-snapshot check remained green.
-- `src/game/model.ts` became a pure compatibility facade; UUID/node-number behavior moved to its actual owners.
+- `src/game/model.ts` became a pure compatibility facade; UUID/node-number behavior moved to their actual owners.
 - Worker project-settings validation stopped directly depending on Commands and now composes through the validation catalog.
 - App stopped constructing Narrative draft interactions for unmatched Author input and stopped resolving application capabilities through Commands.
 - Application capability contracts/catalogs moved to the neutral engine application boundary.
+- Fork/clone setup stopped relying on draft D1 auto-provisioning as the primary path: new installs now explicitly create D1 and persist its binding identity before Worker deployment.
 
 ### 2026-08-31
 
