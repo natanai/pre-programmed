@@ -58,7 +58,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
 
     if (route.type === "feature" && route.feature === "inventory" && route.workspace === "body-background") {
       const background = route.data?.backgroundId
-        ? context.snapshot.bodyBackgrounds.find((candidate) => candidate.id === route.data?.backgroundId)
+        ? (context.snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.backgroundId)
         : undefined;
       return <BodyBackgroundEditor
         snapshot={context.snapshot}
