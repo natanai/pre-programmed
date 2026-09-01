@@ -16,11 +16,16 @@ function validBodySlots(value: unknown) {
     if (typeof slot.name !== "string" || !slot.name.trim()) return false;
     ids.add(slot.id);
     keys.add(slot.key);
-    for (const field of ["x", "y", "width", "height"] as const) {
-      if (typeof slot[field] !== "number" || !Number.isFinite(slot[field])) return false;
-    }
-    if (slot.x < 0 || slot.y < 0 || slot.width < 4 || slot.height < 4) return false;
-    if (slot.x + slot.width > 100 || slot.y + slot.height > 100) return false;
+
+    const { x, y, width, height } = slot;
+    if (
+      typeof x !== "number" || !Number.isFinite(x)
+      || typeof y !== "number" || !Number.isFinite(y)
+      || typeof width !== "number" || !Number.isFinite(width)
+      || typeof height !== "number" || !Number.isFinite(height)
+    ) return false;
+    if (x < 0 || y < 0 || width < 4 || height < 4) return false;
+    if (x + width > 100 || y + height > 100) return false;
   }
   return true;
 }
