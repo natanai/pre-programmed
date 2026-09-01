@@ -28,7 +28,7 @@ const setItemState: EffectHandler = (effect, _snapshot, state) => {
 
 const setBodyBackground: EffectHandler = (effect, snapshot, state) => {
   if (effect.type !== "set_body_background") return unchangedEffect(state);
-  if (effect.backgroundId && !snapshot.bodyBackgrounds.some((background) => background.id === effect.backgroundId)) {
+  if (effect.backgroundId && !(snapshot.bodyBackgrounds ?? []).some((background) => background.id === effect.backgroundId)) {
     return unchangedEffect(state);
   }
   return {
