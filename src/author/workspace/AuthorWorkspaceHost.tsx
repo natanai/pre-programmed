@@ -1,39 +1,68 @@
 import { createPortal } from "react-dom";
+import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../game/model";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import { renderAuthorFeatureWorkspace } from "../features/registry";
-import type { AuthorWorkspaceContext } from "../features/types";
-import type { AuthorLeaveConfirmation, AuthorPanelRoute } from "../workSurfaceNavigation";
+import type { AuthorPersist, AuthorRuntimeSurface } from "../features/types";
+import { AuthorResourceProvider } from "../resources/context";
+import { buildAuthorResourceTools } from "../resources/runtime";
+import type {
+  AuthorLeaveConfirmation,
+  AuthorTaskCompletion,
+  AuthorTaskEntry,
+  AuthorTaskResult,
+  AuthorTaskRoute,
+} from "../tasks/types";
 
 /**
- * Composition host for focused Author workspaces.
+ * Root host for nested Author tasks.
  *
- * App supplies the live session/navigation context. Feature-specific rendering
- * is delegated to the Author feature manifest registry. The rendered workspace
- * is portaled to a root Author layer so player-terminal geometry can never
- * constrain an editor's viewport or keyboard behavior.
- *
- * The root owns guarded Back navigation and the single discard-confirmation
- * surface shared by Back and the application-level X escape.
+ * Suspended tasks remain mounted under stable task ids, preserving local draft
+ * state exactly as the author left it. Only the top task is visible. Each task
+ * receives dirty-state ownership scoped to its own id plus the same generic
+ * resource task runtime, so cross-feature creation never needs parent-specific
+ * callbacks or feature imports.
  */
 export function AuthorWorkspaceHost({
-  panel,
+  tasks,
+  activeTaskId,
   toolGroups,
+  snapshot,
+  playState,
+  authorMode,
+  authorToken,
+  persist,
+  completeTask,
+  requestBack,
+  setTaskDirty,
+  pushTask,
+  runtime,
+  onSnapshot,
+  onRestore,
   leaveConfirmation,
   onConfirmLeave,
   onCancelLeave,
-  ...context
-}: AuthorWorkspaceContext & {
-  panel: AuthorPanelRoute | null;
+}: {
+  tasks: AuthorTaskEntry[];
+  activeTaskId: string | null;
   toolGroups: AuthorToolGroup[];
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  authorMode: boolean;
+  authorToken: string;
+  persist: AuthorPersist;
+  completeTask: (result?: AuthorTaskResult) => void;
+  requestBack: () => void;
+  setTaskDirty: (taskId: string, dirty: boolean) => void;
+  pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
+  runtime: AuthorRuntimeSurface;
+  onSnapshot: (snapshot: ProjectSnapshot) => void;
+  onRestore: (bookmark: AuthorBookmark) => void;
   leaveConfirmation: AuthorLeaveConfirmation | null;
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
 }) {
-  if (!panel) return null;
-  const workspace = panel.type === "tools"
-    ? <AuthorToolIndex groups={toolGroups} />
-    : renderAuthorFeatureWorkspace(panel, context);
-  if (!workspace) return null;
+  if (!tasks.length) return null;
+  const resources = buildAuthorResourceTools(snapshot, pushTask);
 
   return createPortal(
     <div
@@ -41,17 +70,48 @@ export function AuthorWorkspaceHost({
       role="presentation"
       onPointerDown={(event) => event.stopPropagation()}
     >
-      <nav className="author-workspace-navigation" aria-label="Author workspace navigation">
+      <nav className="author-workspace-navigation" aria-label="Author task navigation">
         <button
           type="button"
           className="author-workspace-back"
-          onClick={context.leaveCurrentSurface}
+          onClick={requestBack}
         >
           [← BACK]
         </button>
+        {tasks.length > 1 ? <span className="author-task-depth" aria-label={`${tasks.length} nested Author tasks`}>TASK {tasks.length}</span> : null}
       </nav>
       <div className="author-workspace-content">
-        {workspace}
+        {tasks.map((task) => {
+          const active = task.id === activeTaskId;
+          const context = {
+            taskId: task.id,
+            snapshot,
+            playState,
+            authorMode,
+            authorToken,
+            persist,
+            completeTask,
+            leaveCurrentTask: requestBack,
+            setWorkspaceDirty: (dirty: boolean) => setTaskDirty(task.id, dirty),
+            pushTask,
+            resources,
+            runtime,
+            onSnapshot,
+            onRestore,
+          };
+          const workspace = task.route.type === "tools"
+            ? <AuthorToolIndex groups={toolGroups} />
+            : renderAuthorFeatureWorkspace(task.route, context);
+          if (!workspace) return null;
+          return <div
+            key={task.id}
+            className={`author-task-surface${active ? " is-active" : " is-suspended"}`}
+            aria-hidden={!active}
+            style={active ? undefined : { display: "none" }}
+          >
+            <AuthorResourceProvider tools={resources}>{workspace}</AuthorResourceProvider>
+          </div>;
+        })}
       </div>
       {leaveConfirmation ? <div className="author-leave-shade">
         <section
@@ -64,8 +124,8 @@ export function AuthorWorkspaceHost({
           <h2 id="author-leave-title">UNSAVED CHANGES</h2>
           <p id="author-leave-copy">
             {leaveConfirmation.action === "close" && leaveConfirmation.dirtyCount > 1
-              ? `${leaveConfirmation.dirtyCount} Author workspaces contain unsaved changes.`
-              : "This Author workspace contains unsaved changes."}
+              ? `${leaveConfirmation.dirtyCount} Author tasks contain unsaved changes.`
+              : "This Author task contains unsaved changes."}
           </p>
           <div className="author-leave-actions">
             <button type="button" autoFocus onClick={onCancelLeave}>[KEEP EDITING]</button>
