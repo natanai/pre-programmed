@@ -7,7 +7,7 @@ function itemLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summari
 
 function bodyBackgroundLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1], id: string) {
   if (!id) return "no body background";
-  return snapshot.bodyBackgrounds.find((background) => background.id === id)?.name || "choose body background";
+  return (snapshot.bodyBackgrounds ?? []).find((background) => background.id === id)?.name || "choose body background";
 }
 
 export const hasItemConditionAdapter: ConditionAuthorAdapter = {
@@ -87,6 +87,6 @@ export const setBodyBackgroundEffectAdapter: EffectAuthorAdapter = {
     onChange={(event) => onChange({ ...effect, backgroundId: event.target.value })}
   >
     <option value="">none</option>
-    {snapshot.bodyBackgrounds.map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
+    {(snapshot.bodyBackgrounds ?? []).map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
   </select> : null,
 };
