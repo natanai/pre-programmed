@@ -96,7 +96,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
             <button type="button" onClick={() => move(index, -1)} aria-label={`Move effect ${index + 1} up`}>[↑]</button>
             <button type="button" onClick={() => move(index, 1)} aria-label={`Move effect ${index + 1} down`}>[↓]</button>
           </div>
-        </div> : null;
+        </div>;
       })}
     </div> : <div className="effects-empty">No effects configured.</div>}
     <button type="button" className="effect-add" onClick={() => setScreen("choose")}>[+ EFFECT]</button>
