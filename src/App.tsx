@@ -606,10 +606,8 @@ export default function App() {
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
   const authorToolGroups = buildAuthorToolGroups({
-    currentNode,
-    fallbackInput,
-    invalidDraft,
-    notationForInput,
+    snapshot,
+    playState,
     pushPanel: workSurface.pushPanel,
     close: workSurface.close,
     downloadBackup,
