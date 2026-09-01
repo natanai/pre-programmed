@@ -567,7 +567,7 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close(); setAuthorMessage("LOCATION LOADED.");
   };
-  const applyInventoryState = (state: PlayState) => {
+  const applyWorkspaceState = (state: PlayState) => {
     if (!snapshot || !playState) return;
     const transitioned = state.traversal.length > playState.traversal.length;
     setPlayState(state);
@@ -576,7 +576,7 @@ export default function App() {
     if (node) showNode(snapshot, node, state);
     workSurface.close();
   };
-  const showInventoryResponse = (text: string) => {
+  const showWorkspaceOutput = (text: string) => {
     historyPinnedToPresentRef.current = true;
     appendActive();
     setActiveText("");
@@ -688,9 +688,11 @@ export default function App() {
           leaveCurrentSurface={workSurface.requestBack}
           setWorkspaceDirty={workSurface.setCurrentDirty}
           pushPanel={workSurface.pushPanel}
-          onInventoryState={applyInventoryState}
-          onInventoryOutput={showInventoryResponse}
-          onEvents={handleEffectEvents}
+          runtime={{
+            updateState: applyWorkspaceState,
+            output: showWorkspaceOutput,
+            events: handleEffectEvents,
+          }}
           onSnapshot={applyCanonicalSnapshot}
           onRestore={restoreBookmark}
           leaveConfirmation={workSurface.leaveConfirmation}

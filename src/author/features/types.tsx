@@ -16,6 +16,13 @@ export type AuthorPersist = (
   closeAfterSave?: boolean,
 ) => Promise<AuthorPersistResult>;
 
+/** Runtime presentation capabilities available to any feature workspace. */
+export type AuthorRuntimeSurface = {
+  updateState: (state: PlayState) => void;
+  output: (text: string) => void;
+  events: (events: EffectEvent[]) => void;
+};
+
 export type AuthorWorkspaceContext = {
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -25,9 +32,7 @@ export type AuthorWorkspaceContext = {
   leaveCurrentSurface: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
   pushPanel: (route: AuthorPanelRoute) => void;
-  onInventoryState: (state: PlayState) => void;
-  onInventoryOutput: (text: string) => void;
-  onEvents: (events: EffectEvent[]) => void;
+  runtime: AuthorRuntimeSurface;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
   onRestore: (bookmark: AuthorBookmark) => void;
 };

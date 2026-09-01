@@ -15,9 +15,9 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       state={context.playState}
       authorMode={context.authorMode}
-      onState={context.onInventoryState}
-      onOutput={context.onInventoryOutput}
-      onEvents={context.onEvents}
+      onState={context.runtime.updateState}
+      onOutput={context.runtime.output}
+      onEvents={context.runtime.events}
       onEditItem={(item) => context.pushPanel({ type: "item", item })}
       onCreateItem={() => context.pushPanel({ type: "item" })}
       onSave={async (operations, description) => {
