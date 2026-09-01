@@ -58,20 +58,28 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
   const enabledSources = context.snapshot.settings.commands.referenceSources.filter((source) => source.enabled).length;
   const enabledCommands = context.snapshot.settings.commands.commands.filter((command) => command.enabled).length;
   return <div className="command-settings-overview">
-    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "references" })}>
-      <span><strong>REFERENCE SOURCES</strong><small>Choose what players can refer to and which words identify each target.</small></span>
-      <span>{enabledSources}/{COMMAND_REFERENCE_SOURCES.length} ›</span>
-    </button>
+    <div className="command-settings-guide">
+      <p><strong>PLAYER COMMAND</strong><span>What a player can type, what operation it attempts, and which target receives it.</span></p>
+      <p><strong>TARGET NAME / ALIAS</strong><span>A word that identifies an existing item, character, location, variable, or computed value.</span></p>
+      <p><strong>RESOURCE OPERATION</strong><span>What a particular resource can do. For example, edit an Item’s inspect/use/equip behavior under Inventory.</span></p>
+    </div>
+    <button type="button" className="command-settings-create" onClick={() => context.pushTask({
+      type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
+    })}>[+ NEW PLAYER COMMAND]</button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
-      <span><strong>COMMAND GRAMMAR</strong><small>Define operations, aliases, argument slots, and accepted input shapes.</small></span>
+      <span><strong>PLAYER COMMANDS</strong><small>Create project-wide typed phrases such as <code>polish {"{item}"}</code> or <code>go {"{location}"}</code>.</small></span>
       <span>{enabledCommands} ›</span>
     </button>
+    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "references" })}>
+      <span><strong>TARGET NAMES + ALIASES</strong><small>Choose which authored things commands can name and add alternate words for them.</small></span>
+      <span>{enabledSources}/{COMMAND_REFERENCE_SOURCES.length} ›</span>
+    </button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "capabilities" })}>
-      <span><strong>ENGINE CAPABILITIES</strong><small>Browse module-provided actions and create your own player-facing language for them.</small></span>
+      <span><strong>APPLICATION ACTIONS</strong><small>Connect player wording to module-provided, targetless actions such as opening Inventory.</small></span>
       <span>{APPLICATION_COMMAND_CAPABILITIES.length} ›</span>
     </button>
     <p className="command-settings-note">
-      No traditional adventure-game verbs are required. A location can be entered as <code>{"{location}"}</code>, <code>go {"{location}"}</code>, or any authored pattern.
+      Item operations such as inspect, use, and equip are configured on each Item. They appear in Player Commands only when you author typed grammar that invokes them.
     </p>
   </div>;
 }
@@ -79,9 +87,9 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
 function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
   const configured = context.snapshot.settings.commands.referenceSources;
   return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>REFERENCE SOURCES</span><span>{configured.filter((source) => source.enabled).length} ENABLED</span></header>
+    <header><span>TARGET NAMES + ALIASES</span><span>{configured.filter((source) => source.enabled).length} ENABLED</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">Reference sources are feature-owned. Enabling one makes it available to command slots; it does not assign any verb.</p>
+      <p className="command-settings-note">Enable a target type when Player Commands should recognize its existing names. Open it to add alternate words. This does not create an operation or command by itself.</p>
       {COMMAND_REFERENCE_SOURCES.map((source) => {
         const setting = configured.find((candidate) => candidate.sourceKind === source.kind);
         const count = source.candidates(context.snapshot, context.playState).length;
@@ -130,7 +138,7 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
   };
 
   return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>REFERENCES · {source.label}</span></header>
+    <header><span>TARGET NAMES · {source.label}</span></header>
     <div className="author-panel-body command-reference-editor">
       <p className="command-settings-note">{source.description}</p>
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enable this reference source</label>
@@ -160,29 +168,29 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
 function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext }) {
   const commands = context.snapshot.settings.commands.commands;
   return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>COMMAND GRAMMAR</span><span>{commands.length} COMMANDS</span></header>
+    <header><span>PLAYER COMMANDS</span><span>{commands.length} {commands.length === 1 ? "COMMAND" : "COMMANDS"}</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">Commands are project-wide grammar. Local node interactions still handle exact scene-specific phrases.</p>
+      <p className="command-settings-note">This list contains only project-wide typed commands. Inventory is currently the sole starter command. Item operations such as inspect, use, and equip remain on each Item unless you create player wording for them here.</p>
       {commands.map((command) => <button type="button" key={command.id} onClick={() => context.pushTask({
         type: "feature",
         feature: "commands",
         workspace: "command",
         data: { commandId: command.id },
       })}>
-        <span><strong>{command.label || command.operation}</strong><small>{command.patterns.join(" · ") || "no patterns"}</small></span>
+        <span><strong>{command.label || command.operation}</strong><small>{command.patterns.join(" · ") || "no player input patterns"}</small><small>{command.targetSlot ? "TARGETED" : "APPLICATION / NO TARGET"} · {command.operation}</small></span>
         <span>{command.enabled ? "ON" : "OFF"} ›</span>
       </button>)}
       {!commands.length ? <div className="command-settings-empty">NO PROJECT COMMANDS YET.</div> : null}
     </div>
     <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask({
       type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
-    })}>[+ COMMAND]</button></div>
+    })}>[+ PLAYER COMMAND]</button></div>
   </section>;
 }
 
 function CapabilitiesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
   return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>ENGINE CAPABILITIES</span><span>{APPLICATION_COMMAND_CAPABILITIES.length}</span></header>
+    <header><span>APPLICATION ACTIONS</span><span>{APPLICATION_COMMAND_CAPABILITIES.length}</span></header>
     <div className="author-panel-body command-settings-list">
       <p className="command-settings-note">Capabilities are actions supplied by engine modules. They have no mandatory player-facing words. Create a command, then choose whatever language fits this game.</p>
       {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <button type="button" key={capability.operation} onClick={() => context.pushTask({
@@ -221,6 +229,11 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const dirty = JSON.stringify(currentForDirty) !== baseline;
   const slotNames = placeholderNames(currentForDirty.patterns);
   const availableSources = COMMAND_REFERENCE_SOURCES;
+  const enabledSourceKinds = new Set(
+    context.snapshot.settings.commands.referenceSources
+      .filter((source) => source.enabled)
+      .map((source) => source.sourceKind),
+  );
 
   useEffect(() => {
     context.setWorkspaceDirty(dirty);
@@ -290,23 +303,25 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   };
 
   return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>COMMAND · {draft.label || "NEW"}</span></header>
+    <header><span>PLAYER COMMAND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body command-editor-body">
-      <label>NAME
+      <p className="command-settings-note">Example: name the command “Polish,” add the pattern <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. If Inventory Items is marked OFF, enable it under Target Names + Aliases.</p>
+      <label>COMMAND NAME
         <input value={draft.label} autoFocus onChange={(event) => {
           const label = event.target.value;
           setDraft({ ...draft, label, operation: operationTouched ? draft.operation : operationIdFromLabel(label) });
         }} />
+        <small>The author-facing name shown in this list. This is what was previously described as the command label.</small>
       </label>
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enabled</label>
+      <label>PLAYER INPUT PATTERNS · ONE PER LINE
+        <textarea rows={5} value={patternsText} onChange={(event) => updatePatterns(event.target.value)} placeholder={"{location}\ngo {location}\nwalk to {location}"} />
+        <small>Literal words are matched as written. Braced names create argument slots.</small>
+      </label>
       <label>OPERATION ID
         <input list="engine-capability-operation-ids" value={draft.operation} onChange={(event) => { setOperationTouched(true); setDraft({ ...draft, operation: event.target.value.toLowerCase() }); }} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
         <datalist id="engine-capability-operation-ids">{APPLICATION_COMMAND_CAPABILITIES.map((candidate) => <option key={candidate.operation} value={candidate.operation}>{candidate.label}</option>)}</datalist>
-        <small>Stable engine operation ID. Use an installed capability or any authored/module ID such as examine, go, combat.attack.</small>
-      </label>
-      <label>PATTERNS · ONE PER LINE
-        <textarea rows={5} value={patternsText} onChange={(event) => updatePatterns(event.target.value)} placeholder={"{location}\ngo {location}\nwalk to {location}"} />
-        <small>Literal words are matched as written. Braced names create argument slots.</small>
+        <small>Stable engine action ID, generated from the command name unless you edit it. Examples: polish, examine, go, or combat.attack.</small>
       </label>
       {draft.slots.length ? <div className="command-slot-editor">
         <h3>ARGUMENT SLOTS</h3>
@@ -316,8 +331,11 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
             slots: draft.slots.map((candidate) => candidate.name === slot.name ? { ...candidate, sourceKind: event.target.value } : candidate),
           })}>
             <option value="text">FREE TEXT</option>
-            {availableSources.map((source) => <option key={source.kind} value={source.kind}>{source.label}</option>)}
+            {availableSources.map((source) => <option key={source.kind} value={source.kind}>{source.label}{enabledSourceKinds.has(source.kind) ? "" : " · OFF"}</option>)}
           </select>
+          {slot.sourceKind !== "text" && !enabledSourceKinds.has(slot.sourceKind)
+            ? <small className="command-slot-source-warning">Enable {COMMAND_REFERENCE_SOURCE_BY_KIND[slot.sourceKind]?.label ?? slot.sourceKind} under Target Names + Aliases before this command can recognize player input.</small>
+            : null}
         </label>)}
         <label>PRIMARY TARGET
           <select value={draft.targetSlot} onChange={(event) => setDraft({ ...draft, targetSlot: event.target.value })}>
@@ -340,8 +358,8 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
 export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSection[] = [
   {
     id: "commands",
-    label: "COMMANDS + REFERENCES",
-    description: "Define what players can refer to and the project-wide grammar that maps their text to operations.",
+    label: "PLAYER LANGUAGE",
+    description: "Create player commands, configure target names and aliases, and connect wording to engine actions.",
     order: 20,
     render: (context) => <CommandsOverview context={context} />,
   },

@@ -5,17 +5,22 @@
 
 .project-settings-index,
 .project-settings-section-body {
+  width: 100%;
+  max-width: 100%;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .project-settings-intro,
 .project-settings-description {
   margin: 0 0 1rem;
-  color: var(--muted);
+  color: var(--dos-muted);
   line-height: 1.45;
+  overflow-wrap: anywhere;
 }
 
 .project-settings-section-list {
@@ -32,7 +37,7 @@
   gap: 1rem;
   padding: .8rem .9rem;
   text-align: left;
-  border: 1px solid var(--line);
+  border: 1px solid var(--dos-line);
   background: transparent;
   color: inherit;
 }
@@ -44,7 +49,7 @@
 }
 
 .project-settings-section-list small {
-  color: var(--muted);
+  color: var(--dos-muted);
   white-space: normal;
   line-height: 1.35;
 }
@@ -55,7 +60,7 @@
 }
 
 .project-setting-card {
-  border: 1px solid var(--line);
+  border: 1px solid var(--dos-line);
   padding: .85rem;
   display: grid;
   gap: .75rem;
@@ -81,5 +86,21 @@
 @media (min-width: 760px) {
   .project-settings-section-list {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .project-settings-workspace > header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    line-height: 1.2;
+  }
+
+  .project-settings-workspace > header > span {
+    max-width: 100%;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
