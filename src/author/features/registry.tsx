@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { commandsAuthorFeature } from "../../features/commands/author/manifest";
 import { inventoryAuthorFeature } from "../../features/inventory/author/manifest";
 import { mediaAuthorFeature } from "../../features/media/author/manifest";
@@ -7,6 +8,7 @@ import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import { projectAuthorFeature } from "./projectManifest";
 import type {
   AuthorFeatureManifest,
+  AuthorPlaySurfaceContext,
   AuthorUnhandledInputMutation,
   AuthorWorkspaceContext,
 } from "./types";
@@ -45,6 +47,15 @@ export function resolveAuthorUnhandledInputMutation(
     if (mutation) return mutation;
   }
   return null;
+}
+
+export function renderAuthorFeaturePlaySurfaces(context: AuthorPlaySurfaceContext) {
+  return <>{AUTHOR_FEATURES.map((feature) => {
+    const surface = feature.renderPlaySurface?.(context);
+    return surface === null || surface === undefined
+      ? null
+      : <Fragment key={feature.id}>{surface}</Fragment>;
+  })}</>;
 }
 
 export function renderAuthorFeatureWorkspace(
