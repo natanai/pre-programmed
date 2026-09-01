@@ -9,4 +9,5 @@ export const INVENTORY_EFFECTS = [
   { type: "give_item", label: "give item" },
   { type: "remove_item", label: "remove item" },
   { type: "set_item_state", label: "change item state" },
+  { type: "set_body_background", label: "set body background" },
 ] as const satisfies readonly RuleDescriptor[];
