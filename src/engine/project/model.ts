@@ -1,43 +1,48 @@
-import type { Value } from "../rules/model";
-import type { InventoryEntry, ItemDefinition } from "../../features/inventory/model";
+import type { CommandsPlayStateSlice } from "../../features/commands/projectSlice";
 import type { InventoryMutationOperation } from "../../features/inventory/mutations";
-import type { SynthSound } from "../../features/media/model";
+import type { InventoryPlayStateSlice, InventoryProjectSlice } from "../../features/inventory/projectSlice";
 import type { MediaMutationOperation } from "../../features/media/mutations";
-import type { GameNode, Interaction } from "../../features/narrative/model";
+import type { MediaProjectSlice } from "../../features/media/projectSlice";
 import type { NarrativeMutationOperation } from "../../features/narrative/mutations";
-import type { ComputedDefinition, VariableDefinition } from "../../features/state/model";
+import type { NarrativePlayStateSlice, NarrativeProjectSlice } from "../../features/narrative/projectSlice";
 import type { StateMutationOperation } from "../../features/state/mutations";
-import type { EntityDefinition } from "../../features/world/model";
+import type { StatePlayStateSlice, StateProjectSlice } from "../../features/state/projectSlice";
 import type { WorldMutationOperation } from "../../features/world/mutations";
+import type { WorldProjectSlice } from "../../features/world/projectSlice";
 import type { ProjectSettings } from "./settings";
 
-export type ProjectSnapshot = {
+export type CoreProjectSnapshot = {
   schemaVersion: number;
   revision: number;
-  startNodeId: string;
   settings: ProjectSettings;
-  nodes: GameNode[];
-  interactions: Interaction[];
-  entities: EntityDefinition[];
-  variables: VariableDefinition[];
-  computedValues: ComputedDefinition[];
-  items: ItemDefinition[];
-  synthSounds: SynthSound[];
 };
 
-export type PlayState = {
-  currentNodeId: string;
-  traversal: string[];
-  values: Record<string, Value>;
-  attempts: Record<string, number>;
-  inventory: InventoryEntry[];
-  visitedNodeIds: string[];
-  interactionVisibility: Record<string, boolean>;
+/**
+ * Explicit project-data composition root. Runtime shape remains flat for source
+ * compatibility while field ownership lives beside installed features.
+ */
+export type ProjectSnapshot =
+  & CoreProjectSnapshot
+  & NarrativeProjectSlice
+  & WorldProjectSlice
+  & StateProjectSlice
+  & InventoryProjectSlice
+  & MediaProjectSlice;
+
+export type CorePlayState = {
   sessionStartedAt: number;
-  variableTimeUpdatedAt: number;
-  commandsEntered: number;
-  lastCommand: string;
 };
+
+/**
+ * Explicit play-state composition root. Existing callers keep the same flat
+ * state shape while each feature owns the fields it introduces.
+ */
+export type PlayState =
+  & CorePlayState
+  & NarrativePlayStateSlice
+  & StatePlayStateSlice
+  & InventoryPlayStateSlice
+  & CommandsPlayStateSlice;
 
 export type AuthorBookmark = {
   id: string;
