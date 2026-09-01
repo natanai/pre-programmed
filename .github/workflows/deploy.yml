@@ -30,46 +30,29 @@ jobs:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
-      - name: Probe deployed Worker binding metadata
+      - name: Prepare deployment configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
+          PRE_PROGRAMMED_D1_DATABASE_NAME: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_NAME }}
+          PRE_PROGRAMMED_D1_DATABASE_ID: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_ID }}
+        run: node scripts/prepare-deployment-wrangler.mjs .wrangler.deploy.jsonc
+
+      - name: Verify generated binding matches current production
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from "node:fs";
-          const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
-          const workerName = config.name;
-          const root = `https://api.cloudflare.com/client/v4/accounts/${process.env.CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${encodeURIComponent(workerName)}/versions`;
-          const headers = { Authorization: `Bearer ${process.env.CLOUDFLARE_API_TOKEN}` };
-          try {
-            const listResponse = await fetch(`${root}?per_page=10`, { headers });
-            if (!listResponse.ok) {
-              console.log(`WORKER_VERSION_METADATA unavailable (${listResponse.status})`);
-              process.exit(0);
-            }
-            const listPayload = await listResponse.json();
-            const versions = Array.isArray(listPayload?.result?.items) ? listPayload.result.items : [];
-            const versionId = versions.find((version) => typeof version?.id === "string")?.id;
-            if (!versionId) {
-              console.log("WORKER_VERSION_D1_BINDING not-found (no-version)");
-              process.exit(0);
-            }
-            const detailResponse = await fetch(`${root}/${encodeURIComponent(versionId)}`, { headers });
-            if (!detailResponse.ok) {
-              console.log(`WORKER_VERSION_DETAIL unavailable (${detailResponse.status})`);
-              process.exit(0);
-            }
-            const detailPayload = await detailResponse.json();
-            const bindings = detailPayload?.result?.resources?.bindings ?? [];
-            const binding = bindings.find((candidate) =>
-              candidate?.type === "d1"
-              && candidate?.name === "DB"
-              && typeof candidate?.database_id === "string"
-            );
-            console.log(binding ? "WORKER_VERSION_D1_BINDING available" : "WORKER_VERSION_D1_BINDING not-found");
-          } catch {
-            console.log("WORKER_VERSION_METADATA unavailable (request-error)");
-          }
+          const current = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
+          const generated = JSON.parse(readFileSync(".wrangler.deploy.jsonc", "utf8"));
+          const bindingFor = (config) => config.d1_databases?.find((binding) => binding.binding === "DB");
+          const currentBinding = bindingFor(current);
+          const generatedBinding = bindingFor(generated);
+          if (!currentBinding || !generatedBinding) process.exit(1);
+          if (current.name !== generated.name) process.exit(1);
+          if (currentBinding.database_name !== generatedBinding.database_name) process.exit(1);
+          if (currentBinding.database_id !== generatedBinding.database_id) process.exit(1);
+          console.log("Generated deployment config matches the current production Worker and D1 binding.");
           NODE
 
       - name: Deploy API Worker
@@ -79,13 +62,13 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           SECRETS_FILE="$RUNNER_TEMP/pre-programmed-worker-secrets.json"
-          trap 'rm -f "$SECRETS_FILE"' EXIT
+          trap 'rm -f "$SECRETS_FILE" .wrangler.deploy.jsonc' EXIT
           node --input-type=module - "$SECRETS_FILE" <<'NODE'
           import { writeFileSync } from "node:fs";
           if (!process.env.ADMIN_KEY) process.exit(1);
           writeFileSync(process.argv[2], JSON.stringify({ ADMIN_KEY: process.env.ADMIN_KEY }), { mode: 0o600 });
           NODE
-          npx wrangler deploy --secrets-file "$SECRETS_FILE"
+          npx wrangler deploy --config .wrangler.deploy.jsonc --secrets-file "$SECRETS_FILE"
 
       - name: Verify API
         env:
