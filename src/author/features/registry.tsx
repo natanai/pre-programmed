@@ -4,7 +4,9 @@ import { inventoryAuthorFeature } from "../../features/inventory/author/manifest
 import { mediaAuthorFeature } from "../../features/media/author/manifest";
 import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
+import type { AuthorResourceProvider } from "../resources/types";
 import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
+import type { AuthorTaskRoute } from "../tasks/types";
 import { projectAuthorFeature } from "./projectManifest";
 import type {
   AuthorFeatureManifest,
@@ -12,14 +14,13 @@ import type {
   AuthorUnhandledInputMutation,
   AuthorWorkspaceContext,
 } from "./types";
-import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 
 /**
  * Single composition registry for Author-capable feature modules.
  *
- * A new feature should own its tools/workspace renderer/settings/terminal aliases
- * beside the feature and add one manifest here. App does not need to know which
- * Author modules exist.
+ * A new feature should own its tools/workspace renderer/resources/settings/
+ * terminal aliases beside the feature and add one manifest here. App does not
+ * need to know which Author modules or resource kinds exist.
  */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
@@ -30,7 +31,15 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   projectAuthorFeature,
 ];
 
-export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorPanelRoute | null {
+export function getAuthorResourceProvider(kind: string): AuthorResourceProvider | undefined {
+  for (const feature of AUTHOR_FEATURES) {
+    const provider = feature.resources?.find((candidate) => candidate.kind === kind);
+    if (provider) return provider;
+  }
+  return undefined;
+}
+
+export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorTaskRoute | null {
   for (const feature of AUTHOR_FEATURES) {
     const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));
     if (shortcut) return shortcut.route;
@@ -59,7 +68,7 @@ export function renderAuthorFeaturePlaySurfaces(context: AuthorPlaySurfaceContex
 }
 
 export function renderAuthorFeatureWorkspace(
-  route: AuthorPanelRoute,
+  route: AuthorTaskRoute,
   context: AuthorWorkspaceContext,
 ) {
   if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") {
