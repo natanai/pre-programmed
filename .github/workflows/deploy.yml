@@ -30,6 +30,21 @@ jobs:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
+      - name: Verify configured D1 binding
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          DB_NAME=$(node --input-type=module <<'NODE'
+          import { readFileSync } from "node:fs";
+          const config = JSON.parse(readFileSync("wrangler.jsonc", "utf8"));
+          const binding = config.d1_databases?.find((candidate) => candidate.binding === "DB");
+          if (!binding?.database_name) process.exit(1);
+          process.stdout.write(binding.database_name);
+          NODE
+          )
+          npx wrangler d1 info "$DB_NAME" --json >/dev/null
+
       - name: Deploy API Worker
         env:
           ADMIN_KEY: ${{ secrets.ADMIN_KEY }}
