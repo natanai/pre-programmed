@@ -1,5 +1,5 @@
 import type { PlayState, ProjectSnapshot } from "../../game/model";
-import type { AuthorPanelRoute } from "../workSurfaceNavigation";
+import type { AuthorTaskRoute } from "../tasks/types";
 
 export type AuthorToolDefinition = {
   id: string;
@@ -20,8 +20,8 @@ export type AuthorToolContribution = {
 export type AuthorToolContext = {
   snapshot: ProjectSnapshot;
   playState: PlayState;
-  pushPanel: (route: AuthorPanelRoute) => void;
-  close: () => void;
+  pushTask: (route: AuthorTaskRoute) => string;
+  closeAll: () => void;
   downloadBackup: () => Promise<void>;
 };
 
