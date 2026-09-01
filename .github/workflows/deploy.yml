@@ -26,6 +26,9 @@ jobs:
 
       - run: npm ci --no-audit --no-fund
       - run: npm run build:pages
+        env:
+          VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
+          VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
       - name: Deploy API Worker
         env:
@@ -43,9 +46,13 @@ jobs:
           npx wrangler deploy --secrets-file "$SECRETS_FILE"
 
       - name: Verify API
+        env:
+          API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
         run: |
           node --input-type=module <<'NODE'
-          const url = "https://pre-programmed.natanai.workers.dev/api/health";
+          const fallbackOrigin = "https://pre-programmed.natanai.workers.dev";
+          const origin = (process.env.API_ORIGIN || fallbackOrigin).replace(/\/+$/, "");
+          const url = `${origin}/api/health`;
           for (let attempt = 0; attempt < 12; attempt += 1) {
             try {
               const response = await fetch(url, { cache: "no-store" });
