@@ -1,0 +1,25 @@
+.author-reference-field {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.author-reference-field > select {
+  min-width: 0;
+  width: 100%;
+}
+
+.author-reference-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.author-reference-actions button {
+  white-space: nowrap;
+}
+
+.author-reference-empty {
+  opacity: 0.72;
+  line-height: 1.35;
+}
