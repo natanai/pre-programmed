@@ -7,12 +7,12 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
   tools: mediaAuthorTools,
   renderWorkspace(route, context) {
-    if (route.type === "assets") return <AssetExplorer
+    if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
       snapshot={context.snapshot}
       onClose={context.leaveCurrentSurface}
     />;
 
-    if (route.type === "synth") return <SynthPanel
+    if (route.type === "feature" && route.feature === "media" && route.workspace === "synth") return <SynthPanel
       snapshot={context.snapshot}
       onOpenSound={(sound) => context.pushPanel({
         type: "feature",
