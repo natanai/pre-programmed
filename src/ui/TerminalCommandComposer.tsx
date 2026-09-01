@@ -190,6 +190,17 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       });
     };
 
+    const toggleMenu = () => {
+      setMenuOpen((open) => !open);
+      window.requestAnimationFrame(() => {
+        const current = field();
+        if (current && !window.matchMedia(COARSE_POINTER_QUERY).matches) {
+          current.focus({ preventScroll: true });
+        }
+        queueCaretSync();
+      });
+    };
+
     const mirrorValue = secret ? "•".repeat(value.length) : value;
     const mirrorCaret = Math.min(caretIndex, mirrorValue.length);
 
@@ -262,11 +273,11 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
             className="terminal-command-toggle"
             aria-label={menuOpen ? "Hide available options" : "Show available options"}
             aria-expanded={menuOpen}
-            onPointerDown={(event) => event.stopPropagation()}
-            onClick={() => {
-              setMenuOpen((open) => !open);
-              window.requestAnimationFrame(queueCaretSync);
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              if (!window.matchMedia(COARSE_POINTER_QUERY).matches) event.preventDefault();
             }}
+            onClick={toggleMenu}
           >{menuOpen ? "▲" : "▼"}</button> : null}
 
           {!secret && choices.length ? <div className="terminal-command-choices" aria-label="Available commands">
