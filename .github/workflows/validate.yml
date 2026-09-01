@@ -1,5 +1,6 @@
 name: Validate
 
+# Validation only: this workflow never deploys or uses production secrets.
 on:
   pull_request:
     branches:
