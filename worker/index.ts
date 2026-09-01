@@ -1,7 +1,7 @@
 import type { ProjectMutation, ProjectSnapshot } from "../src/game/model";
 import { createAuthorToken, isAuthor } from "./auth";
 import { collectD1Backup } from "./backup";
-import { ensureSchema } from "./db/migrations";
+import { ensureSchema } from "./db/schema";
 import { json, withCors } from "./http";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
 import { validateMutationBody } from "./validation";
