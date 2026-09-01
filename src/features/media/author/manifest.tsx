@@ -6,6 +6,10 @@ import { mediaAuthorTools } from "./tools";
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
   tools: mediaAuthorTools,
+  terminalShortcuts: [
+    { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
+    { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
+  ],
   renderWorkspace(route, context) {
     if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
       snapshot={context.snapshot}

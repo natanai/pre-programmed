@@ -11,9 +11,9 @@ import type { AuthorPanelRoute } from "../workSurfaceNavigation";
 /**
  * Single composition registry for Author-capable feature modules.
  *
- * A new feature should own its tools/workspace renderer/settings sections beside
- * the feature and add one manifest here. App does not need to know which Author
- * modules exist.
+ * A new feature should own its tools/workspace renderer/settings/terminal aliases
+ * beside the feature and add one manifest here. App does not need to know which
+ * Author modules exist.
  */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
@@ -23,6 +23,14 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   commandsAuthorFeature,
   projectAuthorFeature,
 ];
+
+export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorPanelRoute | null {
+  for (const feature of AUTHOR_FEATURES) {
+    const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));
+    if (shortcut) return shortcut.route;
+  }
+  return null;
+}
 
 export function renderAuthorFeatureWorkspace(
   route: AuthorPanelRoute,

@@ -45,6 +45,11 @@ export type AuthorProjectSettingsSection = {
   render: (context: AuthorWorkspaceContext) => ReactNode;
 };
 
+export type AuthorTerminalShortcut = {
+  commands: readonly string[];
+  route: AuthorPanelRoute;
+};
+
 export type AuthorFeatureManifest = {
   /** Stable feature identifier used only by the Author composition root. */
   id: string;
@@ -52,6 +57,8 @@ export type AuthorFeatureManifest = {
   tools?: AuthorToolContributor;
   /** Optional advanced project settings owned by this module. */
   projectSettings?: readonly AuthorProjectSettingsSection[];
+  /** Optional terminal aliases that open a workspace owned by this feature. */
+  terminalShortcuts?: readonly AuthorTerminalShortcut[];
   /** Return a workspace for routes owned by this feature, otherwise null. */
   renderWorkspace?: (route: AuthorPanelRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };
