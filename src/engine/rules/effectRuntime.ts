@@ -1,11 +1,12 @@
+import type { MediaEffectEvent } from "../../features/media/effectEvents";
 import type { Effect } from "./model";
 import type { PlayState, ProjectSnapshot } from "../project/model";
 
-export type EffectEvent =
-  | { type: "notification"; text: string }
-  | { type: "synth"; synthId: string }
-  | { type: "audio"; assetPath: string }
-  | { type: "art"; assetPath: string };
+/**
+ * Runtime events are contributed by installed features. Engine Rules owns the
+ * execution envelope; feature modules own the payloads their effects emit.
+ */
+export type EffectEvent = MediaEffectEvent;
 
 export type EffectExecution = {
   state: PlayState;
