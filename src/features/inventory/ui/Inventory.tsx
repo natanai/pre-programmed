@@ -58,11 +58,12 @@ export function Inventory({
     return () => window.clearInterval(timer);
   }, []);
 
+  const bodyBackgrounds = snapshot.bodyBackgrounds ?? [];
   const selectedEntry = selected?.kind === "item" ? state.inventory.find((entry) => entry.instanceId === selected.id) : undefined;
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
   const selectedVariable = selected?.kind === "variable" ? snapshot.variables.find((item) => item.id === selected.id) : undefined;
   const selectedComputed = selected?.kind === "computed" ? snapshot.computedValues.find((item) => item.id === selected.id) : undefined;
-  const activeBodyBackground = snapshot.bodyBackgrounds.find((background) => background.id === state.bodyBackgroundId);
+  const activeBodyBackground = bodyBackgrounds.find((background) => background.id === state.bodyBackgroundId);
   const normalizedDefinitionQuery = definitionQuery.trim().toLowerCase();
   const visibleDefinitions = snapshot.items.filter((item) => !normalizedDefinitionQuery || [
     item.name,
@@ -148,13 +149,13 @@ export function Inventory({
           { type: "bodyBackground.starting", id: event.target.value || null },
         ], `Changed starting body background`)}>
           <option value="">none</option>
-          {snapshot.bodyBackgrounds.map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
+          {bodyBackgrounds.map((background) => <option value={background.id} key={background.id}>{background.name}</option>)}
         </select>
       </label>
     </div>
     <div className="inventory-definition-scroll">
-      {snapshot.bodyBackgrounds.length ? <div className="inventory-body-background-cards">
-        {snapshot.bodyBackgrounds.map((background) => <article className="inventory-body-background-card" key={background.id}>
+      {bodyBackgrounds.length ? <div className="inventory-body-background-cards">
+        {bodyBackgrounds.map((background) => <article className="inventory-body-background-card" key={background.id}>
           <button type="button" className="inventory-body-background-preview-button" onClick={() => onEditBodyBackground(background)}>
             <span className="inventory-body-background-thumbnail" style={background.assetPath ? {
               backgroundImage: `url("${assetUrl(background.assetPath)}")`,
@@ -219,7 +220,7 @@ export function Inventory({
             backgroundImage: `url("${assetUrl(activeBodyBackground.assetPath)}")`,
           } : undefined}
         >
-          {!activeBodyBackground?.assetPath ? <span>{snapshot.bodyBackgrounds.length ? "NO ACTIVE BODY IMAGE" : "BODY BACKGROUND NOT CONFIGURED"}</span> : null}
+          {!activeBodyBackground?.assetPath ? <span>{bodyBackgrounds.length ? "NO ACTIVE BODY IMAGE" : "BODY BACKGROUND NOT CONFIGURED"}</span> : null}
         </div>
       </section>
       <div className="inventory-grid" style={{ "--columns": INVENTORY_COLUMNS, "--rows": INVENTORY_ROWS } as CSSProperties}
