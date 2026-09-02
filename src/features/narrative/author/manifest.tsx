@@ -211,6 +211,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       return <NodeEditor
         node={node}
         snapshot={context.snapshot}
+        autoFocusText={!requestedNodeId}
         onPreview={(value, speakerId) => context.runtime.preview({
           text: value.text,
           performance: value.performance,
