@@ -3,6 +3,7 @@ import type { AuthorToolGroup } from "../AuthorToolIndex";
 import { AUTHOR_FEATURES } from "../features/registry";
 import type { AuthorToolContext } from "../tools/types";
 import type { AuthorSearchEntry } from "./types";
+import { buildSearchIndex } from "./projectSearch";
 
 function searchableText(entry: AuthorSearchEntry) {
   return normalizePlayerInput(`${entry.groupLabel} ${entry.label} ${entry.description} ${entry.searchText}`);
@@ -40,6 +41,7 @@ export function buildAuthorSearchEntries(
   context: AuthorToolContext,
   groups: readonly AuthorToolGroup[],
 ): AuthorSearchEntry[] {
+  const projectDocuments = buildSearchIndex(context.snapshot);
   const entries: AuthorSearchEntry[] = groups.flatMap((group) => group.tools.map((tool) => ({
     id: `tool:${group.id}:${tool.id}`,
     groupLabel: group.label,
@@ -85,12 +87,13 @@ export function buildAuthorSearchEntries(
       for (const resource of provider.list(context.snapshot)) {
         const route = provider.editRoute?.(resource);
         if (!route) continue;
+        const projectDocument = projectDocuments.find((document) => document.id === resource.id);
         entries.push({
           id: `resource:${feature.id}:${provider.kind}:${resource.id}`,
           groupLabel: provider.pluralLabel?.toLocaleUpperCase() ?? `${provider.label.toLocaleUpperCase()}S`,
           label: resource.label,
           description: resource.detail || `Edit ${provider.label.toLocaleLowerCase()}.`,
-          searchText: `${provider.kind} ${provider.label} ${provider.pluralLabel ?? ""} ${resource.value}`,
+          searchText: `${provider.kind} ${provider.label} ${provider.pluralLabel ?? ""} ${resource.value} ${projectDocument?.searchText ?? ""}`,
           onSelect: () => context.pushTask(route),
         });
       }

@@ -33,6 +33,10 @@ describe("local author destination search", () => {
   it("finds nested Author controls and concepts rather than only visible home cards", () => {
     const snapshot = project({
       items: [{ id: "cyber-leg", key: "cyber-leg", name: "Cyber Leg", description: "replacement limb", assetId: "", width: 1, height: 2, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, interactable: true, operations: ["inspect"], equipmentSlotKeys: ["leg"], tags: [], initialState: {}, hooks: [] }],
+      interactions: [{
+        id: "secret-response", sourceNodeId: "a", wording: "Look closely", choiceVisibility: "typed", aliases: ["look"], tags: [], notes: "",
+        outcomes: [{ id: "secret-outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "A phosphorescent inscription appears.", responsePerformance: { charactersPerSecond: 18, cues: [] }, effects: [], disposition: "stay", destinationNodeId: null }],
+      }],
     });
     const playState = createEmptyPlayState(snapshot);
     const pushTask = vi.fn(() => "task");
@@ -49,5 +53,6 @@ describe("local author destination search", () => {
       "ITEMS + EQUIPMENT RULES",
     ]));
     expect(searchAuthorEntries(entries, "cyber leg")[0]?.label).toBe("Cyber Leg");
+    expect(searchAuthorEntries(entries, "phosphorescent inscription").map((entry) => entry.label)).toContain("Look closely");
   });
 });
