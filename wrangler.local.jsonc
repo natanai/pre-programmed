@@ -13,12 +13,5 @@
       "database_id": "11111111-1111-4111-8111-111111111111",
       "preview_database_id": "pre-programmed-local"
     }
-  ],
-  "r2_buckets": [
-    {
-      "binding": "ASSET_CONTENT",
-      "bucket_name": "pre-programmed-local-assets",
-      "preview_bucket_name": "pre-programmed-local-assets"
-    }
   ]
 }
