@@ -1,4 +1,4 @@
-import type { ProjectSnapshot } from "../../game/model";
+import type { ProjectSnapshot } from "../../engine/project/model";
 import { getAuthorResourceProvider } from "../features/registry";
 import type { AuthorTaskCompletion, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorResourceTools } from "./types";

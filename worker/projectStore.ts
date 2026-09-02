@@ -4,7 +4,7 @@ import type {
   ProjectMutation,
   ProjectSnapshot,
   RevisionSummary,
-} from "../src/game/model";
+} from "../src/engine/project/model";
 import { applyOperations } from "../src/engine/project/mutations";
 import { parseJson } from "./db/json";
 import { ensureSchema } from "./db/schema";

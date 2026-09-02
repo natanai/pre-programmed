@@ -1,4 +1,4 @@
-import type { ProjectSnapshot } from "../../game/model";
+import type { ProjectSnapshot } from "../../engine/project/model";
 import type { AuthorResourceResult, AuthorTaskCompletion, AuthorTaskRoute } from "../tasks/types";
 
 export type AuthorResourceOption = {

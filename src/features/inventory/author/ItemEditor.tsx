@@ -3,9 +3,11 @@ import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
-import type { ItemDefinition, MutationOperation, ProjectSnapshot } from "../../../game/model";
-import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import type { ItemDefinition } from "../model";
+import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import "./inventoryAuthor.css";
+import { referencesTo } from "../../../author/references/projectReferences";
 
 const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
 
@@ -19,9 +21,11 @@ function emptyItem(): ItemDefinition {
   };
 }
 
-export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
+export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: ItemDefinition;
+  openOperations?: boolean;
+  preferredOperation?: string;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
@@ -51,6 +55,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
   const minimumStartingQuantity = useMemo(() => Math.max(0, ...(snapshot.bodyBackgrounds ?? []).map((bodyType) =>
     (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
   )), [draft.id, snapshot.bodyBackgrounds]);
+  const usages = initial ? referencesTo(snapshot, "item", initial.id).filter((reference) => reference.ownerId !== initial.id) : [];
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -77,6 +82,15 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
         setBaseline(JSON.stringify(item));
         setWorkspaceDirty(false);
       }
+    } finally { setSaving(false); }
+  };
+
+  const remove = async () => {
+    if (!initial || usages.length || !window.confirm(`Delete item “${initial.name}”?`)) return;
+    setSaving(true);
+    try {
+      const result = await onSave([{ type: "item.delete", id: initial.id }], `Deleted item ${initial.name}`);
+      if (result.status === "saved" || result.status === "queued") onCancel();
     } finally { setSaving(false); }
   };
 
@@ -146,10 +160,10 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
 
       <section className="item-editor-section">
         <h3>PLAYER BEHAVIOR</h3>
-        <OperationHooksEditor snapshot={snapshot} targetKind="inventory.item" capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+        <OperationHooksEditor snapshot={snapshot} targetKind="inventory.item" defaultOpen={openOperations} preferredOperation={preferredOperation} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </section>
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button></div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
   </section>;
 }

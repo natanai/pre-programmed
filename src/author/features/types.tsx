@@ -1,18 +1,24 @@
 import type { ReactNode } from "react";
 import type { AuthorCapability } from "../capabilities/types";
-import type { EffectEvent } from "../../game/effects";
+import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import type {
   AuthorBookmark,
   MutationOperation,
   PlayState,
   ProjectSnapshot,
-  TextPerformance,
-} from "../../game/model";
+} from "../../engine/project/model";
+import type { TextPerformance } from "../../features/narrative/model";
 import type { AuthorPersistResult } from "../persistence/authorProjectPersistence";
 import type { AuthorResourceProvider, AuthorResourceTools } from "../resources/types";
+import type { ProjectReferenceContribution } from "../references/types";
+import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../rules/types";
 import type { AuthorSearchContributor } from "../search/types";
+import type { SearchDocumentContribution } from "../search/types";
 import type { AuthorTaskCompletion, AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorToolContributor } from "../tools/types";
+import type { CommandReferenceSource } from "../../features/commands/referenceSource";
+import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
+import type { TextCueAuthorAdapter } from "../textCues/types";
 
 export type AuthorPersist = (
   operations: MutationOperation[],
@@ -82,6 +88,20 @@ export type AuthorFeatureManifest = {
   search?: AuthorSearchContributor;
   /** Resources this feature owns and can create/edit from reference fields. */
   resources?: readonly AuthorResourceProvider[];
+  /** Player-command target vocabularies owned by this feature. */
+  commandReferences?: readonly CommandReferenceSource[];
+  /** Operations this feature exposes on semantic target kinds. */
+  operations?: readonly AuthorOperationDefinition[];
+  /** Feature-owned condition editors composed by the generic rule UI. */
+  conditions?: readonly ConditionAuthorAdapter[];
+  /** Feature-owned effect editors composed by the generic rule UI. */
+  effects?: readonly EffectAuthorAdapter[];
+  /** Feature-owned inline text cues composed by narrative authoring. */
+  textCues?: readonly TextCueAuthorAdapter[];
+  /** Authored content documents contributed to the shared search index. */
+  searchDocuments?: readonly SearchDocumentContribution[];
+  /** Outbound project references used for missing-link and lifecycle analysis. */
+  references?: readonly ProjectReferenceContribution[];
   /** Optional advanced project settings owned by this module. */
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */

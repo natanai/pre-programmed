@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
-import { type EffectEvent } from "../../../game/effects";
+import type { EffectEvent } from "../../../engine/rules/effectRuntime";
 import {
   giveInventoryItem,
   compatibleBodySlots,
@@ -9,18 +9,15 @@ import {
   INVENTORY_ROWS,
   itemCanEquipToSlot,
   setActiveBodyType,
-} from "../../../game/inventory";
+} from "../runtime";
 import type {
   BodyBackgroundDefinition,
   ItemDefinition,
-  MutationOperation,
-  OperationId,
-  OperationTarget,
-  PlayState,
-  ProjectSnapshot,
-} from "../../../game/model";
-import { executeOperation, formatOperationOutput, type OperationRequest } from "../../../game/operations";
-import { readComputedValue } from "../../../game/runtimeValues";
+} from "../model";
+import type { MutationOperation, PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import type { OperationId, OperationTarget } from "../../operations/model";
+import { executeOperation, formatOperationOutput, type OperationRequest } from "../../operations/runtime";
+import { readComputedValue } from "../../state/runtimeValues";
 import "../author/inventoryAuthor.css";
 
 type InventoryScreen = "play" | "definitions" | "body-types";

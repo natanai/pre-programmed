@@ -5,6 +5,9 @@ import { popActiveAuthorTask, setAuthorTaskDirtyState } from "../src/author/task
 import type { AuthorTaskEntry, AuthorTaskResult } from "../src/author/tasks/types";
 import { project } from "./fixtures";
 import { createEmptyPlayState } from "../src/engine/project/playState";
+import { applyOperations } from "../src/engine/project/mutations";
+import { parseCommand } from "../src/features/narrative/parser";
+import { executeInteraction } from "../src/features/narrative/runtime";
 
 const parent: AuthorTaskEntry = { id: "parent", route: { type: "tools" }, dirty: true };
 const child: AuthorTaskEntry = {
@@ -65,6 +68,30 @@ describe("Author task stack", () => {
         outcomes: [{ authorStatus: "draft" }],
       } }],
     });
+  });
+
+  it("preserves the already-resolved fallback response after capturing the phrase", () => {
+    const snapshot = project({ interactions: [{
+      id: "fallback", sourceNodeId: "a", wording: "", matchMode: "fallback", choiceVisibility: "typed",
+      aliases: [], tags: [], notes: "", outcomes: [{
+        id: "fallback-outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" },
+        responseText: "The world does not understand yet.", responsePerformance: { charactersPerSecond: 18, cues: [] },
+        effects: [], disposition: "stay", destinationNodeId: null,
+      }],
+    }] });
+    const state = createEmptyPlayState(snapshot);
+    const parsedBeforeCapture = parseCommand("Growl at the moon", snapshot, state);
+    expect(parsedBeforeCapture.reason).toBe("fallback");
+    const resolution = resolveAuthorCapability({
+      capability: "input.capture-unmatched",
+      data: { sourceNodeId: "a", input: "Growl at the moon" },
+    }, { snapshot, playState: state });
+    expect(resolution?.type).toBe("mutation");
+    if (!resolution || resolution.type !== "mutation" || !parsedBeforeCapture.interaction) throw new Error("Expected capture and fallback.");
+    const updated = applyOperations(snapshot, resolution.operations);
+    const execution = executeInteraction(updated, state, parsedBeforeCapture.interaction);
+    expect(execution.responseText).toBe("The world does not understand yet.");
+    expect(updated.interactions.some((interaction) => interaction.wording === "Growl at the moon")).toBe(true);
   });
 
   it("returns a feature-owned resource result through the generic runtime", () => {

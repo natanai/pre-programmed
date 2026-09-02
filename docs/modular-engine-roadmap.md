@@ -39,7 +39,7 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - Worker persistence is feature-owned; `worker/projectStore.ts` is primarily orchestration.
 - Runtime schema initialization composes immutable historical migrations with future feature migration contributions through `worker/db/schema.ts`; the obsolete second migration runner has been removed.
 - Worker mutation validation is feature-composed, including feature-owned project-settings validation.
-- `src/game/model.ts` is now a pure shrink-only compatibility facade rather than an implementation owner.
+- Prototype aggregate model imports have been removed; callers import the engine or feature owner directly.
 - Media was physically removed on a temporary probe branch and the engine still passed typecheck, full tests, and build after removing only its explicit registrations/composition entries.
 - The same Author implementation has been exercised successfully on real desktop and mobile clients.
 - Desktop Author mode can remain open beside the playable game; mobile uses the focused presentation of the same workspaces.
@@ -97,7 +97,7 @@ The remaining Narrative-specific central Author route shapes are `node` and `int
 
 `App.tsx` remains the main frontend meeting point, but refactoring it is not a goal by itself. Project persistence and Author workspace/history/undo now have platform composition roots; remaining direct hosted session/login/backup/save selection should move only where the resulting boundary is real and useful to both hosted and local operation.
 
-Remaining one-line `src/game/*` and `src/components/*` facades are not duplicate implementations. Migrate or delete them when their consumers are naturally touched rather than launching a flag-day import rewrite.
+Prototype-era `src/game/*` and Author-field component facades are gone. New work imports the engine or feature owner directly; do not restore migration shims for deleted prototypes.
 
 ### 3. Real-machine local acceptance
 
@@ -187,7 +187,7 @@ A new developer/user should be able to:
 - Verification ownership rules were added to `docs/feature-boundaries.md`.
 - Worker API compatibility cleanup removed obsolete bootstrap/per-node routes and standardized on the canonical schema owner.
 - The historical migrations file became data/helper-only; the obsolete duplicate runtime migration owner was deleted and the live project-snapshot check remained green.
-- `src/game/model.ts` became a pure compatibility facade; UUID/node-number behavior moved to their actual owners.
+- UUID/node-number behavior and all former aggregate model imports now resolve directly to their actual owners.
 - Worker project-settings validation stopped directly depending on Commands and now composes through the validation catalog.
 - App stopped constructing Narrative draft interactions for unmatched Author input and stopped resolving application capabilities through Commands.
 - Narrative's current-input Author surface moved behind the feature manifest; obsolete duplicate unhandled-input authoring UI was deleted.

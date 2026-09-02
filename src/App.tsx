@@ -35,28 +35,30 @@ import {
   projectClockScheduleKey,
   resetProjectClocks,
 } from "./engine/runtime/projectClock";
-import { effectEventsForTextCue, presentEffectEvents, type EffectEvent } from "./game/effects";
-import { buildGraphIndex, notationForNode } from "./game/graph";
-import { interpolateText } from "./game/interpolation";
-import { applyOperations } from "./game/mutations";
+import { effectEventsForTextCue } from "./engine/presentation/textCueEventCatalog";
+import type { EffectEvent } from "./engine/rules/effectRuntime";
+import { presentEffectEvents } from "./ui/effectPresentationCatalog";
+import { buildGraphIndex, notationForNode } from "./features/narrative/graph";
+import { interpolateText } from "./features/narrative/interpolation";
+import { applyOperations } from "./engine/project/mutations";
 import {
   createEmptyPlayState,
   reconcilePlayState,
   reconcilePlayStateAfterProjectChange,
   resumeAuthorBookmark,
-  type AuthorBookmark,
-  type GameNode,
-  type Interaction,
-  type MutationOperation,
-  type PlayState,
-  type ProjectMutation,
-  type ProjectSnapshot,
-  type TextPerformance,
-} from "./game/model";
-import { executeOperation } from "./game/operations";
-import { parseCommand, type ParserResult } from "./game/parser";
-import { executeInteraction } from "./game/runtime";
-import { compileTextNotation } from "./game/textNotation";
+} from "./engine/project/playState";
+import type {
+  AuthorBookmark,
+  MutationOperation,
+  PlayState,
+  ProjectMutation,
+  ProjectSnapshot,
+} from "./engine/project/model";
+import type { GameNode, Interaction, TextPerformance } from "./features/narrative/model";
+import { executeOperation } from "./features/operations/runtime";
+import { parseCommand, type ParserResult } from "./features/commands/parser";
+import { executeInteraction } from "./features/narrative/runtime";
+import { compileTextNotation } from "./features/narrative/textNotation";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -509,29 +511,25 @@ export default function App() {
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
 
+    appendActive();
+    const commandLineId = crypto.randomUUID();
+    setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
+
     if (parsed.reason === "fallback" && authorMode && authorView) {
       const resolution = resolveAuthorCapability({
         capability: "input.capture-unmatched",
         data: { sourceNodeId: currentState.currentNodeId, input: value.trim() },
       }, { snapshot, playState: currentState });
       if (resolution?.type === "mutation") {
-        setParserResult(null);
         const result = await persist(resolution.operations, resolution.description);
         if (result.status === "saved" || result.status === "queued") {
           setAuthorMessage(resolution.message ?? "DRAFT INPUT CREATED.");
         }
-        return;
       }
       if (resolution?.type === "handled") {
-        setParserResult(null);
         setAuthorMessage(resolution.message ?? "INPUT CAPTURED.");
-        return;
       }
     }
-
-    appendActive();
-    const commandLineId = crypto.randomUUID();
-    setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
 
     if (parsed.invocation) {
       if (!parsed.invocation.target) {

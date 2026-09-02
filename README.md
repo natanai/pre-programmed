@@ -329,13 +329,12 @@ src/engine/                generic contracts plus explicit installed-feature com
 src/author/                shared Author navigation/workspace/runtime composition
 src/data/                  API and browser-cache helpers
 src/platform/              host/platform adapters such as Cloudflare persistence
-src/game/                  shrink-only compatibility re-exports for older imports
-src/components/            small shared/compatibility UI surfaces
+src/components/            application-level display controls
 worker/features/           feature-owned D1 persistence and mutation validation
 worker/db/                 canonical schema owner + immutable historical migration data
 worker/projectStore.ts     core D1/revision/bookmark orchestration
 scripts/                   installation/build helpers
-.github/workflows/         one automatic production deploy + opt-in prototype verification
+.github/workflows/         one automatic production deploy + opt-in verification
 ```
 
 The architecture rule is:

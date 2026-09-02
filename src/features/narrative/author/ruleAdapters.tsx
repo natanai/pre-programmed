@@ -5,6 +5,7 @@ export const visitedConditionAdapter: ConditionAuthorAdapter = {
   type: "visited",
   label: "visited node",
   create: () => ({ type: "visited", nodeId: "", value: true }),
+  references: (condition) => condition.type === "visited" && condition.nodeId ? [{ resourceKind: "node", resourceId: condition.nodeId, detail: "visited node" }] : [],
   render: ({ condition, onChange }) => {
     if (condition.type !== "visited") return null;
     return <>
@@ -22,6 +23,7 @@ export const interactionVisibilityEffectAdapter: EffectAuthorAdapter = {
   category: "narrative",
   description: "Change whether another authored input is available to the player.",
   create: () => ({ id: crypto.randomUUID(), type: "set_interaction_visibility", interactionId: "", visible: true }),
+  references: (effect) => effect.type === "set_interaction_visibility" && effect.interactionId ? [{ resourceKind: "interaction", resourceId: effect.interactionId, detail: "interaction visibility target" }] : [],
   summarize: (effect, snapshot) => {
     if (effect.type !== "set_interaction_visibility") return "Show/hide interaction";
     const interaction = snapshot.interactions.find((item) => item.id === effect.interactionId);
@@ -40,6 +42,7 @@ export const transitionEffectAdapter: EffectAuthorAdapter = {
   category: "narrative",
   description: "Move play to another node after this outcome.",
   create: () => ({ id: crypto.randomUUID(), type: "transition", nodeId: "" }),
+  references: (effect) => effect.type === "transition" && effect.nodeId ? [{ resourceKind: "node", resourceId: effect.nodeId, detail: "transition destination" }] : [],
   summarize: (effect, snapshot) => {
     if (effect.type !== "transition") return "Transition";
     const node = snapshot.nodes.find((item) => item.id === effect.nodeId);

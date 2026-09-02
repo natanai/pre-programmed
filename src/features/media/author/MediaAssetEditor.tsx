@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import { referencesTo } from "../../../author/references/projectReferences";
 import type { MediaAsset, MediaAssetKind } from "../model";
 import { configuredAssetStore } from "../ui/assetStore";
 import "./mediaAuthor.css";
@@ -24,10 +26,11 @@ function imageDimensions(dataUrl: string) {
   });
 }
 
-export function MediaAssetEditor({ kind, initial, onSave, onCancel, setWorkspaceDirty }: {
+export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, setWorkspaceDirty }: {
+  snapshot: ProjectSnapshot;
   kind: MediaAssetKind;
   initial?: MediaAsset;
-  onSave: (operations: [{ type: "mediaAsset.upsert"; asset: MediaAsset }], description: string) => Promise<AuthorPersistResult>;
+  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
@@ -36,6 +39,7 @@ export function MediaAssetEditor({ kind, initial, onSave, onCancel, setWorkspace
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(draft) !== baseline;
+  const usages = initial ? referencesTo(snapshot, `media-${initial.kind}`, initial.id) : [];
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -81,6 +85,15 @@ export function MediaAssetEditor({ kind, initial, onSave, onCancel, setWorkspace
     }
   };
 
+  const remove = async () => {
+    if (!initial || usages.length || !window.confirm(`Delete media asset “${initial.name}”?`)) return;
+    setSaving(true);
+    try {
+      const result = await onSave([{ type: "mediaAsset.delete", id: initial.id }], `Deleted media asset ${initial.name}`);
+      if (result.status === "saved" || result.status === "queued") onCancel();
+    } finally { setSaving(false); }
+  };
+
   return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} ASSET · {draft?.name ?? "NEW"}</span></header>
     <div className="author-panel-body">
@@ -99,6 +112,7 @@ export function MediaAssetEditor({ kind, initial, onSave, onCancel, setWorkspace
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE ASSET"}]</button>
       <button type="button" onClick={onCancel}>[CANCEL]</button>
+      {initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>
   </section>;
 }

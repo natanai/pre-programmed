@@ -142,6 +142,48 @@
   grid-column: 1 / -1;
 }
 
+.command-slot-source-warning button {
+  min-height: 2.5em;
+  margin-left: .35em;
+  border: 0;
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+.player-interactions-workspace h3,
+.target-behaviors-workspace h3 {
+  margin: .45rem 0 -.25rem;
+  color: var(--dos-muted);
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.player-interaction-target {
+  display: grid;
+  gap: .35em;
+  padding: .5em;
+  border: 1px solid var(--dos-line);
+}
+
+.player-interaction-target-heading {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+}
+
+.player-interaction-target-heading span:first-child { display: grid; }
+.player-interaction-operation-links { display: flex; flex-wrap: wrap; gap: .35em; }
+.player-interaction-operation-links button { padding: .25em .45em; border: 1px solid var(--dos-line); color: var(--dos-muted); background: #050505; font: inherit; }
+.player-interaction-operation-links button.is-available { color: var(--dos-text); border-color: var(--dos-text); }
+
 .command-delete-zone {
   margin-top: 1rem;
   padding-top: 1rem;

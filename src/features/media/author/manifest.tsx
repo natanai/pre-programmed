@@ -4,9 +4,15 @@ import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
+import { mediaSearchDocuments } from "./search";
+import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
+import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
+  effects: [synthEffectAdapter, audioEffectAdapter, artEffectAdapter],
+  textCues: MEDIA_TEXT_CUE_AUTHOR_ADAPTERS,
+  searchDocuments: [mediaSearchDocuments],
   tools: mediaAuthorTools,
   search: mediaAuthorSearch,
   resources: [
@@ -67,6 +73,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       onClose={context.leaveCurrentTask}
       onOpenAsset={(assetId, kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { assetId, kind } })}
       onNewAsset={(kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { kind } })}
+      onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
     />;
 
     if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
@@ -76,6 +83,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         : undefined;
       const resourceKind = route.data?.resourceTask;
       return <MediaAssetEditor
+        snapshot={context.snapshot}
         kind={kind}
         initial={initial}
         setWorkspaceDirty={context.setWorkspaceDirty}
@@ -83,8 +91,8 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         onSave={async (operations, description) => {
           const result = await context.persist(operations, description);
           if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations[0];
-            context.completeTask({
+            const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
+            if (operation?.type === "mediaAsset.upsert") context.completeTask({
               type: "resource",
               kind: resourceKind,
               id: operation.asset.id,
@@ -136,6 +144,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
           }
           return result;
         }}
+        onCancel={context.leaveCurrentTask}
         setWorkspaceDirty={context.setWorkspaceDirty}
       />;
     }

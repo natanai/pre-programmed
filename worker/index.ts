@@ -1,4 +1,4 @@
-import type { ProjectMutation } from "../src/game/model";
+import type { ProjectMutation } from "../src/engine/project/model";
 import { createAuthorToken, isAuthor } from "./auth";
 import { collectD1Backup } from "./backup";
 import { ensureSchema } from "./db/schema";

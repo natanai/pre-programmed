@@ -2,19 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
-import {
-  makeId,
-  nextNodeNumber,
-  type Condition,
-  type GameNode,
-  type Interaction,
-  type InteractionChoiceVisibility,
-  type InteractionOutcome,
-  type MutationOperation,
-  type PlayState,
-  type ProjectSnapshot,
-} from "../../../game/model";
-import { ConditionEditor, EffectsEditor } from "../../../components/AuthorFields";
+import type { Condition } from "../../../engine/rules/model";
+import type {
+  MutationOperation,
+  PlayState,
+  ProjectSnapshot,
+} from "../../../engine/project/model";
+import { makeId } from "../../../engine/project/id";
+import { nextNodeNumber } from "../nodeNumber";
+import type {
+  GameNode,
+  Interaction,
+  InteractionChoiceVisibility,
+  InteractionOutcome,
+} from "../model";
+import { ConditionEditor } from "../../../author/ConditionEditor";
+import { EffectsEditor } from "../../../author/EffectsEditor";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";

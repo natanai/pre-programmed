@@ -1,4 +1,4 @@
-import type { PlayState, ProjectSnapshot } from "../../game/model";
+import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import type { AuthorTaskRoute } from "../tasks/types";
 
 export type AuthorToolDefinition = {

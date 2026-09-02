@@ -1,6 +1,18 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { DefinitionsPanel, type StateAuthorResourceKind } from "./DefinitionsPanel";
 import { stateAuthorSearch, stateAuthorTools } from "./tools";
+import { STATE_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
+import { WORLD_COMMAND_REFERENCE_SOURCES } from "../../world/commandReferences";
+import {
+  clearFlagEffectAdapter,
+  decrementEffectAdapter,
+  flagConditionAdapter,
+  incrementEffectAdapter,
+  setFlagEffectAdapter,
+  setValueEffectAdapter,
+  variableConditionAdapter,
+} from "./ruleAdapters";
+import { stateProjectReferences } from "./references";
 
 const DEFINITIONS_ROUTE = { type: "feature", feature: "state", workspace: "definitions" } as const;
 
@@ -18,6 +30,10 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
 
 export const stateAuthorFeature: AuthorFeatureManifest = {
   id: "state",
+  commandReferences: [...WORLD_COMMAND_REFERENCE_SOURCES, ...STATE_COMMAND_REFERENCE_SOURCES],
+  conditions: [flagConditionAdapter, variableConditionAdapter],
+  effects: [setFlagEffectAdapter, clearFlagEffectAdapter, setValueEffectAdapter, incrementEffectAdapter, decrementEffectAdapter],
+  references: [stateProjectReferences],
   tools: stateAuthorTools,
   search: stateAuthorSearch,
   resources: [

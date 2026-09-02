@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { createPortal } from "react-dom";
-import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../game/model";
+import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import type { AuthorSearchEntry } from "../search/types";
 import { renderAuthorFeatureWorkspace } from "../features/registry";

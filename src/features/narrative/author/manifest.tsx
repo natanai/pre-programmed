@@ -1,8 +1,9 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { previewEventsForEffects } from "../../../author/rules/catalog";
 import { normalizePlayerInput } from "../../../engine/input/normalize";
-import { buildGraphIndex } from "../../../game/graph";
-import { makeId, nextNodeNumber } from "../../../game/model";
+import { buildGraphIndex } from "../graph";
+import { makeId } from "../../../engine/project/id";
+import { nextNodeNumber } from "../nodeNumber";
 import { createDraftInteraction } from "../drafts";
 import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
@@ -10,11 +11,16 @@ import { NodeEditor } from "./NodeEditor";
 import { notationForNarrativeInteraction } from "./notation";
 import { StructureNavigator } from "./StructureNavigator";
 import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
+import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "./ruleAdapters";
+import { narrativeProjectReferences } from "./references";
 
 const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
 
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
+  conditions: [visitedConditionAdapter],
+  effects: [interactionVisibilityEffectAdapter, transitionEffectAdapter],
+  references: [narrativeProjectReferences],
   tools: narrativeAuthorTools,
   search: narrativeAuthorSearch,
   resources: [

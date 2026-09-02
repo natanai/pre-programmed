@@ -43,7 +43,7 @@ function validStartingEquipment(value: unknown) {
 }
 
 export const inventoryMutationValidator: WorkerMutationValidator = {
-  types: ["item.upsert", "bodyBackground.upsert", "bodyBackground.delete", "bodyBackground.starting"],
+  types: ["item.upsert", "item.delete", "bodyBackground.upsert", "bodyBackground.delete", "bodyBackground.starting"],
   validate(operation) {
     if (operation.type === "item.upsert") {
       if (!object(operation.item)) return "Item is invalid.";
@@ -86,6 +86,10 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
         return "Body type starting equipment is invalid.";
       }
       return null;
+    }
+
+    if (operation.type === "item.delete") {
+      return typeof operation.id === "string" && operation.id ? null : "Item id is required.";
     }
 
     if (operation.type === "bodyBackground.delete") {

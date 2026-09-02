@@ -32,7 +32,7 @@ describe("local author destination search", () => {
 
   it("finds nested Author controls and concepts rather than only visible home cards", () => {
     const snapshot = project({
-      items: [{ id: "cyber-leg", key: "cyber-leg", name: "Cyber Leg", description: "replacement limb", assetId: "", width: 1, height: 2, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, interactable: true, operations: ["inspect"], equipmentSlotKeys: ["leg"], tags: [], initialState: {}, hooks: [] }],
+      items: [{ id: "cyber-leg", key: "cyber-leg", name: "Cyber Leg", description: "replacement limb", assetId: "", width: 1, height: 2, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, interactable: true, operations: ["inspect", "use", "polish"], equipmentSlotKeys: ["leg"], tags: [], initialState: {}, hooks: [{ id: "polish-response", operation: "polish", order: 0, condition: { type: "always" }, responseText: "The chrome gleams.", effects: [], success: true }] }],
       interactions: [{
         id: "secret-response", sourceNodeId: "a", wording: "Look closely", choiceVisibility: "typed", aliases: ["look"], tags: [], notes: "",
         outcomes: [{ id: "secret-outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "A phosphorescent inscription appears.", responsePerformance: { charactersPerSecond: 18, cues: [] }, effects: [], disposition: "stay", destinationNodeId: null }],
@@ -54,5 +54,8 @@ describe("local author destination search", () => {
     ]));
     expect(searchAuthorEntries(entries, "cyber leg")[0]?.label).toBe("Cyber Leg");
     expect(searchAuthorEntries(entries, "phosphorescent inscription").map((entry) => entry.label)).toContain("Look closely");
+    for (const operation of ["inspect", "use", "polish"]) {
+      expect(searchAuthorEntries(entries, operation).map((entry) => entry.label)).toContain("Cyber Leg");
+    }
   });
 });

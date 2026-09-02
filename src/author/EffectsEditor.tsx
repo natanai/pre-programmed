@@ -1,6 +1,7 @@
 import { useState } from "react";
-import type { Effect, ProjectSnapshot } from "../game/model";
-import { EFFECT_AUTHOR_ADAPTERS, EFFECT_AUTHOR_ADAPTER_BY_TYPE } from "./rules/catalog";
+import type { Effect } from "../engine/rules/model";
+import type { ProjectSnapshot } from "../engine/project/model";
+import { effectAuthorAdapter, effectAuthorAdapters } from "./rules/catalog";
 import type { EffectAuthorAdapter } from "./rules/types";
 import "./effectsEditor.css";
 
@@ -13,7 +14,8 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
-  const categories = [...new Set(EFFECT_AUTHOR_ADAPTERS.map((adapter) => adapter.category))];
+  const adapters = effectAuthorAdapters();
+  const categories = [...new Set(adapters.map((adapter) => adapter.category))];
   const selectedIndex = selectedEffectId ? effects.findIndex((effect) => effect.id === selectedEffectId) : -1;
   const selectedEffect = selectedIndex >= 0 ? effects[selectedIndex] : undefined;
 
@@ -48,7 +50,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
 
   const changeSelectedType = (type: Effect["type"]) => {
     if (!selectedEffect || selectedIndex < 0) return;
-    const adapter = EFFECT_AUTHOR_ADAPTER_BY_TYPE[type];
+    const adapter = effectAuthorAdapter(type);
     if (!adapter) return;
     const replacement = { ...adapter.create(), id: selectedEffect.id } as Effect;
     replace(selectedIndex, replacement);
@@ -60,7 +62,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
     <div className="effect-type-groups">{categories.map((category) => <section key={category}>
       <h4>{category.toUpperCase()}</h4>
       <div className="effect-type-list">
-        {EFFECT_AUTHOR_ADAPTERS.filter((adapter) => adapter.category === category).map((adapter) => <button type="button" key={adapter.type} onClick={() => addEffect(adapter)}>
+        {adapters.filter((adapter) => adapter.category === category).map((adapter) => <button type="button" key={adapter.type} onClick={() => addEffect(adapter)}>
           <span><strong>{adapter.label.toUpperCase()}</strong><small>{adapter.description}</small></span><span aria-hidden="true">›</span>
         </button>)}
       </div>
@@ -68,7 +70,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
   </div>;
 
   if (screen === "edit" && selectedEffect && selectedIndex >= 0) {
-    const adapter = EFFECT_AUTHOR_ADAPTER_BY_TYPE[selectedEffect.type];
+    const adapter = effectAuthorAdapter(selectedEffect.type);
     return <div className="effects-editor focused-effect-editor">
       <button type="button" className="effects-back" onClick={() => { setSelectedEffectId(null); setScreen("list"); }}>[← BACK TO EFFECTS]</button>
       <div className="focused-effect-heading">
@@ -76,7 +78,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
         <small>{adapter?.summarize?.(selectedEffect, snapshot) ?? adapter?.label ?? selectedEffect.type}</small>
       </div>
       <label>TYPE <select value={selectedEffect.type} onChange={(event) => changeSelectedType(event.target.value as Effect["type"])}>
-        {EFFECT_AUTHOR_ADAPTERS.map((option) => <option value={option.type} key={option.type}>{option.label}</option>)}
+        {adapters.map((option) => <option value={option.type} key={option.type}>{option.label}</option>)}
       </select></label>
       <div className="focused-effect-fields">
         {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot })}
@@ -88,7 +90,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
   return <div className="effects-editor effects-overview">
     {effects.length ? <div className="effect-summary-list">
       {effects.map((effect, index) => {
-        const adapter = EFFECT_AUTHOR_ADAPTER_BY_TYPE[effect.type];
+        const adapter = effectAuthorAdapter(effect.type);
         const summary = adapter?.summarize?.(effect, snapshot) ?? adapter?.label ?? effect.type;
         return <div className="effect-summary-row" key={effect.id}>
           <button type="button" className="effect-summary-open" onClick={() => openEffect(effect)}>

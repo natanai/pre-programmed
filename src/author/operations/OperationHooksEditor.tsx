@@ -1,11 +1,12 @@
 import { useState } from "react";
 import type {
   Condition,
-  OperationHook,
-  ProjectSnapshot,
-} from "../../game/model";
-import type { OperationId } from "../../features/operations/model";
-import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../components/AuthorFields";
+} from "../../engine/rules/model";
+import type { ProjectSnapshot } from "../../engine/project/model";
+import type { OperationHook, OperationId } from "../../features/operations/model";
+import { ConditionEditor } from "../ConditionEditor";
+import { EffectsEditor } from "../EffectsEditor";
+import { ValueMentionField } from "../ValueMentionField";
 import { authorOperationDefinitions } from "./catalog";
 import "./operationHooksEditor.css";
 
@@ -63,17 +64,27 @@ function operationDefinitionsFor(snapshot: ProjectSnapshot, targetKind: string, 
   return [...definitions, { value: current, label: current, targetKinds: [targetKind] }];
 }
 
-export function OperationHooksEditor({ capability, snapshot, targetKind, onChange }: {
+export function OperationHooksEditor({ capability, snapshot, targetKind, defaultOpen = false, preferredOperation, onChange }: {
   capability: OperationCapabilityDraft;
   snapshot: ProjectSnapshot;
   /** Semantic author target kind, e.g. inventory.item or world.character. */
   targetKind: string;
+  defaultOpen?: boolean;
+  preferredOperation?: string;
   onChange: (capability: OperationCapabilityDraft) => void;
 }) {
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
+  const [expanded, setExpanded] = useState(defaultOpen);
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
   const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
+  const cardDefinitions = [
+    ...operationDefinitions,
+    ...capability.hooks
+      .filter((hook) => !operationDefinitions.some((definition) => definition.value === hook.operation))
+      .map((hook) => ({ value: hook.operation, label: hook.operation, targetKinds: [targetKind] })),
+  ].filter((definition, index, all) => all.findIndex((candidate) => candidate.value === definition.value) === index)
+    .sort((left, right) => left.value === preferredOperation ? -1 : right.value === preferredOperation ? 1 : 0);
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
@@ -89,16 +100,20 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, onChang
   });
 
   const moveHook = (id: string, direction: -1 | 1) => {
-    const index = capability.hooks.findIndex((hook) => hook.id === id);
-    const target = index + direction;
-    if (index < 0 || target < 0 || target >= capability.hooks.length) return;
+    const hook = capability.hooks.find((candidate) => candidate.id === id);
+    if (!hook) return;
+    const siblings = capability.hooks.filter((candidate) => candidate.operation === hook.operation);
+    const siblingIndex = siblings.findIndex((candidate) => candidate.id === id);
+    const siblingTarget = siblings[siblingIndex + direction];
+    if (!siblingTarget) return;
+    const index = capability.hooks.findIndex((candidate) => candidate.id === id);
+    const target = capability.hooks.findIndex((candidate) => candidate.id === siblingTarget.id);
     const hooks = [...capability.hooks];
     [hooks[index], hooks[target]] = [hooks[target], hooks[index]];
     onChange({ ...capability, hooks: hooks.map((hook, order) => ({ ...hook, order })) });
   };
 
-  const addHook = () => {
-    const operation = capability.operations[0] ?? operationDefinitions[0]?.value ?? "inspect";
+  const addHook = (operation: OperationId) => {
     const hook = emptyHook(operation, capability.hooks.length);
     onChange({
       interactable: true,
@@ -135,37 +150,45 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, onChang
     setScreen("list");
   };
 
-  return <details className="operation-capability-editor focused-operation-capability">
+  return <details className="operation-capability-editor focused-operation-capability" open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
     <summary>[PLAYER OPERATIONS]</summary>
     <div className="operation-capability-body">
       {screen === "list" ? <>
         <label className="check-label"><input type="checkbox" checked={capability.interactable}
-          onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> allow player operation attempts</label>
+          onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> player can attempt operations on this target</label>
         {capability.interactable ? <>
-          <fieldset className="operation-choices"><legend>AVAILABLE OPERATIONS</legend>
-            {operationDefinitions.map((operation) => <label className="check-label" key={operation.value}><input type="checkbox"
-              checked={capability.operations.includes(operation.value)}
-              onChange={(event) => onChange({
-                ...capability,
-                operations: event.target.checked
-                  ? [...capability.operations, operation.value]
-                  : capability.operations.filter((candidate) => candidate !== operation.value),
-              })} /> {operation.label}</label>)}
-          </fieldset>
-          <div className="operation-hook-list">
-            {capability.hooks.map((hook, index) => <div className="operation-hook-summary" key={hook.id}>
-              <button type="button" className="operation-hook-open" onClick={() => openHook(hook)}>
-                <span className="operation-hook-title">{index + 1}. {hook.operation.toUpperCase()} · {hook.success ? "SUCCEEDS" : "DOES NOT SUCCEED"}</span>
-                <span>{hookSnippet(hook)}</span>
-                <small>{conditionSummary(hook.condition)} · {hook.effects.length} effect{hook.effects.length === 1 ? "" : "s"}</small>
-              </button>
-              <div className="operation-hook-order">
-                <button type="button" aria-label={`Move hook ${index + 1} up`} onClick={() => moveHook(hook.id, -1)}>[↑]</button>
-                <button type="button" aria-label={`Move hook ${index + 1} down`} onClick={() => moveHook(hook.id, 1)}>[↓]</button>
-              </div>
-            </div>)}
+          <p className="operation-capability-help">An available operation can use feature defaults even without an authored response. Add responses when this target should say something, apply effects, vary by attempt, or override success.</p>
+          <div className="operation-card-list">
+            {cardDefinitions.map((operation) => {
+              const available = capability.operations.includes(operation.value);
+              const hooks = capability.hooks.filter((hook) => hook.operation === operation.value);
+              return <section className={`operation-card${available ? " is-available" : ""}`} key={operation.value}>
+                <div className="operation-card-heading">
+                  <span><strong>{operation.label.toUpperCase()}</strong><small>{available ? "AVAILABLE TO PLAYER" : "NOT AVAILABLE"} · {hooks.length} response{hooks.length === 1 ? "" : "s"}</small></span>
+                  <label className="check-label"><input type="checkbox" checked={available} onChange={(event) => onChange({
+                    ...capability,
+                    operations: event.target.checked
+                      ? [...capability.operations, operation.value]
+                      : capability.operations.filter((candidate) => candidate !== operation.value),
+                  })} /> available</label>
+                </div>
+                {hooks.length ? <div className="operation-hook-list">
+                  {hooks.map((hook, index) => <div className="operation-hook-summary" key={hook.id}>
+                    <button type="button" className="operation-hook-open" onClick={() => openHook(hook)}>
+                      <span className="operation-hook-title">{index + 1}. {hook.success ? "SUCCEEDS" : "DOES NOT SUCCEED"}</span>
+                      <span>{hookSnippet(hook)}</span>
+                      <small>{conditionSummary(hook.condition)} · {hook.effects.length} effect{hook.effects.length === 1 ? "" : "s"}</small>
+                    </button>
+                    <div className="operation-hook-order">
+                      <button type="button" aria-label={`Move ${operation.label} response ${index + 1} up`} disabled={index === 0} onClick={() => moveHook(hook.id, -1)}>[↑]</button>
+                      <button type="button" aria-label={`Move ${operation.label} response ${index + 1} down`} disabled={index === hooks.length - 1} onClick={() => moveHook(hook.id, 1)}>[↓]</button>
+                    </div>
+                  </div>)}
+                </div> : <span className="operation-card-empty">No authored response. {available ? "Feature defaults may still handle this operation." : "Enable it or add a response when needed."}</span>}
+                <button type="button" className="operation-add-hook" onClick={() => addHook(operation.value)}>[+ {operation.label.toUpperCase()} RESPONSE]</button>
+              </section>;
+            })}
           </div>
-          <button type="button" className="operation-add-hook" onClick={addHook}>[+ OPERATION RESPONSE]</button>
         </> : null}
       </> : selectedHook ? <>
         <button type="button" className="operation-hook-back" onClick={back}>[{screen === "hook" ? "← BACK TO RESPONSES" : "← BACK TO RESPONSE"}]</button>

@@ -19,6 +19,7 @@ import {
 } from "../synth";
 import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
+import { referencesTo } from "../../../author/references/projectReferences";
 
 /** List workspace. Editing a sound is a child Author route rather than hidden local navigation. */
 export function SynthPanel({ snapshot, onOpenSound, onNewSound }: {
@@ -38,10 +39,11 @@ export function SynthPanel({ snapshot, onOpenSound, onNewSound }: {
   </section>;
 }
 
-export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
+export function SynthEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: SynthSound;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
+  onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState<SynthSound>(() => structuredClone(initial ?? { ...createStarterSynth(), key: "", label: "" }));
@@ -51,6 +53,7 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
   const [saving, setSaving] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
   const validationErrors = useMemo(() => validateSynth(draft), [draft]);
+  const usages = initial ? referencesTo(snapshot, "synth-sound", initial.id) : [];
   const sequenceLength = synthSequenceLength(draft);
 
   useEffect(() => {
@@ -77,6 +80,15 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
         setBaseline(JSON.stringify(sound));
         setWorkspaceDirty(false);
       }
+    } finally { setSaving(false); }
+  };
+
+  const remove = async () => {
+    if (!initial || usages.length || !window.confirm(`Delete synth sound “${initial.label}”?`)) return;
+    setSaving(true);
+    try {
+      const result = await onSave([{ type: "synth.delete", id: initial.id }], `Deleted synth ${initial.label}`);
+      if (result.status === "saved" || result.status === "queued") onCancel();
     } finally { setSaving(false); }
   };
 
@@ -129,6 +141,7 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
     <div className="author-panel-footer author-actions">
       <button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button>
       <button type="button" disabled={saving || !dirty || !draft.label.trim() || validationErrors.length > 0} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
+      {initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>
   </section>;
 }
@@ -145,7 +158,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: { sound: SynthSound; voice
     <div className="synth-steps">{voice.steps.map((step, index) => <div className={step.active ? "active" : ""} key={index}>
       <button type="button" aria-label={`Toggle step ${index + 1}`} aria-pressed={step.active} onClick={() => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, active: !item.active } : item) })}>{String(index + 1).padStart(2, "0")}</button>
       {voice.waveform !== "noise" ? <select aria-label={`Step ${index + 1} note`} value={step.note} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, note: event.target.value } : item) })}>{[2,3,4,5,6,7].flatMap((octave) => ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"].map((note) => <option key={`${note}${octave}`} value={`${note}${octave}`}>{note}{octave}</option>))}</select> : <span className="synth-noise-step">NOISE</span>}
-      <label className="synth-step-volume"><span>VOL {Math.round(step.volume * 100)}</span><input aria-label={`Step ${index + 1} volume`} type="range" min={0} max={1} step={0.05} value={step.volume} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, volume: Number(event.target.value) } : item) })} /></label>
+      <label className="synth-step-volume"><span>VOL {Math.round(step.volume * 100)}</span><input aria-label={`Step ${index + 1} volume`} type="range" min={0} max={1} step={0.01} value={step.volume} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, volume: Number(event.target.value) } : item) })} /></label>
     </div>)}</div>
   </div>;
 }

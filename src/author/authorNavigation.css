@@ -158,10 +158,11 @@
 }
 
 .author-tool-copy small {
-  overflow: hidden;
+  overflow: visible;
   color: var(--dos-muted);
   line-height: 1.1;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .author-tool-arrow {

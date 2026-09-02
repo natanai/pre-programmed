@@ -14,7 +14,6 @@
   "include": [
     "vite.config.ts",
     "worker",
-    "src/game/model.ts",
     "src/engine/**/*.ts",
     "src/features/**/*.ts"
   ],

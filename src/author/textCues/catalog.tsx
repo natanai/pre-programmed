@@ -1,12 +1,12 @@
-import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "../../features/media/author/textCueAdapters";
-import type { TextCueType } from "../../game/model";
+import type { TextCueType } from "../../features/narrative/model";
+import { getAuthorTextCueAdapters } from "../features/registry";
 import type { TextCueAuthorAdapter } from "./types";
 
-/** Explicit composition root for optional feature controls in Narrative cue authoring. */
-export const FEATURE_TEXT_CUE_AUTHOR_ADAPTERS: readonly TextCueAuthorAdapter[] = [
-  ...MEDIA_TEXT_CUE_AUTHOR_ADAPTERS,
-];
+/** Lazy access avoids feature-manifest cycles while keeping cue ownership modular. */
+export function featureTextCueAuthorAdapters(): readonly TextCueAuthorAdapter[] {
+  return getAuthorTextCueAdapters();
+}
 
-export const FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE = Object.fromEntries(
-  FEATURE_TEXT_CUE_AUTHOR_ADAPTERS.map((adapter) => [adapter.type, adapter]),
-) as Partial<Record<TextCueType, TextCueAuthorAdapter>>;
+export function featureTextCueAuthorAdapter(type: TextCueType): TextCueAuthorAdapter | undefined {
+  return featureTextCueAuthorAdapters().find((adapter) => adapter.type === type);
+}

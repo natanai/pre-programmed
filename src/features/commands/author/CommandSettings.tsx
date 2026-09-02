@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
-import { COMMAND_REFERENCE_SOURCES, COMMAND_REFERENCE_SOURCE_BY_KIND } from "../referenceCatalog";
+import { commandReferenceSourceByKind, commandReferenceSources } from "../referenceCatalog";
 import type { CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
+import { authorOperationDefinitions } from "../../../author/operations/catalog";
 import "./commandSettings.css";
 
 const OPERATION_ID_PATTERN = /^[a-z][a-z0-9_.-]{0,63}$/;
@@ -55,6 +56,7 @@ async function persistCommands(context: AuthorWorkspaceContext, commands: Comman
 }
 
 function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
+  const referenceSources = commandReferenceSources();
   const enabledSources = context.snapshot.settings.commands.referenceSources.filter((source) => source.enabled).length;
   const enabledCommands = context.snapshot.settings.commands.commands.filter((command) => command.enabled).length;
   return <div className="command-settings-overview">
@@ -72,7 +74,7 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
     </button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "references" })}>
       <span><strong>TARGET NAMES + ALIASES</strong><small>Choose which authored things commands can name and add alternate words for them.</small></span>
-      <span>{enabledSources}/{COMMAND_REFERENCE_SOURCES.length} ›</span>
+      <span>{enabledSources}/{referenceSources.length} ›</span>
     </button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "capabilities" })}>
       <span><strong>APPLICATION ACTIONS</strong><small>Connect player wording to module-provided, targetless actions such as opening Inventory.</small></span>
@@ -84,13 +86,70 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
   </div>;
 }
 
+function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceContext }) {
+  const node = context.snapshot.nodes.find((candidate) => candidate.id === context.playState.currentNodeId);
+  const sceneInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === context.playState.currentNodeId);
+  const validInputs = sceneInteractions.filter((interaction) => interaction.matchMode !== "fallback");
+  const invalidInput = sceneInteractions.find((interaction) => interaction.matchMode === "fallback");
+
+  return <section className="author-panel author-panel-frame command-settings-workspace player-interactions-workspace">
+    <header><span>PLAYER INTERACTIONS</span><span>PLAY + BUILD</span></header>
+    <div className="author-panel-body command-settings-list">
+      <p className="command-settings-note">Start from what the player types or the thing they act on. Scene responses, reusable wording, and target behavior remain owned by their feature while this workspace connects the journey.</p>
+
+      <h3>CURRENT SCENE · #{node?.nodeNumber ?? "?"}</h3>
+      {validInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => context.pushTask({
+        type: "feature", feature: "narrative", workspace: "interaction", data: { interactionId: interaction.id },
+      })}>
+        <span><strong>{interaction.wording || interaction.aliases[0] || "Untitled input"}</strong><small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"}</small></span><span>›</span>
+      </button>)}
+      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "narrative", workspace: "interaction" })}>
+        <span><strong>+ CURRENT-SCENE INPUT</strong><small>Define text that is valid only here and what happens in response.</small></span><span>›</span>
+      </button>
+      <button type="button" onClick={() => context.pushTask({
+        type: "feature", feature: "narrative", workspace: "interaction", data: { ...(invalidInput ? { interactionId: invalidInput.id } : {}), fallback: "true" },
+      })}>
+        <span><strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong><small>What still happens when player text does not match.</small></span><span>›</span>
+      </button>
+
+      <h3>REUSABLE PLAYER LANGUAGE</h3>
+      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
+        <span><strong>PLAYER COMMANDS</strong><small>Create wording such as polish {"{item}"}, then continue directly into target behavior.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
+      </button>
+
+      <h3>ITEM BEHAVIOR</h3>
+      {context.snapshot.items.map((item) => <article className="player-interaction-target" key={item.id}>
+        <button type="button" className="player-interaction-target-heading" onClick={() => context.pushTask({
+          type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations" },
+        })}>
+          <span><strong>{item.name || item.key || "Untitled item"}</strong><small>{(item.hooks ?? []).length} authored response{(item.hooks ?? []).length === 1 ? "" : "s"}</small></span><span>ALL ›</span>
+        </button>
+        <div className="player-interaction-operation-links">{authorOperationDefinitions(context.snapshot, "inventory.item").map((operation) => {
+          const available = (item.operations ?? []).includes(operation.value);
+          const responseCount = (item.hooks ?? []).filter((hook) => hook.operation === operation.value).length;
+          return <button type="button" className={available ? "is-available" : ""} key={operation.value} onClick={() => context.pushTask({
+            type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations", operation: operation.value },
+          })}>{operation.label.toUpperCase()} · {available ? "ON" : "OFF"} · {responseCount}</button>;
+        })}</div>
+      </article>)}
+      {!context.snapshot.items.length ? <div className="command-settings-empty">NO ITEMS YET.</div> : null}
+
+      <h3>OTHER TARGET BEHAVIOR</h3>
+      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" })}>
+        <span><strong>PEOPLE, PLACES + STATE</strong><small>Configure operations and responses on characters, locations, and exposed status values.</small></span><span>›</span>
+      </button>
+    </div>
+  </section>;
+}
+
 function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
+  const referenceSources = commandReferenceSources();
   const configured = context.snapshot.settings.commands.referenceSources;
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>TARGET NAMES + ALIASES</span><span>{configured.filter((source) => source.enabled).length} ENABLED</span></header>
     <div className="author-panel-body command-settings-list">
       <p className="command-settings-note">Enable a target type when Player Commands should recognize its existing names. Open it to add alternate words. This does not create an operation or command by itself.</p>
-      {COMMAND_REFERENCE_SOURCES.map((source) => {
+      {referenceSources.map((source) => {
         const setting = configured.find((candidate) => candidate.sourceKind === source.kind);
         const count = source.candidates(context.snapshot, context.playState).length;
         return <button type="button" key={source.kind} onClick={() => context.pushTask({
@@ -108,7 +167,7 @@ function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContex
 }
 
 function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspaceContext; sourceKind: string }) {
-  const source = COMMAND_REFERENCE_SOURCE_BY_KIND[sourceKind];
+  const source = commandReferenceSourceByKind(sourceKind);
   const initial = referenceSetting(context.snapshot.settings.commands, sourceKind);
   const [draft, setDraft] = useState(initial);
   const [baseline, setBaseline] = useState(JSON.stringify(initial));
@@ -225,10 +284,12 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const [operationTouched, setOperationTouched] = useState(Boolean(existing || initialOperation));
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [enablingSource, setEnablingSource] = useState("");
+  const [continuedToTargets, setContinuedToTargets] = useState(Boolean(existing));
   const currentForDirty = { ...draft, patterns: patternLines(patternsText) };
   const dirty = JSON.stringify(currentForDirty) !== baseline;
   const slotNames = placeholderNames(currentForDirty.patterns);
-  const availableSources = COMMAND_REFERENCE_SOURCES;
+  const availableSources = commandReferenceSources();
   const enabledSourceKinds = new Set(
     context.snapshot.settings.commands.referenceSources
       .filter((source) => source.enabled)
@@ -272,9 +333,35 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
         setPatternsText(command.patterns.join("\n"));
         setBaseline(JSON.stringify(command));
         context.setWorkspaceDirty(false);
+        const target = command.targetSlot ? command.slots.find((slot) => slot.name === command.targetSlot) : undefined;
+        if (!continuedToTargets && target && target.sourceKind !== "text") {
+          setContinuedToTargets(true);
+          context.pushTask({
+            type: "feature",
+            feature: "commands",
+            workspace: "target-behaviors",
+            data: { sourceKind: target.sourceKind, operation: command.operation, commandLabel: command.label },
+          });
+        }
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  const enableSource = async (sourceKind: string) => {
+    const source = commandReferenceSourceByKind(sourceKind);
+    if (!source || enablingSource) return;
+    setEnablingSource(sourceKind);
+    try {
+      const setting = referenceSetting(context.snapshot.settings.commands, sourceKind);
+      await persistCommands(
+        context,
+        updateReferenceSetting(context.snapshot.settings.commands, { ...setting, enabled: true }),
+        `Enabled ${source.label} player-command targets`,
+      );
+    } finally {
+      setEnablingSource("");
     }
   };
 
@@ -334,7 +421,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
             {availableSources.map((source) => <option key={source.kind} value={source.kind}>{source.label}{enabledSourceKinds.has(source.kind) ? "" : " · OFF"}</option>)}
           </select>
           {slot.sourceKind !== "text" && !enabledSourceKinds.has(slot.sourceKind)
-            ? <small className="command-slot-source-warning">Enable {COMMAND_REFERENCE_SOURCE_BY_KIND[slot.sourceKind]?.label ?? slot.sourceKind} under Target Names + Aliases before this command can recognize player input.</small>
+            ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} is not recognized yet. <button type="button" disabled={Boolean(enablingSource)} onClick={() => void enableSource(slot.sourceKind)}>[{enablingSource === slot.sourceKind ? "ENABLING..." : `ENABLE HERE`}]</button></small>
             : null}
         </label>)}
         <label>PRIMARY TARGET
@@ -355,6 +442,33 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   </section>;
 }
 
+function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel }: {
+  context: AuthorWorkspaceContext;
+  sourceKind: string;
+  operation: string;
+  commandLabel: string;
+}) {
+  const isItem = sourceKind === "inventory.item";
+  return <section className="author-panel author-panel-frame command-settings-workspace target-behaviors-workspace">
+    <header><span>{commandLabel || operation.toUpperCase()} · TARGET BEHAVIOR</span></header>
+    <div className="author-panel-body command-settings-list">
+      <p className="command-settings-note">The player wording is ready. Choose a target to define what its {operation} operation says, changes, or triggers. Targets without a response can still reject the attempt or use feature-owned defaults.</p>
+      {isItem ? context.snapshot.items.map((item) => {
+        const enabled = (item.operations ?? []).includes(operation);
+        const responses = (item.hooks ?? []).filter((hook) => hook.operation === operation).length;
+        return <button type="button" key={item.id} onClick={() => context.pushTask({
+          type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations", operation },
+        })}>
+          <span><strong>{item.name || item.key || "Untitled item"}</strong><small>{enabled ? "available" : "not available"} · {responses} response{responses === 1 ? "" : "s"}</small></span><span>›</span>
+        </button>;
+      }) : <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" })}>
+        <span><strong>OPEN TARGET DEFINITIONS</strong><small>Choose a character, location, or state value and add this operation’s response.</small></span><span>›</span>
+      </button>}
+      {isItem && !context.snapshot.items.length ? <div className="command-settings-empty">NO ITEMS EXIST YET.</div> : null}
+    </div>
+  </section>;
+}
+
 export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSection[] = [
   {
     id: "commands",
@@ -372,5 +486,12 @@ export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: 
   if (route.workspace === "grammar") return <CommandGrammarWorkspace context={context} />;
   if (route.workspace === "capabilities") return <CapabilitiesWorkspace context={context} />;
   if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} />;
+  if (route.workspace === "interactions") return <PlayerInteractionsWorkspace context={context} />;
+  if (route.workspace === "target-behaviors") return <TargetBehaviorsWorkspace
+    context={context}
+    sourceKind={route.data?.sourceKind ?? ""}
+    operation={route.data?.operation ?? ""}
+    commandLabel={route.data?.commandLabel ?? ""}
+  />;
   return null;
 }

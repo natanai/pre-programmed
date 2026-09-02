@@ -38,6 +38,34 @@ export function getAuthorResourceProvider(kind: string): AuthorResourceProvider 
   return undefined;
 }
 
+export function getAuthorCommandReferenceSources() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.commandReferences ?? []);
+}
+
+export function getAuthorOperationDefinitions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.operations ?? []);
+}
+
+export function getAuthorConditionAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.conditions ?? []);
+}
+
+export function getAuthorEffectAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.effects ?? []);
+}
+
+export function getAuthorTextCueAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.textCues ?? []);
+}
+
+export function getAuthorSearchDocumentContributions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.searchDocuments ?? []);
+}
+
+export function getAuthorReferenceContributions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.references ?? []);
+}
+
 export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorTaskRoute | null {
   for (const feature of AUTHOR_FEATURES) {
     const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));

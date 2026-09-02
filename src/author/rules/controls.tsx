@@ -1,4 +1,4 @@
-import type { ComparisonOperator } from "../../game/model";
+import type { ComparisonOperator } from "../../engine/rules/model";
 
 export function ComparisonSelect({ value, onChange }: {
   value: ComparisonOperator;

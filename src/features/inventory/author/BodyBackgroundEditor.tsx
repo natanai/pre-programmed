@@ -4,11 +4,11 @@ import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type {
   BodyBackgroundDefinition,
   BodySlotDefinition,
-  MutationOperation,
-  ProjectSnapshot,
-} from "../../../game/model";
+} from "../model";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import "./inventoryAuthor.css";
+import { referencesTo } from "../../../author/references/projectReferences";
 
 type SlotGesture = {
   slotId: string;
@@ -59,6 +59,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
     }
     return [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
   }, [draft.startingEquipment, snapshot.items]);
+  const usages = initial ? referencesTo(snapshot, "body-type", initial.id) : [];
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -168,7 +169,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
   };
 
   const remove = async () => {
-    if (!initial || !window.confirm(`Delete body type “${initial.name}”?`)) return;
+    if (!initial || usages.length || !window.confirm(`Delete body type “${initial.name}”?`)) return;
     setSaving(true);
     try {
       const result = await onSave(
@@ -275,7 +276,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={saving || !dirty || !draft.name.trim() || !slotKeysValid || !startingEquipmentValid} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
       <button type="button" onClick={onCancel}>[CANCEL]</button>
-      {initial ? <button type="button" className="danger" disabled={saving} onClick={() => void remove()}>[DELETE]</button> : null}
+      {initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>
   </section>;
 }

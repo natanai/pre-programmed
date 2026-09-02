@@ -8,6 +8,52 @@
   margin-top: .55em;
 }
 
+.operation-capability-help {
+  margin: 0;
+  color: var(--dos-muted);
+  line-height: 1.35;
+}
+
+.operation-card-list {
+  display: grid;
+  gap: .7em;
+}
+
+.operation-card {
+  display: grid;
+  gap: .55em;
+  padding: .65em;
+  border: 1px solid var(--dos-line);
+}
+
+.operation-card.is-available {
+  border-color: var(--dos-text);
+}
+
+.operation-card-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: .75em;
+}
+
+.operation-card-heading > span {
+  display: grid;
+  min-width: 0;
+  gap: .15em;
+}
+
+.operation-card-heading strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.operation-card-heading small,
+.operation-card-empty {
+  color: var(--dos-muted);
+  line-height: 1.25;
+}
+
 .operation-hook-list {
   display: grid;
   border: 1px solid var(--dos-line);

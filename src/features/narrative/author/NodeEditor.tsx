@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
-import type { GameNode, MutationOperation, ProjectSnapshot } from "../../../game/model";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import type { GameNode } from "../model";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
 import "./nodeEditor.css";
 

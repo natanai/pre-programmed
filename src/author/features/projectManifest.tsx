@@ -2,9 +2,27 @@ import type { AuthorFeatureManifest } from "./types";
 import { PROJECT_GENERAL_SETTINGS } from "../settings/projectGeneralSettings";
 import { projectAuthorTools } from "../tools/projectTools";
 import { WorkspacePanel } from "../workspace/WorkspacePanel";
+import {
+  allConditionAdapter,
+  alwaysConditionAdapter,
+  anyConditionAdapter,
+  attemptConditionAdapter,
+  notConditionAdapter,
+  notificationEffectAdapter,
+  runtimeStateConditionAdapter,
+} from "../rules/coreAdapters";
 
 export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
+  conditions: [
+    alwaysConditionAdapter,
+    allConditionAdapter,
+    anyConditionAdapter,
+    notConditionAdapter,
+    attemptConditionAdapter,
+    runtimeStateConditionAdapter,
+  ],
+  effects: [notificationEffectAdapter],
   tools: projectAuthorTools,
   projectSettings: PROJECT_GENERAL_SETTINGS,
   renderWorkspace(route, context) {

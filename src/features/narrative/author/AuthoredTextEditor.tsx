@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import {
-  FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE,
-  FEATURE_TEXT_CUE_AUTHOR_ADAPTERS,
+  featureTextCueAuthorAdapter,
+  featureTextCueAuthorAdapters,
 } from "../../../author/textCues/catalog";
-import type { ProjectSnapshot, TextCueType, TextPerformance } from "../../../game/model";
+import type { ProjectSnapshot } from "../../../engine/project/model";
+import type { TextCueType, TextPerformance } from "../model";
 import { compileTextNotation, validateTextNotation } from "../textNotation";
 import { TextRulesReference, type InlineTextRule } from "./TextRulesReference";
 import "./authoredTextEditor.css";
@@ -43,7 +44,7 @@ export function AuthoredTextEditor({
   );
   const availableCueTypes: readonly TextCueType[] = [
     ...CORE_CUE_TYPES,
-    ...FEATURE_TEXT_CUE_AUTHOR_ADAPTERS.map((adapter) => adapter.type),
+    ...featureTextCueAuthorAdapters().map((adapter) => adapter.type),
   ];
   const selectionLength = Math.max(0, selection.end - selection.start);
 
@@ -71,7 +72,7 @@ export function AuthoredTextEditor({
   };
 
   const addCue = (type: TextCueType) => {
-    const featureAdapter = FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE[type];
+    const featureAdapter = featureTextCueAuthorAdapter(type);
     const cueValue = type === "pause"
       ? 350
       : type === "speed"
@@ -142,7 +143,7 @@ export function AuthoredTextEditor({
       <div className="authored-text-cue-buttons">{availableCueTypes.map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
       <div className="authored-text-cue-list">
         {value.performance.cues.map((cue, index) => {
-          const featureAdapter = FEATURE_TEXT_CUE_AUTHOR_ADAPTER_BY_TYPE[cue.type];
+          const featureAdapter = featureTextCueAuthorAdapter(cue.type);
           return <div className="authored-text-cue-row" key={cue.id}>
             <span><strong>{index + 1}. {cue.type.toUpperCase()}</strong><small>{cue.start}:{cue.end}</small></span>
             {(cue.type === "pause" || cue.type === "speed") ? <input aria-label={`${cue.type} value`} type="number" value={Number(cue.value ?? 0)} onChange={(event) => updateCueValue(cue.id, Number(event.target.value))} /> : null}

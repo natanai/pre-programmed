@@ -1,4 +1,6 @@
-import type { Condition, Effect, OperationHook, ProjectSnapshot } from "../../src/game/model";
+import type { Condition, Effect } from "../../src/engine/rules/model";
+import type { ProjectSnapshot } from "../../src/engine/project/model";
+import type { OperationHook } from "../../src/features/operations/model";
 
 type IntegrityIssue = {
   key: string;

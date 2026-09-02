@@ -11,7 +11,7 @@ This percentage measures the reusable engine + Author suite, not game content. I
 - Remove or migrate the remaining Narrative-specific `node` and `interaction` Author route payloads when they can use stable feature-owned identifiers without a compatibility registry.
 - Finish moving the remaining hosted/platform choices out of shared application code where doing so creates a real replaceable boundary rather than abstraction for its own sake.
 - App still directly owns a few hosted Author-session/backup/save selections even though project persistence and Author workspace/history/undo now have platform composition points.
-- Keep shrink-only compatibility facades from gaining responsibilities.
+- Keep removed prototype compatibility facades from being recreated.
 
 Acceptance: optional feature implementations can still be replaced/deleted by changing the feature plus explicit composition entries, and hosted/local platform selection does not require feature or Author-editor rewrites.
 

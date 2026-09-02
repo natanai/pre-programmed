@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
-import type { EffectEvent } from "../../game/effects";
-import type { Condition, Effect, ProjectSnapshot } from "../../game/model";
+import type { EffectEvent } from "../../engine/rules/effectRuntime";
+import type { Condition, Effect } from "../../engine/rules/model";
+import type { ProjectSnapshot } from "../../engine/project/model";
+import type { ResourceReference } from "../references/types";
 
 export type RenderNestedCondition = (
   condition: Condition,
@@ -19,6 +21,7 @@ export type ConditionAuthorAdapter = {
   type: Condition["type"];
   label: string;
   create: () => Condition;
+  references?: (condition: Condition) => readonly ResourceReference[];
   render: (context: ConditionAuthorContext) => ReactNode;
 };
 
@@ -35,6 +38,7 @@ export type EffectAuthorAdapter = {
   description: string;
   create: () => Effect;
   summarize?: (effect: Effect, snapshot: ProjectSnapshot) => string;
+  references?: (effect: Effect) => readonly ResourceReference[];
   /** Safe presentation-only events; state-changing effects deliberately omit this. */
   previewEvents?: (effect: Effect, snapshot: ProjectSnapshot) => EffectEvent[];
   render: (context: EffectAuthorContext) => ReactNode;

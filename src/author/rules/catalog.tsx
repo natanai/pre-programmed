@@ -1,71 +1,26 @@
-import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "./types";
-import {
-  allConditionAdapter,
-  alwaysConditionAdapter,
-  anyConditionAdapter,
-  attemptConditionAdapter,
-  notConditionAdapter,
-  notificationEffectAdapter,
-  runtimeStateConditionAdapter,
-} from "./coreAdapters";
-import {
-  giveItemEffectAdapter,
-  hasItemConditionAdapter,
-  lacksItemConditionAdapter,
-  removeItemEffectAdapter,
-  setBodyBackgroundEffectAdapter,
-  setItemStateEffectAdapter,
-} from "../../features/inventory/author/ruleAdapters";
-import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "../../features/media/author/ruleAdapters";
-import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "../../features/narrative/author/ruleAdapters";
-import {
-  clearFlagEffectAdapter,
-  decrementEffectAdapter,
-  flagConditionAdapter,
-  incrementEffectAdapter,
-  setFlagEffectAdapter,
-  setValueEffectAdapter,
-  variableConditionAdapter,
-} from "../../features/state/author/ruleAdapters";
+import type { Condition, Effect } from "../../engine/rules/model";
+import { getAuthorConditionAdapters, getAuthorEffectAdapters } from "../features/registry";
+import type { EffectAuthorAdapter } from "./types";
 
-export const CONDITION_AUTHOR_ADAPTERS: readonly ConditionAuthorAdapter[] = [
-  alwaysConditionAdapter,
-  allConditionAdapter,
-  anyConditionAdapter,
-  notConditionAdapter,
-  hasItemConditionAdapter,
-  lacksItemConditionAdapter,
-  flagConditionAdapter,
-  variableConditionAdapter,
-  attemptConditionAdapter,
-  visitedConditionAdapter,
-  runtimeStateConditionAdapter,
-];
+export function conditionAuthorAdapters() {
+  return getAuthorConditionAdapters();
+}
 
-export const EFFECT_AUTHOR_ADAPTERS: readonly EffectAuthorAdapter[] = [
-  setFlagEffectAdapter,
-  clearFlagEffectAdapter,
-  setValueEffectAdapter,
-  incrementEffectAdapter,
-  decrementEffectAdapter,
-  giveItemEffectAdapter,
-  removeItemEffectAdapter,
-  setItemStateEffectAdapter,
-  setBodyBackgroundEffectAdapter,
-  interactionVisibilityEffectAdapter,
-  notificationEffectAdapter,
-  synthEffectAdapter,
-  audioEffectAdapter,
-  artEffectAdapter,
-  transitionEffectAdapter,
-];
+export function effectAuthorAdapters() {
+  return getAuthorEffectAdapters();
+}
 
-export const CONDITION_AUTHOR_ADAPTER_BY_TYPE = Object.fromEntries(CONDITION_AUTHOR_ADAPTERS.map((adapter) => [adapter.type, adapter])) as Partial<Record<ConditionAuthorAdapter["type"], ConditionAuthorAdapter>>;
-export const EFFECT_AUTHOR_ADAPTER_BY_TYPE = Object.fromEntries(EFFECT_AUTHOR_ADAPTERS.map((adapter) => [adapter.type, adapter])) as Partial<Record<EffectAuthorAdapter["type"], EffectAuthorAdapter>>;
+export function conditionAuthorAdapter(type: Condition["type"]) {
+  return conditionAuthorAdapters().find((adapter) => adapter.type === type);
+}
+
+export function effectAuthorAdapter(type: Effect["type"]) {
+  return effectAuthorAdapters().find((adapter) => adapter.type === type);
+}
 
 export function previewEventsForEffects(
   effects: Parameters<NonNullable<EffectAuthorAdapter["previewEvents"]>>[0][],
   snapshot: Parameters<NonNullable<EffectAuthorAdapter["previewEvents"]>>[1],
 ) {
-  return effects.flatMap((effect) => EFFECT_AUTHOR_ADAPTER_BY_TYPE[effect.type]?.previewEvents?.(effect, snapshot) ?? []);
+  return effects.flatMap((effect) => effectAuthorAdapter(effect.type)?.previewEvents?.(effect, snapshot) ?? []);
 }

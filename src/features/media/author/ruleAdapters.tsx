@@ -8,6 +8,7 @@ export const synthEffectAdapter: EffectAuthorAdapter = {
   category: "sound & image",
   description: "Play a reusable authored synth sound.",
   create: () => ({ id: crypto.randomUUID(), type: "synth", synthId: "" }),
+  references: (effect) => effect.type === "synth" && effect.synthId ? [{ resourceKind: "synth-sound", resourceId: effect.synthId, detail: "synth effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "synth"
     ? `Play synth: ${snapshot.synthSounds.find((sound) => sound.id === effect.synthId)?.label || "choose synth"}`
     : "Play synth",
@@ -23,6 +24,7 @@ export const audioEffectAdapter: EffectAuthorAdapter = {
   category: "sound & image",
   description: "Play an authored or repository audio asset.",
   create: () => ({ id: crypto.randomUUID(), type: "audio", assetId: "" }),
+  references: (effect) => effect.type === "audio" && effect.assetId ? [{ resourceKind: "media-audio", resourceId: effect.assetId, detail: "audio effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "audio" ? `Play audio: ${configuredAssetStore.resolve(snapshot, effect.assetId)?.name ?? "choose sound"}` : "Play sound",
   previewEvents: (effect) => effect.type === "audio" ? [{ type: "audio", assetId: effect.assetId }] : [],
   render: ({ effect, onChange }) => effect.type === "audio"
@@ -36,6 +38,7 @@ export const artEffectAdapter: EffectAuthorAdapter = {
   category: "sound & image",
   description: "Show an authored image or sprite.",
   create: () => ({ id: crypto.randomUUID(), type: "art", assetId: "" }),
+  references: (effect) => effect.type === "art" && effect.assetId ? [{ resourceKind: "media-image", resourceId: effect.assetId, detail: "image effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "art" ? `Show art: ${configuredAssetStore.resolve(snapshot, effect.assetId)?.name ?? "choose image"}` : "Show sprite/art",
   previewEvents: (effect) => effect.type === "art" ? [{ type: "art", assetId: effect.assetId }] : [],
   render: ({ effect, onChange }) => effect.type === "art"

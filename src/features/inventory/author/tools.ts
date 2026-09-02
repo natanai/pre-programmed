@@ -23,7 +23,7 @@ export const inventoryAuthorSearch: AuthorSearchContributor = (context) => [
     groupLabel: "GAME SYSTEMS",
     label: "ITEMS + EQUIPMENT RULES",
     description: "Edit item names, images, operations, starting quantities, equipment slots, auto-equip, and storage behavior.",
-    searchText: "item label name image inventory operation rule effects equip equipped auto equip give slot hand starting default storage space grid",
+      searchText: "item label name image inventory interaction player behavior operation operations response responses inspect use polish move remove equip unequip rule effects equipped auto give slot hand starting default storage space grid",
     onSelect: () => context.pushTask({ type: "feature", feature: "inventory", workspace: "inventory" }),
   },
   {

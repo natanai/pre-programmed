@@ -4,13 +4,12 @@ import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type {
   ComputedDefinition,
-  EntityDefinition,
-  MutationOperation,
-  ProjectSnapshot,
   VariableDefinition,
-  Value,
-} from "../../../game/model";
-import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
+} from "../model";
+import type { EntityDefinition } from "../../world/model";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import type { Value } from "../../../engine/rules/model";
+import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import "./definitionsPanel.css";
 
 type Mode = "variables" | "computed" | "entities";

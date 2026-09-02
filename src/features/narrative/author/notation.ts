@@ -1,5 +1,6 @@
-import { buildGraphIndex, notationForNode } from "../../../game/graph";
-import type { Interaction, PlayState, ProjectSnapshot } from "../../../game/model";
+import { buildGraphIndex, notationForNode } from "../graph";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import type { Interaction } from "../model";
 
 type GraphIndex = ReturnType<typeof buildGraphIndex>;
 

@@ -205,6 +205,22 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
       ];
     }
 
+    if (operation.type === "item.delete") {
+      return [
+        db.prepare("DELETE FROM operation_hooks WHERE target_kind = 'item' AND target_id = ?").bind(operation.id),
+        db.prepare(
+          `UPDATE inventory_body_backgrounds
+              SET starting_equipment_json = COALESCE((
+                SELECT json_group_array(json(value))
+                  FROM json_each(inventory_body_backgrounds.starting_equipment_json)
+                 WHERE json_extract(value, '$.itemId') <> ?
+              ), '[]'),
+                  updated_at = CURRENT_TIMESTAMP`,
+        ).bind(operation.id),
+        db.prepare("DELETE FROM item_definitions WHERE id = ?").bind(operation.id),
+      ];
+    }
+
     if (operation.type === "bodyBackground.upsert") {
       const bodyType = operation.background;
       const legacyBodyType = bodyType as typeof bodyType & { assetPath?: string };

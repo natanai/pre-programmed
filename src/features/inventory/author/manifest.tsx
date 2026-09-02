@@ -3,9 +3,25 @@ import { Inventory } from "../ui/Inventory";
 import { BodyTypeEditor } from "./BodyBackgroundEditor";
 import { ItemEditor } from "./ItemEditor";
 import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
+import { INVENTORY_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
+import { INVENTORY_OPERATION_DEFINITIONS } from "../operationAdapter";
+import {
+  giveItemEffectAdapter,
+  hasItemConditionAdapter,
+  lacksItemConditionAdapter,
+  removeItemEffectAdapter,
+  setBodyBackgroundEffectAdapter,
+  setItemStateEffectAdapter,
+} from "./ruleAdapters";
+import { inventoryProjectReferences } from "./references";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
   id: "inventory",
+  commandReferences: INVENTORY_COMMAND_REFERENCE_SOURCES,
+  operations: INVENTORY_OPERATION_DEFINITIONS,
+  conditions: [hasItemConditionAdapter, lacksItemConditionAdapter],
+  effects: [giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter, setBodyBackgroundEffectAdapter],
+  references: [inventoryProjectReferences],
   tools: inventoryAuthorTools,
   search: inventoryAuthorSearch,
   resources: [
@@ -99,6 +115,8 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       return <ItemEditor
         snapshot={context.snapshot}
         initial={item}
+        openOperations={route.data?.section === "operations"}
+        preferredOperation={route.data?.operation}
         onSave={async (operations, description) => {
           const result = await context.persist(operations, description);
           if (resourceTask && (result.status === "saved" || result.status === "queued")) {

@@ -56,6 +56,15 @@ describe("stable media assets", () => {
     })]);
   });
 
+  it("deletes media resources through their feature-owned mutation handlers", () => {
+    const sound = createStarterSynth("sound");
+    const asset = createEmbeddedAsset({ name: "chime.wav", mimeType: "audio/wav", dataUrl: "data:audio/wav;base64,AA==", size: 1 });
+    const snapshot = project({ synthSounds: [sound], mediaAssets: [asset] });
+    const updated = applyOperations(snapshot, [{ type: "synth.delete", id: sound.id }, { type: "mediaAsset.delete", id: asset.id }]);
+    expect(updated.synthSounds).toEqual([]);
+    expect(updated.mediaAssets).toEqual([]);
+  });
+
   it("keeps runtime effects on stable IDs instead of storage URLs", () => {
     const snapshot = project();
     const execution = executeEffects(snapshot, createEmptyPlayState(snapshot), [{

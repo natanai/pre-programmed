@@ -3,7 +3,7 @@ import { normalizePlayerInput } from "../../engine/input/normalize";
 import type { Interaction } from "../narrative/model";
 import type { OperationArguments, OperationTarget } from "../operations/model";
 import type { CommandDefinition } from "./model";
-import { COMMAND_REFERENCE_SOURCE_BY_KIND } from "./referenceCatalog";
+import { commandReferenceSourceByKind } from "./referenceCatalog";
 
 export type ParserMatchReason =
   | "exact-alias"
@@ -108,7 +108,7 @@ function referenceArgument(
   const sourceSetting = snapshot.settings.commands.referenceSources.find(
     (setting) => setting.sourceKind === sourceKind && setting.enabled,
   );
-  const source = COMMAND_REFERENCE_SOURCE_BY_KIND[sourceKind];
+  const source = commandReferenceSourceByKind(sourceKind);
   if (!sourceSetting || !source) return null;
 
   const normalizedCapture = normalizeCommand(captured);

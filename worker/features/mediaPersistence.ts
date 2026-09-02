@@ -77,6 +77,9 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
            recipe_json=excluded.recipe_json, updated_at=CURRENT_TIMESTAMP`,
       ).bind(sound.id, sound.key, sound.label, JSON.stringify(recipe))];
     }
+    if (operation.type === "synth.delete") {
+      return [db.prepare("DELETE FROM synth_sounds WHERE id = ?").bind(operation.id)];
+    }
     if (operation.type === "mediaAsset.upsert") {
       const asset = operation.asset;
       return [db.prepare(

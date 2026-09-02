@@ -1,7 +1,7 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
 import { normalizeCommand } from "../../features/narrative/parser";
-import { AUTHOR_SEARCH_DOCUMENT_CONTRIBUTIONS } from "./searchCatalog";
+import { getAuthorSearchDocumentContributions } from "../features/registry";
 import type { SearchDocument, SearchKind } from "./types";
 
 export type { SearchDocument, SearchKind } from "./types";
@@ -39,8 +39,15 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
             interaction.notes,
             ...interaction.aliases,
             ...interaction.tags,
-            ...interaction.outcomes.map((outcome) => outcome.responseText),
+            ...interaction.outcomes.flatMap((outcome) => [
+              outcome.label,
+              outcome.responseText,
+              JSON.stringify(outcome.condition),
+              JSON.stringify(outcome.effects),
+              outcome.speakerId ?? "",
+            ]),
           ]),
+          JSON.stringify(node.performance.cues),
           ...context.flatMap((entity) => [entity.key, entity.name, entity.description, ...entity.tags]),
           ...referencedItems.flatMap((item) => [item.key, item.name, item.description, ...item.tags]),
         ].join(" "),
@@ -57,7 +64,14 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         interaction.wording,
         ...interaction.aliases,
         ...interaction.tags,
-        ...interaction.outcomes.map((outcome) => outcome.responseText),
+        interaction.notes,
+        ...interaction.outcomes.flatMap((outcome) => [
+          outcome.label,
+          outcome.responseText,
+          JSON.stringify(outcome.condition),
+          JSON.stringify(outcome.effects),
+          outcome.speakerId ?? "",
+        ]),
       ].join(" "),
       nodeId: interaction.sourceNodeId,
     })),
@@ -65,27 +79,49 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
       id: entity.id,
       kind: entity.type,
       label: entity.name,
-      searchText: [entity.key, entity.name, entity.description, ...entity.tags].join(" "),
+      searchText: [entity.key, entity.name, entity.description, ...entity.tags, ...(entity.operations ?? []), JSON.stringify(entity.hooks ?? [])].join(" "),
     })),
     ...snapshot.items.map((item) => ({
       id: item.id,
       kind: "item" as const,
       label: item.name,
-      searchText: [item.name, item.description, ...item.tags].join(" "),
+      searchText: [
+        item.key,
+        item.name,
+        item.description,
+        ...item.tags,
+        ...(item.operations ?? []),
+        JSON.stringify(item.hooks ?? []),
+        ...(item.equipmentSlotKeys ?? []),
+        item.equippedStorage ?? "inventory",
+        item.equipOnGiveSlotKey ?? "",
+      ].join(" "),
     })),
     ...snapshot.variables.map((definition) => ({
       id: definition.id,
       kind: "variable" as const,
       label: definition.label,
-      searchText: `${definition.key} ${definition.label}`,
+      searchText: `${definition.key} ${definition.label} ${definition.valueType} ${definition.timeRate ?? 0} ${definition.timeUnit ?? ""} ${(definition.operations ?? []).join(" ")} ${JSON.stringify(definition.hooks ?? [])}`,
     })),
     ...snapshot.computedValues.map((definition) => ({
       id: definition.id,
       kind: "computed" as const,
       label: definition.label,
-      searchText: `${definition.key} ${definition.label} ${definition.source}`,
+      searchText: `${definition.key} ${definition.label} ${definition.source} ${(definition.operations ?? []).join(" ")} ${JSON.stringify(definition.hooks ?? [])}`,
     })),
-    ...AUTHOR_SEARCH_DOCUMENT_CONTRIBUTIONS.flatMap((contribution) => contribution(snapshot)),
+    ...(snapshot.bodyBackgrounds ?? []).map((bodyType) => ({
+      id: bodyType.id,
+      kind: "body-type" as const,
+      label: bodyType.name,
+      searchText: `${bodyType.name} ${bodyType.assetId} ${(bodyType.slots ?? []).flatMap((slot) => [slot.name, slot.key]).join(" ")} ${(bodyType.startingEquipment ?? []).flatMap((assignment) => [assignment.slotKey, assignment.itemId]).join(" ")} ${snapshot.startingBodyBackgroundId === bodyType.id ? "starting default active body" : ""}`,
+    })),
+    ...snapshot.settings.commands.commands.map((command) => ({
+      id: command.id,
+      kind: "command" as const,
+      label: command.label || command.operation,
+      searchText: `${command.label} ${command.operation} ${command.patterns.join(" ")} ${command.slots.flatMap((slot) => [slot.name, slot.sourceKind]).join(" ")} ${command.targetSlot}`,
+    })),
+    ...getAuthorSearchDocumentContributions().flatMap((contribution) => contribution(snapshot)),
   ];
 }
 

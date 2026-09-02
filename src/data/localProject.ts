@@ -1,4 +1,4 @@
-import type { ProjectMutation, ProjectSnapshot } from "../game/model";
+import type { ProjectMutation, ProjectSnapshot } from "../engine/project/model";
 import { normalizeProjectSnapshot } from "../engine/project/settings";
 
 const DB_NAME = "pre-programmed-author";

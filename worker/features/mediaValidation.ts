@@ -23,7 +23,7 @@ function synthSound(value: unknown): value is SynthSound {
 }
 
 export const mediaMutationValidator: WorkerMutationValidator = {
-  types: ["synth.upsert", "mediaAsset.upsert", "mediaAsset.delete"],
+  types: ["synth.upsert", "synth.delete", "mediaAsset.upsert", "mediaAsset.delete"],
   validate(operation) {
     if (operation.type === "synth.upsert") {
       if (!synthSound(operation.sound)) return "Synth sound is invalid.";
@@ -39,6 +39,12 @@ export const mediaMutationValidator: WorkerMutationValidator = {
       if (typeof asset.dataUrl !== "string" || !asset.dataUrl.startsWith("data:") || asset.dataUrl.length > 1_500_000) return "Media asset data is invalid or too large.";
       if (typeof asset.mimeType !== "string" || !asset.mimeType.includes("/")) return "Media asset MIME type is invalid.";
       if (typeof asset.size !== "number" || !Number.isInteger(asset.size) || asset.size < 0 || asset.size > 1_000_000) return "Media asset must be no larger than 1 MB.";
+    }
+    if (operation.type === "synth.delete") {
+      return typeof operation.id === "string" && operation.id ? null : "Synth sound id is required.";
+    }
+    if (operation.type === "mediaAsset.delete") {
+      return typeof operation.id === "string" && operation.id ? null : "Media asset id is required.";
     }
     return null;
   },

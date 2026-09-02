@@ -58,19 +58,9 @@ Before adding a cross-feature import, ask whether the dependency is actually one
 
 Do not create circular feature ownership merely to avoid writing a small stable contract.
 
-## 4. `src/game/*` is shrink-only compatibility architecture
+## 4. Import the owning module directly
 
-The remaining `src/game/*` modules exist so the modularization can proceed without a flag-day import rewrite.
-
-Rules:
-
-- do not add a new system to `src/game/`;
-- do not move new feature behavior into a compatibility facade;
-- existing facade behavior should migrate toward its owning engine/feature module when touched safely;
-- facades may re-export stable contracts while old imports remain;
-- the directory should become smaller over time and may eventually disappear.
-
-A bug fix may temporarily require touching a facade, but the preferred direction is always toward the owning module rather than expanding facade ownership.
+The prototype-era `src/game/*` compatibility layer has been removed. Engine contracts come from `src/engine/*`; feature models and behavior come from the feature that owns them. Do not recreate aggregate facades that hide ownership or let unrelated modules accumulate behind one import path.
 
 ## 5. `App.tsx` is an application shell, not a feature home
 

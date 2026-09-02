@@ -1,6 +1,6 @@
 import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject, type SyntheticEvent } from "react";
-import { makeValueToken } from "../game/interpolation";
-import type { ProjectSnapshot } from "../game/model";
+import { makeValueToken } from "../features/narrative/interpolation";
+import type { ProjectSnapshot } from "../engine/project/model";
 
 type Mention = { start: number; end: number; query: string };
 type TextSelection = { start: number; end: number };

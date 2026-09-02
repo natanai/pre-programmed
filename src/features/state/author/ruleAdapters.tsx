@@ -1,4 +1,4 @@
-import type { Value } from "../../../game/model";
+import type { Value } from "../../../engine/rules/model";
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
 import { ComparisonSelect } from "../../../author/rules/controls";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
@@ -17,6 +17,7 @@ export const flagConditionAdapter: ConditionAuthorAdapter = {
   type: "flag",
   label: "flag",
   create: () => ({ type: "flag", key: "", value: true }),
+  references: (condition) => condition.type === "flag" && condition.key ? [{ resourceKind: "flag", resourceId: condition.key, detail: "flag condition" }] : [],
   render: ({ condition, onChange }) => {
     if (condition.type !== "flag") return null;
     return <>
@@ -32,6 +33,7 @@ export const variableConditionAdapter: ConditionAuthorAdapter = {
   type: "variable",
   label: "variable comparison",
   create: () => ({ type: "variable", key: "", operator: "eq", value: 0 }),
+  references: (condition) => condition.type === "variable" && condition.key ? [{ resourceKind: "variable", resourceId: condition.key, detail: "variable condition" }] : [],
   render: ({ condition, onChange, snapshot }) => {
     if (condition.type !== "variable") return null;
     return <>
@@ -51,6 +53,7 @@ export const setFlagEffectAdapter: EffectAuthorAdapter = {
   category: "state",
   description: "Turn an authored boolean flag on.",
   create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "" }),
+  references: (effect) => effect.type === "set_flag" && effect.key ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "set_flag" ? `Set ${variableLabel(snapshot, effect.key)} true` : "Set flag",
   render: ({ effect, onChange }) => effect.type === "set_flag"
     ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
@@ -63,6 +66,7 @@ export const clearFlagEffectAdapter: EffectAuthorAdapter = {
   category: "state",
   description: "Turn an authored boolean flag off.",
   create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "" }),
+  references: (effect) => effect.type === "clear_flag" && effect.key ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "clear_flag" ? `Set ${variableLabel(snapshot, effect.key)} false` : "Clear flag",
   render: ({ effect, onChange }) => effect.type === "clear_flag"
     ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
@@ -75,6 +79,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
   category: "state",
   description: "Replace an authored variable's value.",
   create: () => ({ id: crypto.randomUUID(), type: "set_value", key: "", value: 0 }),
+  references: (effect) => effect.type === "set_value" && effect.key ? [{ resourceKind: "variable", resourceId: effect.key, detail: "variable effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "set_value" ? `${variableLabel(snapshot, effect.key)} = ${String(effect.value)}` : "Set value",
   render: ({ effect, onChange, snapshot }) => {
     if (effect.type !== "set_value") return null;
@@ -97,6 +102,7 @@ export const incrementEffectAdapter: EffectAuthorAdapter = {
   category: "state",
   description: "Increase an authored number variable.",
   create: () => ({ id: crypto.randomUUID(), type: "increment", key: "", amount: 1 }),
+  references: (effect) => effect.type === "increment" && effect.key ? [{ resourceKind: "number-variable", resourceId: effect.key, detail: "variable effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "increment" ? `Increase ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Increment",
   render: ({ effect, onChange }) => effect.type === "increment" ? <>
     <ReferenceField kind="number-variable" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
@@ -110,6 +116,7 @@ export const decrementEffectAdapter: EffectAuthorAdapter = {
   category: "state",
   description: "Decrease an authored number variable.",
   create: () => ({ id: crypto.randomUUID(), type: "decrement", key: "", amount: 1 }),
+  references: (effect) => effect.type === "decrement" && effect.key ? [{ resourceKind: "number-variable", resourceId: effect.key, detail: "variable effect" }] : [],
   summarize: (effect, snapshot) => effect.type === "decrement" ? `Decrease ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Decrement",
   render: ({ effect, onChange }) => effect.type === "decrement" ? <>
     <ReferenceField kind="number-variable" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />

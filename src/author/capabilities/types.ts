@@ -1,4 +1,4 @@
-import type { MutationOperation, PlayState, ProjectSnapshot } from "../../game/model";
+import type { MutationOperation, PlayState, ProjectSnapshot } from "../../engine/project/model";
 import type { AuthorTaskData, AuthorTaskRoute, AuthorTaskValue } from "../tasks/types";
 
 export type AuthorCapabilityRequest = {

@@ -7,7 +7,7 @@ import type {
   PlayState,
   ProjectSnapshot,
   RevisionSummary,
-} from "../../game/model";
+} from "../../engine/project/model";
 import "./workspacePanel.css";
 
 export function WorkspacePanel({ token, snapshot, playState, initialView = "locations", onSave, onSnapshot, onRestore }: {

@@ -14,6 +14,7 @@ export const hasItemConditionAdapter: ConditionAuthorAdapter = {
   type: "has_item",
   label: "has item",
   create: () => ({ type: "has_item", itemId: "", minimum: 1 }),
+  references: (condition) => condition.type === "has_item" && condition.itemId ? [{ resourceKind: "item", resourceId: condition.itemId, detail: "required item" }] : [],
   render: ({ condition, onChange }) => {
     if (condition.type !== "has_item") return null;
     return <>
@@ -27,6 +28,7 @@ export const lacksItemConditionAdapter: ConditionAuthorAdapter = {
   type: "lacks_item",
   label: "lacks item",
   create: () => ({ type: "lacks_item", itemId: "" }),
+  references: (condition) => condition.type === "lacks_item" && condition.itemId ? [{ resourceKind: "item", resourceId: condition.itemId, detail: "excluded item" }] : [],
   render: ({ condition, onChange }) => condition.type === "lacks_item"
     ? <ReferenceField kind="item" value={condition.itemId} onChange={(itemId) => onChange({ ...condition, itemId })} />
     : null,
@@ -38,6 +40,7 @@ export const giveItemEffectAdapter: EffectAuthorAdapter = {
   category: "inventory & body",
   description: "Give the player an item; its authored on-give equipment rule can run automatically.",
   create: () => ({ id: crypto.randomUUID(), type: "give_item", itemId: "", quantity: 1 }),
+  references: (effect) => effect.type === "give_item" && effect.itemId ? [{ resourceKind: "item", resourceId: effect.itemId, detail: "item to give" }] : [],
   summarize: (effect, snapshot) => effect.type === "give_item" ? `Give ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Give item",
   render: ({ effect, onChange }) => effect.type === "give_item" ? <>
     <ReferenceField kind="item" value={effect.itemId} onChange={(itemId) => onChange({ ...effect, itemId })} />
@@ -51,6 +54,7 @@ export const removeItemEffectAdapter: EffectAuthorAdapter = {
   category: "inventory & body",
   description: "Remove a quantity of an item from the player.",
   create: () => ({ id: crypto.randomUUID(), type: "remove_item", itemId: "", quantity: 1 }),
+  references: (effect) => effect.type === "remove_item" && effect.itemId ? [{ resourceKind: "item", resourceId: effect.itemId, detail: "item to remove" }] : [],
   summarize: (effect, snapshot) => effect.type === "remove_item" ? `Remove ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Remove item",
   render: ({ effect, onChange }) => effect.type === "remove_item" ? <>
     <ReferenceField kind="item" value={effect.itemId} onChange={(itemId) => onChange({ ...effect, itemId })} />
@@ -64,6 +68,7 @@ export const setItemStateEffectAdapter: EffectAuthorAdapter = {
   category: "inventory & body",
   description: "Change one authored state field on the player's item.",
   create: () => ({ id: crypto.randomUUID(), type: "set_item_state", itemId: "", key: "", value: "" }),
+  references: (effect) => effect.type === "set_item_state" && effect.itemId ? [{ resourceKind: "item", resourceId: effect.itemId, detail: "item state target" }] : [],
   summarize: (effect, snapshot) => effect.type === "set_item_state"
     ? `${itemLabel(snapshot, effect.itemId)} · ${effect.key || "state"} = ${String(effect.value ?? "")}`
     : "Change item state",
@@ -80,6 +85,7 @@ export const setBodyBackgroundEffectAdapter: EffectAuthorAdapter = {
   category: "inventory & body",
   description: "Activate a body type and its slot layout.",
   create: () => ({ id: crypto.randomUUID(), type: "set_body_background", backgroundId: "" }),
+  references: (effect) => effect.type === "set_body_background" && effect.backgroundId ? [{ resourceKind: "body-type", resourceId: effect.backgroundId, detail: "body type to activate" }] : [],
   summarize: (effect, snapshot) => effect.type === "set_body_background"
     ? `Body type → ${bodyTypeLabel(snapshot, effect.backgroundId)}`
     : "Set body type",

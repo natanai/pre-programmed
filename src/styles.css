@@ -298,6 +298,8 @@ button:disabled { opacity: .45; cursor: default; }
 .time-change-setting { display: grid; grid-template-columns: minmax(0, 1fr) minmax(8em, .45fr); gap: 0 1em; }
 .panel-tabs button[aria-pressed="true"], .voice-tabs button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; }
 .asset-warning { display: grid; gap: .3em; margin: .6em 0; padding: .5em; border: 1px solid var(--dos-line); color: var(--dos-warn); }
+.asset-warning button { display: grid; gap: .15em; padding: .35em; border: 0; background: #050505; color: inherit; text-align: left; font: inherit; overflow-wrap: anywhere; }
+.asset-warning button small { color: var(--dos-muted); }
 .asset-list { max-height: 20em; overflow: auto; }
 .asset-list > button { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto; width: 100%; border: 0; font: inherit; }
 .asset-list code { color: var(--dos-text); }
@@ -391,7 +393,7 @@ button:disabled { opacity: .45; cursor: default; }
   .author-panel, .inventory-surface { margin-left: -4px; margin-right: -4px; padding: .6em; }
   .author-panel > header, .inventory-surface > header { margin: 0 0 .6em; padding-right: 3em; }
   .author-panel > header, .inventory-surface > header { position: sticky; top: 0; z-index: 5; min-height: 2.75em; }
-  .author-panel > header > span, .inventory-surface > header > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .author-panel > header > span, .inventory-surface > header > span { min-width: 0; overflow: visible; text-overflow: clip; white-space: normal; overflow-wrap: anywhere; }
   .author-panel > header button, .inventory-surface > header button, summary { min-height: 2.75em; display: inline-flex; align-items: center; }
   .author-panel-frame > header { position: relative; }
   .author-panel-body { scroll-padding-block: .5em 4em; }

@@ -1,6 +1,6 @@
 import type { ProjectSnapshot } from "../../engine/project/model";
-import { INVENTORY_OPERATION_DEFINITIONS } from "../../features/inventory/operationAdapter";
 import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
+import { getAuthorOperationDefinitions } from "../features/registry";
 
 /**
  * Compose module-provided operation capabilities with project-authored,
@@ -24,7 +24,7 @@ export function authorOperationDefinitions(
     } satisfies AuthorOperationDefinition];
   });
   const definitions: AuthorOperationDefinition[] = [
-    ...INVENTORY_OPERATION_DEFINITIONS.filter((definition) => definition.targetKinds.includes(targetKind)),
+    ...getAuthorOperationDefinitions().filter((definition) => definition.targetKinds.includes(targetKind)),
     ...authoredCommandDefinitions,
   ];
   const seen = new Set<string>();

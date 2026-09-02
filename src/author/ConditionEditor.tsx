@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
-import type { Condition, ProjectSnapshot } from "../game/model";
-import { CONDITION_AUTHOR_ADAPTERS, CONDITION_AUTHOR_ADAPTER_BY_TYPE } from "./rules/catalog";
+import type { Condition } from "../engine/rules/model";
+import type { ProjectSnapshot } from "../engine/project/model";
+import { conditionAuthorAdapter, conditionAuthorAdapters } from "./rules/catalog";
 
 export function ConditionEditor({
   condition,
@@ -13,15 +14,16 @@ export function ConditionEditor({
   snapshot: ProjectSnapshot;
   depth?: number;
 }) {
-  const adapter = CONDITION_AUTHOR_ADAPTER_BY_TYPE[condition.type];
+  const adapters = conditionAuthorAdapters();
+  const adapter = conditionAuthorAdapter(condition.type);
   const selectType = (event: ChangeEvent<HTMLSelectElement>) => {
-    const next = CONDITION_AUTHOR_ADAPTER_BY_TYPE[event.target.value as Condition["type"]];
+    const next = conditionAuthorAdapter(event.target.value as Condition["type"]);
     if (next) onChange(next.create());
   };
 
   return <div className={`condition-editor condition-depth-${Math.min(depth, 3)}`}>
     <select aria-label="Condition type" value={condition.type} onChange={selectType}>
-      {CONDITION_AUTHOR_ADAPTERS.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
+      {adapters.map((option) => <option key={option.type} value={option.type}>{option.label}</option>)}
     </select>
     {adapter?.render({
       condition,

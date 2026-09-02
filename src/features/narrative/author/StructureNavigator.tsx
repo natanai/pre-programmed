@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../../../game/graph";
-import type { Interaction, PlayState, ProjectSnapshot } from "../../../game/model";
+import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../graph";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import type { Interaction } from "../model";
 import "./structureNavigator.css";
 
 export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInteraction, onClose: _onClose }: {

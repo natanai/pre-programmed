@@ -1,4 +1,4 @@
-import type { ProjectMutation, ProjectSnapshot } from "../game/model";
+import type { ProjectMutation, ProjectSnapshot } from "../engine/project/model";
 import { configuredAuthorPlatform } from "../platform/author/configuredAuthorPlatform";
 import { ApiError } from "../platform/cloudflare/http";
 import { configuredProjectPersistence } from "../platform/persistence/configuredProjectPersistence";
