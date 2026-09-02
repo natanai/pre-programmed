@@ -32,12 +32,13 @@ export type AuthorWorkspaceDefinition<TDraft> = {
   save?: (build: AuthorWorkspaceBuildContext<TDraft>) => Promise<AuthorWorkspaceSaveResult<TDraft>>;
 };
 
-/** Preserve a feature's concrete draft type while exposing a heterogeneous registry entry. */
-export function defineAuthorWorkspace<TDraft>(definition: AuthorWorkspaceDefinition<TDraft>) {
-  return definition;
-}
+/** Registry erases draft type only at the composition boundary. */
+export type RegisteredAuthorWorkspaceDefinition = AuthorWorkspaceDefinition<any>;
 
-export type RegisteredAuthorWorkspaceDefinition = AuthorWorkspaceDefinition<unknown>;
+/** Preserve a feature's concrete draft type while returning a registry-safe definition. */
+export function defineAuthorWorkspace<TDraft>(definition: AuthorWorkspaceDefinition<TDraft>): RegisteredAuthorWorkspaceDefinition {
+  return definition as RegisteredAuthorWorkspaceDefinition;
+}
 
 function defaultSignature(value: unknown) {
   return JSON.stringify(value);
