@@ -30,6 +30,25 @@ describe("local author destination search", () => {
     }
   });
 
+  it("uses graph proximity only to rank real text matches", () => {
+    const snapshot = project({
+      nodes: [
+        { id: "a", nodeNumber: 1, text: "origin", ending: false, tags: [], characterId: null, locationId: null, performance: { charactersPerSecond: 18, cues: [] } },
+        { id: "near", nodeNumber: 2, text: "reachable courtyard", ending: false, tags: [], characterId: null, locationId: null, performance: { charactersPerSecond: 18, cues: [] } },
+        { id: "far", nodeNumber: 3, text: "rain soaked alley", ending: false, tags: [], characterId: null, locationId: null, performance: { charactersPerSecond: 18, cues: [] } },
+      ],
+      interactions: [{
+        id: "to-near", sourceNodeId: "a", wording: "go courtyard", choiceVisibility: "prompt", aliases: [], tags: [], notes: "",
+        outcomes: [{ id: "to-near-outcome", order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "", effects: [], disposition: "go", destinationNodeId: "near" }],
+      }],
+    });
+    const state = createEmptyPlayState(snapshot);
+    const documents = buildSearchIndex(snapshot);
+
+    expect(searchProject(snapshot, documents, state, "rain soaked alley", ["node"]).map((result) => result.id)).toEqual(["far"]);
+    expect(searchProject(snapshot, documents, state, "completely unique destination", ["node"])).toEqual([]);
+  });
+
   it("finds nested Author controls and concepts rather than only visible home cards", () => {
     const snapshot = project({
       items: [{ id: "cyber-leg", key: "cyber-leg", name: "Cyber Leg", description: "replacement limb", assetId: "", width: 1, height: 2, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, interactable: true, operations: ["inspect", "use", "polish"], equipmentSlotKeys: ["leg"], tags: [], initialState: {}, hooks: [{ id: "polish-response", operation: "polish", order: 0, condition: { type: "always" }, responseText: "The chrome gleams.", effects: [], success: true }] }],
