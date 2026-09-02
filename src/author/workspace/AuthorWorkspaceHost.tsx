@@ -28,7 +28,6 @@ type SharedTaskProps = {
   completeTask: (taskId: string, result?: AuthorTaskResult) => void;
   requestBack: (taskId?: string) => void;
   setTaskDirty: (taskId: string, dirty: boolean) => void;
-  registerTaskSave: (taskId: string, handler: AuthorWorkspaceSaveHandler | null) => void;
   pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
   runtime: AuthorRuntimeSurface;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
@@ -40,10 +39,15 @@ type PreservedWorkspaceView = {
   scrollPositions: Array<{ element: HTMLElement; top: number; left: number }>;
 };
 
+function afterReactTurn() {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+}
+
 function AuthorTaskSurface({
   task,
   active,
   resources,
+  registerTaskSave,
   toolGroups,
   searchEntries,
   snapshot,
@@ -54,12 +58,16 @@ function AuthorTaskSurface({
   completeTask,
   requestBack,
   setTaskDirty,
-  registerTaskSave,
   pushTask,
   runtime,
   onSnapshot,
   onRestore,
-}: SharedTaskProps & { task: AuthorTaskEntry; active: boolean; resources: AuthorResourceTools }) {
+}: SharedTaskProps & {
+  task: AuthorTaskEntry;
+  active: boolean;
+  resources: AuthorResourceTools;
+  registerTaskSave: (taskId: string, handler: AuthorWorkspaceSaveHandler | null) => void;
+}) {
   const completeCurrentTask = useCallback(
     (result?: AuthorTaskResult) => completeTask(task.id, result),
     [completeTask, task.id],
@@ -73,6 +81,8 @@ function AuthorTaskSurface({
     (handler: AuthorWorkspaceSaveHandler | null) => registerTaskSave(task.id, handler),
     [registerTaskSave, task.id],
   );
+
+  useEffect(() => () => registerTaskSave(task.id, null), [registerTaskSave, task.id]);
 
   const context: AuthorWorkspaceContext = {
     taskId: task.id,
@@ -125,36 +135,44 @@ function scrollableWorkspaceElements(layer: HTMLElement) {
  * Root host for nested Author tasks.
  *
  * Suspended tasks remain mounted under stable task ids, preserving local draft
- * state exactly as the author left it. Only the top task is visible. Each task
- * receives task-scoped completion, dirty ownership, and a registered save
- * boundary so the master close action can save the entire stack deepest-first.
+ * state exactly as the author left it. The host owns the generic Save-All
+ * registry because it is the one layer that can see every mounted task without
+ * learning any feature-specific persistence behavior.
  */
 export function AuthorWorkspaceHost({
   tasks,
   activeTaskId,
   leaveConfirmation,
-  savingAll,
-  saveAllError,
-  onSaveAllAndClose,
-  onDiscardAndLeave,
+  onConfirmLeave,
   onCancelLeave,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
   activeTaskId: string | null;
   leaveConfirmation: AuthorLeaveConfirmation | null;
-  savingAll: boolean;
-  saveAllError: string;
-  onSaveAllAndClose: () => void;
-  onDiscardAndLeave: () => void;
+  onConfirmLeave: () => void;
   onCancelLeave: () => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
+  const [saveAllError, setSaveAllError] = useState("");
   const workspaceLayerRef = useRef<HTMLDivElement>(null);
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
+  const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
 
   useEffect(() => setStackOpen(false), [activeTaskId]);
+  useEffect(() => {
+    const liveTaskIds = new Set(tasks.map((task) => task.id));
+    for (const taskId of saveHandlersRef.current.keys()) {
+      if (!liveTaskIds.has(taskId)) saveHandlersRef.current.delete(taskId);
+    }
+  }, [tasks]);
+
+  const registerTaskSave = useCallback((taskId: string, handler: AuthorWorkspaceSaveHandler | null) => {
+    if (handler) saveHandlersRef.current.set(taskId, handler);
+    else saveHandlersRef.current.delete(taskId);
+  }, []);
 
   const preview = useCallback<AuthorRuntimeSurface["preview"]>((presentation) => {
     const layer = workspaceLayerRef.current;
@@ -183,6 +201,34 @@ export function AuthorWorkspaceHost({
       preservedViewRef.current = null;
     });
   }, []);
+
+  const saveAllAndReturn = useCallback(async () => {
+    if (savingAll) return;
+    setSavingAll(true);
+    setSaveAllError("");
+    try {
+      // Deepest-first is essential. A child resource may complete into its
+      // suspended parent's draft, and the parent must save after receiving it.
+      const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
+      for (const task of dirtyTasks) {
+        const save = saveHandlersRef.current.get(task.id);
+        if (!save) {
+          setSaveAllError("One unsaved task has not migrated to the shared Save boundary yet. Save that task normally, then use X again.");
+          return;
+        }
+        const accepted = await save();
+        if (!accepted) {
+          setSaveAllError("A task could not be saved. Nothing was discarded; fix that task and try again.");
+          return;
+        }
+        shared.setTaskDirty(task.id, false);
+        await afterReactTurn();
+      }
+      onConfirmLeave();
+    } finally {
+      setSavingAll(false);
+    }
+  }, [onConfirmLeave, savingAll, shared, tasks]);
 
   const authorRuntime = useMemo<AuthorRuntimeSurface>(() => ({ ...shared.runtime, preview }), [preview, shared.runtime]);
 
@@ -246,6 +292,7 @@ export function AuthorWorkspaceHost({
             task={task}
             active={task.id === activeTaskId}
             resources={resources}
+            registerTaskSave={registerTaskSave}
           />)}
         </div>
         {leaveConfirmation ? <div className="author-leave-shade">
@@ -264,9 +311,9 @@ export function AuthorWorkspaceHost({
             </p>
             {saveAllError ? <p className="author-leave-error" role="alert">{saveAllError}</p> : null}
             <div className="author-leave-actions">
-              <button type="button" autoFocus disabled={savingAll} onClick={onCancelLeave}>[KEEP EDITING]</button>
-              {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={onSaveAllAndClose}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
-              <button type="button" disabled={savingAll} onClick={onDiscardAndLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
+              <button type="button" autoFocus disabled={savingAll} onClick={() => { setSaveAllError(""); onCancelLeave(); }}>[KEEP EDITING]</button>
+              {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={() => void saveAllAndReturn()}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
+              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
             </div>
           </section>
         </div> : null}
