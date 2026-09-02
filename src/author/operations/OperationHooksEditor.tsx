@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   Condition,
 } from "../../engine/rules/model";
@@ -79,6 +79,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
   const [expanded, setExpanded] = useState(defaultOpen);
+  const preferredControlRef = useRef<HTMLButtonElement>(null);
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
   const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
   const cardDefinitions = [
@@ -88,6 +89,18 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
       .map((hook) => ({ value: hook.operation, label: hook.operation, targetKinds: [targetKind] })),
   ].filter((definition, index, all) => all.findIndex((candidate) => candidate.value === definition.value) === index)
     .sort((left, right) => left.value === preferredOperation ? -1 : right.value === preferredOperation ? 1 : 0);
+
+  useEffect(() => {
+    if (!defaultOpen || !preferredOperation) return;
+    setExpanded(true);
+    const frame = window.requestAnimationFrame(() => {
+      const control = preferredControlRef.current;
+      if (!control) return;
+      control.scrollIntoView({ block: "center", inline: "nearest" });
+      control.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [defaultOpen, preferredOperation]);
 
   const replaceHook = (id: string, hook: OperationHook) => onChange({
     ...capability,
@@ -161,7 +174,8 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
             {cardDefinitions.map((operation) => {
               const available = capability.operations.includes(operation.value);
               const hooks = capability.hooks.filter((hook) => hook.operation === operation.value);
-              return <section className={`operation-card${available ? " is-available" : ""}`} key={operation.value}>
+              const preferred = operation.value === preferredOperation;
+              return <section className={`operation-card${available ? " is-available" : ""}`} key={operation.value} data-preferred-operation={preferred || undefined}>
                 <div className="operation-card-heading">
                   <span><strong>{operation.label.toUpperCase()}</strong><small>{available ? "AVAILABLE TO PLAYER" : "NOT AVAILABLE"} · {hooks.length} response{hooks.length === 1 ? "" : "s"}</small></span>
                   <label className="check-label"><input type="checkbox" checked={available} onChange={(event) => onChange({
@@ -184,7 +198,12 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                     </div>
                   </div>)}
                 </div> : <span className="operation-card-empty">No authored response. {available ? "Feature defaults may still handle this operation." : "Enable it or add a response when needed."}</span>}
-                <button type="button" className="operation-add-hook" onClick={() => addHook(operation.value)}>[+ {operation.label.toUpperCase()} RESPONSE]</button>
+                <button
+                  ref={preferred ? preferredControlRef : undefined}
+                  type="button"
+                  className="operation-add-hook"
+                  onClick={() => addHook(operation.value)}
+                >[+ {operation.label.toUpperCase()} RESPONSE]</button>
               </section>;
             })}
             {!cardDefinitions.length ? <div className="operation-card-empty">No operation vocabulary is installed for this target yet. Create targeted wording in Player Interactions to add one.</div> : null}
