@@ -16,7 +16,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "assets") return "Media assets";
     if (route.workspace === "synth") return "Synth sounds";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
-      const asset = snapshot.mediaAssets.find((candidate) => candidate.id === route.data?.assetId);
+      const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
       return asset?.name || (route.workspace === "vector-asset" ? "New 32×32 vector" : `New ${route.data?.kind === "image" ? "image" : "sound"}`);
     }
     if (route.workspace === "synth-sound") {
@@ -103,6 +103,30 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
         : undefined;
       const resourceKind = route.data?.resourceTask;
+      const saveResource = async (operations: Parameters<typeof context.persist>[0], description: string) => {
+        const result = await context.persist(operations, description);
+        if (resourceKind && (result.status === "saved" || result.status === "queued")) {
+          const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
+          if (operation?.type === "mediaAsset.upsert") context.completeTask({
+            type: "resource",
+            kind: resourceKind,
+            id: operation.asset.id,
+            value: operation.asset.id,
+            label: operation.asset.name,
+          });
+        }
+        return result;
+      };
+
+      if (kind === "image" && initial?.authoringMode === "grid32") return <VectorAssetEditor
+        snapshot={context.snapshot}
+        initial={initial}
+        authorToken={context.authorToken}
+        setWorkspaceDirty={context.setWorkspaceDirty}
+        onCancel={context.leaveCurrentTask}
+        onSave={saveResource}
+      />;
+
       return <MediaAssetEditor
         snapshot={context.snapshot}
         kind={kind}
@@ -110,20 +134,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
-            if (operation?.type === "mediaAsset.upsert") context.completeTask({
-              type: "resource",
-              kind: resourceKind,
-              id: operation.asset.id,
-              value: operation.asset.id,
-              label: operation.asset.name,
-            });
-          }
-          return result;
-        }}
+        onSave={saveResource}
       />;
     }
 
