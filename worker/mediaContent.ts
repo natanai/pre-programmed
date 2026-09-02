@@ -99,7 +99,7 @@ async function putDatabaseTextContent(db: MediaContentDatabase, bucket: R2Bucket
 
   let text = "";
   try {
-    text = new TextDecoder("utf-8", { fatal: true }).decode(content);
+    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(content);
   } catch {
     return json({ error: "Text media must contain valid UTF-8." }, { status: 400 });
   }
