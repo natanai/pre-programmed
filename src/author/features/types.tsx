@@ -48,6 +48,8 @@ export type AuthorRuntimeSurface = {
 
 export type AuthorWorkspaceContext = {
   taskId: string;
+  /** True only when Back/Cancel can return to another suspended Author task. */
+  hasParentTask: boolean;
   snapshot: ProjectSnapshot;
   playState: PlayState;
   authorMode: boolean;
