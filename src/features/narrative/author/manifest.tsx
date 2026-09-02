@@ -2,12 +2,10 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { previewEventsForEffects } from "../../../author/rules/catalog";
 import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { buildGraphIndex } from "../graph";
-import { makeId } from "../../../engine/project/id";
-import { nextNodeNumber } from "../nodeNumber";
 import { createDraftInteraction } from "../drafts";
 import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
-import { NodeEditor } from "./NodeEditor";
+import { nodeWorkspace } from "./nodeWorkspace";
 import { notationForNarrativeInteraction } from "./notation";
 import { StructureNavigator } from "./StructureNavigator";
 import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
@@ -37,6 +35,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
   references: [narrativeProjectReferences],
   tools: narrativeAuthorTools,
   search: narrativeAuthorSearch,
+  workspaces: [nodeWorkspace],
   resources: [
     {
       kind: "node",
@@ -185,50 +184,6 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           onDirtyChange={context.setWorkspaceDirty}
         />
       </div>;
-    }
-
-    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "node") {
-      const requestedNodeId = route.data?.nodeId;
-      const resourceTask = route.data?.resourceTask === "node";
-      const node = requestedNodeId
-        ? context.snapshot.nodes.find((candidate) => candidate.id === requestedNodeId)
-        : resourceTask ? {
-          id: makeId(),
-          nodeNumber: nextNodeNumber(context.snapshot),
-          text: "",
-          ending: false,
-          tags: [],
-          characterId: null,
-          locationId: null,
-          performance: { charactersPerSecond: 18, cues: [] },
-        } : undefined;
-      if (!node) return null;
-      return <NodeEditor
-        node={node}
-        snapshot={context.snapshot}
-        autoFocusText={!requestedNodeId}
-        onPreview={(value, speakerId) => context.runtime.preview({
-          text: value.text,
-          performance: value.performance,
-          speakerId,
-        })}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceTask && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "node.upsert");
-            if (operation?.type === "node.upsert") context.completeTask({
-              type: "resource",
-              kind: "node",
-              id: operation.node.id,
-              value: operation.node.id,
-              label: `Node #${operation.node.nodeNumber}`,
-            });
-          }
-          return result;
-        }}
-        onCancel={context.leaveCurrentTask}
-        onDirtyChange={context.setWorkspaceDirty}
-      />;
     }
 
     if (route.type === "feature" && route.feature === "narrative" && route.workspace === "structure") return <StructureNavigator
