@@ -32,6 +32,28 @@ export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, 
 }
 
 /**
+ * Resume a durable play state without counting time spent outside the active
+ * play session. Feature-owned reconciliation then repairs data that changed in
+ * a compatible authored project revision.
+ */
+export function resumePlayState(
+  snapshot: ProjectSnapshot,
+  state: PlayState,
+  savedAt: string | number,
+  now = Date.now(),
+): PlayState {
+  const savedAtTime = typeof savedAt === "number" ? savedAt : Date.parse(savedAt);
+  const elapsedAtSave = Number.isFinite(savedAtTime)
+    ? Math.max(0, savedAtTime - state.sessionStartedAt)
+    : 0;
+  return reconcilePlayState(snapshot, {
+    ...structuredClone(state),
+    sessionStartedAt: now - elapsedAtSave,
+    variableTimeUpdatedAt: now,
+  }, now);
+}
+
+/**
  * Reconcile feature-owned play state after authored project data changes.
  * App/session code should call this composition root rather than naming the
  * feature whose state needs repair or initialization.
@@ -48,15 +70,9 @@ export function reconcilePlayStateAfterProjectChange(
 }
 
 export function resumeAuthorBookmark(snapshot: ProjectSnapshot, bookmark: AuthorBookmark, now = Date.now()): PlayState {
-  const savedAt = Date.parse(bookmark.createdAt);
-  const elapsedAtSave = Number.isFinite(savedAt)
-    ? Math.max(0, savedAt - bookmark.playState.sessionStartedAt)
-    : 0;
-  return reconcilePlayState(snapshot, {
-    ...structuredClone(bookmark.playState),
+  return resumePlayState(snapshot, {
+    ...bookmark.playState,
     currentNodeId: bookmark.nodeId,
     traversal: [...bookmark.traversal],
-    sessionStartedAt: now - elapsedAtSave,
-    variableTimeUpdatedAt: now,
-  }, now);
+  }, bookmark.createdAt, now);
 }
