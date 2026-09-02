@@ -1,7 +1,7 @@
 name: Verify behavior
 
 # Full behavioral verification is intentionally opt-in during rapid prototyping.
-# This branch trigger is a temporary explicit checkpoint for the Media foundation replacement.
+# This branch trigger is the final explicit checkpoint for the Media foundation replacement.
 on:
   workflow_dispatch:
   push:
