@@ -41,11 +41,15 @@ export const mediaMutationValidator: WorkerMutationValidator = {
       if (typeof asset.id !== "string" || !asset.id || typeof asset.name !== "string" || !asset.name.trim()) return "Media asset identity is invalid.";
       if (typeof asset.kind !== "string" || !["audio", "image"].includes(asset.kind)) return "Media asset type is invalid.";
       if (typeof asset.mimeType !== "string" || !asset.mimeType.includes("/")) return "Media asset MIME type is invalid.";
+      const mimeType = asset.mimeType.toLowerCase();
+      if (asset.kind === "audio" && !mimeType.startsWith("audio/")) return "Audio assets require an audio MIME type.";
+      if (asset.kind === "image" && !mimeType.startsWith("image/")) return "Image assets require an image MIME type.";
       if (asset.contentKey !== null && (typeof asset.contentKey !== "string" || !/^[A-Za-z0-9_-]{8,128}$/.test(asset.contentKey))) return "Media asset content key is invalid.";
       if (typeof asset.byteLength !== "number" || !Number.isInteger(asset.byteLength) || asset.byteLength < 0 || asset.byteLength > 20_000_000) return "Media asset must be no larger than 20 MB.";
       if (!optionalDimension(asset.intrinsicWidth) || !optionalDimension(asset.intrinsicHeight)) return "Media asset dimensions are invalid.";
       if (!["inline", "overlay"].includes(String(asset.defaultPresentation))) return "Media asset presentation is invalid.";
       if (!["file", "grid32"].includes(String(asset.authoringMode))) return "Media asset authoring mode is invalid.";
+      if (asset.authoringMode === "grid32" && (asset.kind !== "image" || mimeType !== "image/svg+xml")) return "32×32 grid assets must be SVG images.";
     }
     if (operation.type === "synth.delete") {
       return typeof operation.id === "string" && operation.id ? null : "Synth sound id is required.";
