@@ -144,7 +144,7 @@ export function InteractionEditor({
   initialCommand?: string;
   fallback?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onCancel: () => void;
+  onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
   onPreview?: (outcome: InteractionOutcome) => void;
@@ -370,7 +370,7 @@ export function InteractionEditor({
 
     <div className="author-actions author-panel-footer guided-editor-footer">
       <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      <button type="button" onClick={onCancel}>[CANCEL]</button>
+      {onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}
       {screen.type === "overview" && initial ? confirmDelete ? <>
         <span>Delete this {fallbackMode ? "invalid-input response" : "user input"}?</span>
         <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
