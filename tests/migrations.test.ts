@@ -10,6 +10,10 @@ function currentMigrations() {
   ].sort((left, right) => left.id - right.id);
 }
 
+function applyMigration(database: DatabaseSync, migration: { sql: string }) {
+  for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
+}
+
 describe("D1 migration safety", () => {
   it("keeps multi-line statements intact for prepared execution", () => {
     const statements = splitSqlStatements(`
@@ -54,9 +58,7 @@ describe("D1 migration safety", () => {
     const migrations = currentMigrations();
 
     try {
-      for (const migration of migrations) {
-        for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
-      }
+      for (const migration of migrations) applyMigration(database, migration);
 
       const meta = database
         .prepare("SELECT schema_version FROM project_meta WHERE id = 1")
@@ -64,6 +66,33 @@ describe("D1 migration safety", () => {
       const latestId = migrations.at(-1)?.id ?? 0;
 
       expect(meta?.schema_version).toBe(latestId);
+    } finally {
+      database.close();
+    }
+  });
+
+  it("migrates legacy compatible equipment slots into equivalent one-slot placements", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const placementMigration = migrations.find((migration) => migration.id === 22);
+    expect(placementMigration?.name).toBe("inventory-equipment-placements");
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 22)) applyMigration(database, migration);
+      database.prepare(
+        `INSERT INTO item_definitions (id, key, name, equipment_slot_keys_json)
+         VALUES (?, ?, ?, ?)`,
+      ).run("legacy-gloves", "legacy_gloves", "Legacy Gloves", '["left","right"]');
+
+      applyMigration(database, placementMigration!);
+
+      const row = database.prepare(
+        "SELECT equipment_placements_json FROM item_definitions WHERE id = ?",
+      ).get("legacy-gloves") as { equipment_placements_json: string };
+      expect(JSON.parse(row.equipment_placements_json)).toEqual([
+        { anchorSlotKey: "left", occupiedSlotKeys: ["left"] },
+        { anchorSlotKey: "right", occupiedSlotKeys: ["right"] },
+      ]);
     } finally {
       database.close();
     }
