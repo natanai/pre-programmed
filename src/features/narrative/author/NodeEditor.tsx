@@ -8,9 +8,10 @@ import "./nodeEditor.css";
 
 type NodeScreen = "text" | "context";
 
-export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange, onPreview }: {
+export function NodeEditor({ node, snapshot, autoFocusText = false, onSave, onCancel, onDirtyChange, onPreview }: {
   node: GameNode;
   snapshot: ProjectSnapshot;
+  autoFocusText?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
@@ -55,7 +56,7 @@ export function NodeEditor({ node, snapshot, onSave, onCancel, onDirtyChange, on
           snapshot={snapshot}
           label="NODE TEXT"
           rows={7}
-          autoFocus
+          autoFocus={autoFocusText}
           onChange={(value) => setDraft({ ...draft, text: value.text, performance: value.performance })}
           onPreview={onPreview ? (value) => onPreview(value, draft.characterId) : undefined}
         />
