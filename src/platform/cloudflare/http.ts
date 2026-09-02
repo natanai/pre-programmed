@@ -11,7 +11,10 @@ const configuredApiOrigin = import.meta.env.VITE_API_ORIGIN?.trim().replace(/\/+
 export const API_ORIGIN = configuredApiOrigin || "https://pre-programmed.natanai.workers.dev";
 
 export function apiUrl(path: string) {
-  if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1" || window.location.hostname === "terminal.local") {
+  if (typeof window !== "undefined"
+    && (window.location.hostname === "localhost"
+      || window.location.hostname === "127.0.0.1"
+      || window.location.hostname === "terminal.local")) {
     return path;
   }
   return `${API_ORIGIN}${path}`;
