@@ -1,12 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { isPlaySessionCompatible, type PersistedPlaySession } from "../src/data/localPlaySession";
+import {
+  isPlaySessionCompatible,
+  normalizePersistedPlaySession,
+  type PersistedPlaySession,
+} from "../src/data/localPlaySession";
 import { createEmptyPlayState, resumePlayState } from "../src/engine/project/playState";
 import { node, project } from "./fixtures";
 
 function sessionFor(snapshot = project()): PersistedPlaySession {
   const playState = createEmptyPlayState(snapshot, 1_000);
   return {
-    version: 1,
+    version: 2,
     schemaVersion: snapshot.schemaVersion,
     projectRevision: snapshot.revision,
     savedAt: new Date(6_000).toISOString(),
@@ -40,5 +44,32 @@ describe("player session persistence", () => {
 
     expect(resumed.sessionStartedAt).toBe(15_000);
     expect(resumed.variableTimeUpdatedAt).toBe(20_000);
+  });
+
+  it("upgrades v1 saves without preserving obsolete storage URLs", () => {
+    const current = sessionFor();
+    const legacy = {
+      ...current,
+      version: 1,
+      presentation: {
+        ...current.presentation,
+        transcript: [
+          { id: "text", text: "hello" },
+          { id: "old-art", text: "", artUrl: "https://old-storage.example/art.png" },
+        ],
+      },
+    };
+
+    const upgraded = normalizePersistedPlaySession(legacy);
+    expect(upgraded?.version).toBe(2);
+    expect(upgraded?.presentation.transcript).toEqual([{ id: "text", text: "hello" }]);
+    expect(JSON.stringify(upgraded)).not.toContain("artUrl");
+  });
+
+  it("keeps stable art identities in the saved transcript", () => {
+    const current = sessionFor();
+    current.presentation.transcript.push({ id: "art", text: "", artAssetId: "asset-eye" });
+    const normalized = normalizePersistedPlaySession(current);
+    expect(normalized?.presentation.transcript.at(-1)).toEqual({ id: "art", text: "", artAssetId: "asset-eye" });
   });
 });
