@@ -2,10 +2,6 @@ import type { EffectEventPresenter } from "../../../engine/presentation/effectPr
 import { configuredAssetStore } from "./assetStore";
 import { playSynthSound } from "./synthPlayback";
 
-function usesInlineArt(width: number | null, height: number | null) {
-  return Boolean(width && height && width <= 32 && height <= 32);
-}
-
 /** Media owns the browser meaning of Media-generated effect events. */
 export const presentMediaEffectEvent: EffectEventPresenter = (event, context) => {
   switch (event.type) {
@@ -16,13 +12,13 @@ export const presentMediaEffectEvent: EffectEventPresenter = (event, context) =>
     }
     case "audio": {
       const asset = configuredAssetStore.resolve(context.snapshot, event.assetId);
-      if (asset) void new Audio(asset.url).play().catch(() => undefined);
+      if (asset?.url) void new Audio(asset.url).play().catch(() => undefined);
       return true;
     }
     case "art": {
       const asset = configuredAssetStore.resolve(context.snapshot, event.assetId);
-      if (!asset) return true;
-      if (usesInlineArt(asset.width, asset.height)) context.surface.appendInlineAsset(asset.url);
+      if (!asset?.url) return true;
+      if (asset.defaultPresentation === "inline") context.surface.appendInlineAsset(asset.url);
       else context.surface.showOverlayAsset(asset.url);
       return true;
     }

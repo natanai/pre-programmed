@@ -16,7 +16,7 @@ export function withCors(request: Request, response: Response) {
   if (!origin || !ALLOWED_ORIGINS.has(origin)) return response;
   const headers = new Headers(response.headers);
   headers.set("access-control-allow-origin", origin);
-  headers.set("access-control-allow-methods", "GET, POST, PATCH, OPTIONS");
+  headers.set("access-control-allow-methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
   headers.set("access-control-allow-headers", "Authorization, Content-Type");
   headers.append("vary", "Origin");
   return new Response(response.body, {

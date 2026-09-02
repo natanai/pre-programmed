@@ -1,34 +1,63 @@
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
-import { assetUrl } from "../../../data/assets";
-import {
-  createEmbeddedAsset,
-  embeddedDescriptor,
-  type AssetStore,
-  type MediaAssetDescriptor,
-} from "../assets";
+import type { ProjectSnapshot } from "../../../engine/project/model";
+import type { AssetStore, MediaAssetDescriptor } from "../assets";
+import type { MediaAsset } from "../model";
+import { configuredAssetContentStore } from "../../../platform/assets/contentStore";
 
-function repositoryAssets(): MediaAssetDescriptor[] {
-  return ASSET_MANIFEST.filter((asset) => asset.runtimePath).map((asset) => ({
-    id: `repo:${asset.runtimePath}`,
-    name: asset.path.replace(/^public\/assets\//, ""),
-    kind: asset.type,
-    source: "repository",
-    url: assetUrl(asset.runtimePath),
-    size: asset.size,
-    width: asset.dimensions?.width ?? null,
-    height: asset.dimensions?.height ?? null,
-  }));
+function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
+  return {
+    id: entry.id,
+    name: entry.name,
+    kind: entry.type,
+    mimeType: entry.mimeType,
+    contentKey: null,
+    byteLength: entry.byteLength,
+    intrinsicWidth: entry.dimensions?.width ?? null,
+    intrinsicHeight: entry.dimensions?.height ?? null,
+    defaultPresentation: entry.defaultPresentation,
+    authoringMode: entry.authoringMode,
+  };
 }
 
-/** Browser composition of read-only repository assets and portable project assets. */
+function descriptor(asset: MediaAsset, editable: boolean): MediaAssetDescriptor {
+  return {
+    ...asset,
+    url: configuredAssetContentStore.urlFor(asset),
+    editable,
+  };
+}
+
+/** Browser composition of one stable asset catalog backed by project metadata and repository metadata. */
 export const configuredAssetStore: AssetStore = {
   list(snapshot, kind) {
-    return [...repositoryAssets(), ...(snapshot.mediaAssets ?? []).map(embeddedDescriptor)]
+    const projectById = new Map((snapshot.mediaAssets ?? []).map((asset) => [asset.id, asset] as const));
+    const assets = new Map<string, MediaAssetDescriptor>();
+
+    for (const entry of ASSET_MANIFEST) {
+      const repository = repositoryAsset(entry);
+      const project = projectById.get(entry.id);
+      const merged = project ? {
+        ...project,
+        // The repository file is the content currently shipped to players, so
+        // content-derived metadata comes from that file while authored behavior stays stable.
+        mimeType: repository.mimeType,
+        byteLength: repository.byteLength,
+        intrinsicWidth: repository.intrinsicWidth,
+        intrinsicHeight: repository.intrinsicHeight,
+      } : repository;
+      assets.set(entry.id, descriptor(merged, true));
+    }
+
+    for (const project of snapshot.mediaAssets ?? []) {
+      if (!assets.has(project.id)) assets.set(project.id, descriptor(project, true));
+    }
+
+    return [...assets.values()]
       .filter((asset) => !kind || asset.kind === kind)
       .sort((left, right) => left.name.localeCompare(right.name) || left.id.localeCompare(right.id));
   },
+
   resolve(snapshot, assetId) {
     return this.list(snapshot).find((asset) => asset.id === assetId) ?? null;
   },
-  createEmbedded: createEmbeddedAsset,
 };

@@ -10,8 +10,8 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "assets",
       label: "ASSETS",
-      description: "Browse detected repository art and audio.",
-      searchText: "image images sound sounds file files upload embedded media sprite art audio",
+      description: "Import, draw, browse, and export stable media assets.",
+      searchText: "image images sound sounds file files upload media sprite art audio svg vector draw asset",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
     },
   },
@@ -43,8 +43,8 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
     id: "media:asset-library",
     groupLabel: "WORLD + MEDIA",
     label: "MEDIA ASSETS",
-    description: "Find or create stable project sounds and images.",
-    searchText: "asset assets audio sound image art sprite upload embedded repository file",
+    description: "Import files or draw scalable 32×32 vector assets behind stable project IDs.",
+    searchText: "asset assets audio sound image art sprite upload repository file svg vector draw grid export",
     onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
   },
 ];

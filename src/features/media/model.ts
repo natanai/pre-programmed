@@ -21,15 +21,26 @@ export type SynthSound = {
 };
 
 export type MediaAssetKind = "audio" | "image";
+export type MediaAssetPresentation = "inline" | "overlay";
+export type MediaAssetAuthoringMode = "file" | "grid32";
 
+/**
+ * Stable project identity and behavior for media. Content location is deliberately
+ * absent: repository paths and hosted-object URLs belong to the platform resolver.
+ */
 export type MediaAsset = {
   id: string;
   name: string;
   kind: MediaAssetKind;
-  source: "embedded";
-  dataUrl: string;
   mimeType: string;
-  size: number;
-  width: number | null;
-  height: number | null;
+  contentKey: string | null;
+  byteLength: number;
+  intrinsicWidth: number | null;
+  intrinsicHeight: number | null;
+  defaultPresentation: MediaAssetPresentation;
+  authoringMode: MediaAssetAuthoringMode;
 };
+
+export function isVectorAsset(asset: Pick<MediaAsset, "kind" | "mimeType">) {
+  return asset.kind === "image" && asset.mimeType.toLowerCase() === "image/svg+xml";
+}
