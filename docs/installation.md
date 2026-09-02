@@ -1,8 +1,8 @@
 # Install Pre-Programmed as a New Game Engine Instance
 
-The goal is simple: **fork/clone → connect your infrastructure → create the game in Author mode.** Ordinary game content should not require changes to engine source.
+The goal is: **fork/clone → connect persistence → create the game in Author mode.** Ordinary game content should not require editing engine source, and optional platform services must not be prerequisites for running the engine.
 
-The repository does not carry any installation's D1 database UUID or hosted Media content. `wrangler.jsonc` is local installation state and is intentionally ignored by Git.
+The repository does not carry any installation's D1 database UUID or hosted binary Media. `wrangler.jsonc` is local installation state and is intentionally ignored by Git.
 
 ## 1. Fork or clone
 
@@ -12,104 +12,122 @@ Install dependencies:
 npm install
 ```
 
-For a GitHub **fork**, run:
+For a GitHub **fork**:
 
 ```sh
 npm run setup:installation
 ```
 
-For a direct **clone of `natanai/pre-programmed`** that should become a separate game installation, run:
+For a direct **clone of `natanai/pre-programmed`** that should become a separate game installation:
 
 ```sh
 npm run setup:installation -- --new-installation
 ```
 
-The explicit flag keeps a direct upstream checkout from being mistaken for a new game installation. An existing checkout of the original production repository therefore cannot silently create replacement local infrastructure.
+The explicit flag prevents a direct upstream checkout from being mistaken for a new installation.
 
 The helper prepares:
 
 - a Worker name;
-- a new D1 database name;
-- an R2 Media bucket name;
-- a local, ignored `wrangler.jsonc` based on `wrangler.template.jsonc`;
-- `.env.local` with client API/base-path settings;
-- a Pages base path inferred from the GitHub repository name when possible.
+- a D1 database name;
+- an optional R2/blob bucket binding only when you choose one;
+- a local ignored `wrangler.jsonc`;
+- `.env.local` with API/base-path settings;
+- a Pages base path inferred from the repository name when possible.
 
 It does **not** create Cloudflare resources by itself.
 
-For normal forks, the default Worker name is the repository name, the default D1 name is `<worker-name>-db`, and the default Media bucket is `<worker-name>-assets`. A direct upstream clone uses a safer `my-...` Worker-name default so it cannot casually collide with the original installation.
-
 ### Existing-installation safety
 
-After a checkout has its **own** D1 configuration, setup refuses to overwrite it by default.
-
-Only when replacing an already configured installation intentionally should you use:
+Once a checkout has its own D1 configuration, setup refuses to overwrite it by default. Use:
 
 ```sh
 npm run setup:installation -- --force
 ```
 
-For non-interactive setup, these environment variables are supported:
+only when replacing that installation intentionally.
+
+Supported non-interactive variables:
 
 ```text
 PRE_PROGRAMMED_WORKER_NAME
 PRE_PROGRAMMED_D1_DATABASE_NAME
-PRE_PROGRAMMED_ASSET_BUCKET_NAME
 PRE_PROGRAMMED_API_ORIGIN
 PRE_PROGRAMMED_REPOSITORY_NAME
 PRE_PROGRAMMED_BASE_PATH
+PRE_PROGRAMMED_ASSET_BUCKET_NAME   # optional blob storage only
 ```
 
-## 2. Create this installation's D1 database and R2 Media bucket
+## 2. Create the database
 
-Authenticate Wrangler with the Cloudflare account that should own the game.
-
-The setup helper prints the exact commands for the names you chose. They have this form:
+Authenticate Wrangler with the Cloudflare account that should own the hosted game, then create the D1 binding printed by setup:
 
 ```sh
 npx wrangler d1 create YOUR_DATABASE_NAME --binding DB --update-config
-npx wrangler r2 bucket create YOUR_MEDIA_BUCKET_NAME
 ```
 
-`--binding DB` assigns the binding expected by the Worker, and `--update-config` writes the newly created database name and UUID into the local `wrangler.jsonc`. The setup helper has already added the `ASSET_CONTENT` R2 binding to that local config.
+D1 is sufficient for the engine's mutable project data and for textual/vector Media such as Author-created SVG.
 
-After D1 creation succeeds, the local configuration should contain the installation's database identity and Media binding. Do not copy another installation's database ID or bucket name unless sharing that infrastructure is intentional.
+### Media storage model
 
-D1 and R2 have deliberately different responsibilities:
+Game systems reference only stable Media asset IDs. Content location is behind the Media platform boundary.
 
-- **D1** stores project structure and Media metadata, including stable asset IDs and immutable `contentKey` references.
-- **R2** stores uploaded or Author-created Media bytes.
-- **Repository assets** under `public/assets` remain deployable content and carry `.asset.json` sidecars that preserve stable identity independently of file path.
+The default installation can use:
 
-Game systems reference only the stable Media asset ID. Moving an asset between hosted content and a repository copy therefore does not require rewriting narrative, inventory, cue, or effect references.
+- **D1** — project structure, Media metadata, and textual/vector asset content such as SVG;
+- **repository assets** — files under `public/assets` with stable identity sidecars;
+- **browser storage** — temporary cache, player-local state, and queued edits only.
 
-## 3. Configure Author access and deploy the Worker once locally
+A separate blob/object store is **optional**. It is useful for uploaded binary files such as PNG, WebP, WAV, MP3, and similar larger objects, but it is not required to deploy, play, author text content, or create/save SVG vectors.
 
-Configure the Worker secret:
+The included Cloudflare adapter supports R2 when desired. To opt in, set a bucket during setup or add this binding to `wrangler.jsonc`:
+
+```json
+{
+  "r2_buckets": [
+    {
+      "binding": "ASSET_CONTENT",
+      "bucket_name": "your-game-assets"
+    }
+  ]
+}
+```
+
+and create the bucket:
+
+```sh
+npx wrangler r2 bucket create YOUR_BUCKET_NAME
+```
+
+If `ASSET_CONTENT` is absent, binary upload attempts report that optional blob storage is not configured; the rest of the engine continues to operate.
+
+## 3. Configure Author access and deploy the Worker
+
+Configure:
 
 ```text
 ADMIN_KEY
 ```
 
-Then deploy using the local installation config:
+Then deploy:
 
 ```sh
 npx wrangler deploy
 ```
 
-This first deployment gives the Worker its D1 and R2 bindings. On first use, the Worker initializes its own schema through the canonical project schema/migration owner. No manual D1 table editing is required.
+On first use, the Worker initializes its schema through the canonical migration owner. No manual D1 table editing is required.
 
-The first local deploy is also useful for later GitHub Actions deployment: the workflow can recover the D1 database ID from the already-deployed Worker's version metadata instead of storing that UUID in Git.
+The first hosted deployment also lets GitHub Actions recover the D1 database ID from the deployed Worker later, so the database UUID does not need to be committed to the reusable engine repository.
 
 ## 4. Point the client at the Worker
 
-Once the Worker URL is known, set:
+Set:
 
 ```text
 VITE_API_ORIGIN
 ```
 
-For the included GitHub Pages deployment workflow, use the repository variable:
+For GitHub Pages, use repository variable:
 
 ```text
 PRE_PROGRAMMED_API_ORIGIN
@@ -119,7 +137,7 @@ The Pages base path is derived from the repository name automatically. `VITE_BAS
 
 ## 5. Optional GitHub production deployment
 
-The included production workflow expects:
+Required GitHub configuration:
 
 ```text
 Secrets:
@@ -131,75 +149,88 @@ Variable:
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
-The deployment workflow does **not** require a committed `wrangler.jsonc`. It creates a temporary `.wrangler.deploy.jsonc` from `wrangler.template.jsonc` for each production deployment.
-
-By default it derives the Worker name from the GitHub repository name, the D1 name as `<worker-name>-db`, and the Media bucket as `<worker-name>-assets`. If your installation uses different names, set these repository variables:
+Optional installation overrides:
 
 ```text
 PRE_PROGRAMMED_WORKER_NAME
 PRE_PROGRAMMED_D1_DATABASE_NAME
-PRE_PROGRAMMED_ASSET_BUCKET_NAME
+PRE_PROGRAMMED_D1_DATABASE_ID
+PRE_PROGRAMMED_ASSET_BUCKET_NAME   # opt in to R2 only
 ```
+
+The workflow builds the client, prepares a temporary Wrangler config, deploys the Worker, verifies D1/text-Media health and a project snapshot, then publishes Pages.
+
+When `PRE_PROGRAMMED_ASSET_BUCKET_NAME` is **unset**, the workflow does not create, require, or bind R2. When it is explicitly set, the included Cloudflare adapter verifies/creates that optional bucket and adds `ASSET_CONTENT` to the Worker.
 
 For the D1 UUID, the workflow supports two paths:
 
-1. If the Worker has already been deployed with its D1 binding, the workflow reads that Worker's version metadata and recovers the `DB` binding ID automatically.
-2. For an installation that must deploy through Actions before a Worker version exists, set:
+1. recover the existing Worker's `DB` binding automatically; or
+2. use `PRE_PROGRAMMED_D1_DATABASE_ID` for a first Actions-only deployment.
 
-```text
-PRE_PROGRAMMED_D1_DATABASE_ID
+## 6. Run locally without Cloudflare object storage
+
+```sh
+npm run local
 ```
 
-The UUID is then installation configuration supplied by GitHub rather than reusable repository source.
+The checked-in local runtime intentionally uses D1 with **no R2 binding**. This proves that optional object storage is not part of the core engine contract.
 
-Before Worker deployment, the workflow verifies that the configured R2 Media bucket exists. If it is genuinely absent, it creates the bucket. It does not suppress authentication or API errors. Consequently, the Cloudflare API token must have both the Worker permissions needed for deployment/version inspection **and Workers R2 Storage Write permission** when the workflow may need to create the Media bucket.
+For persistence acceptance across a local restart:
 
-Production deployment on `main` is intentionally the only automatic workflow. Prototype branch work does not continuously run CI.
+```sh
+npm run verify:local
+```
 
-## 6. Verify the installed engine
+That acceptance creates and retrieves SVG content through D1, restarts the local Worker, and confirms both the project metadata and SVG survive without R2.
 
-A successful installation should satisfy these product checks:
+Useful checks:
 
-1. `/api/health` reports a healthy D1-backed Worker, `mediaPersistence: "r2"`, and Author access configured.
-2. `/api/project/snapshot` returns an initialized project.
-3. The client loads that project.
+```sh
+npm run build
+npm run typecheck
+npm test
+npm run verify
+```
+
+## 7. Verify a hosted installation
+
+A base installation should satisfy:
+
+1. `/api/health` reports healthy D1 persistence and `mediaTextPersistence: "d1"`.
+2. `mediaBlobPersistence` may legitimately be `"unconfigured"`.
+3. `/api/project/snapshot` returns an initialized project.
 4. Author login succeeds.
-5. An Author edit can be saved and survives reload.
-6. An uploaded/created Media asset can be fetched and survives Worker restart/redeploy.
+5. Author edits survive reload.
+6. An Author-created SVG can be saved, fetched, and exported without R2.
+7. If a blob provider is configured, binary file uploads survive redeploy as well.
 
-`npm run verify:local` exercises persistent D1 project state and R2 Media content together across a local runtime restart. The production deployment workflow separately verifies the hosted Worker health and a real project-snapshot read after deployment.
+## Portable Media architecture
+
+A Media asset stores stable identity/metadata and an immutable `contentKey`; it does **not** store a D1 URL, R2 URL, repository path, or browser-local URL.
+
+The content resolver decides where a key lives:
+
+- D1 text storage for supported textual Media such as SVG;
+- optional blob storage for binary hosted content;
+- repository content when an asset has a source-controlled copy.
+
+This means adding, removing, or replacing a storage provider does not require rewriting narrative cues, inventory references, effects, player saves, or other game data.
+
+D1-backed text content is also included automatically in the canonical database backup because it is ordinary relational installation data. Optional blob-provider objects are included separately when that provider is configured.
 
 ## Media migration note
 
-The Media foundation no longer stores base64/data-URL bytes inside D1. Migration 20 preserves legacy Media asset identity and metadata but intentionally removes the old `data_url` payload. Any previously embedded uploaded assets therefore need a **one-time re-upload** after this migration.
+Migration 20 removed the old `data_url`/base64 prototype payload from the metadata table. Migration 21 adds a **separate textual content table** for stable, immutable text assets such as SVG. This does not restore the old data-URL model: references still use asset ID + `contentKey`, and content storage remains behind the platform adapter.
 
-This is a deliberate foundation replacement rather than a permanent compatibility layer: future references remain stable because content location is no longer encoded into those references.
+## What belongs to an installation
 
-## What belongs to the installation
+Installation state includes:
 
-These are installation state, not engine behavior:
-
-- Worker name;
-- Cloudflare account credentials;
-- D1 database name and ID;
-- R2 Media bucket name and contents;
+- Worker/runtime identity;
+- database configuration;
 - Author key;
 - hosted API origin;
-- GitHub Pages repository/base path.
+- Pages/base-path configuration;
+- optional blob-provider configuration, if chosen.
 
-The local `wrangler.jsonc`, `.env.local`, and generated deployment Wrangler config are therefore not canonical engine source.
-
-## What remains to prove for a new installation
-
-A literal clean-install acceptance run is still the final proof for any new clone/fork:
-
-1. create a fresh fork or clone;
-2. run setup;
-3. create its D1 database and R2 Media bucket;
-4. deploy its Worker;
-5. load the client;
-6. enter Author mode;
-7. save an edit and a Media asset;
-8. reload and confirm both persisted.
-
-After setup, nodes, interactions, characters, locations, variables, items, conditions, effects, commands, Media assets, and other ordinary game systems should be authored through the engine rather than by editing application source.
+Those details are adapters/configuration, not game-engine behavior. A future developer should be able to replace the Cloudflare persistence adapters without changing feature modules or authored project references.
