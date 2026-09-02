@@ -11,14 +11,17 @@ The engine is intentionally modular and still in rapid prototyping. Experimental
 
 ## The short version
 
-| Thing | Where it lives |
+| Thing | Default location |
 | --- | --- |
-| Engine code, UI, fonts, and repository-managed Media | GitHub repository |
-| Mutable project structure and Media metadata | Cloudflare D1 |
-| Uploaded/Author-created Media bytes | Cloudflare R2 |
-| Temporary cache, player autosave, and queued edits | Browser storage |
+| Engine code, UI, fonts, repository-managed Media | Git repository |
+| Mutable project structure and Media metadata | D1 through the configured project-persistence adapter |
+| Author-created SVG/vector text | D1 through the Media content adapter |
+| Uploaded binary Media | Optional blob provider such as R2, or repository Media |
+| Temporary cache, player autosave, queued edits | Browser storage |
 
-Normal authoring happens **inside the live game**.
+**R2 is optional.** The engine, Author mode, SVG authoring, player runtime, and production deployment do not require an R2 account or bucket.
+
+Normal authoring happens **inside the running game**.
 
 ## Author mode
 
@@ -34,11 +37,11 @@ The same running game gains Author controls. The ordinary loop is:
 
 1. Stand at the part of the game you want to work on.
 2. Open or create the relevant node, User Input, response, item, character, state, Media asset, or other resource.
-3. Save.
-4. Return to play or preview.
+3. Save that Author task.
+4. Continue editing, preview, or use the master Author exit to return to play.
 5. Exercise the authored behavior through the real runtime.
 
-Desktop and mobile use the same Author features and save/runtime code. Responsive layout may change how those controls are presented, but not which capabilities exist.
+Desktop and mobile use the same Author features, task system, save paths, and runtime. Responsive layout changes presentation rather than capability.
 
 ## Core game concepts
 
@@ -46,31 +49,19 @@ Desktop and mobile use the same Author features and save/runtime code. Responsiv
 
 A node is a playable narrative state: the text the player is currently at. A node can have many User Inputs that stay at that node, transition elsewhere, or cause effects without moving.
 
-### User Input
+### User Input and response
 
-A User Input is something the player can type at the current node, for example:
-
-```text
-cry
-look around
-open the door
-```
-
-Optional alternate phrasings can point to the same interaction rather than duplicating behavior.
-
-### Outcome / response
-
-A User Input can have one or more ordered outcomes. An outcome can return response text, select a speaker, run effects, stay in place, or transition to another node. Conditions decide which outcome applies.
+A User Input is text the player can type at the current node. Each input can have ordered outcomes. An outcome can return response text, select a speaker, apply effects, stay in place, or transition to another node. Conditions decide which outcome applies.
 
 ### Effects
 
 Effects are feature-contributed runtime actions. Current examples include state changes, inventory changes, interaction visibility, notifications, synth playback, recorded audio, artwork presentation, and transitions.
 
-Feature code owns the meaning of its effect. Shared rule/runtime code composes those contributions rather than hard-wiring every feature combination.
+Feature code owns the meaning of its effect. Shared rule/runtime code composes those contributions rather than hard-wiring feature combinations.
 
 ## Inline text-performance notation
 
-Node text and normal response text can contain terse slash notation. The notation is compiled into the same performance model used by Author tooling and is removed before the player sees the text.
+Node text and response text can contain terse slash notation. The notation compiles into the same performance model used by Author tooling and is removed before the player sees the text.
 
 ```text
 /p          pause 350 ms
@@ -84,31 +75,45 @@ Node text and normal response text can contain terse slash notation. The notatio
 //          literal slash
 ```
 
-Braces define the affected span explicitly. The local player speed multiplier scales typing speed but does not rewrite authored timing.
-
 ## Media
 
-Media is a complete feature-owned vertical slice. Game systems reference **stable Media asset IDs**; they do not store repository paths, data URLs, R2 object URLs, or browser-local file locations.
+Media is a feature-owned vertical slice. Game systems reference **stable Media asset IDs**; they do not store repository paths, D1 URLs, R2 URLs, data URLs, or browser-local object URLs.
 
-A Media asset contains project-level identity and behavior such as:
+A Media asset contains project identity and behavior such as:
 
 - stable `id`;
 - name and kind (`image` or `audio`);
 - MIME type;
-- immutable hosted `contentKey`, or `null` when the repository copy is active;
+- immutable `contentKey`, or `null` when the repository copy is active;
 - byte length and intrinsic dimensions when applicable;
 - default player presentation (`inline` or `overlay`);
 - authoring mode (`file` or `grid32`).
 
-Content location is resolved behind the Media platform boundary at runtime.
+The platform content adapter resolves where a `contentKey` lives.
 
-### Uploaded and Author-created Media
+### Storage-neutral content
 
-File imports and 32×32 authored vectors upload their bytes to the installation's `ASSET_CONTENT` R2 bucket. D1 stores only metadata and the immutable `contentKey`.
+The current default adapters resolve content through three independent capabilities:
 
-Replacing content creates a new content key rather than overwriting the previous object. That allows revision Undo to restore a prior Media version simply by restoring its prior metadata reference.
+1. **D1 text content** — textual/vector Media such as SVG.
+2. **Repository Media** — source-controlled files under `public/assets`.
+3. **Optional blob content** — larger/binary uploads, with Cloudflare R2 supplied as one adapter when configured.
 
-Files are currently limited to 20 MB each.
+The stable project model does not distinguish those locations. Moving content between providers therefore does not require rewriting narrative cues, inventory references, effects, player saves, or other authored data.
+
+### 32×32 vector authoring
+
+The Media tool includes a 32×32 drawing editor with pencil, eraser, fill, color, Undo/Redo, and clear controls.
+
+The 32×32 grid is an **authoring coordinate system**, not a player pixel-size rule. It serializes to SVG with:
+
+```text
+viewBox="0 0 32 32"
+```
+
+and no fixed rendered width or height. Player presentation can therefore scale it cleanly as vector artwork.
+
+Author-created SVG text is saved in the existing D1-backed database system. It does not require R2.
 
 ### Repository Media
 
@@ -127,93 +132,62 @@ public/assets/
 └── audio/
 ```
 
-Supported build-detected formats:
+Supported build-detected formats include PNG, WebP, GIF, SVG, MP3, WAV, and OGG.
 
-```text
-Images: PNG, WebP, GIF, SVG
-Audio:  MP3, WAV, OGG
-```
-
-Every shipped Media file also has an identity sidecar beside it:
+Every shipped Media file has an identity sidecar beside it, for example:
 
 ```text
 openeye.svg
 openeye.svg.asset.json
 ```
 
-The sidecar carries the stable asset ID and presentation metadata. The build fails if a repository Media file lacks identity metadata or duplicates another asset ID.
+The sidecar carries stable asset identity/presentation metadata. Moving an exported hosted asset into the repository does not require changing references elsewhere in the game.
 
-This separation matters: moving an exported hosted asset into `public/assets` does **not** require changing every narrative cue, item, effect, or other reference that uses it.
+### Optional binary uploads
 
-The generated asset manifest is build output and is recreated automatically.
+Binary file uploads need a blob/content provider if they are not promoted to repository Media. The bundled Cloudflare adapter supports R2, but R2 is deliberately **not part of the engine contract**.
+
+If no blob provider is configured:
+
+- text/game authoring continues normally;
+- SVG/vector authoring continues normally through D1;
+- repository images/audio continue normally;
+- binary upload attempts report that optional blob storage is unavailable.
+
+A future installation can provide another blob adapter without changing feature modules or the `MediaAsset` model.
 
 ### Import / export
 
-The Author Media tool can import normal audio/image files and export an asset together with its `.asset.json` identity sidecar. Exporting an asset is therefore a supported promotion path from hosted content into repository-managed content without minting a new identity.
-
-If an asset has both hosted content and a repository copy, its metadata selects which content is active. Other game modules still reference only the same asset ID.
-
-### 32×32 vector authoring
-
-The Media tool also includes a 32×32 drawing editor with pencil, eraser, fill, color, Undo/Redo, and clear controls.
-
-The 32×32 grid is an **authoring coordinate system**, not a player pixel-size rule. It serializes to SVG with:
-
-```text
-viewBox="0 0 32 32"
-```
-
-and no fixed rendered width or height. The player can therefore scale it as vector artwork rather than stretching a fixed 32-pixel bitmap.
+The Author Media tool can export an asset together with its `.asset.json` identity sidecar. This provides a supported promotion path from hosted content into repository-managed content while preserving the same asset ID.
 
 ### Player presentation
 
 Image presentation is explicit metadata, independent of intrinsic dimensions:
 
-- `inline` places the image in the terminal transcript and keeps its stable asset ID in player autosave/history.
+- `inline` places the image in the terminal transcript;
 - `overlay` opens the Media-owned large viewer.
 
-Inline images can be opened into the same viewer. The viewer supports zoom/reset/close on desktop and touch layouts through the same implementation.
-
-Player autosave stores `artAssetId`, never the resolved asset URL. If content moves between R2 and the repository, resumed player sessions resolve the current content through the same stable identity.
+Player autosave stores stable Media IDs rather than resolved URLs.
 
 ### Audio
 
-Recorded audio files use the Media asset system described above. Synth sounds are separate structured game data generated by the browser audio runtime; they remain a Media feature resource but do not need R2 bytes.
+Recorded audio uses the same Media identity/content boundary. Synth sounds are structured project data generated by the browser audio runtime and do not require blob storage.
 
-## Inventory and status
+## Inventory, state, people, and commands
 
-Typing either of these opens the player inventory:
+Inventory items can carry Media references, quantities, stacking, equipment rules, operations, and authored operation responses/effects.
 
-```text
-inventory
-inv
-```
+Variables and computed values support normal state changes, time-based change, conditions, status exposure, and target operations. Characters and locations are reusable world entities.
 
-Item definitions can have a name, description, Media image reference, grid dimensions, stacking/default quantity, operation capabilities, equipment compatibility, state, and authored operation responses/effects.
+Player command grammar can map reusable wording to feature-owned target operations without moving operation behavior into the Commands feature.
 
-Variables and computed values can also be exposed in status and can independently support authored operations.
+## Player saves and Author history
 
-## Characters, locations, structure, and state
+Player progress is stored locally in the browser. Current node, state, inventory, transcript/presentation data, and stable Media references can resume through Continue/New Game behavior.
 
-Characters and locations are reusable world entities. Variables and computed values are reusable state definitions. Structure provides an author-side view of graph relationships without requiring authors to manage a giant canvas before writing ordinary interactions.
+Durable Author changes create project revisions. Media revisions retain prior immutable `contentKey` references, while the content layer preserves versioned content independently of the current asset metadata.
 
-Feature-specific behavior remains with its owning module; shared navigation and operation contracts compose those features.
-
-## Locations, history, player saves, and backup
-
-### Author locations
-
-Author bookmarks capture useful testing positions so an author can return to a particular project/play state.
-
-### History / Undo
-
-Durable Author changes create revisions. Revision payloads store the prior project snapshot. Media revisions therefore retain prior `contentKey` references; immutable R2 objects remain available so Undo can restore prior Media content as well as metadata.
-
-### Player autosave
-
-Player progress is stored locally in the browser. Presentation data uses stable Media IDs rather than storage URLs. Older v1 saves are upgraded to the current format; obsolete URL-only artwork lines are discarded without discarding otherwise compatible play progress.
-
-### Backup
+## Backup
 
 In Author mode, use the Backup control or type:
 
@@ -227,26 +201,11 @@ or:
 /backup
 ```
 
-The canonical backup contains both:
-
-- D1 relational project state;
-- hosted R2 Media objects.
-
-Repository Media is already part of source control and therefore does not need to be duplicated as R2 content merely for backup.
-
-## Saving and browser behavior
-
-Author edits update the local UI optimistically and are persisted through the project persistence adapter. If the network is unavailable, supported mutations can queue locally for later synchronization. Revision conflicts synchronize to the newer server project instead of silently overwriting it.
-
-D1 is the durable mutable project/metadata store. R2 is the durable hosted Media-content store. Browser storage is for responsiveness, player-local state, and temporary resilience—not as the canonical Media database.
-
-## Display settings
-
-Player display/playback settings are browser-local because they are preferences rather than game content. Current settings include text size, text-speed multiplier, and reduced motion.
+The canonical backup always includes the D1 database. Because D1-backed SVG content is ordinary database data, it is included automatically. If an optional blob provider is configured, its hosted Media objects are also included. Repository Media remains source-controlled and does not need to be duplicated into hosted storage just for backup.
 
 ## Architecture
 
-The architecture rule is:
+The core rule is:
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
 
@@ -255,20 +214,19 @@ Important paths:
 ```text
 public/assets/             repository-managed Media + identity sidecars
 src/App.tsx                application/session composition shell
-src/features/              feature-owned vertical slices and Author implementations
+src/features/              feature-owned vertical slices
 src/features/media/        Media model, rules, authoring, player presentation
 src/engine/                generic contracts and composition roots
-src/author/                shared Author navigation/workspace composition
+src/author/                shared Author task/UI composition
 src/platform/              environment/platform adapters
 worker/features/           feature-owned D1 persistence and validation
-worker/mediaContent.ts     R2 Media-content boundary
+worker/mediaContent.ts     storage-neutral hosted Media content boundary
 worker/db/                 schema composition + historical migrations
-worker/projectStore.ts     revision/concurrency/bookmark orchestration
 scripts/                   setup/build/deployment helpers
 .github/workflows/         production deploy + opt-in verification
 ```
 
-Read `docs/feature-boundaries.md` before substantial engine changes. `docs/modular-engine-roadmap.md` records remaining modularity work, and `docs/installation.md` is the supported fork/clone setup path.
+Read `docs/feature-boundaries.md` before substantial engine changes. `docs/installation.md` is the supported fork/clone setup path.
 
 ## Running locally
 
@@ -277,13 +235,15 @@ npm install
 npm run local
 ```
 
-`npm run local` starts the client plus isolated local Worker storage, including local D1 and R2 bindings.
+The checked-in local runtime deliberately uses local D1 **without an R2 binding**. This is the default portability proof, not a reduced mode.
 
-For a real persistence acceptance across a local restart:
+For persistence acceptance across a local restart:
 
 ```sh
 npm run verify:local
 ```
+
+That check persists project data and SVG content through D1, restarts the runtime, and verifies both survive with no object-storage service.
 
 Useful targeted commands:
 
@@ -292,26 +252,22 @@ npm run build
 npm run build:pages
 npm run typecheck
 npm test
-```
-
-For an explicit full checkpoint:
-
-```sh
 npm run verify
 ```
 
-Full verification is intentionally not an automatic tax on every prototype branch update.
+Full verification is intentionally an explicit checkpoint during rapid prototyping rather than an automatic tax on every branch update.
 
 ## Installation and production deployment
 
-A new installation owns its own:
+A base installation needs:
 
-- Worker identity;
-- D1 database;
-- R2 Media bucket;
-- Author key;
-- API origin;
-- Pages/base-path configuration.
+- a runtime/Worker identity;
+- a project database;
+- an Author key;
+- an API origin;
+- client hosting/base-path configuration.
+
+An R2/blob bucket is optional.
 
 Use:
 
@@ -319,14 +275,12 @@ Use:
 npm run setup:installation
 ```
 
-for the supported setup journey. See `docs/installation.md` for fork/direct-clone safety and Cloudflare/GitHub configuration.
+for the supported setup journey. See `docs/installation.md` for fork/direct-clone safety and platform configuration.
 
-Production has one automatic deployment owner: GitHub Actions. A `main` deployment builds the Pages client, ensures the configured Media bucket exists, prepares the Worker bindings, deploys the Worker, verifies D1 + R2 health and a project snapshot, and then publishes Pages.
-
-The Cloudflare Git-build integration should remain disconnected; Cloudflare is the runtime/storage platform, not a second source-controlled deployment pipeline.
+For the included Cloudflare adapter, D1 remains the current hosted project-database implementation. That is an adapter choice, not permission for feature modules to depend directly on Cloudflare APIs. A future developer should be able to replace persistence adapters without changing authored game references or feature logic.
 
 ## Media migration from the prototype
 
-Migration 20 intentionally removes the old embedded `data_url` bytes from D1 while retaining Media identity and metadata. Previously embedded files therefore require a **one-time re-upload** after migration.
+Migration 20 removed the old `data_url`/base64 payload from the Media metadata table. Migration 21 adds a separate immutable **text-content table** for SVG and similar supported text Media.
 
-This is deliberate: the old base64-in-D1 implementation is not kept alive as a second Media system. Durable references now point to stable asset identity while the Media feature resolves content location behind that contract.
+This does not restore the old embedded-data-URL architecture. Asset identity still points to an immutable `contentKey`; the content adapter decides whether that key resolves from D1 text storage, an optional blob store, or a repository copy.

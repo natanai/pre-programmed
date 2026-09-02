@@ -119,11 +119,22 @@ Not allowed:
 
 The desktop left suite must remain a presentation of the same Author workspaces used on mobile.
 
-## 8. Instance configuration is not engine behavior
+## 8. Instance configuration and providers are not engine behavior
 
-A fork's Worker URL, D1 database ID/name, repository Pages path, credentials, and Author key belong to installation/setup configuration.
+A fork's Worker URL, database ID/name, repository Pages path, credentials, Author key, and optional storage-provider configuration belong to installation/setup adapters.
 
 Do not hard-code a new installation's values into feature/runtime behavior.
+
+A provider-specific service may implement a capability, but a feature must not make an optional provider a prerequisite for the entire engine. In particular:
+
+- stable project data stores provider-neutral identities/keys rather than provider URLs;
+- platform adapters decide how those keys resolve;
+- absence of an optional provider disables only the capability that truly requires it;
+- local/default installations must remain useful without optional paid services;
+- deployment must not fail merely because an optional provider is absent;
+- adding or replacing a provider must not require mobile/desktop forks or feature-specific compatibility branches.
+
+For Media, D1-backed textual content, repository assets, and an optional blob provider all satisfy parts of one content boundary. R2 is one possible blob adapter, not a Media-domain concept.
 
 Current hard-coded production fallbacks are transitional compatibility and should shrink as bootstrap/setup work is completed.
 

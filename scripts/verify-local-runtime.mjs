@@ -6,7 +6,7 @@ const dataDirectory = ".wrangler/local-verification";
 const origin = "http://127.0.0.1:5173";
 const acceptanceContentKey = "local_media_acceptance_01";
 const acceptanceAssetId = "local-media-acceptance";
-const acceptanceContent = "pre-programmed local media acceptance";
+const acceptanceContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#fff"/></svg>';
 let runtime = null;
 
 function sleep(ms) {
@@ -91,18 +91,19 @@ async function uploadAcceptanceMedia(token) {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "audio/wav",
+      "Content-Type": "image/svg+xml",
     },
     body: acceptanceContent,
   });
-  if (!response.ok) throw new Error(`Local media upload failed (${response.status}): ${await response.text()}`);
+  if (!response.ok) throw new Error(`Local SVG upload failed (${response.status}): ${await response.text()}`);
 }
 
 async function readAcceptanceMedia() {
   const response = await fetch(`${origin}/api/media/content/${acceptanceContentKey}`, { cache: "no-store" });
-  if (!response.ok) throw new Error(`Local media read failed (${response.status}): ${await response.text()}`);
+  if (!response.ok) throw new Error(`Local SVG read failed (${response.status}): ${await response.text()}`);
   const content = await response.text();
-  if (content !== acceptanceContent) throw new Error("Local media content changed unexpectedly.");
+  if (content !== acceptanceContent) throw new Error("Local SVG content changed unexpectedly.");
+  if (!response.headers.get("content-type")?.startsWith("image/svg+xml")) throw new Error("Local SVG content type changed unexpectedly.");
 }
 
 try {
@@ -112,7 +113,8 @@ try {
   await waitForJson("/api/health", (health) =>
     health?.ok === true
     && health?.persistence === "d1"
-    && health?.mediaPersistence === "r2"
+    && health?.mediaTextPersistence === "d1"
+    && health?.mediaBlobPersistence === "unconfigured"
     && health?.authorConfigured === true);
   const initial = await waitForJson("/api/project/snapshot", (snapshot) =>
     Array.isArray(snapshot?.nodes)
@@ -127,24 +129,26 @@ try {
     type: "mediaAsset.upsert",
     asset: {
       id: acceptanceAssetId,
-      name: "local-acceptance.wav",
-      kind: "audio",
-      mimeType: "audio/wav",
+      name: "local-acceptance.svg",
+      kind: "image",
+      mimeType: "image/svg+xml",
       contentKey: acceptanceContentKey,
       byteLength: new TextEncoder().encode(acceptanceContent).byteLength,
-      intrinsicWidth: null,
-      intrinsicHeight: null,
-      defaultPresentation: "overlay",
-      authoringMode: "file",
+      intrinsicWidth: 32,
+      intrinsicHeight: 32,
+      defaultPresentation: "inline",
+      authoringMode: "grid32",
     },
-  }], "Local R2 media persistence acceptance");
+  }], "Local D1 SVG media persistence acceptance");
   const saved = await mutate(withMedia, token, [
     { type: "project.settings", settings: withMedia.settings },
   ], "Local D1 persistence acceptance");
   await stopRuntime();
 
   startRuntime();
-  await waitForJson("/api/health", (health) => health?.mediaPersistence === "r2");
+  await waitForJson("/api/health", (health) =>
+    health?.mediaTextPersistence === "d1"
+    && health?.mediaBlobPersistence === "unconfigured");
   const reopened = await waitForJson("/api/project/snapshot", (snapshot) =>
     Array.isArray(snapshot?.nodes)
     && snapshot.revision === saved.revision
@@ -152,7 +156,7 @@ try {
   if (reopened.startNodeId !== saved.startNodeId) throw new Error("Reopened local project changed identity unexpectedly.");
   await readAcceptanceMedia();
 
-  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with persistent D1 project state and R2 media content.`);
+  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with persistent D1 project state and D1-backed SVG content, without R2.`);
 } finally {
   await stopRuntime();
   await rm(dataDirectory, { recursive: true, force: true });

@@ -11,7 +11,12 @@ function hostedContentUrl(contentKey: string) {
 }
 
 async function responseError(response: Response, fallback: string) {
-  const detail = await response.text();
+  const raw = await response.text();
+  let detail = raw;
+  try {
+    const parsed = JSON.parse(raw) as { error?: unknown };
+    if (typeof parsed.error === "string") detail = parsed.error;
+  } catch {}
   throw new ApiError(response.status, detail || fallback);
 }
 
@@ -27,8 +32,10 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 /**
- * Browser content port. Repository and hosted objects intentionally collapse to
- * the same URL-producing boundary; no caller stores either location in project data.
+ * Browser content port. Repository files and API-hosted content intentionally
+ * collapse to the same URL-producing boundary. The API may resolve a contentKey
+ * from D1 text storage, an optional blob adapter, or another future provider;
+ * callers never persist those locations into project data.
  */
 export const configuredAssetContentStore = {
   urlFor(asset: Pick<MediaAsset, "id" | "contentKey">) {

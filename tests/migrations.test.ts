@@ -46,7 +46,7 @@ describe("D1 migration scripts", () => {
     } finally { database.close(); }
   });
 
-  it("composes feature-owned migrations and replaces the embedded-media prototype schema", () => {
+  it("composes feature-owned migrations and stores textual media separately from metadata", () => {
     const database = new DatabaseSync(":memory:");
     try {
       const migrations = [...MIGRATION_SCRIPTS, ...WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.migrations ?? [])]
@@ -56,6 +56,7 @@ describe("D1 migration scripts", () => {
       const bodyColumns = database.prepare("PRAGMA table_info(inventory_body_backgrounds)").all() as Array<{ name: string }>;
       const outcomeColumns = database.prepare("PRAGMA table_info(interaction_outcomes)").all() as Array<{ name: string }>;
       const mediaColumns = database.prepare("PRAGMA table_info(media_assets)").all() as Array<{ name: string }>;
+      const mediaTextColumns = database.prepare("PRAGMA table_info(media_text_content)").all() as Array<{ name: string }>;
       const version = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
       expect(itemColumns.map((column) => column.name)).toContain("equipped_storage");
       expect(itemColumns.map((column) => column.name)).toContain("equip_on_give_slot_key");
@@ -67,7 +68,10 @@ describe("D1 migration scripts", () => {
         "id", "name", "kind", "mime_type", "content_key", "byte_length", "intrinsic_width", "intrinsic_height", "default_presentation", "authoring_mode",
       ]));
       expect(mediaColumns.map((column) => column.name)).not.toContain("data_url");
-      expect(version.schema_version).toBeGreaterThanOrEqual(20);
+      expect(mediaTextColumns.map((column) => column.name)).toEqual(expect.arrayContaining([
+        "content_key", "mime_type", "content_text", "byte_length", "created_at",
+      ]));
+      expect(version.schema_version).toBeGreaterThanOrEqual(21);
     } finally { database.close(); }
   });
 });

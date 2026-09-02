@@ -79,6 +79,21 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 20 WHERE id = 1;
       `,
     },
+    {
+      id: 21,
+      name: "media-text-content-store",
+      sql: `
+        CREATE TABLE IF NOT EXISTS media_text_content (
+          content_key TEXT PRIMARY KEY,
+          mime_type TEXT NOT NULL,
+          content_text TEXT NOT NULL,
+          byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        UPDATE project_meta SET schema_version = 21 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
