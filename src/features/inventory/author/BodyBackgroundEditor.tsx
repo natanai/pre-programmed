@@ -196,6 +196,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
           <option value="">none</option>
           {ASSET_MANIFEST.filter((asset) => asset.type === "image" && asset.runtimePath).map((asset) => <option value={asset.runtimePath!} key={asset.path}>{asset.path.replace(/^public\/assets\//, "")}</option>)}
         </select></label>
+        <small className="field-help">Canvas is 3:4 portrait. A 3:4 image aligns cleanly with slots; other aspect ratios are contained and may leave empty space.</small>
         <div
           ref={canvasRef}
           className={`body-type-layout-editor${draft.assetPath ? " has-background" : ""}`}
