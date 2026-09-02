@@ -1,3 +1,4 @@
+import type { ChangeEvent } from "react";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -20,7 +21,7 @@ function AuthorUiNodeView({ node }: { node: AuthorUiNode }) {
       autoFocus: node.autoFocus,
       enterKeyHint: node.enterKeyHint,
       inputMode: node.inputMode,
-      onChange: (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => node.onChange(event.target.value),
+      onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => node.onChange(event.target.value),
     };
     return <label className="author-ui-field" htmlFor={node.id}>
       <span className={labelClass(node.labelMode)}>{node.label}</span>
