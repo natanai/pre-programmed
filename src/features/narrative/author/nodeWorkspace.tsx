@@ -31,6 +31,10 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   } satisfies GameNode;
 }
 
+function routeData(route: AuthorTaskRoute) {
+  return route.type === "feature" ? route.data : undefined;
+}
+
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   id: "narrative.node",
   matches(route) {
@@ -45,6 +49,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     return { node };
   },
   buildSpec({ draft, setDraft, context, route }) {
+    const data = routeData(route);
     const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
     const location = context.snapshot.entities.find((entity) => entity.id === draft.node.locationId)?.name ?? "No location";
     return {
@@ -60,7 +65,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             snapshot={context.snapshot}
             label="NODE TEXT"
             rows={7}
-            autoFocus={!route.data?.nodeId}
+            autoFocus={!data?.nodeId}
             onChange={(value) => setDraft((current) => ({
               ...current,
               node: { ...current.node, text: value.text, performance: value.performance },
@@ -104,15 +109,16 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     };
   },
   async save({ draft, context, route }) {
+    const data = routeData(route);
     const result = await context.persist(
       [{ type: "node.upsert", node: draft.node }],
-      `${route.data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
+      `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
     );
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
       accepted: true,
       draft,
-      completion: route.data?.resourceTask === "node" ? {
+      completion: data?.resourceTask === "node" ? {
         type: "resource",
         kind: "node",
         id: draft.node.id,
