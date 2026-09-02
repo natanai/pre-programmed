@@ -18,11 +18,46 @@ import "./mediaAuthor.css";
 
 type Tool = "pencil" | "eraser" | "fill";
 
-function coordinates(svg: SVGSVGElement, clientX: number, clientY: number) {
-  const bounds = svg.getBoundingClientRect();
+const VECTOR_CANVAS_PIXELS = 1024;
+
+function coordinates(canvas: HTMLCanvasElement, clientX: number, clientY: number) {
+  const bounds = canvas.getBoundingClientRect();
   const x = Math.max(0, Math.min(VECTOR_GRID_SIZE - 1, Math.floor(((clientX - bounds.left) / bounds.width) * VECTOR_GRID_SIZE)));
   const y = Math.max(0, Math.min(VECTOR_GRID_SIZE - 1, Math.floor(((clientY - bounds.top) / bounds.height) * VECTOR_GRID_SIZE)));
   return { x, y };
+}
+
+function renderVectorCanvas(canvas: HTMLCanvasElement, cells: readonly VectorCell[]) {
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) return;
+
+  const cellPixels = canvas.width / VECTOR_GRID_SIZE;
+  context.imageSmoothingEnabled = false;
+  context.fillStyle = "#000000";
+  context.fillRect(0, 0, canvas.width, canvas.height);
+
+  cells.forEach((cell, index) => {
+    if (!cell) return;
+    context.fillStyle = cell;
+    context.fillRect(
+      (index % VECTOR_GRID_SIZE) * cellPixels,
+      Math.floor(index / VECTOR_GRID_SIZE) * cellPixels,
+      cellPixels,
+      cellPixels,
+    );
+  });
+
+  context.beginPath();
+  context.strokeStyle = "#333333";
+  context.lineWidth = 2;
+  for (let position = 1; position < VECTOR_GRID_SIZE; position += 1) {
+    const pixel = position * cellPixels;
+    context.moveTo(pixel, 0);
+    context.lineTo(pixel, canvas.height);
+    context.moveTo(0, pixel);
+    context.lineTo(canvas.width, pixel);
+  }
+  context.stroke();
 }
 
 export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCancel, setWorkspaceDirty }: {
@@ -45,12 +80,18 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(Boolean(initial));
   const [error, setError] = useState("");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const strokeStart = useRef<VectorCell[] | null>(null);
   const activePointer = useRef<number | null>(null);
   const dirty = JSON.stringify({ name, presentation, cells }) !== baseline;
   const usages = initial ? referencesTo(snapshot, "media-image", initial.id) : [];
   const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
   const repositoryAvailable = configuredAssetContentStore.hasRepository(assetId);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) renderVectorCanvas(canvas, cells);
+  }, [cells]);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -86,7 +127,8 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     setCells((current) => paintVectorCell(current, x, y, tool === "eraser" ? null : color));
   };
 
-  const beginStroke = (event: PointerEvent<SVGSVGElement>) => {
+  const beginStroke = (event: PointerEvent<HTMLCanvasElement>) => {
+    event.preventDefault();
     const point = coordinates(event.currentTarget, event.clientX, event.clientY);
     if (tool === "fill") {
       commit(floodFillVectorGrid(cells, point.x, point.y, color));
@@ -98,13 +140,14 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     drawAt(point.x, point.y);
   };
 
-  const continueStroke = (event: PointerEvent<SVGSVGElement>) => {
+  const continueStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     if (activePointer.current !== event.pointerId || tool === "fill") return;
+    event.preventDefault();
     const point = coordinates(event.currentTarget, event.clientX, event.clientY);
     drawAt(point.x, point.y);
   };
 
-  const endStroke = (event: PointerEvent<SVGSVGElement>) => {
+  const endStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     if (activePointer.current !== event.pointerId) return;
     activePointer.current = null;
     const before = strokeStart.current;
@@ -195,33 +238,27 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     catch (reason) { setError(reason instanceof Error ? reason.message : "Asset export failed."); }
   };
 
-  const gridLines = Array.from({ length: VECTOR_GRID_SIZE - 1 }, (_, index) => index + 1);
   const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
   const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
 
   return <section className="author-panel author-panel-frame vector-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>32×32 VECTOR · {name || "NEW"}</span></header>
     <div className="author-panel-body vector-editor-body">
-      <p className="field-help">The grid is only the authoring coordinate system. Saved SVG has a 0–32 viewBox and no fixed rendered width or height, so players can scale it cleanly.</p>
+      <p className="field-help">The grid is the editor's 32×32 coordinate surface. Saving serializes the same cell model to scalable SVG; the browser canvas is only the authoring viewport.</p>
       <div className="vector-editor-layout">
         <div className="vector-canvas-wrap">
-          <svg
+          <canvas
+            ref={canvasRef}
             className="vector-canvas"
-            viewBox={`0 0 ${VECTOR_GRID_SIZE} ${VECTOR_GRID_SIZE}`}
+            width={VECTOR_CANVAS_PIXELS}
+            height={VECTOR_CANVAS_PIXELS}
             role="img"
             aria-label="32 by 32 vector drawing grid"
             onPointerDown={beginStroke}
             onPointerMove={continueStroke}
             onPointerUp={endStroke}
             onPointerCancel={endStroke}
-          >
-            <rect width={VECTOR_GRID_SIZE} height={VECTOR_GRID_SIZE} className="vector-canvas-background" />
-            {cells.map((cell, index) => cell ? <rect key={index} x={index % VECTOR_GRID_SIZE} y={Math.floor(index / VECTOR_GRID_SIZE)} width="1" height="1" fill={cell} /> : null)}
-            <g className="vector-grid-lines" aria-hidden="true">
-              {gridLines.map((position) => <path key={`v${position}`} d={`M ${position} 0 V ${VECTOR_GRID_SIZE}`} />)}
-              {gridLines.map((position) => <path key={`h${position}`} d={`M 0 ${position} H ${VECTOR_GRID_SIZE}`} />)}
-            </g>
-          </svg>
+          />
         </div>
         <div className="vector-controls">
           <label>NAME <input value={name} onChange={(event) => setName(event.target.value)} /></label>
@@ -240,7 +277,7 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
               <option value="overlay">large art / overlay</option>
             </select>
           </label>
-          <small>{cells.filter(Boolean).length} / 1024 cells used · SVG remains vector at every player zoom level.</small>
+          <small>{cells.filter(Boolean).length} / 1024 cells used · saved output remains SVG at every player zoom level.</small>
         </div>
       </div>
       {loading ? <div className="author-message">LOADING VECTOR CONTENT...</div> : null}
