@@ -68,6 +68,7 @@ import { executeOperation } from "./features/operations/runtime";
 import { parseCommand, type ParserResult } from "./features/commands/parser";
 import { executeInteraction } from "./features/narrative/runtime";
 import { compileTextNotation } from "./features/narrative/textNotation";
+import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -145,7 +146,7 @@ export default function App() {
   const [playSessionReady, setPlaySessionReady] = useState(false);
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
-  const [eventArt, setEventArt] = useState("");
+  const [eventArtAssetId, setEventArtAssetId] = useState("");
   const terminalComposerRef = useRef<TerminalCommandComposerHandle>(null);
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
@@ -245,7 +246,7 @@ export default function App() {
     setCommand("");
     setParserResult(null);
     setNotifications([]);
-    setEventArt("");
+    setEventArtAssetId("");
     firedCueIds.current = new Set();
     completedPendingDestination.current = "";
     if (sameRevision) {
@@ -280,7 +281,7 @@ export default function App() {
     setCommand("");
     setParserResult(null);
     setNotifications([]);
-    setEventArt("");
+    setEventArtAssetId("");
     setActiveText("");
     setActiveNodeId(undefined);
     setActiveSpeakerId(null);
@@ -288,7 +289,7 @@ export default function App() {
     setPendingDestinationNodeId(null);
     firedCueIds.current = new Set();
     completedPendingDestination.current = "";
-    const node = snapshot.nodes.find((candidate) => candidate.id === snapshot.startNodeId);
+    const node = snapshot.nodes.find((node) => node.id === snapshot.startNodeId);
     if (node) showNode(snapshot, node, state);
     setPendingPlaySession(null);
     setPlaySessionReady(true);
@@ -379,7 +380,7 @@ export default function App() {
     if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorTasks.hasTasks) return;
     const timer = window.setTimeout(() => {
       void savePlaySession({
-        version: 1,
+        version: 2,
         schemaVersion: snapshot.schemaVersion,
         projectRevision: snapshot.revision,
         savedAt: new Date().toISOString(),
@@ -554,11 +555,11 @@ export default function App() {
           setNotifications((items) => [...items, { id, text, anchorLineId: anchoredLineId }]);
           window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
         },
-        appendInlineAsset(assetUrl) {
-          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artUrl: assetUrl }]);
+        appendInlineAsset(assetId) {
+          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artAssetId: assetId }]);
         },
-        showOverlayAsset(url) {
-          setEventArt(url);
+        showOverlayAsset(assetId) {
+          setEventArtAssetId(assetId);
         },
       },
     });
@@ -790,7 +791,8 @@ export default function App() {
       >
         <div className="terminal-history-content">
           {transcript.map((line) => {
-            if (line.artUrl) return <div className="story-line" key={line.id} aria-hidden="true"><img src={line.artUrl} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
+            const artAssetId = line.artAssetId;
+            if (artAssetId) return <div className="story-line" key={line.id}><MediaAssetThumbnail snapshot={snapshot} assetId={artAssetId} onOpen={() => setEventArtAssetId(artAssetId)} /></div>;
             if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); setPanel({ type: "feature", feature: "narrative", workspace: "node", data: { nodeId: line.nodeId! } }); }}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
@@ -887,7 +889,7 @@ export default function App() {
       setAuthorMessage("");
     }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
-    {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
+    {eventArtAssetId ? <MediaAssetViewer snapshot={snapshot} assetId={eventArtAssetId} onClose={() => setEventArtAssetId("")} /> : null}
     {pendingPlaySession ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
   </main>;
 }
