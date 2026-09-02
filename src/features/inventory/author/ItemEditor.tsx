@@ -99,7 +99,7 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
     <div className="author-panel-body item-editor-body">
       <section className="item-editor-section">
         <h3>IDENTITY</h3>
-        <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus /></label>
+        <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus={!initial} /></label>
         <label>DESCRIPTION <textarea rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
         <GeneratedKeyField source={draft.name} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
