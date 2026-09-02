@@ -1,4 +1,6 @@
+import type { AuthorWorkspaceContext } from "../../../author/features/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import type { GameNode } from "../model";
@@ -9,7 +11,7 @@ type NodeWorkspaceDraft = {
   node: GameNode;
 };
 
-function nodeForRoute(route: Parameters<typeof nodeWorkspace.matches>[0], context: Parameters<typeof nodeWorkspace.createDraft>[1]) {
+function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "narrative" || route.workspace !== "node") return undefined;
   const requestedNodeId = route.data?.nodeId;
   const existing = requestedNodeId
