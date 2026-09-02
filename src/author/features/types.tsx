@@ -26,6 +26,9 @@ export type AuthorPersist = (
   description: string,
 ) => Promise<AuthorPersistResult>;
 
+/** Return true only when the task's current draft was durably accepted. */
+export type AuthorWorkspaceSaveHandler = () => Promise<boolean>;
+
 /** Runtime presentation capabilities available to any feature workspace. */
 export type AuthorRuntimeSurface = {
   updateState: (state: PlayState) => void;
@@ -38,7 +41,7 @@ export type AuthorRuntimeSurface = {
     speakerId?: string | null;
     events?: EffectEvent[];
   }) => void;
-  /** Close Author work and run an authored player phrase through the real runtime. */
+  /** Run authored player language through the runtime. This must not be used as an implicit Author exit. */
   tryInput: (input: string) => void;
 };
 
@@ -52,6 +55,8 @@ export type AuthorWorkspaceContext = {
   completeTask: (result?: AuthorTaskResult) => void;
   leaveCurrentTask: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
+  /** Register the task's save boundary so the master Author exit can save every suspended draft deepest-first. */
+  registerWorkspaceSave: (handler: AuthorWorkspaceSaveHandler | null) => void;
   pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
   resources: AuthorResourceTools;
   /** Resolve feature-owned command-target authoring without coupling Commands to feature internals. */
@@ -117,6 +122,10 @@ export type AuthorFeatureManifest = {
   capabilities?: readonly AuthorCapability[];
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
-  /** Return a workspace for routes owned by this feature, otherwise null. */
+  /**
+   * Transitional escape hatch for prototype workspaces not yet migrated to the
+   * shared Author UI grammar. New features should not add unrestricted workspace
+   * markup; the architecture test keeps this legacy surface from expanding.
+   */
   renderWorkspace?: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };
