@@ -5,7 +5,7 @@ import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import type { AuthorSearchEntry } from "../search/types";
 import { describeAuthorTask, getAuthorCommandTargetAdapter, renderAuthorFeatureWorkspace } from "../features/registry";
 import { AuthorQuickFind } from "../search/AuthorQuickFind";
-import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext } from "../features/types";
+import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext, AuthorWorkspaceSaveHandler } from "../features/types";
 import { AuthorResourceProvider } from "../resources/context";
 import { buildAuthorResourceTools } from "../resources/runtime";
 import type { AuthorResourceTools } from "../resources/types";
@@ -28,6 +28,7 @@ type SharedTaskProps = {
   completeTask: (taskId: string, result?: AuthorTaskResult) => void;
   requestBack: (taskId?: string) => void;
   setTaskDirty: (taskId: string, dirty: boolean) => void;
+  registerTaskSave: (taskId: string, handler: AuthorWorkspaceSaveHandler | null) => void;
   pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
   runtime: AuthorRuntimeSurface;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
@@ -53,6 +54,7 @@ function AuthorTaskSurface({
   completeTask,
   requestBack,
   setTaskDirty,
+  registerTaskSave,
   pushTask,
   runtime,
   onSnapshot,
@@ -67,6 +69,10 @@ function AuthorTaskSurface({
     (dirty: boolean) => setTaskDirty(task.id, dirty),
     [setTaskDirty, task.id],
   );
+  const registerWorkspaceSave = useCallback(
+    (handler: AuthorWorkspaceSaveHandler | null) => registerTaskSave(task.id, handler),
+    [registerTaskSave, task.id],
+  );
 
   const context: AuthorWorkspaceContext = {
     taskId: task.id,
@@ -78,6 +84,7 @@ function AuthorTaskSurface({
     completeTask: completeCurrentTask,
     leaveCurrentTask,
     setWorkspaceDirty,
+    registerWorkspaceSave,
     pushTask,
     resources,
     resolveCommandTarget: getAuthorCommandTargetAdapter,
@@ -119,21 +126,27 @@ function scrollableWorkspaceElements(layer: HTMLElement) {
  *
  * Suspended tasks remain mounted under stable task ids, preserving local draft
  * state exactly as the author left it. Only the top task is visible. Each task
- * receives task-scoped completion and dirty ownership plus the same generic
- * resource runtime, so a suspended task cannot accidentally affect its child.
+ * receives task-scoped completion, dirty ownership, and a registered save
+ * boundary so the master close action can save the entire stack deepest-first.
  */
 export function AuthorWorkspaceHost({
   tasks,
   activeTaskId,
   leaveConfirmation,
-  onConfirmLeave,
+  savingAll,
+  saveAllError,
+  onSaveAllAndClose,
+  onDiscardAndLeave,
   onCancelLeave,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
   activeTaskId: string | null;
   leaveConfirmation: AuthorLeaveConfirmation | null;
-  onConfirmLeave: () => void;
+  savingAll: boolean;
+  saveAllError: string;
+  onSaveAllAndClose: () => void;
+  onDiscardAndLeave: () => void;
   onCancelLeave: () => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
@@ -243,15 +256,17 @@ export function AuthorWorkspaceHost({
             aria-labelledby="author-leave-title"
             aria-describedby="author-leave-copy"
           >
-            <h2 id="author-leave-title">UNSAVED CHANGES</h2>
+            <h2 id="author-leave-title">{leaveConfirmation.action === "close" ? "RETURN TO PLAYER" : "UNSAVED CHANGES"}</h2>
             <p id="author-leave-copy">
-              {leaveConfirmation.action === "close" && leaveConfirmation.dirtyCount > 1
-                ? `${leaveConfirmation.dirtyCount} Author tasks contain unsaved changes.`
+              {leaveConfirmation.action === "close"
+                ? `${leaveConfirmation.dirtyCount} Author ${leaveConfirmation.dirtyCount === 1 ? "task has" : "tasks have"} unsaved work. Save all work before returning to play, or discard it.`
                 : "This Author task contains unsaved changes."}
             </p>
+            {saveAllError ? <p className="author-leave-error" role="alert">{saveAllError}</p> : null}
             <div className="author-leave-actions">
-              <button type="button" autoFocus onClick={onCancelLeave}>[KEEP EDITING]</button>
-              <button type="button" onClick={onConfirmLeave}>[DISCARD CHANGES]</button>
+              <button type="button" autoFocus disabled={savingAll} onClick={onCancelLeave}>[KEEP EDITING]</button>
+              {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={onSaveAllAndClose}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
+              <button type="button" disabled={savingAll} onClick={onDiscardAndLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
             </div>
           </section>
         </div> : null}
