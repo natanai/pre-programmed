@@ -42,17 +42,18 @@
   padding-right: 3.25em;
 }
 
-.author-workspace-navigation-standard {
-  display: grid;
-  gap: .25em;
-  min-width: 0;
-}
-
-.author-workspace-navigation-actions {
+.author-workspace-primary-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .35em .65em;
+  min-width: 0;
+}
+
+.author-workspace-navigation-context {
+  display: grid;
+  gap: .25em;
+  min-width: 0;
 }
 
 .author-workspace-navigation button {
@@ -66,9 +67,14 @@
   cursor: pointer;
 }
 
-.author-workspace-keyboard-bar,
+.author-workspace-back-compact,
+.author-workspace-stack-toggle,
 .author-workspace-stack-panel {
   display: none;
+}
+
+.author-workspace-find-slot {
+  min-width: 0;
 }
 
 .author-workspace-content {
@@ -133,7 +139,8 @@
   color: var(--dos-bright);
 }
 
-.author-task-return {
+.author-task-return,
+.author-workspace-stack-heading {
   color: var(--dos-muted);
   font-size: .78em;
   line-height: 1.15;
@@ -148,7 +155,7 @@
   top: calc(100% + .25em);
   right: 0;
   left: 0;
-  z-index: 15;
+  z-index: 30;
   display: grid;
   gap: .5em;
   max-height: min(65dvh, 34em);
@@ -344,58 +351,51 @@ body:has(.author-workspace-layer.is-previewing) .work-surface-close {
 }
 
 html[data-keyboard-open="true"] .author-workspace-layer {
-  gap: .1em;
-  padding-top: max(4px, env(safe-area-inset-top));
-  padding-bottom: max(4px, env(safe-area-inset-bottom));
+  gap: .05em;
+  padding-top: max(2px, env(safe-area-inset-top));
+  padding-bottom: max(2px, env(safe-area-inset-bottom));
 }
 
 html[data-keyboard-open="true"] .author-workspace-navigation {
-  min-height: 2.5em;
+  min-height: 2.2em;
   gap: 0;
 }
 
-html[data-keyboard-open="true"] .author-workspace-navigation-standard {
+html[data-keyboard-open="true"] .author-workspace-navigation-context,
+html[data-keyboard-open="true"] .author-workspace-tools,
+html[data-keyboard-open="true"] .author-workspace-back-wide {
   display: none;
 }
 
-html[data-keyboard-open="true"] .author-workspace-keyboard-bar {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: .45em;
-  min-width: 0;
-  min-height: 2.5em;
+html[data-keyboard-open="true"] .author-workspace-primary-actions {
+  flex-wrap: nowrap;
+  gap: .25em .5em;
+  min-height: 2.2em;
 }
 
-html[data-keyboard-open="true"] .author-workspace-current-task {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--dos-bright);
-  line-height: 1.1;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+html[data-keyboard-open="true"] .author-workspace-back-compact,
+html[data-keyboard-open="true"] .author-workspace-stack-toggle {
+  display: inline;
 }
 
-html[data-keyboard-open="true"] .author-workspace-current-task strong {
-  font-weight: 400;
+html[data-keyboard-open="true"] .author-workspace-stack-toggle {
+  margin-left: auto;
 }
 
-html[data-keyboard-open="true"] .author-workspace-current-task small {
-  color: var(--dos-muted);
-  font-size: .82em;
+html[data-keyboard-open="true"] .author-workspace-navigation button {
+  min-height: 2.2em;
 }
 
 html[data-keyboard-open="true"] .author-workspace-stack-panel {
   position: absolute;
-  top: calc(100% + .15em);
+  top: calc(100% + .1em);
   right: 0;
   left: 0;
-  z-index: 25;
+  z-index: 35;
   display: grid;
   gap: .45em;
   max-height: min(58dvh, 24em);
-  padding: .65em;
+  padding: .55em;
   overflow-y: auto;
   border: 1px solid var(--dos-bright);
   background: #000;
@@ -405,11 +405,31 @@ html[data-keyboard-open="true"] .author-workspace-stack-panel {
 html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail {
   display: grid;
   gap: .35em;
-  padding-top: .25em;
+  padding-top: .15em;
 }
 
 html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail li:not(:last-child)::after {
   content: none;
+}
+
+html[data-keyboard-open="true"] .author-quick-find-panel {
+  top: calc(100% + .1em);
+  max-height: calc(var(--terminal-viewport-height, 100dvh) - 3em);
+  gap: .4em;
+  padding: .5em;
+}
+
+html[data-keyboard-open="true"] .author-task-surface > .author-panel,
+html[data-keyboard-open="true"] .author-task-surface > .dialogue-authoring-popover > .author-panel,
+html[data-keyboard-open="true"] .author-task-surface > .inventory-surface {
+  padding: .4em;
+}
+
+html[data-keyboard-open="true"] .author-task-surface > .author-panel-frame > header,
+html[data-keyboard-open="true"] .author-task-surface > .dialogue-authoring-popover > .author-panel-frame > header,
+html[data-keyboard-open="true"] .author-task-surface > .inventory-surface > header {
+  margin: 0 0 .35em;
+  padding-bottom: .25em;
 }
 
 html[data-keyboard-open="true"] .author-panel-body,
