@@ -48,6 +48,8 @@ export const variableConditionAdapter: ConditionAuthorAdapter = {
 export const setFlagEffectAdapter: EffectAuthorAdapter = {
   type: "set_flag",
   label: "set flag",
+  category: "state",
+  description: "Turn an authored boolean flag on.",
   create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "" }),
   summarize: (effect, snapshot) => effect.type === "set_flag" ? `Set ${variableLabel(snapshot, effect.key)} true` : "Set flag",
   render: ({ effect, onChange }) => effect.type === "set_flag"
@@ -58,6 +60,8 @@ export const setFlagEffectAdapter: EffectAuthorAdapter = {
 export const clearFlagEffectAdapter: EffectAuthorAdapter = {
   type: "clear_flag",
   label: "clear flag",
+  category: "state",
+  description: "Turn an authored boolean flag off.",
   create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "" }),
   summarize: (effect, snapshot) => effect.type === "clear_flag" ? `Set ${variableLabel(snapshot, effect.key)} false` : "Clear flag",
   render: ({ effect, onChange }) => effect.type === "clear_flag"
@@ -68,6 +72,8 @@ export const clearFlagEffectAdapter: EffectAuthorAdapter = {
 export const setValueEffectAdapter: EffectAuthorAdapter = {
   type: "set_value",
   label: "set value",
+  category: "state",
+  description: "Replace an authored variable's value.",
   create: () => ({ id: crypto.randomUUID(), type: "set_value", key: "", value: 0 }),
   summarize: (effect, snapshot) => effect.type === "set_value" ? `${variableLabel(snapshot, effect.key)} = ${String(effect.value)}` : "Set value",
   render: ({ effect, onChange, snapshot }) => {
@@ -88,6 +94,8 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
 export const incrementEffectAdapter: EffectAuthorAdapter = {
   type: "increment",
   label: "increment",
+  category: "state",
+  description: "Increase an authored number variable.",
   create: () => ({ id: crypto.randomUUID(), type: "increment", key: "", amount: 1 }),
   summarize: (effect, snapshot) => effect.type === "increment" ? `Increase ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Increment",
   render: ({ effect, onChange }) => effect.type === "increment" ? <>
@@ -99,6 +107,8 @@ export const incrementEffectAdapter: EffectAuthorAdapter = {
 export const decrementEffectAdapter: EffectAuthorAdapter = {
   type: "decrement",
   label: "decrement",
+  category: "state",
+  description: "Decrease an authored number variable.",
   create: () => ({ id: crypto.randomUUID(), type: "decrement", key: "", amount: 1 }),
   summarize: (effect, snapshot) => effect.type === "decrement" ? `Decrease ${variableLabel(snapshot, effect.key)} by ${effect.amount}` : "Decrement",
   render: ({ effect, onChange }) => effect.type === "decrement" ? <>

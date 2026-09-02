@@ -14,10 +14,11 @@ import {
   type PlayState,
   type ProjectSnapshot,
 } from "../../../game/model";
-import { ConditionEditor, EffectsEditor, ValueMentionField } from "../../../components/AuthorFields";
+import { ConditionEditor, EffectsEditor } from "../../../components/AuthorFields";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
-import { TextRulesReference } from "./TextRulesReference";
+import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
+import { validateTextNotation } from "../textNotation";
 import "./interactionEditor.css";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
@@ -62,7 +63,7 @@ function normalizedInteraction(
     ...outcome,
     authorStatus: outcome.authorStatus ?? "configured",
     speakerId: outcome.speakerId ?? (creating ? defaultSpeakerId : null),
-    responseCharactersPerSecond: outcome.responseCharactersPerSecond ?? 18,
+    responsePerformance: outcome.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
   })) : [{ ...createDraftOutcome(), speakerId: defaultSpeakerId }];
   return value;
 }
@@ -121,6 +122,7 @@ export function InteractionEditor({
   onSave,
   onCancel,
   onDirtyChange,
+  onPreview,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -130,6 +132,7 @@ export function InteractionEditor({
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
+  onPreview?: (outcome: InteractionOutcome) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const sourceSpeakerId = snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.characterId ?? null;
@@ -201,6 +204,12 @@ export function InteractionEditor({
     if (incompleteTransition) {
       setError("Choose an existing destination or write the text for a new node.");
       setScreen({ type: "after", outcomeId: incompleteTransition.id });
+      return;
+    }
+    const invalidText = draft.outcomes.find((outcome) => validateTextNotation(outcome.responseText).length);
+    if (invalidText) {
+      setError("Fix the response text rule error before saving.");
+      setScreen({ type: "response", outcomeId: invalidText.id });
       return;
     }
     setError("");
@@ -301,7 +310,9 @@ export function InteractionEditor({
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
         onText={(responseText) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responseText }))}
+        onPerformance={(responsePerformance) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responsePerformance }))}
         onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
+        onPreview={onPreview ? () => onPreview(selectedOutcome) : undefined}
         onOpen={(type) => setScreen({ type, outcomeId: selectedOutcome.id })}
         onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
         onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
@@ -337,7 +348,7 @@ export function InteractionEditor({
     </div>
 
     <div className="author-actions author-panel-footer guided-editor-footer">
-      <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & PLAY"}]</button>
+      <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE & TRY"}]</button>
       <button type="button" onClick={onCancel}>[CANCEL]</button>
       {screen.type === "overview" && initial ? confirmDelete ? <>
         <span>Delete this {fallbackMode ? "invalid-input response" : "user input"}?</span>
@@ -436,14 +447,16 @@ function InputSettings({ draft, fallbackMode, onChange }: {
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, onSpeaker, onOpen, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, onPerformance, onSpeaker, onPreview, onOpen, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   index: number;
   total: number;
   notation: string;
   onText: (text: string) => void;
+  onPerformance: (performance: InteractionOutcome["responsePerformance"]) => void;
   onSpeaker: (speakerId: string | null) => void;
+  onPreview?: () => void;
   onOpen: (screen: "when" | "after" | "effects" | "author-details") => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
@@ -461,18 +474,18 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
         />
         <small>The selected character's name is shown with this response in play.</small>
       </label>
-      <label>RESPONSE TEXT
-        <ValueMentionField
-          snapshot={snapshot}
-          multiline
-          rows={5}
-          autoFocus
-          ariaLabel={`Response text ${index + 1}`}
-          value={outcome.responseText}
-          onValueChange={onText}
-        />
-      </label>
-      <TextRulesReference />
+      <AuthoredTextEditor
+        value={{ text: outcome.responseText, performance: outcome.responsePerformance }}
+        snapshot={snapshot}
+        label={`RESPONSE TEXT ${index + 1}`}
+        rows={5}
+        autoFocus
+        onChange={(value: AuthoredTextValue) => {
+          onText(value.text);
+          onPerformance(value.performance);
+        }}
+        onPreview={onPreview ? () => onPreview() : undefined}
+      />
     </section>
     <section className="guided-section guided-drill-list">
       <button type="button" className="guided-drill-row" onClick={() => onOpen("when")}><span>WHEN</span><span className="guided-row-value">{conditionSummary(outcome.condition)}</span><span>›</span></button>

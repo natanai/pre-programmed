@@ -7,7 +7,7 @@ import {
   notationForNode,
   participatesInCycle,
   traversalPreviousDistance,
-} from "../src/game/graph";
+} from "../src/features/narrative/graph";
 import { interaction, node, project } from "./fixtures";
 
 const snapshot = project({

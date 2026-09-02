@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
-import { ASSET_MANIFEST } from "../../../generated/assetManifest";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type {
   BodyBackgroundDefinition,
   BodySlotDefinition,
   MutationOperation,
   ProjectSnapshot,
 } from "../../../game/model";
-import { assetUrl } from "../../../data/assets";
+import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import "./inventoryAuthor.css";
 
 type SlotGesture = {
@@ -23,7 +23,7 @@ function clamp(value: number, minimum: number, maximum: number) {
 }
 
 function emptyBodyType(): BodyBackgroundDefinition {
-  return { id: crypto.randomUUID(), name: "", assetPath: "", slots: [], startingEquipment: [] };
+  return { id: crypto.randomUUID(), name: "", assetId: "", slots: [], startingEquipment: [] };
 }
 
 export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
@@ -47,6 +47,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
   const [gesture, setGesture] = useState<SlotGesture | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
   const dirty = useMemo(() => JSON.stringify({ draft, starting }) !== baseline, [baseline, draft, starting]);
+  const backgroundAsset = configuredAssetStore.resolve(snapshot, draft.assetId);
   const slotKeysValid = useMemo(() => {
     const keys = draft.slots.map((slot) => slot.key.trim());
     return keys.every(Boolean) && new Set(keys).size === keys.length;
@@ -192,17 +193,14 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
 
       <section className="item-editor-section">
         <h3>BODY IMAGE + SLOT LAYOUT</h3>
-        <label>BACKGROUND ASSET <select value={draft.assetPath} onChange={(event) => setDraft({ ...draft, assetPath: event.target.value })}>
-          <option value="">none</option>
-          {ASSET_MANIFEST.filter((asset) => asset.type === "image" && asset.runtimePath).map((asset) => <option value={asset.runtimePath!} key={asset.path}>{asset.path.replace(/^public\/assets\//, "")}</option>)}
-        </select></label>
+        <label>BACKGROUND ASSET <ReferenceField kind="media-image" value={draft.assetId} onChange={(assetId) => setDraft({ ...draft, assetId })} placeholder="none" /></label>
         <div
           ref={canvasRef}
-          className={`body-type-layout-editor${draft.assetPath ? " has-background" : ""}`}
-          style={draft.assetPath ? { backgroundImage: `url("${assetUrl(draft.assetPath)}")` } : undefined}
+          className={`body-type-layout-editor${backgroundAsset ? " has-background" : ""}`}
+          style={backgroundAsset ? { backgroundImage: `url("${backgroundAsset.url}")` } : undefined}
           aria-label="Body slot layout editor"
         >
-          {!draft.assetPath ? <span className="body-type-layout-empty">NO IMAGE SELECTED</span> : null}
+          {!backgroundAsset ? <span className="body-type-layout-empty">NO IMAGE SELECTED</span> : null}
           {draft.slots.map((slot) => <div
             className={`body-slot-editor-rect${gesture?.slotId === slot.id ? " active" : ""}`}
             key={slot.id}

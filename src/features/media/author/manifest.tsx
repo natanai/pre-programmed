@@ -1,5 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
+import { MediaAssetEditor } from "./MediaAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
 import { mediaAuthorTools } from "./tools";
 
@@ -30,6 +32,29 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         data: { soundId: resource.id, resourceTask: "synth-sound" },
       }),
     },
+    ...(["audio", "image"] as const).map((kind) => ({
+      kind: `media-${kind}`,
+      label: kind === "audio" ? "Sound" : "Image",
+      pluralLabel: kind === "audio" ? "Sounds" : "Images",
+      list: (snapshot: Parameters<typeof configuredAssetStore.list>[0]) => configuredAssetStore.list(snapshot, kind).map((asset) => ({
+        id: asset.id,
+        value: asset.id,
+        label: asset.name,
+        detail: `${asset.source} · ${asset.size} bytes`,
+      })),
+      createRoute: () => ({
+        type: "feature" as const,
+        feature: "media",
+        workspace: "asset",
+        data: { kind, resourceTask: `media-${kind}` },
+      }),
+      editRoute: (resource: { id: string }) => resource.id.startsWith("repo:") ? null : ({
+        type: "feature" as const,
+        feature: "media",
+        workspace: "asset",
+        data: { kind, assetId: resource.id, resourceTask: `media-${kind}` },
+      }),
+    })),
   ],
   terminalShortcuts: [
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
@@ -39,7 +64,37 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
       snapshot={context.snapshot}
       onClose={context.leaveCurrentTask}
+      onOpenAsset={(assetId, kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { assetId, kind } })}
+      onNewAsset={(kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { kind } })}
     />;
+
+    if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
+      const kind = route.data?.kind === "image" ? "image" : "audio";
+      const initial = route.data?.assetId
+        ? context.snapshot.mediaAssets.find((asset) => asset.id === route.data?.assetId)
+        : undefined;
+      const resourceKind = route.data?.resourceTask;
+      return <MediaAssetEditor
+        kind={kind}
+        initial={initial}
+        setWorkspaceDirty={context.setWorkspaceDirty}
+        onCancel={context.leaveCurrentTask}
+        onSave={async (operations, description) => {
+          const result = await context.persist(operations, description);
+          if (resourceKind && (result.status === "saved" || result.status === "queued")) {
+            const operation = operations[0];
+            context.completeTask({
+              type: "resource",
+              kind: resourceKind,
+              id: operation.asset.id,
+              value: operation.asset.id,
+              label: operation.asset.name,
+            });
+          }
+          return result;
+        }}
+      />;
+    }
 
     if (route.type === "feature" && route.feature === "media" && route.workspace === "synth") return <SynthPanel
       snapshot={context.snapshot}

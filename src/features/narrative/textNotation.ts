@@ -15,6 +15,39 @@ type OpenScope = {
 
 const DEFAULT_PAUSE_MS = 350;
 
+export type TextNotationIssue = {
+  index: number;
+  message: string;
+};
+
+/** Validate authored inline notation before it reaches the player. */
+export function validateTextNotation(rawText: string): TextNotationIssue[] {
+  const issues: TextNotationIssue[] = [];
+  const scopes: number[] = [];
+  for (let index = 0; index < rawText.length; index += 1) {
+    if (rawText.startsWith("//", index)) {
+      index += 1;
+      continue;
+    }
+    const scope = rawText.slice(index).match(/^\/([lfshwbi])\{/);
+    if (scope) {
+      scopes.push(index);
+      index += 2;
+      continue;
+    }
+    if (/^\/[a-z]\{/i.test(rawText.slice(index))) {
+      issues.push({ index, message: `Unknown text rule at character ${index + 1}.` });
+      continue;
+    }
+    if (rawText[index] === "}") {
+      if (scopes.length) scopes.pop();
+      else issues.push({ index, message: `Unmatched } at character ${index + 1}.` });
+    }
+  }
+  for (const index of scopes) issues.push({ index, message: `Text rule opened at character ${index + 1} needs a closing }.` });
+  return issues.sort((left, right) => left.index - right.index);
+}
+
 function clampSpeed(value: number) {
   return Math.max(1, Math.min(120, Math.round(value)));
 }

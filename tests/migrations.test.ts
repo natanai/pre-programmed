@@ -60,7 +60,7 @@ describe("D1 migration scripts", () => {
     }
   });
 
-  it("applies feature-owned inventory migrations through the current schema", () => {
+  it("composes feature-owned migrations without freezing the installed feature roster", () => {
     const database = new DatabaseSync(":memory:");
     try {
       const migrations = [
@@ -70,13 +70,18 @@ describe("D1 migration scripts", () => {
       for (const migration of migrations) {
         for (const statement of splitSqlStatements(migration.sql)) database.exec(statement);
       }
-      const version = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
       const itemColumns = database.prepare("PRAGMA table_info(item_definitions)").all() as Array<{ name: string }>;
       const bodyColumns = database.prepare("PRAGMA table_info(inventory_body_backgrounds)").all() as Array<{ name: string }>;
+      const outcomeColumns = database.prepare("PRAGMA table_info(interaction_outcomes)").all() as Array<{ name: string }>;
+      const mediaAssetTable = database.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'media_assets'").get();
 
-      expect(version.schema_version).toBe(15);
       expect(itemColumns.map((column) => column.name)).toContain("equipped_storage");
+      expect(itemColumns.map((column) => column.name)).toContain("equip_on_give_slot_key");
+      expect(itemColumns.map((column) => column.name)).toContain("asset_id");
       expect(bodyColumns.map((column) => column.name)).toContain("starting_equipment_json");
+      expect(bodyColumns.map((column) => column.name)).toContain("asset_id");
+      expect(outcomeColumns.map((column) => column.name)).toContain("response_performance_json");
+      expect(mediaAssetTable).toBeTruthy();
     } finally {
       database.close();
     }

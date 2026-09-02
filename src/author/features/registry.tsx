@@ -11,7 +11,6 @@ import { projectAuthorFeature } from "./projectManifest";
 import type {
   AuthorFeatureManifest,
   AuthorPlaySurfaceContext,
-  AuthorUnhandledInputMutation,
   AuthorWorkspaceContext,
 } from "./types";
 
@@ -43,17 +42,6 @@ export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorTas
   for (const feature of AUTHOR_FEATURES) {
     const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));
     if (shortcut) return shortcut.route;
-  }
-  return null;
-}
-
-export function resolveAuthorUnhandledInputMutation(
-  sourceNodeId: string,
-  input: string,
-): AuthorUnhandledInputMutation | null {
-  for (const feature of AUTHOR_FEATURES) {
-    const mutation = feature.buildUnhandledInputMutation?.(sourceNodeId, input);
-    if (mutation) return mutation;
   }
   return null;
 }

@@ -35,6 +35,8 @@ export const lacksItemConditionAdapter: ConditionAuthorAdapter = {
 export const giveItemEffectAdapter: EffectAuthorAdapter = {
   type: "give_item",
   label: "give item",
+  category: "inventory & body",
+  description: "Give the player an item; its authored on-give equipment rule can run automatically.",
   create: () => ({ id: crypto.randomUUID(), type: "give_item", itemId: "", quantity: 1 }),
   summarize: (effect, snapshot) => effect.type === "give_item" ? `Give ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Give item",
   render: ({ effect, onChange }) => effect.type === "give_item" ? <>
@@ -46,6 +48,8 @@ export const giveItemEffectAdapter: EffectAuthorAdapter = {
 export const removeItemEffectAdapter: EffectAuthorAdapter = {
   type: "remove_item",
   label: "remove item",
+  category: "inventory & body",
+  description: "Remove a quantity of an item from the player.",
   create: () => ({ id: crypto.randomUUID(), type: "remove_item", itemId: "", quantity: 1 }),
   summarize: (effect, snapshot) => effect.type === "remove_item" ? `Remove ${itemLabel(snapshot, effect.itemId)} ×${effect.quantity}` : "Remove item",
   render: ({ effect, onChange }) => effect.type === "remove_item" ? <>
@@ -57,6 +61,8 @@ export const removeItemEffectAdapter: EffectAuthorAdapter = {
 export const setItemStateEffectAdapter: EffectAuthorAdapter = {
   type: "set_item_state",
   label: "change item state",
+  category: "inventory & body",
+  description: "Change one authored state field on the player's item.",
   create: () => ({ id: crypto.randomUUID(), type: "set_item_state", itemId: "", key: "", value: "" }),
   summarize: (effect, snapshot) => effect.type === "set_item_state"
     ? `${itemLabel(snapshot, effect.itemId)} · ${effect.key || "state"} = ${String(effect.value ?? "")}`
@@ -71,6 +77,8 @@ export const setItemStateEffectAdapter: EffectAuthorAdapter = {
 export const setBodyBackgroundEffectAdapter: EffectAuthorAdapter = {
   type: "set_body_background",
   label: "set body type",
+  category: "inventory & body",
+  description: "Activate a body type and its slot layout.",
   create: () => ({ id: crypto.randomUUID(), type: "set_body_background", backgroundId: "" }),
   summarize: (effect, snapshot) => effect.type === "set_body_background"
     ? `Body type → ${bodyTypeLabel(snapshot, effect.backgroundId)}`

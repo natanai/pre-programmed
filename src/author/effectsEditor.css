@@ -115,7 +115,6 @@
 
 .focused-effect-fields > input,
 .focused-effect-fields > select,
-.focused-effect-fields > .asset-effect-picker,
 .focused-effect-fields > .effect-notification {
   width: 100%;
 }
@@ -133,4 +132,37 @@
   .effect-summary-order button {
     min-width: 2.75em;
   }
+}
+.effect-type-groups {
+  display: grid;
+  gap: 1em;
+}
+
+.effect-type-groups section {
+  display: grid;
+  gap: .35em;
+}
+
+.effect-type-groups h4 {
+  margin: 0;
+  color: var(--dos-muted);
+  font-size: .9em;
+  font-weight: 400;
+}
+
+.effect-type-list button > span:first-child {
+  display: grid;
+  min-width: 0;
+  gap: .15em;
+}
+
+.effect-type-list button strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.effect-type-list button small {
+  color: var(--dos-muted);
+  line-height: 1.2;
+  white-space: normal;
 }

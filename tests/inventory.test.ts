@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { addInventoryItem, canPlaceItem, entryOccupiesInventoryGrid } from "../src/game/inventory";
-import { createEmptyPlayState, reconcilePlayStateAfterProjectChange, type ItemDefinition } from "../src/game/model";
-import { attemptOperation, executeOperation, formatOperationOutput } from "../src/game/operations";
+import { executeEffects } from "../src/engine/rules/executeEffects";
+import { createEmptyPlayState, reconcilePlayStateAfterProjectChange } from "../src/engine/project/playState";
+import type { ItemDefinition } from "../src/features/inventory/model";
+import { addInventoryItem, canPlaceItem, entryOccupiesInventoryGrid, giveInventoryItem } from "../src/features/inventory/runtime";
+import { attemptOperation, executeOperation, formatOperationOutput } from "../src/features/operations/runtime";
 import { project } from "./fixtures";
 
 const item: ItemDefinition = {
-  id: "box", key: "box", name: "Box", description: "A box", assetPath: "", width: 2, height: 2,
+  id: "box", key: "box", name: "Box", description: "A box", assetId: "", width: 2, height: 2,
   stackable: false, maxStack: 1, removable: false, startingQuantity: 0, interactable: true,
   operations: ["inspect", "use", "move", "remove"], tags: [], initialState: {}, hooks: [
     { id: "drop-first", operation: "remove", order: 0, condition: { type: "attempt", operator: "eq", value: 1 }, responseText: "first refusal", effects: [], success: false },
@@ -79,7 +81,7 @@ describe("inventory engine", () => {
       bodyBackgrounds: [{
         id: "adult",
         name: "Adult",
-        assetPath: "",
+        assetId: "",
         slots: [{ id: "hand-slot", key: "hand", name: "Hand", x: 10, y: 10, width: 20, height: 20 }],
         startingEquipment: [{ slotKey: "hand", itemId: wearable.id }],
       }],
@@ -90,6 +92,135 @@ describe("inventory engine", () => {
     expect(state.inventory).toHaveLength(2);
     expect(state.inventory.reduce((total, entry) => total + entry.quantity, 0)).toBe(2);
     expect(state.inventory.filter((entry) => entry.equippedSlotKey === "hand")).toHaveLength(1);
+  });
+
+  it("auto-equips a newly granted instance and safely replaces the prior slot occupant", () => {
+    const naturalLeg: ItemDefinition = {
+      ...item,
+      id: "natural-leg",
+      key: "natural_leg",
+      name: "Natural Leg",
+      width: 1,
+      height: 1,
+      startingQuantity: 1,
+      equipmentSlotKeys: ["leg"],
+      equippedStorage: "slot",
+    };
+    const cyberLeg: ItemDefinition = {
+      ...item,
+      id: "cyber-leg",
+      key: "cyber_leg",
+      name: "Cyber Leg",
+      width: 1,
+      height: 1,
+      startingQuantity: 0,
+      equipmentSlotKeys: ["leg"],
+      equippedStorage: "slot",
+      equipOnGiveSlotKey: "leg",
+    };
+    const body = {
+      id: "body",
+      name: "Body",
+      assetId: "",
+      slots: [{ id: "leg-slot", key: "leg", name: "Leg", x: 10, y: 10, width: 20, height: 20 }],
+      startingEquipment: [{ slotKey: "leg", itemId: naturalLeg.id }],
+    };
+    const grantSnapshot = project({
+      items: [naturalLeg, cyberLeg],
+      startingBodyBackgroundId: body.id,
+      bodyBackgrounds: [body],
+    });
+    const before = createEmptyPlayState(grantSnapshot);
+    const naturalInstanceId = before.inventory[0].instanceId;
+    const after = executeEffects(grantSnapshot, before, [{
+      id: "grant-cyber-leg",
+      type: "give_item",
+      itemId: cyberLeg.id,
+      quantity: 1,
+    }]).state;
+
+    expect(after.inventory).toHaveLength(2);
+    expect(after.inventory.find((entry) => entry.itemId === cyberLeg.id)?.equippedSlotKey).toBe("leg");
+    expect(after.inventory.find((entry) => entry.instanceId === naturalInstanceId)?.equippedSlotKey).toBeNull();
+    expect(after.inventory.filter((entry) => entry.equippedSlotKey === "leg")).toHaveLength(1);
+  });
+
+  it("does not apply equip-on-give rules to authored starting quantities", () => {
+    const cyberLeg: ItemDefinition = {
+      ...item,
+      id: "cyber-leg",
+      key: "cyber_leg",
+      name: "Cyber Leg",
+      width: 1,
+      height: 1,
+      startingQuantity: 1,
+      equipmentSlotKeys: ["leg"],
+      equippedStorage: "slot",
+      equipOnGiveSlotKey: "leg",
+    };
+    const startSnapshot = project({
+      items: [cyberLeg],
+      startingBodyBackgroundId: "body",
+      bodyBackgrounds: [{
+        id: "body",
+        name: "Body",
+        assetId: "",
+        slots: [{ id: "leg-slot", key: "leg", name: "Leg", x: 10, y: 10, width: 20, height: 20 }],
+      }],
+    });
+
+    const state = createEmptyPlayState(startSnapshot);
+    expect(state.inventory).toHaveLength(1);
+    expect(state.inventory[0].equippedSlotKey).toBeNull();
+  });
+
+  it("refuses an unsafe auto-equip replacement without losing either existing item", () => {
+    const naturalLeg: ItemDefinition = {
+      ...item,
+      id: "natural-leg",
+      key: "natural_leg",
+      name: "Natural Leg",
+      width: 1,
+      height: 1,
+      startingQuantity: 1,
+      equipmentSlotKeys: ["leg"],
+      equippedStorage: "slot",
+    };
+    const cyberLeg: ItemDefinition = {
+      ...naturalLeg,
+      id: "cyber-leg",
+      key: "cyber_leg",
+      name: "Cyber Leg",
+      startingQuantity: 0,
+      equipOnGiveSlotKey: "leg",
+    };
+    const blocker: ItemDefinition = {
+      ...item,
+      id: "full-grid",
+      key: "full_grid",
+      name: "Full Grid",
+      width: 10,
+      height: 6,
+      startingQuantity: 1,
+    };
+    const fullSnapshot = project({
+      items: [naturalLeg, cyberLeg, blocker],
+      startingBodyBackgroundId: "body",
+      bodyBackgrounds: [{
+        id: "body",
+        name: "Body",
+        assetId: "",
+        slots: [{ id: "leg-slot", key: "leg", name: "Leg", x: 10, y: 10, width: 20, height: 20 }],
+        startingEquipment: [{ slotKey: "leg", itemId: naturalLeg.id }],
+      }],
+    });
+    const before = createEmptyPlayState(fullSnapshot);
+    const after = giveInventoryItem(fullSnapshot, before, cyberLeg.id, 1);
+
+    expect(after.inventory).toHaveLength(before.inventory.length);
+    expect(after.inventory.some((entry) => entry.itemId === cyberLeg.id)).toBe(false);
+    expect(after.inventory.find((entry) => entry.itemId === naturalLeg.id)?.equippedSlotKey).toBe("leg");
+    expect(after.inventory.some((entry) => entry.itemId === blocker.id)).toBe(true);
   });
 
   it("lets slot-carried equipment free grid capacity and refuses unsafe unequip", () => {
@@ -120,7 +251,7 @@ describe("inventory engine", () => {
       bodyBackgrounds: [{
         id: "body",
         name: "Body",
-        assetPath: "",
+        assetId: "",
         slots: [{ id: "leg-slot", key: "leg", name: "Leg", x: 10, y: 10, width: 20, height: 20 }],
         startingEquipment: [{ slotKey: "leg", itemId: wearable.id }],
       }],
@@ -144,7 +275,7 @@ describe("inventory engine", () => {
     const body = {
       id: "body",
       name: "Body",
-      assetPath: "",
+      assetId: "",
       slots: [{ id: "hand-slot", key: "hand", name: "Hand", x: 10, y: 10, width: 20, height: 20 }],
     };
     const previous = project({ items: [wearable], bodyBackgrounds: [body], startingBodyBackgroundId: "body" });

@@ -1,36 +1,17 @@
 import type { EffectAuthorAdapter } from "../../../author/rules/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
-import { ASSET_MANIFEST } from "../../../generated/assetManifest";
-
-function AssetEffectSelect({ kind, value, onChange }: { kind: "audio" | "art"; value: string; onChange: (value: string) => void }) {
-  const manifestType = kind === "art" ? "image" : "audio";
-  const assets = ASSET_MANIFEST.filter((asset) => asset.type === manifestType && asset.runtimePath);
-  const detected = assets.some((asset) => asset.runtimePath === value);
-  const noun = kind === "art" ? "image / sprite" : "audio file";
-  return <div className="asset-effect-picker">
-    <select aria-label={`Choose detected ${noun}`} value={detected ? value : ""} onChange={(event) => onChange(event.target.value)}>
-      <option value="">{assets.length ? `choose detected ${noun}` : `no detected ${noun}s`}</option>
-      {assets.map((asset) => <option value={asset.runtimePath} key={asset.path}>{asset.path.replace(/^public\/assets\//, "")}</option>)}
-    </select>
-    {!assets.length ? <small>Put files in public/assets/ and deploy them; detected files will appear here.</small> : null}
-    <details className="asset-manual-path"><summary>[MANUAL PATH]</summary>
-      <input aria-label={`Manual ${noun} path`} placeholder="/assets/..." value={value} onChange={(event) => onChange(event.target.value)} />
-    </details>
-  </div>;
-}
-
-function assetName(path: string) {
-  const clean = path.replace(/^\/+/, "");
-  return clean.split("/").pop() || "choose asset";
-}
+import { configuredAssetStore } from "../ui/assetStore";
 
 export const synthEffectAdapter: EffectAuthorAdapter = {
   type: "synth",
   label: "play synth",
+  category: "sound & image",
+  description: "Play a reusable authored synth sound.",
   create: () => ({ id: crypto.randomUUID(), type: "synth", synthId: "" }),
   summarize: (effect, snapshot) => effect.type === "synth"
     ? `Play synth: ${snapshot.synthSounds.find((sound) => sound.id === effect.synthId)?.label || "choose synth"}`
     : "Play synth",
+  previewEvents: (effect) => effect.type === "synth" ? [{ type: "synth", synthId: effect.synthId }] : [],
   render: ({ effect, onChange }) => effect.type === "synth"
     ? <ReferenceField kind="synth-sound" value={effect.synthId} onChange={(synthId) => onChange({ ...effect, synthId })} />
     : null,
@@ -38,20 +19,26 @@ export const synthEffectAdapter: EffectAuthorAdapter = {
 
 export const audioEffectAdapter: EffectAuthorAdapter = {
   type: "audio",
-  label: "play repo audio",
-  create: () => ({ id: crypto.randomUUID(), type: "audio", assetPath: "" }),
-  summarize: (effect) => effect.type === "audio" ? `Play audio: ${assetName(effect.assetPath)}` : "Play repo audio",
+  label: "play sound",
+  category: "sound & image",
+  description: "Play an authored or repository audio asset.",
+  create: () => ({ id: crypto.randomUUID(), type: "audio", assetId: "" }),
+  summarize: (effect, snapshot) => effect.type === "audio" ? `Play audio: ${configuredAssetStore.resolve(snapshot, effect.assetId)?.name ?? "choose sound"}` : "Play sound",
+  previewEvents: (effect) => effect.type === "audio" ? [{ type: "audio", assetId: effect.assetId }] : [],
   render: ({ effect, onChange }) => effect.type === "audio"
-    ? <AssetEffectSelect kind="audio" value={effect.assetPath} onChange={(assetPath) => onChange({ ...effect, assetPath })} />
+    ? <ReferenceField kind="media-audio" value={effect.assetId} onChange={(assetId) => onChange({ ...effect, assetId })} />
     : null,
 };
 
 export const artEffectAdapter: EffectAuthorAdapter = {
   type: "art",
   label: "show sprite/art",
-  create: () => ({ id: crypto.randomUUID(), type: "art", assetPath: "" }),
-  summarize: (effect) => effect.type === "art" ? `Show art: ${assetName(effect.assetPath)}` : "Show sprite/art",
+  category: "sound & image",
+  description: "Show an authored image or sprite.",
+  create: () => ({ id: crypto.randomUUID(), type: "art", assetId: "" }),
+  summarize: (effect, snapshot) => effect.type === "art" ? `Show art: ${configuredAssetStore.resolve(snapshot, effect.assetId)?.name ?? "choose image"}` : "Show sprite/art",
+  previewEvents: (effect) => effect.type === "art" ? [{ type: "art", assetId: effect.assetId }] : [],
   render: ({ effect, onChange }) => effect.type === "art"
-    ? <AssetEffectSelect kind="art" value={effect.assetPath} onChange={(assetPath) => onChange({ ...effect, assetPath })} />
+    ? <ReferenceField kind="media-image" value={effect.assetId} onChange={(assetId) => onChange({ ...effect, assetId })} />
     : null,
 };

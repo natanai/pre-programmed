@@ -3,8 +3,8 @@ import {
   persistAuthorMutation,
   type AuthorLocalPersistence,
 } from "../src/author/persistence/authorProjectPersistence";
-import { applyOperations } from "../src/game/mutations";
-import type { MutationOperation, ProjectMutation, ProjectSnapshot } from "../src/game/model";
+import { applyOperations } from "../src/engine/project/mutations";
+import type { MutationOperation, ProjectMutation, ProjectSnapshot } from "../src/engine/project/model";
 import {
   ProjectWriteRejectedError,
   type ProjectPersistence,

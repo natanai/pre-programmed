@@ -48,6 +48,7 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
     if (operation.type === "item.upsert") {
       if (!object(operation.item)) return "Item is invalid.";
       const item = operation.item;
+      if (typeof item.assetId !== "string" && typeof item.assetPath !== "string") return "Item asset reference is invalid.";
       if (item.startingQuantity !== undefined && (
         !Number.isInteger(item.startingQuantity) || (item.startingQuantity as number) < 0
       )) {
@@ -59,6 +60,19 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       if (item.equippedStorage !== undefined && item.equippedStorage !== "inventory" && item.equippedStorage !== "slot") {
         return "Item equipped storage policy is invalid.";
       }
+      if (item.equipOnGiveSlotKey !== undefined && item.equipOnGiveSlotKey !== null && (
+        typeof item.equipOnGiveSlotKey !== "string" || !item.equipOnGiveSlotKey.trim()
+      )) {
+        return "Item equip-on-give slot key is invalid.";
+      }
+      if (
+        typeof item.equipOnGiveSlotKey === "string"
+        && Array.isArray(item.equipmentSlotKeys)
+        && item.equipmentSlotKeys.length > 0
+        && !item.equipmentSlotKeys.includes(item.equipOnGiveSlotKey)
+      ) {
+        return "Item equip-on-give slot must be one of its compatible slots.";
+      }
       return validateOperationCapabilities(item) ?? validateHooks(item);
     }
 
@@ -66,7 +80,7 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       if (!object(operation.background)) return "Body type is invalid.";
       if (typeof operation.background.id !== "string" || !operation.background.id) return "Body type id is required.";
       if (typeof operation.background.name !== "string" || !operation.background.name.trim()) return "Body type name is required.";
-      if (typeof operation.background.assetPath !== "string") return "Body type asset path is invalid.";
+      if (typeof operation.background.assetId !== "string" && typeof operation.background.assetPath !== "string") return "Body type asset reference is invalid.";
       if (operation.background.slots !== undefined && !validBodySlots(operation.background.slots)) return "Body type slots are invalid.";
       if (operation.background.startingEquipment !== undefined && !validStartingEquipment(operation.background.startingEquipment)) {
         return "Body type starting equipment is invalid.";

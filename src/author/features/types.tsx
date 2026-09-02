@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
+import type { AuthorCapability } from "../capabilities/types";
 import type { EffectEvent } from "../../game/effects";
 import type {
   AuthorBookmark,
   MutationOperation,
   PlayState,
   ProjectSnapshot,
+  TextPerformance,
 } from "../../game/model";
 import type { AuthorPersistResult } from "../persistence/authorProjectPersistence";
 import type { AuthorResourceProvider, AuthorResourceTools } from "../resources/types";
@@ -21,6 +23,15 @@ export type AuthorRuntimeSurface = {
   updateState: (state: PlayState) => void;
   output: (text: string) => void;
   events: (events: EffectEvent[]) => void;
+  /** Present authored text/effects without mutating play state. */
+  preview: (presentation: {
+    text: string;
+    performance: TextPerformance;
+    speakerId?: string | null;
+    events?: EffectEvent[];
+  }) => void;
+  /** Close Author work and run an authored player phrase through the real runtime. */
+  tryInput: (input: string) => void;
 };
 
 export type AuthorWorkspaceContext = {
@@ -61,11 +72,6 @@ export type AuthorTerminalShortcut = {
   route: AuthorTaskRoute;
 };
 
-export type AuthorUnhandledInputMutation = {
-  operations: MutationOperation[];
-  description: string;
-};
-
 export type AuthorFeatureManifest = {
   /** Stable feature identifier used only by the Author composition root. */
   id: string;
@@ -77,8 +83,8 @@ export type AuthorFeatureManifest = {
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */
   terminalShortcuts?: readonly AuthorTerminalShortcut[];
-  /** Optional owner for converting an unmatched player input into an Author mutation. */
-  buildUnhandledInputMutation?: (sourceNodeId: string, input: string) => AuthorUnhandledInputMutation | null;
+  /** Semantic requests this feature can fulfill without direct feature imports. */
+  capabilities?: readonly AuthorCapability[];
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
   /** Return a workspace for routes owned by this feature, otherwise null. */

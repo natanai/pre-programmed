@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { evaluateCondition } from "../src/game/conditions";
-import { executeEffects } from "../src/game/effects";
-import { interpolateText } from "../src/game/interpolation";
-import { createEmptyPlayState, reconcilePlayState, resumeAuthorBookmark, type Interaction } from "../src/game/model";
-import { executeInteraction } from "../src/game/runtime";
+import { evaluateCondition } from "../src/engine/rules/conditions";
+import { executeEffects } from "../src/engine/rules/executeEffects";
+import { createEmptyPlayState, reconcilePlayState, resumeAuthorBookmark } from "../src/engine/project/playState";
+import { interpolateText } from "../src/features/narrative/interpolation";
+import type { Interaction } from "../src/features/narrative/model";
+import { executeInteraction } from "../src/features/narrative/runtime";
 import { advanceTimedVariables } from "../src/features/state/timedVariables";
 import { project } from "./fixtures";
 

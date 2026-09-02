@@ -1,4 +1,4 @@
-import type { SynthSound, SynthVoice } from "./model";
+import type { SynthSound } from "./model";
 
 const NOTE_PATTERN = /^([A-G])(#?)([2-7])$/;
 const NOTE_OFFSETS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -26,18 +26,61 @@ export function validateSynth(sound: SynthSound) {
   return errors;
 }
 
-export function createSilentSynth(id = crypto.randomUUID()): SynthSound {
+export type SynthPresetId = "blip" | "chime" | "alert" | "hit";
+
+const PRESETS: Record<SynthPresetId, Pick<SynthSound, "tempo" | "loop" | "voices">> = {
+  blip: {
+    tempo: 180,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0.01, release: 0.08, steps: [
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "G5", volume: 0.32 },
+      { active: false, note: "C5", volume: 0.35 },
+      { active: false, note: "C5", volume: 0.35 },
+    ] }],
+  },
+  chime: {
+    tempo: 150,
+    loop: false,
+    voices: [{ waveform: "sine", attack: 0.01, release: 0.32, steps: [
+      { active: true, note: "C5", volume: 0.35 },
+      { active: true, note: "E5", volume: 0.32 },
+      { active: true, note: "G5", volume: 0.3 },
+      { active: true, note: "C6", volume: 0.28 },
+    ] }],
+  },
+  alert: {
+    tempo: 210,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.06, steps: [
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "C6", volume: 0.4 },
+      { active: true, note: "C5", volume: 0.4 },
+      { active: true, note: "C6", volume: 0.4 },
+    ] }],
+  },
+  hit: {
+    tempo: 120,
+    loop: false,
+    voices: [{ waveform: "noise", attack: 0, release: 0.12, steps: [
+      { active: true, note: "C4", volume: 0.5 },
+      { active: false, note: "C4", volume: 0.35 },
+      { active: false, note: "C4", volume: 0.35 },
+      { active: false, note: "C4", volume: 0.35 },
+    ] }],
+  },
+};
+
+export function applySynthPreset(sound: SynthSound, preset: SynthPresetId): SynthSound {
+  return { ...sound, ...structuredClone(PRESETS[preset]) };
+}
+
+/** A new sound is immediately audible and small enough to understand at a glance. */
+export function createStarterSynth(id = crypto.randomUUID()): SynthSound {
   return {
     id,
     key: "new-sound",
     label: "New sound",
-    tempo: 120,
-    loop: false,
-    voices: ["square", "triangle", "sawtooth", "noise"].map((waveform) => ({
-      waveform: waveform as SynthVoice["waveform"],
-      attack: 0.01,
-      release: 0.04,
-      steps: Array.from({ length: 16 }, () => ({ active: false, note: "C4", volume: 0.35 })),
-    })),
+    ...structuredClone(PRESETS.blip),
   };
 }

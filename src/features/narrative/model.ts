@@ -41,7 +41,8 @@ export type InteractionOutcome = {
   responseText: string;
   /** Optional character voice for this response; missing/null means unattributed narration. */
   speakerId?: string | null;
-  responseCharactersPerSecond?: number;
+  /** The same authored-text performance contract used by node prose. */
+  responsePerformance: TextPerformance;
   effects: Effect[];
   disposition: InteractionDisposition;
   destinationNodeId: string | null;

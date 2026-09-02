@@ -1,4 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { previewEventsForEffects } from "../../../author/rules/catalog";
+import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { buildGraphIndex } from "../../../game/graph";
 import { makeId, nextNodeNumber } from "../../../game/model";
 import { createDraftInteraction } from "../drafts";
@@ -68,13 +70,31 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
   terminalShortcuts: [
     { commands: ["/structure", "structure"], route: STRUCTURE_ROUTE },
   ],
-  buildUnhandledInputMutation(sourceNodeId, input) {
-    const interaction = createDraftInteraction(sourceNodeId, input.trim());
-    return {
-      operations: [{ type: "interaction.upsert", interaction }],
-      description: `Created draft user input ${interaction.wording}`,
-    };
-  },
+  capabilities: [{
+    id: "input.capture-unmatched",
+    resolve(request, { snapshot }) {
+      const sourceNodeId = typeof request.data?.sourceNodeId === "string" ? request.data.sourceNodeId : "";
+      const input = typeof request.data?.input === "string" ? request.data.input.trim() : "";
+      if (!sourceNodeId || !input) return null;
+      const normalized = normalizePlayerInput(input);
+      const existing = snapshot.interactions.find((interaction) =>
+        interaction.sourceNodeId === sourceNodeId
+        && (interaction.matchMode ?? "command") === "command"
+        && interaction.aliases.some((alias) => normalizePlayerInput(alias) === normalized));
+      if (existing) return {
+        type: "handled",
+        message: `DRAFT ALREADY EXISTS: ${existing.wording || existing.aliases[0]}`,
+        value: existing.id,
+      };
+      const interaction = createDraftInteraction(sourceNodeId, input);
+      return {
+        type: "mutation",
+        operations: [{ type: "interaction.upsert", interaction }],
+        description: `Created draft user input ${interaction.wording}`,
+        message: `DRAFT INPUT CREATED: ${interaction.wording}`,
+      };
+    },
+  }],
   renderPlaySurface(context) {
     const currentInputs = context.snapshot.interactions.filter((interaction) =>
       interaction.sourceNodeId === context.playState.currentNodeId
@@ -115,6 +135,12 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           initial={initial}
           initialCommand={route.data?.command ?? ""}
           fallback={fallback}
+          onPreview={(outcome) => context.runtime.preview({
+            text: outcome.responseText,
+            performance: outcome.responsePerformance,
+            speakerId: outcome.speakerId,
+            events: previewEventsForEffects(outcome.effects, context.snapshot),
+          })}
           onSave={async (operations, description) => {
             const result = await context.persist(operations, description);
             if (result.status !== "saved" && result.status !== "queued") return result;
@@ -131,7 +157,12 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
                 return result;
               }
             }
+            const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
             context.completeTask({ type: "saved" });
+            if (operation?.type === "interaction.upsert" && operation.interaction.matchMode !== "fallback") {
+              const input = operation.interaction.aliases[0] || operation.interaction.wording;
+              if (input) context.runtime.tryInput(input);
+            }
             return result;
           }}
           onCancel={context.leaveCurrentTask}
@@ -159,6 +190,11 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       return <NodeEditor
         node={node}
         snapshot={context.snapshot}
+        onPreview={(value, speakerId) => context.runtime.preview({
+          text: value.text,
+          performance: value.performance,
+          speakerId,
+        })}
         onSave={async (operations, description) => {
           const result = await context.persist(operations, description);
           if (resourceTask && (result.status === "saved" || result.status === "queued")) {

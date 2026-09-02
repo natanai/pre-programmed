@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { EffectEvent } from "../../game/effects";
 import type { Condition, Effect, ProjectSnapshot } from "../../game/model";
 
 export type RenderNestedCondition = (
@@ -30,7 +31,11 @@ export type EffectAuthorContext = {
 export type EffectAuthorAdapter = {
   type: Effect["type"];
   label: string;
+  category: string;
+  description: string;
   create: () => Effect;
   summarize?: (effect: Effect, snapshot: ProjectSnapshot) => string;
+  /** Safe presentation-only events; state-changing effects deliberately omit this. */
+  previewEvents?: (effect: Effect, snapshot: ProjectSnapshot) => EffectEvent[];
   render: (context: EffectAuthorContext) => ReactNode;
 };

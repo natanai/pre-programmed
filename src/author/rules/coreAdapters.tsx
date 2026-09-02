@@ -86,10 +86,13 @@ export const runtimeStateConditionAdapter: ConditionAuthorAdapter = {
 export const notificationEffectAdapter: EffectAuthorAdapter = {
   type: "notification",
   label: "floating notification",
+  category: "presentation",
+  description: "Show brief text without changing game state.",
   create: () => ({ id: crypto.randomUUID(), type: "notification", text: "" }),
   summarize: (effect) => effect.type === "notification"
     ? `Notify: ${effect.text.trim() ? `“${effect.text.trim().slice(0, 48)}${effect.text.trim().length > 48 ? "..." : ""}”` : "write text"}`
     : "Floating notification",
+  previewEvents: (effect) => effect.type === "notification" ? [{ type: "notification", text: effect.text }] : [],
   render: ({ effect, onChange, snapshot }) => effect.type === "notification"
     ? <div className="effect-notification"><ValueMentionField snapshot={snapshot} value={effect.text} onValueChange={(text) => onChange({ ...effect, text })} placeholder="notification text" /></div>
     : null,

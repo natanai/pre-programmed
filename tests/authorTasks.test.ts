@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { resolveAuthorCapability } from "../src/author/capabilities/runtime";
 import { buildAuthorResourceTools } from "../src/author/resources/runtime";
 import { popActiveAuthorTask, setAuthorTaskDirtyState } from "../src/author/tasks/taskStack";
 import type { AuthorTaskEntry, AuthorTaskResult } from "../src/author/tasks/types";
 import { project } from "./fixtures";
+import { createEmptyPlayState } from "../src/engine/project/playState";
 
 const parent: AuthorTaskEntry = { id: "parent", route: { type: "tools" }, dirty: true };
 const child: AuthorTaskEntry = {
@@ -27,6 +29,42 @@ describe("Author task stack", () => {
     const popped = popActiveAuthorTask(tasks, "child");
     expect(popped.popped?.id).toBe("child");
     expect(popped.tasks).toEqual([parent]);
+  });
+
+  it("has no depth cap and preserves every suspended parent", () => {
+    let tasks: AuthorTaskEntry[] = [parent];
+    for (let depth = 1; depth <= 250; depth += 1) {
+      tasks = [...tasks, {
+        id: `nested-${depth}`,
+        route: { type: "feature", feature: `feature-${depth % 3}`, workspace: "editor" },
+        dirty: depth % 7 === 0,
+      }];
+    }
+    expect(tasks).toHaveLength(251);
+    const popped = popActiveAuthorTask(tasks, "nested-250");
+    expect(popped.tasks).toHaveLength(250);
+    expect(popped.tasks[0]).toBe(parent);
+    expect(popped.tasks.at(-1)?.id).toBe("nested-249");
+  });
+
+  it("lets Narrative capture an unmatched phrase even when a player fallback exists", () => {
+    const snapshot = project({ interactions: [{
+      id: "fallback", sourceNodeId: "a", wording: "", matchMode: "fallback", choiceVisibility: "typed",
+      aliases: [], tags: [], notes: "", outcomes: [],
+    }] });
+    const resolution = resolveAuthorCapability({
+      capability: "input.capture-unmatched",
+      data: { sourceNodeId: "a", input: "Growl at the moon" },
+    }, { snapshot, playState: createEmptyPlayState(snapshot) });
+    expect(resolution).toMatchObject({
+      type: "mutation",
+      operations: [{ type: "interaction.upsert", interaction: {
+        wording: "Growl at the moon",
+        aliases: ["Growl at the moon"],
+        matchMode: "command",
+        outcomes: [{ authorStatus: "draft" }],
+      } }],
+    });
   });
 
   it("returns a feature-owned resource result through the generic runtime", () => {

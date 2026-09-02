@@ -10,7 +10,7 @@ export function createDraftOutcome(order = 0, responseText = ""): InteractionOut
     condition: ALWAYS,
     responseText,
     speakerId: null,
-    responseCharactersPerSecond: 18,
+    responsePerformance: { charactersPerSecond: 18, cues: [] },
     effects: [],
     disposition: "stay",
     destinationNodeId: null,

@@ -1,4 +1,5 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
+import { normalizePlayerInput } from "../../engine/input/normalize";
 import type { Interaction } from "../narrative/model";
 import type { OperationArguments, OperationTarget } from "../operations/model";
 import type { CommandDefinition } from "./model";
@@ -30,12 +31,7 @@ export type ParserResult = {
 };
 
 export function normalizeCommand(value: string) {
-  return value
-    .normalize("NFKC")
-    .toLocaleLowerCase()
-    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return normalizePlayerInput(value);
 }
 
 function candidatesAtCurrentNode(snapshot: ProjectSnapshot, state: PlayState) {

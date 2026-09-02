@@ -5,7 +5,7 @@ import {
   projectClockScheduleKey,
   resetProjectClocks,
 } from "../src/engine/runtime/projectClock";
-import { createEmptyPlayState } from "../src/game/model";
+import { createEmptyPlayState } from "../src/engine/project/playState";
 import { project } from "./fixtures";
 
 describe("project clock composition", () => {

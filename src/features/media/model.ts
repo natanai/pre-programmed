@@ -19,3 +19,17 @@ export type SynthSound = {
   loop: boolean;
   voices: SynthVoice[];
 };
+
+export type MediaAssetKind = "audio" | "image";
+
+export type MediaAsset = {
+  id: string;
+  name: string;
+  kind: MediaAssetKind;
+  source: "embedded";
+  dataUrl: string;
+  mimeType: string;
+  size: number;
+  width: number | null;
+  height: number | null;
+};

@@ -32,28 +32,6 @@
   gap: .8em;
 }
 
-.node-text-field {
-  margin-bottom: 0 !important;
-}
-
-.node-text-field .value-mention-field textarea {
-  min-height: 12em;
-  padding: .65em;
-  line-height: 1.25;
-  resize: vertical;
-}
-
-.node-writing-meta {
-  display: flex;
-  min-width: 0;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: .25em .75em;
-  margin-top: -.35em;
-  color: var(--dos-muted);
-  font-size: .9em;
-}
-
 .node-summary-list {
   border: 1px solid var(--dos-line);
 }
@@ -99,15 +77,13 @@
   padding: .35em 0;
 }
 
-.node-focused-form,
-.node-cue-workspace {
+.node-focused-form {
   display: grid;
   align-content: start;
   gap: .75em;
 }
 
-.node-focused-form h3,
-.node-cue-workspace h3 {
+.node-focused-form h3 {
   margin: 0;
   color: var(--dos-muted);
   font-size: 1em;
@@ -119,45 +95,8 @@
   gap: .25em;
 }
 
-.node-cue-workspace .cue-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4em;
-}
-
-.node-cue-list {
-  display: grid;
-  gap: 1px;
-  background: var(--dos-line);
-}
-
-.node-cue-list .cue-row {
-  display: grid;
-  grid-template-columns: minmax(9em, 1fr) minmax(7em, .75fr) auto;
-  align-items: center;
-  gap: .5em;
-  margin: 0;
-  padding: .5em;
-  background: #050505;
-}
-
-.node-cue-list .cue-row > span {
-  display: grid;
-  gap: .1em;
-}
-
-.node-cue-list .cue-row small {
-  color: var(--dos-muted);
-}
-
 .focused-node-editor .performance-preview {
   margin-top: 0;
-}
-
-@container (min-width: 700px) {
-  .node-text-field .value-mention-field textarea {
-    min-height: 15em;
-  }
 }
 
 @media (max-width: 700px), (pointer: coarse) {
@@ -165,26 +104,9 @@
     width: 100%;
   }
 
-  .node-text-field .value-mention-field textarea {
-    min-height: 10em;
-    font-size: max(16px, 1em);
-  }
-
   .node-summary-list > button {
     min-height: 3.6em;
     font-size: max(16px, 1em);
   }
 
-  .node-cue-workspace .cue-buttons > button {
-    min-height: 2.75em;
-  }
-
-  .node-cue-list .cue-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .node-cue-list .cue-row > input,
-  .node-cue-list .cue-row > select {
-    grid-column: 1 / -1;
-  }
 }

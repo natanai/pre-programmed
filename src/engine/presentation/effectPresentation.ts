@@ -4,8 +4,8 @@ import type { ProjectSnapshot } from "../project/model";
 /** UI capabilities the application shell offers to feature effect presenters. */
 export type EffectPresentationSurface = {
   notify(text: string, anchorLineId?: string): void;
-  appendInlineAsset(assetPath: string): void;
-  showOverlayAsset(assetPath: string): void;
+  appendInlineAsset(assetUrl: string): void;
+  showOverlayAsset(assetUrl: string): void;
 };
 
 export type EffectPresentationContext = {

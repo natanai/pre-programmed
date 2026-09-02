@@ -1,4 +1,5 @@
 import type { BodyBackgroundDefinition, BodySlotDefinition, ItemDefinition, StartingEquipmentDefinition } from "../../src/features/inventory/model";
+import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import { hookStatements, loadHooksForKind, resetHooksForKind } from "./operationHooks";
 import type { WorkerFeaturePersistence } from "./types";
@@ -8,7 +9,7 @@ type ItemRow = {
   key: string;
   name: string;
   description: string;
-  asset_path: string;
+  asset_id: string;
   width: number;
   height: number;
   stackable: number;
@@ -19,6 +20,7 @@ type ItemRow = {
   operations_json: string;
   equipment_slot_keys_json: string;
   equipped_storage: "inventory" | "slot";
+  equip_on_give_slot_key: string | null;
   tags_json: string;
   initial_state_json: string;
 };
@@ -26,7 +28,7 @@ type ItemRow = {
 type BodyBackgroundRow = {
   id: string;
   name: string;
-  asset_path: string;
+  asset_id: string;
   slots_json: string;
   starting_equipment_json: string;
 };
@@ -84,19 +86,48 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 15 WHERE id = 1;
       `,
     },
+    {
+      id: 16,
+      name: "inventory-equip-on-give",
+      sql: `
+        ALTER TABLE item_definitions
+        ADD COLUMN equip_on_give_slot_key TEXT;
+
+        UPDATE project_meta SET schema_version = 16 WHERE id = 1;
+      `,
+    },
+    {
+      id: 19,
+      name: "inventory-stable-asset-references",
+      sql: `
+        ALTER TABLE item_definitions
+        ADD COLUMN asset_id TEXT NOT NULL DEFAULT '';
+
+        ALTER TABLE inventory_body_backgrounds
+        ADD COLUMN asset_id TEXT NOT NULL DEFAULT '';
+
+        UPDATE item_definitions
+        SET asset_id = CASE WHEN asset_path = '' THEN '' ELSE 'repo:/' || ltrim(asset_path, '/') END;
+
+        UPDATE inventory_body_backgrounds
+        SET asset_id = CASE WHEN asset_path = '' THEN '' ELSE 'repo:/' || ltrim(asset_path, '/') END;
+
+        UPDATE project_meta SET schema_version = 19 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
     const [items, hookGroups, backgrounds, settings] = await Promise.all([
       db.prepare(
-        `SELECT id, key, name, description, asset_path, width, height, stackable,
+        `SELECT id, key, name, description, asset_id, width, height, stackable,
                 max_stack, removable, starting_quantity, operation_interactable, operations_json,
-                equipment_slot_keys_json, equipped_storage, tags_json, initial_state_json
+                equipment_slot_keys_json, equipped_storage, equip_on_give_slot_key, tags_json, initial_state_json
            FROM item_definitions ORDER BY key`,
       ).all<ItemRow>(),
       loadHooksForKind(db, "item"),
       db.prepare(
-        "SELECT id, name, asset_path, slots_json, starting_equipment_json FROM inventory_body_backgrounds ORDER BY name, id",
+        "SELECT id, name, asset_id, slots_json, starting_equipment_json FROM inventory_body_backgrounds ORDER BY name, id",
       ).all<BodyBackgroundRow>(),
       db.prepare(
         "SELECT starting_body_background_id FROM inventory_settings WHERE id = 1",
@@ -106,7 +137,7 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
     const bodyBackgrounds = backgrounds.results.map((row): BodyBackgroundDefinition => ({
       id: row.id,
       name: row.name,
-      assetPath: row.asset_path,
+      assetId: row.asset_id,
       slots: parseJson<BodySlotDefinition[]>(row.slots_json, []),
       startingEquipment: parseJson<StartingEquipmentDefinition[]>(row.starting_equipment_json, []),
     }));
@@ -118,7 +149,7 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
         key: row.key,
         name: row.name,
         description: row.description,
-        assetPath: row.asset_path,
+        assetId: row.asset_id,
         width: row.width,
         height: row.height,
         stackable: Boolean(row.stackable),
@@ -129,6 +160,7 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
         operations: parseJson(row.operations_json, ["inspect", "use", "move", "remove"]),
         equipmentSlotKeys: parseJson(row.equipment_slot_keys_json, []),
         equippedStorage: row.equipped_storage === "slot" ? "slot" : "inventory",
+        equipOnGiveSlotKey: row.equip_on_give_slot_key,
         tags: parseJson(row.tags_json, []),
         initialState: parseJson(row.initial_state_json, {}),
         hooks: hookGroups.get(row.id) ?? [],
@@ -143,27 +175,30 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
   mutationStatements(db, operation) {
     if (operation.type === "item.upsert") {
       const item = operation.item;
+      const legacyItem = item as typeof item & { assetPath?: string };
+      const assetId = item.assetId ?? legacyAssetId(legacyItem.assetPath ?? "");
       return [
         db.prepare(
           `INSERT INTO item_definitions
-           (id, key, name, description, asset_path, width, height, stackable, max_stack,
+           (id, key, name, description, asset_path, asset_id, width, height, stackable, max_stack,
             removable, starting_quantity, operation_interactable, operations_json,
-            equipment_slot_keys_json, equipped_storage, tags_json, initial_state_json, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+            equipment_slot_keys_json, equipped_storage, equip_on_give_slot_key, tags_json, initial_state_json, updated_at)
+           VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET key=excluded.key, name=excluded.name,
-             description=excluded.description, asset_path=excluded.asset_path, width=excluded.width,
+             description=excluded.description, asset_id=excluded.asset_id, width=excluded.width,
              height=excluded.height, stackable=excluded.stackable, max_stack=excluded.max_stack,
              removable=excluded.removable, starting_quantity=excluded.starting_quantity,
              operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
              equipment_slot_keys_json=excluded.equipment_slot_keys_json,
              equipped_storage=excluded.equipped_storage,
+             equip_on_give_slot_key=excluded.equip_on_give_slot_key,
              tags_json=excluded.tags_json,
              initial_state_json=excluded.initial_state_json, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
-          item.id, item.key, item.name, item.description, item.assetPath, item.width, item.height,
+          item.id, item.key, item.name, item.description, assetId, item.width, item.height,
           Number(item.stackable), item.maxStack, Number(item.removable), item.startingQuantity ?? 0,
           Number(item.interactable ?? true), JSON.stringify(item.operations ?? ["inspect", "use", "move", "remove"]),
-          JSON.stringify(item.equipmentSlotKeys ?? []), item.equippedStorage ?? "inventory",
+          JSON.stringify(item.equipmentSlotKeys ?? []), item.equippedStorage ?? "inventory", item.equipOnGiveSlotKey ?? null,
           JSON.stringify(item.tags), JSON.stringify(item.initialState),
         ),
         ...hookStatements(db, "item", item.id, item.hooks),
@@ -172,16 +207,18 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
 
     if (operation.type === "bodyBackground.upsert") {
       const bodyType = operation.background;
+      const legacyBodyType = bodyType as typeof bodyType & { assetPath?: string };
+      const assetId = bodyType.assetId ?? legacyAssetId(legacyBodyType.assetPath ?? "");
       return [db.prepare(
-        `INSERT INTO inventory_body_backgrounds (id, name, asset_path, slots_json, starting_equipment_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(id) DO UPDATE SET name=excluded.name, asset_path=excluded.asset_path,
+        `INSERT INTO inventory_body_backgrounds (id, name, asset_path, asset_id, slots_json, starting_equipment_json, updated_at)
+         VALUES (?, ?, '', ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(id) DO UPDATE SET name=excluded.name, asset_id=excluded.asset_id,
            slots_json=excluded.slots_json, starting_equipment_json=excluded.starting_equipment_json,
            updated_at=CURRENT_TIMESTAMP`,
       ).bind(
         bodyType.id,
         bodyType.name,
-        bodyType.assetPath,
+        assetId,
         JSON.stringify(bodyType.slots ?? []),
         JSON.stringify(bodyType.startingEquipment ?? []),
       )];
@@ -233,6 +270,7 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
           ...item,
           equipmentSlotKeys: item.equipmentSlotKeys ?? [],
           equippedStorage: item.equippedStorage ?? "inventory",
+          equipOnGiveSlotKey: item.equipOnGiveSlotKey ?? null,
         },
       })),
     ];

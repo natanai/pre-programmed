@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { ItemDefinition, MutationOperation, ProjectSnapshot } from "../../../game/model";
-import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import { OperationHooksEditor } from "../../../components/OperationHooksEditor";
 import "./inventoryAuthor.css";
 
@@ -11,9 +11,10 @@ const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "u
 
 function emptyItem(): ItemDefinition {
   return {
-    id: crypto.randomUUID(), key: "", name: "", description: "", assetPath: "", width: 1, height: 1,
+    id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
     interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], equippedStorage: "inventory",
+    equipOnGiveSlotKey: null,
     tags: [], initialState: {}, hooks: [],
   };
 }
@@ -29,6 +30,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
     ...structuredClone(initial ?? emptyItem()),
     equipmentSlotKeys: [...(initial?.equipmentSlotKeys ?? [])],
     equippedStorage: initial?.equippedStorage ?? "inventory",
+    equipOnGiveSlotKey: initial?.equipOnGiveSlotKey ?? null,
   }));
   const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [saving, setSaving] = useState(false);
@@ -91,10 +93,7 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
 
       <section className="item-editor-section">
         <h3>INVENTORY TILE</h3>
-        <label>ASSET <select value={draft.assetPath} onChange={(event) => setDraft({ ...draft, assetPath: event.target.value })}>
-          <option value="">none / text tile</option>
-          {ASSET_MANIFEST.filter((asset) => asset.type === "image" && asset.runtimePath).map((asset) => <option value={asset.runtimePath!} key={asset.path}>{asset.path.replace(/^public\/assets\//, "")}</option>)}
-        </select></label>
+        <label>ASSET <ReferenceField kind="media-image" value={draft.assetId} onChange={(assetId) => setDraft({ ...draft, assetId })} placeholder="none / text tile" /></label>
         <div className="form-grid">
           <label>WIDTH <input type="number" min={1} max={10} value={draft.width} onChange={(event) => setDraft({ ...draft, width: Number(event.target.value) })} /></label>
           <label>HEIGHT <input type="number" min={1} max={6} value={draft.height} onChange={(event) => setDraft({ ...draft, height: Number(event.target.value) })} /></label>
@@ -115,6 +114,15 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
           </select>
           <small>“Body slot only” frees its grid space while equipped. Unequipping requires enough free grid space.</small>
         </label>
+        <label>WHEN GIVEN TO PLAYER
+          <select value={draft.equipOnGiveSlotKey ?? ""} onChange={(event) => setDraft({ ...draft, equipOnGiveSlotKey: event.target.value || null })}>
+            <option value="">keep in general inventory</option>
+            {slotOptions.filter((slot) => !(draft.equipmentSlotKeys ?? []).length || (draft.equipmentSlotKeys ?? []).includes(slot.key)).map((slot) => (
+              <option value={slot.key} key={slot.key}>equip to {slot.label} · {slot.key}</option>
+            ))}
+          </select>
+          <small>Equips one newly granted instance to this stable slot key and safely moves any prior occupant back to general inventory. This does not affect starting equipment.</small>
+        </label>
         {slotOptions.length ? <div className="equipment-slot-compatibility">
           <button type="button" aria-pressed={(draft.equipmentSlotKeys ?? []).length === 0} onClick={() => setDraft({ ...draft, equipmentSlotKeys: [] })}>[ANY SLOT]</button>
           {slotOptions.map((slot) => <label className="check-label" key={slot.key}>
@@ -126,6 +134,9 @@ export function ItemEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDi
                 equipmentSlotKeys: event.target.checked
                   ? [...(draft.equipmentSlotKeys ?? []), slot.key]
                   : (draft.equipmentSlotKeys ?? []).filter((key) => key !== slot.key),
+                equipOnGiveSlotKey: !event.target.checked && draft.equipOnGiveSlotKey === slot.key
+                  ? null
+                  : draft.equipOnGiveSlotKey,
               })}
             />
             {slot.label} <small>{slot.key}</small>

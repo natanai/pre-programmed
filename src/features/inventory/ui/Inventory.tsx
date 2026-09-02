@@ -1,8 +1,8 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { assetUrl } from "../../../data/assets";
+import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import { type EffectEvent } from "../../../game/effects";
 import {
-  addInventoryItem,
+  giveInventoryItem,
   compatibleBodySlots,
   entryOccupiesInventoryGrid,
   INVENTORY_COLUMNS,
@@ -57,6 +57,9 @@ export function Inventory({
   const [screen, setScreen] = useState<InventoryScreen>("play");
   const [definitionQuery, setDefinitionQuery] = useState("");
   const [now, setNow] = useState(() => Date.now());
+  const assetUrlFor = (assetId: string | undefined | null) => assetId
+    ? configuredAssetStore.resolve(snapshot, assetId)?.url ?? ""
+    : "";
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
@@ -143,7 +146,7 @@ export function Inventory({
             <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void onSave([
               { type: "item.upsert", item: { ...item, startingQuantity: (item.startingQuantity ?? 0) + 1 } },
             ], `Changed starting ${item.name}`)}>[+]</button>
-            <button type="button" className="inventory-add-current" onClick={() => onState(addInventoryItem(snapshot, state, item.id, 1))}>[ADD TO THIS RUN]</button>
+            <button type="button" className="inventory-add-current" onClick={() => onState(giveInventoryItem(snapshot, state, item.id, 1))}>[ADD TO THIS RUN]</button>
           </div>
         </article>)}
       </div> : <div className="inventory-definition-empty">{normalizedDefinitionQuery ? "NO MATCHING ITEM DEFINITIONS." : "NO ITEM DEFINITIONS YET."}</div>}
@@ -171,8 +174,8 @@ export function Inventory({
       {bodyTypes.length ? <div className="inventory-body-background-cards">
         {bodyTypes.map((bodyType) => <article className="inventory-body-background-card" key={bodyType.id}>
           <button type="button" className="inventory-body-background-preview-button" onClick={() => onEditBodyBackground(bodyType)}>
-            <span className="inventory-body-background-thumbnail" style={bodyType.assetPath ? {
-              backgroundImage: `url("${assetUrl(bodyType.assetPath)}")`,
+            <span className="inventory-body-background-thumbnail" style={assetUrlFor(bodyType.assetId) ? {
+              backgroundImage: `url("${assetUrlFor(bodyType.assetId)}")`,
             } : undefined} aria-hidden="true" />
             <span><strong>{bodyType.name}</strong><small>{bodyType.id === snapshot.startingBodyBackgroundId ? `starting · ${(bodyType.slots ?? []).length} slots` : `${(bodyType.slots ?? []).length} slots`}</small></span>
             <span aria-hidden="true">›</span>
@@ -273,7 +276,7 @@ export function Inventory({
               style={{ "--x": entry.x, "--y": entry.y, "--w": item.width, "--h": item.height } as CSSProperties}
               onDragStart={(event) => event.dataTransfer.setData("text/pre-programmed-instance", entry.instanceId)}
               onClick={(event) => { event.stopPropagation(); if (item.interactable ?? true) setSelected({ kind: "item", id: entry.instanceId }); }}>
-              {item.assetPath ? <img src={assetUrl(item.assetPath)} alt="" draggable={false} /> : <span>{item.name.slice(0, 3).toUpperCase()}</span>}
+              {assetUrlFor(item.assetId) ? <img src={assetUrlFor(item.assetId)} alt="" draggable={false} /> : <span>{item.name.slice(0, 3).toUpperCase()}</span>}
               {entry.quantity > 1 ? <b>{entry.quantity}</b> : null}
               {entry.equippedSlotKey ? <i aria-label={`Equipped to ${entry.equippedSlotKey}`}>E</i> : null}
             </button>;
@@ -284,10 +287,10 @@ export function Inventory({
       <section className="inventory-body-area" aria-label="Body equipment area">
         <div className="inventory-body-heading"><span>BODY</span><small>{activeBodyType?.name ?? "NO BODY TYPE"}</small></div>
         <div
-          className={`inventory-body-canvas${activeBodyType?.assetPath ? " has-background" : ""}`}
-          style={activeBodyType?.assetPath ? { backgroundImage: `url("${assetUrl(activeBodyType.assetPath)}")` } : undefined}
+          className={`inventory-body-canvas${assetUrlFor(activeBodyType?.assetId) ? " has-background" : ""}`}
+          style={assetUrlFor(activeBodyType?.assetId) ? { backgroundImage: `url("${assetUrlFor(activeBodyType?.assetId)}")` } : undefined}
         >
-          {!activeBodyType?.assetPath ? <span>{bodyTypes.length ? "NO ACTIVE BODY IMAGE" : "BODY TYPE NOT CONFIGURED"}</span> : null}
+          {!assetUrlFor(activeBodyType?.assetId) ? <span>{bodyTypes.length ? "NO ACTIVE BODY IMAGE" : "BODY TYPE NOT CONFIGURED"}</span> : null}
           {(activeBodyType?.slots ?? []).map((slot) => {
             const equippedEntry = state.inventory.find((entry) => entry.equippedSlotKey === slot.key);
             const equippedItem = snapshot.items.find((item) => item.id === equippedEntry?.itemId);
@@ -317,7 +320,7 @@ export function Inventory({
                 if (selectedEntry && selectedCanEquip) equipToSlot(selectedEntry.instanceId, slot.key);
               }}
             >
-              {equippedItem?.assetPath ? <img src={assetUrl(equippedItem.assetPath)} alt="" draggable={false} /> : equippedItem ? <strong>{equippedItem.name.slice(0, 3).toUpperCase()}</strong> : null}
+              {assetUrlFor(equippedItem?.assetId) ? <img src={assetUrlFor(equippedItem?.assetId)} alt="" draggable={false} /> : equippedItem ? <strong>{equippedItem.name.slice(0, 3).toUpperCase()}</strong> : null}
               <small>{slot.name}</small>
             </button>;
           })}

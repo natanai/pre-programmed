@@ -13,6 +13,7 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
+  const categories = [...new Set(EFFECT_AUTHOR_ADAPTERS.map((adapter) => adapter.category))];
   const selectedIndex = selectedEffectId ? effects.findIndex((effect) => effect.id === selectedEffectId) : -1;
   const selectedEffect = selectedIndex >= 0 ? effects[selectedIndex] : undefined;
 
@@ -56,11 +57,14 @@ export function EffectsEditor({ effects, onChange, snapshot }: {
   if (screen === "choose") return <div className="effects-editor effects-chooser">
     <button type="button" className="effects-back" onClick={() => setScreen("list")}>[← BACK TO EFFECTS]</button>
     <h3>WHAT ELSE HAPPENS?</h3>
-    <div className="effect-type-list">
-      {EFFECT_AUTHOR_ADAPTERS.map((adapter) => <button type="button" key={adapter.type} onClick={() => addEffect(adapter)}>
-        <span>{adapter.label.toUpperCase()}</span><span aria-hidden="true">›</span>
-      </button>)}
-    </div>
+    <div className="effect-type-groups">{categories.map((category) => <section key={category}>
+      <h4>{category.toUpperCase()}</h4>
+      <div className="effect-type-list">
+        {EFFECT_AUTHOR_ADAPTERS.filter((adapter) => adapter.category === category).map((adapter) => <button type="button" key={adapter.type} onClick={() => addEffect(adapter)}>
+          <span><strong>{adapter.label.toUpperCase()}</strong><small>{adapter.description}</small></span><span aria-hidden="true">›</span>
+        </button>)}
+      </div>
+    </section>)}</div>
   </div>;
 
   if (screen === "edit" && selectedEffect && selectedIndex >= 0) {

@@ -15,7 +15,8 @@ export function buildAuthorResourceTools(
     canCreate: (kind) => Boolean(getAuthorResourceProvider(kind)?.createRoute),
     canEdit: (kind, value) => {
       const provider = getAuthorResourceProvider(kind);
-      return Boolean(provider?.editRoute && provider.list(snapshot).some((option) => option.value === value));
+      const resource = provider?.list(snapshot).find((option) => option.value === value);
+      return Boolean(provider?.editRoute && resource && provider.editRoute(resource));
     },
     create(kind, onCreated) {
       const provider = getAuthorResourceProvider(kind);
@@ -30,7 +31,8 @@ export function buildAuthorResourceTools(
       if (!provider?.editRoute) return;
       const resource = provider.list(snapshot).find((option) => option.value === value);
       if (!resource) return;
-      pushTask(provider.editRoute(resource), onComplete);
+      const route = provider.editRoute(resource);
+      if (route) pushTask(route, onComplete);
     },
   };
 }

@@ -1,9 +1,9 @@
 import { unchangedEffect, type EffectHandler } from "../../engine/rules/effectRuntime";
-import { addInventoryItem, removeInventoryItem, setActiveBodyType } from "./runtime";
+import { giveInventoryItem, removeInventoryItem, setActiveBodyType } from "./runtime";
 
 const giveItem: EffectHandler = (effect, snapshot, state) => {
   if (effect.type !== "give_item") return unchangedEffect(state);
-  return { state: addInventoryItem(snapshot, state, effect.itemId, effect.quantity), events: [] };
+  return { state: giveInventoryItem(snapshot, state, effect.itemId, effect.quantity), events: [] };
 };
 
 const removeItem: EffectHandler = (effect, _snapshot, state) => {

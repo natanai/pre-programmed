@@ -15,7 +15,7 @@ export type AuthorResourceProvider = {
   pluralLabel?: string;
   list: (snapshot: ProjectSnapshot) => AuthorResourceOption[];
   createRoute?: () => AuthorTaskRoute;
-  editRoute?: (resource: AuthorResourceOption) => AuthorTaskRoute;
+  editRoute?: (resource: AuthorResourceOption) => AuthorTaskRoute | null;
 };
 
 export type AuthorResourceTools = {

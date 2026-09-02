@@ -62,3 +62,10 @@ export const EFFECT_AUTHOR_ADAPTERS: readonly EffectAuthorAdapter[] = [
 
 export const CONDITION_AUTHOR_ADAPTER_BY_TYPE = Object.fromEntries(CONDITION_AUTHOR_ADAPTERS.map((adapter) => [adapter.type, adapter])) as Partial<Record<ConditionAuthorAdapter["type"], ConditionAuthorAdapter>>;
 export const EFFECT_AUTHOR_ADAPTER_BY_TYPE = Object.fromEntries(EFFECT_AUTHOR_ADAPTERS.map((adapter) => [adapter.type, adapter])) as Partial<Record<EffectAuthorAdapter["type"], EffectAuthorAdapter>>;
+
+export function previewEventsForEffects(
+  effects: Parameters<NonNullable<EffectAuthorAdapter["previewEvents"]>>[0][],
+  snapshot: Parameters<NonNullable<EffectAuthorAdapter["previewEvents"]>>[1],
+) {
+  return effects.flatMap((effect) => EFFECT_AUTHOR_ADAPTER_BY_TYPE[effect.type]?.previewEvents?.(effect, snapshot) ?? []);
+}

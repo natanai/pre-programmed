@@ -192,6 +192,74 @@ export function addInventoryItem(
   return { ...state, inventory };
 }
 
+/**
+ * Grant an item through authored runtime effects. When configured, one newly
+ * granted instance is equipped to its stable body-slot key through the same
+ * transactional replacement path used by player equipment operations.
+ */
+export function giveInventoryItem(
+  snapshot: ProjectSnapshot,
+  state: PlayState,
+  itemId: string,
+  quantity = 1,
+): PlayState {
+  const item = snapshot.items.find((candidate) => candidate.id === itemId);
+  const grantedQuantity = Math.floor(quantity);
+  if (!item || grantedQuantity <= 0 || !item.equipOnGiveSlotKey) {
+    return addInventoryItem(snapshot, state, itemId, quantity);
+  }
+
+  const slot = activeBodySlots(snapshot, state).find((candidate) => candidate.key === item.equipOnGiveSlotKey);
+  if (!slot || !itemCanEquipToSlot(item, slot)) {
+    return addInventoryItem(snapshot, state, itemId, grantedQuantity);
+  }
+
+  const instanceId = crypto.randomUUID();
+  let nextState = state;
+
+  if (item.equippedStorage === "slot") {
+    const provisionalState: PlayState = {
+      ...state,
+      inventory: [...state.inventory, {
+        instanceId,
+        itemId: item.id,
+        quantity: 1,
+        x: 0,
+        y: 0,
+        equippedSlotKey: slot.key,
+        state: { ...item.initialState },
+      }],
+    };
+    const candidateState = equipInventoryEntry(snapshot, provisionalState, instanceId, slot.key);
+    const safelyReplaced = candidateState.inventory
+      .filter((entry) => entry.equippedSlotKey === slot.key)
+      .every((entry) => entry.instanceId === instanceId);
+    nextState = safelyReplaced
+      ? candidateState
+      : addInventoryItem(snapshot, state, item.id, 1);
+  } else {
+    const placement = findFirstPlacement(snapshot, state, item);
+    if (placement) {
+      const provisionalState: PlayState = {
+        ...state,
+        inventory: [...state.inventory, {
+          instanceId,
+          itemId: item.id,
+          quantity: 1,
+          ...placement,
+          equippedSlotKey: null,
+          state: { ...item.initialState },
+        }],
+      };
+      nextState = equipInventoryEntry(snapshot, provisionalState, instanceId, slot.key);
+    } else {
+      nextState = addInventoryItem(snapshot, state, item.id, 1);
+    }
+  }
+
+  return addInventoryItem(snapshot, nextState, item.id, grantedQuantity - 1);
+}
+
 export function createStartingInventory(snapshot: ProjectSnapshot, state: PlayState): PlayState {
   const bodyType = activeBodyType(snapshot, state);
   const remaining = new Map(snapshot.items.map((item) => [item.id, Math.max(0, item.startingQuantity ?? 0)]));

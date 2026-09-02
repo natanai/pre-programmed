@@ -7,12 +7,12 @@ const synth: EffectHandler = (effect, _snapshot, state) => {
 
 const audio: EffectHandler = (effect, _snapshot, state) => {
   if (effect.type !== "audio") return unchangedEffect(state);
-  return { state, events: [{ type: "audio", assetPath: effect.assetPath }] };
+  return { state, events: [{ type: "audio", assetId: effect.assetId }] };
 };
 
 const art: EffectHandler = (effect, _snapshot, state) => {
   if (effect.type !== "art") return unchangedEffect(state);
-  return { state, events: [{ type: "art", assetPath: effect.assetPath }] };
+  return { state, events: [{ type: "art", assetId: effect.assetId }] };
 };
 
 export const MEDIA_EFFECT_HANDLERS: Readonly<Record<string, EffectHandler>> = {

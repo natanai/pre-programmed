@@ -8,9 +8,9 @@ export function mediaEffectEventsForTextCue(cue: TextCue): MediaEffectEvent[] {
     case "synth":
       return [{ type: "synth", synthId: cue.value }];
     case "audio":
-      return [{ type: "audio", assetPath: cue.value }];
+      return [{ type: "audio", assetId: cue.value }];
     case "sprite":
-      return [{ type: "art", assetPath: cue.value }];
+      return [{ type: "art", assetId: cue.value }];
     default:
       return [];
   }

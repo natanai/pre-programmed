@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ItemDefinition } from "../src/game/model";
+import type { ItemDefinition } from "../src/features/inventory/model";
 import { interaction, project } from "./fixtures";
 import { validateNewInventoryReferences } from "../worker/features/inventoryIntegrity";
 
@@ -9,7 +9,7 @@ function item(id: string): ItemDefinition {
     key: id,
     name: id,
     description: "",
-    assetPath: "",
+    assetId: "",
     width: 1,
     height: 1,
     stackable: false,

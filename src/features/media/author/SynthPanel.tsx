@@ -4,7 +4,7 @@ import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import type { SynthSound } from "../model";
-import { createSilentSynth } from "../synth";
+import { applySynthPreset, createStarterSynth, type SynthPresetId } from "../synth";
 import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 
@@ -32,7 +32,7 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
-  const [draft, setDraft] = useState<SynthSound>(() => structuredClone(initial ?? { ...createSilentSynth(), key: "" }));
+  const [draft, setDraft] = useState<SynthSound>(() => structuredClone(initial ?? { ...createStarterSynth(), key: "", label: "" }));
   const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [voiceIndex, setVoiceIndex] = useState(0);
   const [saving, setSaving] = useState(false);
@@ -80,6 +80,7 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
         </section>
         <section className="synth-section">
           <h3>VOICES</h3>
+          <div className="synth-quick-start"><span>QUICK START</span>{(["blip", "chime", "alert", "hit"] as SynthPresetId[]).map((preset) => <button type="button" key={preset} onClick={() => { setDraft(applySynthPreset(draft, preset)); setVoiceIndex(0); void playSynthSound(applySynthPreset(draft, preset)); }}>[{preset.toUpperCase()}]</button>)}</div>
           <nav className="voice-tabs">{draft.voices.map((voice, index) => <button type="button" aria-pressed={voiceIndex === index} key={index} onClick={() => setVoiceIndex(index)}>[V{index + 1} {voice.waveform}]</button>)}</nav>
           {draft.voices[voiceIndex] ? <VoiceEditor sound={draft} voiceIndex={voiceIndex} onChange={setDraft} /> : <div className="workspace-empty">NO VOICE SELECTED.</div>}
         </section>

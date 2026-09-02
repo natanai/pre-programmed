@@ -1,15 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { addInventoryItem } from "../src/game/inventory";
-import {
-  createEmptyPlayState,
-  reconcilePlayState,
-  type ComputedDefinition,
-  type ItemDefinition,
-  type OperationHook,
-  type VariableDefinition,
-} from "../src/game/model";
-import { executeOperation, formatOperationOutput } from "../src/game/operations";
-import { readComputedValue } from "../src/game/runtimeValues";
+import { createEmptyPlayState, reconcilePlayState } from "../src/engine/project/playState";
+import { addInventoryItem } from "../src/features/inventory/runtime";
+import type { ItemDefinition } from "../src/features/inventory/model";
+import type { OperationHook } from "../src/features/operations/model";
+import { executeOperation, formatOperationOutput } from "../src/features/operations/runtime";
+import type { ComputedDefinition, VariableDefinition } from "../src/features/state/model";
+import { readComputedValue } from "../src/features/state/runtimeValues";
 import { project } from "./fixtures";
 
 const firstAndLaterHooks: OperationHook[] = [
@@ -34,7 +30,7 @@ const variable: VariableDefinition = {
 };
 
 const item: ItemDefinition = {
-  id: "item-definition", key: "stone", name: "Stone", description: "A stone", assetPath: "", width: 1, height: 1,
+  id: "item-definition", key: "stone", name: "Stone", description: "A stone", assetId: "", width: 1, height: 1,
   stackable: false, maxStack: 1, removable: false, startingQuantity: 0, interactable: true,
   operations: ["remove", "move"], tags: [], initialState: {}, hooks: firstAndLaterHooks,
 };

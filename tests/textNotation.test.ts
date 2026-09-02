@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compileTextNotation } from "../src/game/textNotation";
+import { compileTextNotation, validateTextNotation } from "../src/features/narrative/textNotation";
 
 const performance = { charactersPerSecond: 20, cues: [] };
 
@@ -47,5 +47,15 @@ describe("inline text notation", () => {
     });
     expect(compiled.text).toBe("a bc d");
     expect(compiled.performance.cues.find((cue) => cue.id === "manual")).toMatchObject({ start: 2, end: 4 });
+  });
+
+  it("reports broken and unknown inline rules before an author can save them", () => {
+    expect(validateTextNotation("wait /f{run")).toEqual([
+      expect.objectContaining({ message: expect.stringContaining("closing }") }),
+    ]);
+    expect(validateTextNotation("say /x{no} now")).toEqual(expect.arrayContaining([
+      expect.objectContaining({ message: expect.stringContaining("Unknown text rule") }),
+    ]));
+    expect(validateTextNotation("say /f{yes} //path")).toEqual([]);
   });
 });

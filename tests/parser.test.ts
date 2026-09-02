@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createEmptyPlayState } from "../src/game/model";
-import { normalizeCommand, parseCommand } from "../src/game/parser";
+import { createEmptyPlayState } from "../src/engine/project/playState";
+import { normalizeCommand, parseCommand } from "../src/features/narrative/parser";
 import { interaction, project } from "./fixtures";
 
 describe("deterministic parser", () => {

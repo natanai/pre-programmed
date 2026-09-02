@@ -1,6 +1,6 @@
-name: Verify prototype
+name: Verify behavior
 
-# Full verification is intentionally opt-in during rapid prototyping.
+# Full behavioral verification is intentionally opt-in during rapid prototyping.
 # Production deployment remains the only automatic workflow on main.
 on:
   workflow_dispatch:
@@ -28,5 +28,5 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
-      - name: Verify prototype
+      - name: Verify behavior
         run: npm run verify

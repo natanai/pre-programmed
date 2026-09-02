@@ -22,12 +22,16 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (candidate.authorStatus !== undefined && !["draft", "configured"].includes(String(candidate.authorStatus))) {
         return "Interaction outcome author status is invalid.";
       }
-      if (candidate.responseCharactersPerSecond !== undefined && (
-        !Number.isInteger(candidate.responseCharactersPerSecond) ||
-        (candidate.responseCharactersPerSecond as number) < 1 ||
-        (candidate.responseCharactersPerSecond as number) > 120
-      )) {
-        return "Response text speed must be an integer from 1 to 120.";
+      const performance = candidate.responsePerformance;
+      const legacySpeed = candidate.responseCharactersPerSecond;
+      const validLegacyQueuedOutcome = performance === undefined
+        && (legacySpeed === undefined || (Number.isInteger(legacySpeed) && (legacySpeed as number) >= 1 && (legacySpeed as number) <= 120));
+      if (!validLegacyQueuedOutcome && (!object(performance)
+        || !Number.isInteger(performance.charactersPerSecond)
+        || (performance.charactersPerSecond as number) < 1
+        || (performance.charactersPerSecond as number) > 120
+        || !Array.isArray(performance.cues))) {
+        return "Response text performance is invalid.";
       }
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (
         typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128

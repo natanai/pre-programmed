@@ -19,6 +19,8 @@ export const visitedConditionAdapter: ConditionAuthorAdapter = {
 export const interactionVisibilityEffectAdapter: EffectAuthorAdapter = {
   type: "set_interaction_visibility",
   label: "show/hide interaction",
+  category: "narrative",
+  description: "Change whether another authored input is available to the player.",
   create: () => ({ id: crypto.randomUUID(), type: "set_interaction_visibility", interactionId: "", visible: true }),
   summarize: (effect, snapshot) => {
     if (effect.type !== "set_interaction_visibility") return "Show/hide interaction";
@@ -35,6 +37,8 @@ export const interactionVisibilityEffectAdapter: EffectAuthorAdapter = {
 export const transitionEffectAdapter: EffectAuthorAdapter = {
   type: "transition",
   label: "transition",
+  category: "narrative",
+  description: "Move play to another node after this outcome.",
   create: () => ({ id: crypto.randomUUID(), type: "transition", nodeId: "" }),
   summarize: (effect, snapshot) => {
     if (effect.type !== "transition") return "Transition";

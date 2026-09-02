@@ -1,5 +1,7 @@
 import "./textRulesReference.css";
 
+export type InlineTextRule = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "pause" | "literal-slash";
+
 /**
  * Compact reminder for Narrative's canonical inline performance notation.
  *
@@ -7,11 +9,21 @@ import "./textRulesReference.css";
  * the authoring surface and compileTextNotation remains the single runtime
  * interpreter for these rules.
  */
-export function TextRulesReference() {
+export function TextRulesReference({ onApply }: { onApply?: (rule: InlineTextRule) => void }) {
   return <details className="text-rules-reference">
     <summary>[? TEXT RULES]</summary>
     <div className="text-rules-reference-body">
       <p>Write these directly in the text. They change how words are delivered; they do not run game/world effects.</p>
+      {onApply ? <div className="text-rule-actions" aria-label="Insert text rule">
+        <button type="button" onClick={() => onApply("l")}>[SLOW]</button>
+        <button type="button" onClick={() => onApply("f")}>[FAST]</button>
+        <button type="button" onClick={() => onApply("s")}>[SHOUT]</button>
+        <button type="button" onClick={() => onApply("h")}>[HIT]</button>
+        <button type="button" onClick={() => onApply("w")}>[WAVE]</button>
+        <button type="button" onClick={() => onApply("b")}>[BLINK]</button>
+        <button type="button" onClick={() => onApply("i")}>[INSTANT]</button>
+        <button type="button" onClick={() => onApply("pause")}>[PAUSE]</button>
+      </div> : null}
       <div className="text-rules-grid">
         <span><strong>/l&#123;text&#125;</strong> slow</span>
         <span><strong>/f&#123;text&#125;</strong> fast</span>

@@ -148,7 +148,11 @@ The Structure tool contains additional relationship notation for navigating the 
 
 ## Assets
 
-Put any file you want the app to detect and assign under:
+In Author mode, choose an Image or Sound reference wherever one is needed. The same chooser can create an asset without leaving the node, response, effect, item, or body type you are editing. Embedded assets are saved with the project under stable IDs, so they survive browsers, backups, local runs, and hosted deployments without depending on a typed path.
+
+The current portable embedded store accepts files up to 1 MB each. It is one implementation of the engine's `AssetStore` contract, not part of effect or inventory semantics; a future hosted object-store adapter can replace it without changing authored references.
+
+Repository-managed assets remain available as a read-only provider. Put them under:
 
 ```text
 public/assets/
@@ -184,7 +188,7 @@ is served by the built app as:
 /assets/sprites/openeye.svg
 ```
 
-You do **not** need to hand-write that path in ordinary Author editing. Detected files appear in the asset selector after the asset has been committed to `main` and the deployment finishes.
+You do **not** hand-write that path in Author editing. Detected files appear in the same asset chooser after the file has been committed and deployed, each represented by a stable repository asset ID.
 
 The generated asset manifest is build output. Do not maintain it by hand; the build recreates it from `public/assets/`.
 
@@ -202,11 +206,15 @@ PNG, GIF, WebP, and normal SVG dimension information is detected during the buil
 
 ## Audio
 
-There are two different sound systems.
+There are three sound sources behind the same authoring flow.
+
+### Embedded audio
+
+Create a Sound from an effect or cue and choose a file. It is stored with the project and can be selected immediately.
 
 ### Repository audio
 
-Recorded audio belongs under `public/assets/audio/` and can be selected from a `play repo audio` effect after deployment.
+Recorded audio may also live under `public/assets/audio/` and becomes selectable from a `play sound` effect after deployment.
 
 Use this for music, ambience, recorded effects, or anything that already exists as an audio file.
 

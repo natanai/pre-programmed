@@ -3,8 +3,8 @@ import { AuthorHome } from "./author/AuthorHome";
 import {
   renderAuthorFeaturePlaySurfaces,
   resolveAuthorFeatureTerminalShortcut,
-  resolveAuthorUnhandledInputMutation,
 } from "./author/features/registry";
+import { resolveAuthorCapability } from "./author/capabilities/runtime";
 import {
   flushQueuedAuthorMutations,
   persistAuthorMutation,
@@ -27,7 +27,6 @@ import {
   loadCachedSnapshot,
   saveCachedSnapshot,
 } from "./data/localProject";
-import { assetUrl } from "./data/assets";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./engine/application/catalog";
 import {
   advanceProjectClocks,
@@ -73,7 +72,7 @@ type TranscriptLine = {
   nodeId?: string;
   speakerId?: string | null;
   command?: boolean;
-  artPath?: string;
+  artUrl?: string;
 };
 
 function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
@@ -125,6 +124,7 @@ export default function App() {
   const [authorMode, setAuthorMode] = useState(false);
   const [authorView, setAuthorView] = useState(true);
   const [authorMessage, setAuthorMessage] = useState("");
+  const [pendingAuthorTryInput, setPendingAuthorTryInput] = useState("");
   const authorTasks = useAuthorTaskRuntime();
   const panel = authorTasks.activeTask?.route ?? null;
   const setPanel = (next: AuthorTaskRoute | null) => next ? authorTasks.openTask(next) : authorTasks.closeAll();
@@ -426,11 +426,11 @@ export default function App() {
           setNotifications((items) => [...items, { id, text, anchorLineId: anchoredLineId }]);
           window.setTimeout(() => setNotifications((items) => items.filter((item) => item.id !== id)), 4000);
         },
-        appendInlineAsset(assetPath) {
-          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artPath: assetPath }]);
+        appendInlineAsset(assetUrl) {
+          setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: "", artUrl: assetUrl }]);
         },
-        showOverlayAsset(assetPath) {
-          setEventArt(assetUrl(assetPath));
+        showOverlayAsset(url) {
+          setEventArt(url);
         },
       },
     });
@@ -441,7 +441,7 @@ export default function App() {
     execution: { state: PlayState; events: EffectEvent[]; responseText: string },
     previousState: PlayState,
     commandLineId: string,
-    charactersPerSecond = 18,
+    performance: TextPerformance = { charactersPerSecond: 18, cues: [] },
     speakerId: string | null = null,
   ) => {
     setPlayState(execution.state);
@@ -453,7 +453,7 @@ export default function App() {
     if (execution.responseText) {
       firedCueIds.current = new Set();
       completedPendingDestination.current = "";
-      const compiled = compileTextNotation(execution.responseText, { charactersPerSecond, cues: [] });
+      const compiled = compileTextNotation(execution.responseText, performance);
       setActiveText(compiled.text);
       setActiveNodeId(undefined);
       setActiveSpeakerId(speakerId);
@@ -508,11 +508,22 @@ export default function App() {
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
 
-    if (!parsed.interaction && !parsed.invocation && authorMode && authorView) {
-      const mutation = resolveAuthorUnhandledInputMutation(currentState.currentNodeId, value.trim());
-      if (mutation) {
+    if (parsed.reason === "fallback" && authorMode && authorView) {
+      const resolution = resolveAuthorCapability({
+        capability: "input.capture-unmatched",
+        data: { sourceNodeId: currentState.currentNodeId, input: value.trim() },
+      }, { snapshot, playState: currentState });
+      if (resolution?.type === "mutation") {
         setParserResult(null);
-        await persist(mutation.operations, mutation.description);
+        const result = await persist(resolution.operations, resolution.description);
+        if (result.status === "saved" || result.status === "queued") {
+          setAuthorMessage(resolution.message ?? "DRAFT INPUT CREATED.");
+        }
+        return;
+      }
+      if (resolution?.type === "handled") {
+        setParserResult(null);
+        setAuthorMessage(resolution.message ?? "INPUT CAPTURED.");
         return;
       }
     }
@@ -567,10 +578,17 @@ export default function App() {
       execution,
       commandState,
       commandLineId,
-      execution.outcome?.responseCharactersPerSecond ?? 18,
+      execution.outcome?.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
       execution.outcome?.speakerId ?? null,
     );
   };
+
+  useEffect(() => {
+    if (!pendingAuthorTryInput || authorTasks.hasTasks) return;
+    const input = pendingAuthorTryInput;
+    setPendingAuthorTryInput("");
+    void handleTerminalValue(input);
+  }, [pendingAuthorTryInput, authorTasks.hasTasks, snapshot?.revision]);
 
   const restoreBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
@@ -641,7 +659,7 @@ export default function App() {
       >
         <div className="terminal-history-content">
           {transcript.map((line) => {
-            if (line.artPath) return <div className="story-line" key={line.id} aria-hidden="true"><img src={assetUrl(line.artPath)} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
+            if (line.artUrl) return <div className="story-line" key={line.id} aria-hidden="true"><img src={line.artUrl} alt="" style={{ display: "block", maxWidth: 32, maxHeight: 32, width: "auto", height: "auto", imageRendering: "pixelated" }} /></div>;
             if (authorExperience && line.nodeId) return <button type="button" className="story-edit-target transcript-node" key={line.id} onClick={(event) => { event.stopPropagation(); setPanel({ type: "feature", feature: "narrative", workspace: "node", data: { nodeId: line.nodeId! } }); }}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}</button>;
             const anchoredNotifications = notifications.filter((item) => item.anchorLineId === line.id);
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}><SpeakerPrefix snapshot={snapshot} speakerId={line.speakerId} />{line.text}{anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => <span key={item.id}>{item.text}</span>)}</span> : null}</div>;
@@ -707,6 +725,20 @@ export default function App() {
             updateState: applyWorkspaceState,
             output: showWorkspaceOutput,
             events: handleEffectEvents,
+            preview: ({ text, performance, speakerId = null, events = [] }) => {
+              firedCueIds.current = new Set();
+              const compiled = compileTextNotation(text, performance);
+              setActiveText(compiled.text);
+              setActiveNodeId(undefined);
+              setActiveSpeakerId(speakerId);
+              setActivePerformance(compiled.performance);
+              setPendingDestinationNodeId(null);
+              handleEffectEvents(events);
+            },
+            tryInput: (input) => {
+              setPendingAuthorTryInput(input);
+              authorTasks.closeAll();
+            },
           }}
           onSnapshot={applyCanonicalSnapshot}
           onRestore={restoreBookmark}

@@ -1,4 +1,5 @@
 import type { GameNode, Interaction } from "../../src/features/narrative/model";
+import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
 
@@ -42,13 +43,55 @@ type OutcomeRow = {
   response_text: string;
   response_speaker_id: string | null;
   response_characters_per_second: number;
+  response_performance_json: string;
   effects_json: string;
   disposition: "stay" | "transition";
   destination_node_id: string | null;
 };
 
+function migrateLegacyMediaEffects(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return value.map((effect) => {
+    if (!effect || typeof effect !== "object") return effect;
+    const candidate = effect as Record<string, unknown>;
+    if ((candidate.type === "audio" || candidate.type === "art")
+      && typeof candidate.assetPath === "string" && typeof candidate.assetId !== "string") {
+      const { assetPath, ...rest } = candidate;
+      return { ...rest, assetId: legacyAssetId(assetPath) };
+    }
+    return effect;
+  });
+}
+
+function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?: unknown }> }>(performance: T): T {
+  return {
+    ...performance,
+    cues: (performance.cues ?? []).map((cue) => (
+      (cue.type === "audio" || cue.type === "sprite") && typeof cue.value === "string"
+        ? { ...cue, value: legacyAssetId(cue.value) }
+        : cue
+    )),
+  };
+}
+
 export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
   id: "narrative",
+  migrations: [{
+    id: 17,
+    name: "narrative-shared-authored-text-performance",
+    sql: `
+      ALTER TABLE interaction_outcomes
+      ADD COLUMN response_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}';
+
+      UPDATE interaction_outcomes
+      SET response_performance_json = json_object(
+        'charactersPerSecond', response_characters_per_second,
+        'cues', json('[]')
+      );
+
+      UPDATE project_meta SET schema_version = 17 WHERE id = 1;
+    `,
+  }],
 
   async load(db) {
     const [meta, nodes, interactions, aliases, outcomes] = await Promise.all([
@@ -67,7 +110,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         .all<AliasRow>(),
       db.prepare(
         `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_speaker_id,
-                response_characters_per_second, effects_json, disposition, destination_node_id
+                response_characters_per_second, response_performance_json, effects_json, disposition, destination_node_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
     ]);
@@ -79,10 +122,10 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
     return {
       startNodeId: meta.start_node_id,
       nodes: nodes.results.map((row): GameNode => {
-        const performance = parseJson(row.performance_json, {
+        const performance = migrateLegacyMediaCues(parseJson(row.performance_json, {
           charactersPerSecond: row.characters_per_second,
           cues: [],
-        });
+        }));
         return {
           id: row.id,
           nodeNumber: row.node_number,
@@ -114,8 +157,11 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           condition: parseJson(outcome.condition_json, { type: "always" }),
           responseText: outcome.response_text,
           speakerId: outcome.response_speaker_id,
-          responseCharactersPerSecond: outcome.response_characters_per_second,
-          effects: parseJson(outcome.effects_json, []),
+          responsePerformance: migrateLegacyMediaCues(parseJson(outcome.response_performance_json, {
+            charactersPerSecond: outcome.response_characters_per_second,
+            cues: [],
+          })),
+          effects: migrateLegacyMediaEffects(parseJson(outcome.effects_json, [])) as Interaction["outcomes"][number]["effects"],
           disposition: outcome.disposition,
           destinationNodeId: outcome.destination_node_id,
         })),
@@ -169,11 +215,17 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         db.prepare("DELETE FROM interaction_aliases WHERE interaction_id = ?").bind(value.id),
         db.prepare("DELETE FROM interaction_outcomes WHERE interaction_id = ?").bind(value.id),
         ...value.aliases.map((alias, index) => db.prepare("INSERT INTO interaction_aliases (interaction_id, alias, order_index) VALUES (?, ?, ?)").bind(value.id, alias, index)),
-        ...value.outcomes.map((outcome) => db.prepare(
+        ...value.outcomes.map((outcome) => {
+          const legacyOutcome = outcome as typeof outcome & { responseCharactersPerSecond?: number };
+          const performance = outcome.responsePerformance ?? {
+            charactersPerSecond: legacyOutcome.responseCharactersPerSecond ?? 18,
+            cues: [],
+          };
+          return db.prepare(
           `INSERT INTO interaction_outcomes
            (id, interaction_id, order_index, label, condition_json, response_text, response_speaker_id,
-            response_characters_per_second, effects_json, disposition, destination_node_id, author_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            response_characters_per_second, response_performance_json, effects_json, disposition, destination_node_id, author_status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         ).bind(
           outcome.id,
           value.id,
@@ -182,12 +234,14 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           JSON.stringify(outcome.condition),
           outcome.responseText,
           outcome.speakerId ?? null,
-          outcome.responseCharactersPerSecond ?? 18,
+          performance.charactersPerSecond,
+          JSON.stringify(performance),
           JSON.stringify(outcome.effects),
           outcome.disposition,
           outcome.destinationNodeId,
           outcome.authorStatus ?? "configured",
-        )),
+        );
+        }),
       ];
     }
 

@@ -6,7 +6,7 @@ export type ItemDefinition = {
   key: string;
   name: string;
   description: string;
-  assetPath: string;
+  assetId: string;
   width: number;
   height: number;
   stackable: boolean;
@@ -19,6 +19,8 @@ export type ItemDefinition = {
   equipmentSlotKeys?: string[];
   /** Whether an equipped instance still occupies the inventory grid. */
   equippedStorage?: "inventory" | "slot";
+  /** Stable body-slot key that a newly granted instance should equip to. */
+  equipOnGiveSlotKey?: string | null;
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];
@@ -59,7 +61,7 @@ export type BodySlotDefinition = {
 export type BodyTypeDefinition = {
   id: string;
   name: string;
-  assetPath: string;
+  assetId: string;
   /** Missing only on legacy snapshots created before body slots existed. */
   slots?: BodySlotDefinition[];
   /** Equipment drawn from authored starting quantities for a new playthrough. */
