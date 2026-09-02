@@ -84,27 +84,31 @@ npx wrangler deploy
 
 The Worker initializes the current schema through the canonical migration system. Do not hand-edit D1 tables for normal installation.
 
-## 5. Point the client at the installation's Worker
+## 5. API origin
 
-Set:
+A hosted client must point to **its own installation's API**. The reusable engine has no upstream-owner fallback.
+
+For ordinary deployment through the included GitHub workflow, you do not need to hard-code a Worker URL. The workflow captures the URL reported by the Worker deployment and injects it into the client build automatically.
+
+For a custom API domain or nonstandard deployment flow, set:
 
 ```text
 VITE_API_ORIGIN
 ```
 
-For the included GitHub Pages workflow, configure repository variable:
+or, for the included GitHub workflow, the optional repository variable:
 
 ```text
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
-This variable must point to **this installation's** API. The production workflow deliberately has no fallback to the upstream repository owner's Worker.
+When that repository variable is present, it overrides the automatically captured Worker target.
 
 The Pages base path is derived from the repository name for the standard setup. `VITE_BASE_PATH` remains available for nonstandard hosting.
 
 ## 6. GitHub production deployment
 
-The included production workflow runs on pushes to `main` that affect deployable source/configuration. Documentation-only changes do not trigger production deployment.
+The included production workflow runs on pushes to `main` that affect deployable source/configuration. Documentation-only and test-only changes do not trigger production deployment.
 
 Required GitHub configuration:
 
@@ -113,9 +117,6 @@ Secrets:
 ADMIN_KEY
 CLOUDFLARE_API_TOKEN
 CLOUDFLARE_ACCOUNT_ID
-
-Variable:
-PRE_PROGRAMMED_API_ORIGIN
 ```
 
 Optional installation overrides:
@@ -125,15 +126,16 @@ PRE_PROGRAMMED_WORKER_NAME
 PRE_PROGRAMMED_D1_DATABASE_NAME
 PRE_PROGRAMMED_D1_DATABASE_ID
 PRE_PROGRAMMED_ASSET_BUCKET_NAME
+PRE_PROGRAMMED_API_ORIGIN
 ```
 
 The workflow:
 
-1. installs dependencies;
-2. builds the client;
-3. prepares temporary Worker configuration;
-4. deploys the Worker;
-5. verifies the configured API and initialized project;
+1. installs dependencies and generates repository Media metadata;
+2. prepares temporary Worker configuration;
+3. deploys the Worker and captures its reported deployment URL;
+4. builds the client against that installation-specific API URL, unless a custom API override is configured;
+5. verifies the selected API and initialized project;
 6. publishes GitHub Pages.
 
 When `PRE_PROGRAMMED_ASSET_BUCKET_NAME` is unset, R2 is not required or bound.

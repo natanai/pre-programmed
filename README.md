@@ -175,8 +175,8 @@ Local-only use does not require a Cloudflare account. Hosted deployment currentl
 
 ## Production workflow
 
-`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow builds the client, prepares installation-specific Worker configuration, deploys the Worker, verifies the configured API, and publishes GitHub Pages.
+`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow prepares installation-specific Worker configuration, deploys that installation's Worker, captures the deployment URL reported by Wrangler, builds the client against that URL, verifies the API, and publishes GitHub Pages.
 
-A cloned installation must provide its own deployment variables and secrets. The workflow must never fall back to this repository owner's production API.
+A cloned installation must provide its own credentials and persistence configuration. It does **not** need to copy this repository owner's Worker URL: the default workflow discovers its own deployment target, while `PRE_PROGRAMMED_API_ORIGIN` remains an optional override for custom API domains. The reusable client contains no upstream production fallback.
 
 See [`docs/installation.md`](docs/installation.md) for the required configuration and [`docs/local-runtime.md`](docs/local-runtime.md) for the no-cloud local path.
