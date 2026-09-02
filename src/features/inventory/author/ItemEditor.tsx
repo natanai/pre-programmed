@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
@@ -7,6 +7,7 @@ import type { MutationOperation, ProjectSnapshot } from "../../../engine/project
 import type { ItemDefinition } from "../model";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import "./inventoryAuthor.css";
+import "./itemEditorDisclosure.css";
 import { referencesTo } from "../../../author/references/projectReferences";
 
 const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
@@ -19,6 +20,22 @@ function emptyItem(): ItemDefinition {
     equipOnGiveSlotKey: null,
     tags: [], initialState: {}, hooks: [],
   };
+}
+
+function ItemEditorDisclosure({ title, summary, defaultOpen = false, children }: {
+  title: string;
+  summary: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    if (defaultOpen) setOpen(true);
+  }, [defaultOpen]);
+  return <details className="item-editor-section item-editor-disclosure" open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
+    <summary><span>{title}</span><small>{summary}</small></summary>
+    <div className="item-editor-disclosure-body">{children}</div>
+  </details>;
 }
 
 export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty }: {
@@ -56,6 +73,8 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
     (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
   )), [draft.id, snapshot.bodyBackgrounds]);
   const usages = initial ? referencesTo(snapshot, "item", initial.id).filter((reference) => reference.ownerId !== initial.id) : [];
+  const operationCount = (draft.operations ?? []).length;
+  const responseCount = (draft.hooks ?? []).length;
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -97,16 +116,14 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
   return <section className="author-panel author-panel-frame item-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>ITEM · {draft.name || "NEW"}</span></header>
     <div className="author-panel-body item-editor-body">
-      <section className="item-editor-section">
-        <h3>IDENTITY</h3>
+      <ItemEditorDisclosure title="IDENTITY" summary={draft.name || "Name, description, tags"} defaultOpen>
         <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} autoFocus={!initial} /></label>
         <label>DESCRIPTION <textarea rows={3} value={draft.description} onChange={(event) => setDraft({ ...draft, description: event.target.value })} /></label>
         <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => setDraft({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
         <GeneratedKeyField source={draft.name} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
-      </section>
+      </ItemEditorDisclosure>
 
-      <section className="item-editor-section">
-        <h3>INVENTORY TILE</h3>
+      <ItemEditorDisclosure title="INVENTORY TILE" summary={`${draft.width}×${draft.height} · start ${draft.startingQuantity ?? 0}${draft.stackable ? " · stackable" : ""}`}>
         <label>ASSET <ReferenceField kind="media-image" value={draft.assetId} onChange={(assetId) => setDraft({ ...draft, assetId })} placeholder="none / text tile" /></label>
         <div className="form-grid">
           <label>WIDTH <input type="number" min={1} max={10} value={draft.width} onChange={(event) => setDraft({ ...draft, width: Number(event.target.value) })} /></label>
@@ -116,10 +133,9 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
           <label className="check-label"><input type="checkbox" checked={draft.removable} onChange={(event) => setDraft({ ...draft, removable: event.target.checked })} /> removal succeeds without a hook</label>
           <label>STARTING QUANTITY <input type="number" min={minimumStartingQuantity} step={1} value={draft.startingQuantity ?? 0} onChange={(event) => setDraft({ ...draft, startingQuantity: Math.max(minimumStartingQuantity, Math.floor(Number(event.target.value))) })} /><small>Total in every new playthrough, including any starting equipped instances.{minimumStartingQuantity ? ` At least ${minimumStartingQuantity} required by body-type loadouts.` : ""}</small></label>
         </div>
-      </section>
+      </ItemEditorDisclosure>
 
-      <section className="item-editor-section">
-        <h3>EQUIPMENT</h3>
+      <ItemEditorDisclosure title="EQUIPMENT" summary={(draft.equipmentSlotKeys ?? []).length ? `${draft.equipmentSlotKeys?.length} restricted slot${draft.equipmentSlotKeys?.length === 1 ? "" : "s"}` : "Any compatible body slot"}>
         <p className="field-help">Enable the <strong>equip</strong> operation below to let this item use body slots. Leaving every slot unchecked allows any slot on the current body type; checking slots restricts the item to those stable slot keys.</p>
         <label>EQUIPPED STORAGE
           <select value={draft.equippedStorage ?? "inventory"} onChange={(event) => setDraft({ ...draft, equippedStorage: event.target.value as "inventory" | "slot" })}>
@@ -156,13 +172,12 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
             {slot.label} <small>{slot.key}</small>
           </label>)}
         </div> : <p className="field-help">No body slots are authored yet. This item will be compatible with future slots unless you later restrict it.</p>}
-      </section>
+      </ItemEditorDisclosure>
 
-      <section className="item-editor-section">
-        <h3>PLAYER BEHAVIOR</h3>
-        <OperationHooksEditor snapshot={snapshot} targetKind="inventory.item" defaultOpen={openOperations} preferredOperation={preferredOperation} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+      <ItemEditorDisclosure title="PLAYER BEHAVIOR" summary={`${operationCount} operation${operationCount === 1 ? "" : "s"} · ${responseCount} response${responseCount === 1 ? "" : "s"}`} defaultOpen={openOperations || Boolean(preferredOperation)}>
+        <OperationHooksEditor snapshot={snapshot} targetKind="inventory.item" defaultOpen={openOperations || Boolean(preferredOperation)} preferredOperation={preferredOperation} capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
-      </section>
+      </ItemEditorDisclosure>
     </div>
     <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
   </section>;
