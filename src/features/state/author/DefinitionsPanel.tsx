@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
@@ -86,11 +87,12 @@ function variableTypeForResource(kind?: StateAuthorResourceKind): VariableDefini
   return undefined;
 }
 
-export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty, resourceKind, resourceId, preferredOperation }: {
+export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty, onRegisterSave, resourceKind, resourceId, preferredOperation }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onClose: () => void;
+  onClose?: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
+  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
   resourceKind?: StateAuthorResourceKind;
   resourceId?: string;
   preferredOperation?: string;
@@ -165,8 +167,8 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     setBaseline(JSON.stringify(next));
   };
 
-  const saveVariable = async () => {
-    if (!variable?.label.trim()) return;
+  const saveVariable = async (): Promise<boolean> => {
+    if (!variable?.label.trim()) return false;
     const definition = {
       ...variable,
       valueType: lockedVariableType ?? variable.valueType,
@@ -185,12 +187,14 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
         setFocusPrimaryField(false);
         setBaseline(JSON.stringify(definition));
         setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally { setSaving(false); }
   };
 
-  const saveComputed = async () => {
-    if (!computed?.label.trim()) return;
+  const saveComputed = async (): Promise<boolean> => {
+    if (!computed?.label.trim()) return false;
     const definition = {
       ...computed,
       key: resolveAuthorKey({
@@ -208,12 +212,14 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
         setFocusPrimaryField(false);
         setBaseline(JSON.stringify(definition));
         setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally { setSaving(false); }
   };
 
-  const saveEntity = async () => {
-    if (!entity?.name.trim()) return;
+  const saveEntity = async (): Promise<boolean> => {
+    if (!entity?.name.trim()) return false;
     const savedEntity = {
       ...entity,
       type: lockedEntityType ?? entity.type,
@@ -232,9 +238,18 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
         setFocusPrimaryField(false);
         setBaseline(JSON.stringify(savedEntity));
         setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally { setSaving(false); }
   };
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    const save = variable ? saveVariable : computed ? saveComputed : entity ? saveEntity : null;
+    onRegisterSave(save);
+    return () => onRegisterSave(null);
+  });
 
   const title = variable
     ? `VARIABLE · ${variable.label || variable.key || "NEW"}`
@@ -268,7 +283,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
         />
       </div> : null}
       {editing ? <div className="definitions-detail-pane">
-        <button type="button" className="definition-back" onClick={cancelEditor}>[← {resourceMode ? "CANCEL" : backLabel}]</button>
+        {cancelEditor ? <button type="button" className="definition-back" onClick={cancelEditor}>[← {resourceMode ? "BACK" : backLabel}]</button> : null}
         <div className="definition-detail-scroll">
           {variable ? <VariableEditor variable={variable} snapshot={snapshot} autoFocus={focusPrimaryField} lockedValueType={lockedVariableType} preferredOperation={preferredOperation} onChange={setVariable} /> : null}
           {computed ? <ComputedEditor computed={computed} snapshot={snapshot} autoFocus={focusPrimaryField} preferredOperation={preferredOperation} onChange={setComputed} /> : null}
@@ -454,10 +469,10 @@ function EntityEditor({ entity, snapshot, autoFocus, lockedType, preferredOperat
   </div>;
 }
 
-function EditorFooter({ saving, onSave, onCancel }: { saving: boolean; onSave: () => void; onCancel: () => void }) {
+function EditorFooter({ saving, onSave, onCancel }: { saving: boolean; onSave: () => void; onCancel?: () => void }) {
   return <div className="author-actions author-panel-footer definition-detail-footer">
     <button type="button" disabled={saving} onClick={onSave}>[{saving ? "SAVING..." : "SAVE"}]</button>
-    <button type="button" onClick={onCancel}>[CANCEL]</button>
+    {onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}
   </div>;
 }
 
