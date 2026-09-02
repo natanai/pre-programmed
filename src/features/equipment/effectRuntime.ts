@@ -3,10 +3,10 @@ import { PRIMARY_POSSESSION_SERVICES } from "../../engine/possessions/servicesCa
 import { setActiveBodyType } from "./runtime";
 
 const setBodyType: EffectHandler = (effect, snapshot, state) => {
-  if (effect.type !== "set_body_background") return unchangedEffect(state);
-  return { state: setActiveBodyType(snapshot, state, effect.backgroundId || null, PRIMARY_POSSESSION_SERVICES), events: [] };
+  if (effect.type !== "set_body_type") return unchangedEffect(state);
+  return { state: setActiveBodyType(snapshot, state, effect.bodyTypeId || null, PRIMARY_POSSESSION_SERVICES), events: [] };
 };
 
 export const EQUIPMENT_EFFECT_HANDLERS: Readonly<Record<string, EffectHandler>> = {
-  set_body_background: setBodyType,
+  set_body_type: setBodyType,
 };

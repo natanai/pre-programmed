@@ -42,7 +42,7 @@ export function interaction(id: string, sourceNodeId: string, destinationNodeId:
 
 export function project(overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
-    schemaVersion: 26,
+    schemaVersion: 27,
     revision: 0,
     startNodeId: "a",
     settings: structuredClone(DEFAULT_PROJECT_SETTINGS),
