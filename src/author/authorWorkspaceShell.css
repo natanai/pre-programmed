@@ -29,12 +29,23 @@
   cursor: default;
 }
 
+.author-workspace-layer.is-previewing {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .author-workspace-navigation {
   position: relative;
   display: grid;
   gap: .25em;
   min-height: 2.75em;
   padding-right: 3.25em;
+}
+
+.author-workspace-navigation-standard {
+  display: grid;
+  gap: .25em;
+  min-width: 0;
 }
 
 .author-workspace-navigation-actions {
@@ -53,6 +64,11 @@
   color: var(--dos-text);
   font: inherit;
   cursor: pointer;
+}
+
+.author-workspace-keyboard-bar,
+.author-workspace-stack-panel {
+  display: none;
 }
 
 .author-workspace-content {
@@ -210,6 +226,25 @@ body:has(.author-workspace-layer) .work-surface-close {
   z-index: 70;
 }
 
+body:has(.author-workspace-layer.is-previewing) .work-surface-close {
+  display: none;
+}
+
+.author-preview-resume {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  z-index: 80;
+  min-height: 2.75em;
+  padding: .4em .7em;
+  border: 1px solid var(--dos-bright);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: 16px/1 "PreProgrammed VGA", monospace;
+  cursor: pointer;
+}
+
 .author-leave-shade {
   position: fixed;
   inset: 0;
@@ -264,6 +299,11 @@ body:has(.author-workspace-layer) .work-surface-close {
   scroll-padding-block: .5em max(4.25em, env(safe-area-inset-bottom));
 }
 
+.author-panel-body :is(input, textarea, select):focus,
+.definition-detail-scroll :is(input, textarea, select):focus {
+  scroll-margin-block: .5em 4.5em;
+}
+
 @media (max-width: 700px), (pointer: coarse) {
   .author-workspace-layer {
     gap: .2em;
@@ -301,9 +341,83 @@ body:has(.author-workspace-layer) .work-surface-close {
     margin: 0;
     padding: .6em;
   }
+}
 
-  html[data-keyboard-open="true"] .author-panel-body,
-  html[data-keyboard-open="true"] .definition-detail-scroll {
-    scroll-padding-bottom: 2.5em;
-  }
+html[data-keyboard-open="true"] .author-workspace-layer {
+  gap: .1em;
+  padding-top: max(4px, env(safe-area-inset-top));
+  padding-bottom: max(4px, env(safe-area-inset-bottom));
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation {
+  min-height: 2.5em;
+  gap: 0;
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation-standard {
+  display: none;
+}
+
+html[data-keyboard-open="true"] .author-workspace-keyboard-bar {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45em;
+  min-width: 0;
+  min-height: 2.5em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-current-task {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-bright);
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+html[data-keyboard-open="true"] .author-workspace-current-task strong {
+  font-weight: 400;
+}
+
+html[data-keyboard-open="true"] .author-workspace-current-task small {
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel {
+  position: absolute;
+  top: calc(100% + .15em);
+  right: 0;
+  left: 0;
+  z-index: 25;
+  display: grid;
+  gap: .45em;
+  max-height: min(58dvh, 24em);
+  padding: .65em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-bright);
+  background: #000;
+  box-shadow: 0 .4em 0 #000;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail {
+  display: grid;
+  gap: .35em;
+  padding-top: .25em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-stack-panel .author-task-trail li:not(:last-child)::after {
+  content: none;
+}
+
+html[data-keyboard-open="true"] .author-panel-body,
+html[data-keyboard-open="true"] .definition-detail-scroll {
+  scroll-padding-block: .35em max(4.5em, env(safe-area-inset-bottom));
+}
+
+html[data-keyboard-open="true"] .author-panel-body :is(input, textarea, select):focus,
+html[data-keyboard-open="true"] .definition-detail-scroll :is(input, textarea, select):focus {
+  scroll-margin-block: .35em 4.75em;
 }
