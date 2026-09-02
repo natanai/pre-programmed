@@ -91,7 +91,7 @@ async function uploadAcceptanceMedia(token) {
     method: "PUT",
     headers: {
       Authorization: `Bearer ${token}`,
-      "Content-Type": "text/plain; charset=utf-8",
+      "Content-Type": "audio/wav",
     },
     body: acceptanceContent,
   });
@@ -127,9 +127,9 @@ try {
     type: "mediaAsset.upsert",
     asset: {
       id: acceptanceAssetId,
-      name: "local-acceptance.txt",
+      name: "local-acceptance.wav",
       kind: "audio",
-      mimeType: "text/plain",
+      mimeType: "audio/wav",
       contentKey: acceptanceContentKey,
       byteLength: new TextEncoder().encode(acceptanceContent).byteLength,
       intrinsicWidth: null,
