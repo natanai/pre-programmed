@@ -4,6 +4,7 @@ import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type {
   BodyBackgroundDefinition,
   BodySlotDefinition,
+  ItemDefinition,
 } from "../model";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
@@ -24,6 +25,21 @@ function clamp(value: number, minimum: number, maximum: number) {
 
 function emptyBodyType(): BodyBackgroundDefinition {
   return { id: crypto.randomUUID(), name: "", assetId: "", slots: [], startingEquipment: [] };
+}
+
+function placementKeys(item: ItemDefinition, anchorSlotKey: string) {
+  const placements = item.equipmentPlacements ?? [];
+  if (!placements.length) return [anchorSlotKey];
+  const placement = placements.find((candidate) => candidate.anchorSlotKey === anchorSlotKey);
+  if (!placement) return null;
+  return [...new Set([anchorSlotKey, ...placement.occupiedSlotKeys])];
+}
+
+function itemFitsBodyAt(item: ItemDefinition, anchorSlotKey: string, slots: BodySlotDefinition[]) {
+  const keys = placementKeys(item, anchorSlotKey);
+  if (!keys) return false;
+  const bodyKeys = new Set(slots.map((slot) => slot.key));
+  return keys.every((key) => bodyKeys.has(key));
 }
 
 export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
@@ -54,11 +70,17 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
   }, [draft.slots]);
   const startingEquipmentValid = useMemo(() => {
     const counts = new Map<string, number>();
+    const occupied = new Set<string>();
     for (const assignment of draft.startingEquipment ?? []) {
+      const item = snapshot.items.find((candidate) => candidate.id === assignment.itemId);
+      if (!item || !itemFitsBodyAt(item, assignment.slotKey, draft.slots)) return false;
+      const keys = placementKeys(item, assignment.slotKey);
+      if (!keys || keys.some((key) => occupied.has(key))) return false;
+      keys.forEach((key) => occupied.add(key));
       counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
     }
     return [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
-  }, [draft.startingEquipment, snapshot.items]);
+  }, [draft.slots, draft.startingEquipment, snapshot.items]);
   const usages = initial ? referencesTo(snapshot, "body-type", initial.id) : [];
 
   useEffect(() => {
@@ -133,7 +155,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
 
   const save = async () => {
     const name = draft.name.trim();
-    if (!name || !slotKeysValid) return;
+    if (!name || !slotKeysValid || !startingEquipmentValid) return;
     const bodyType = {
       ...draft,
       name,
@@ -255,11 +277,10 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
               >
                 <option value="">empty</option>
                 {snapshot.items.filter((item) =>
-                  (item.startingQuantity ?? 0) > 0
-                  && (!(item.equipmentSlotKeys ?? []).length || (item.equipmentSlotKeys ?? []).includes(slot.key)),
+                  (item.startingQuantity ?? 0) > 0 && itemFitsBodyAt(item, slot.key, draft.slots),
                 ).map((item) => <option value={item.id} key={item.id}>{item.name} · {item.startingQuantity} starting</option>)}
               </select>
-              <small>Uses one instance from the item’s starting quantity in each new playthrough.</small>
+              <small>Uses one instance from the item’s starting quantity. Multi-slot placements reserve every occupied slot in this loadout.</small>
             </label>
             <button type="button" className="danger" onClick={() => setDraft({
               ...draft,
@@ -270,7 +291,7 @@ export function BodyTypeEditor({ snapshot, initial, onSave, onCancel, setWorkspa
           {!draft.slots.length ? <p className="field-help">No slots yet. Add only the slots that exist on this body type; another body type may have more or fewer.</p> : null}
         </div>
         {!slotKeysValid ? <p className="body-slot-error">Each slot needs a unique, non-empty slot key.</p> : null}
-        {!startingEquipmentValid ? <p className="body-slot-error">Starting equipment assignments exceed an item’s starting quantity. Increase that item’s starting quantity or clear a slot.</p> : null}
+        {!startingEquipmentValid ? <p className="body-slot-error">Starting equipment is invalid: check item quantities, placement anchors, required body slots, and overlapping occupied slots.</p> : null}
       </section>
     </div>
     <div className="author-actions author-panel-footer">
