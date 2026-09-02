@@ -1,6 +1,25 @@
 import type { Value } from "../../engine/rules/model";
 import type { OperationHook, OperationId } from "../operations/model";
 
+/**
+ * One authored way an item can sit on a body.
+ *
+ * The anchor is the slot the player chooses when equipping. occupiedSlotKeys is
+ * the complete set reserved by that placement, including the anchor itself.
+ * Keeping the resolved shape explicit supports asymmetric and symmetric gear
+ * without teaching the runtime special cases such as "two handed".
+ */
+export type EquipmentPlacementDefinition = {
+  anchorSlotKey: string;
+  occupiedSlotKeys: string[];
+};
+
+/** Canonical runtime assignment for one equipped inventory instance. */
+export type EquipmentAssignment = {
+  anchorSlotKey: string;
+  occupiedSlotKeys: string[];
+};
+
 export type ItemDefinition = {
   id: string;
   key: string;
@@ -15,11 +34,14 @@ export type ItemDefinition = {
   startingQuantity: number;
   interactable: boolean;
   operations: OperationId[];
-  /** Empty/missing means the item may equip to any authored body-slot key. */
-  equipmentSlotKeys?: string[];
+  /**
+   * Explicit equipment placements. Empty/missing means any authored body slot
+   * may be used as an anchor and only that chosen slot is occupied.
+   */
+  equipmentPlacements?: EquipmentPlacementDefinition[];
   /** Whether an equipped instance still occupies the inventory grid. */
   equippedStorage?: "inventory" | "slot";
-  /** Stable body-slot key that a newly granted instance should equip to. */
+  /** Stable anchor-slot key that a newly granted instance should equip to. */
   equipOnGiveSlotKey?: string | null;
   tags: string[];
   initialState: Record<string, Value>;
@@ -27,6 +49,7 @@ export type ItemDefinition = {
 };
 
 export type StartingEquipmentDefinition = {
+  /** Anchor slot for the item's authored equipment placement. */
   slotKey: string;
   itemId: string;
 };
@@ -37,8 +60,8 @@ export type InventoryEntry = {
   quantity: number;
   x: number;
   y: number;
-  /** Stable slot key occupied on the current body type, or null when carried only. */
-  equippedSlotKey?: string | null;
+  /** Null when carried; otherwise the complete body-slot reservation. */
+  equipment?: EquipmentAssignment | null;
   state: Record<string, Value>;
 };
 
