@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { AuthorWorkspaceContext } from "../features/types";
-import type { AuthorTaskRoute } from "../tasks/types";
+import type { AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import { AuthorWorkspaceRenderer } from "./AuthorWorkspaceRenderer";
 import type { AuthorWorkspaceSpec } from "./types";
 
 export type AuthorWorkspaceSaveResult<TDraft> =
-  | { accepted: true; draft?: TDraft }
+  | { accepted: true; draft?: TDraft; completion?: AuthorTaskResult }
   | { accepted: false };
 
 export type AuthorWorkspaceBuildContext<TDraft> = {
@@ -29,6 +29,7 @@ export type AuthorWorkspaceDefinition<TDraft> = {
   createDraft: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => TDraft;
   buildSpec: (build: AuthorWorkspaceBuildContext<TDraft>) => AuthorWorkspaceSpec;
   signature?: (draft: TDraft) => string;
+  saveLabel?: string;
   save?: (build: AuthorWorkspaceBuildContext<TDraft>) => Promise<AuthorWorkspaceSaveResult<TDraft>>;
 };
 
@@ -46,8 +47,11 @@ function defaultSignature(value: unknown) {
 
 /**
  * Shared controller for data-first workspaces. Draft state, dirty state, Save
- * registration, and rendering are generic; only draft creation/spec/persistence
- * stay with the feature definition.
+ * registration, contextual Back, and rendering are generic; only draft
+ * creation/spec/persistence stay with the feature definition.
+ *
+ * Save cannot be an implicit Author exit here. A completion result is honored
+ * only when the task actually has an Author parent; root exit belongs to X.
  */
 export function StructuredAuthorWorkspace<TDraft>({
   definition,
@@ -74,22 +78,45 @@ export function StructuredAuthorWorkspace<TDraft>({
     [context, draft, route],
   );
 
+  const save = useCallback(async () => {
+    if (!definition.save) return true;
+    const result = await definition.save(build);
+    if (!result.accepted) return false;
+    const savedDraft = result.draft ?? build.draft;
+    if (result.draft !== undefined) setDraft(savedDraft);
+    setBaseline(signature(savedDraft));
+    context.setWorkspaceDirty(false);
+    if (result.completion && context.hasParentTask) context.completeTask(result.completion);
+    return true;
+  }, [build, context, definition, signature]);
+
   useEffect(() => {
     if (!definition.save) {
       context.registerWorkspaceSave(null);
       return;
     }
-    context.registerWorkspaceSave(async () => {
-      const result = await definition.save!(build);
-      if (!result.accepted) return false;
-      const savedDraft = result.draft ?? build.draft;
-      if (result.draft !== undefined) setDraft(savedDraft);
-      setBaseline(signature(savedDraft));
-      context.setWorkspaceDirty(false);
-      return true;
-    });
+    context.registerWorkspaceSave(save);
     return () => context.registerWorkspaceSave(null);
-  }, [build, context.registerWorkspaceSave, context.setWorkspaceDirty, definition, signature]);
+  }, [context.registerWorkspaceSave, definition.save, save]);
 
-  return <AuthorWorkspaceRenderer spec={definition.buildSpec(build)} />;
+  const authoredSpec = definition.buildSpec(build);
+  const spec: AuthorWorkspaceSpec = {
+    ...authoredSpec,
+    actions: [
+      ...(definition.save ? [{
+        id: "author-core-save",
+        label: definition.saveLabel ?? "SAVE",
+        disabled: !dirty,
+        onAction: () => { void save(); },
+      }] : []),
+      ...(context.hasParentTask ? [{
+        id: "author-core-back",
+        label: "BACK",
+        onAction: context.leaveCurrentTask,
+      }] : []),
+      ...(authoredSpec.actions ?? []),
+    ],
+  };
+
+  return <AuthorWorkspaceRenderer spec={spec} />;
 }
