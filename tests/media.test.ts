@@ -3,6 +3,7 @@ import { applyOperations } from "../src/engine/project/mutations";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import { executeEffects } from "../src/engine/rules/executeEffects";
 import { createMediaAsset } from "../src/features/media/assets";
+import { configuredAssetStore } from "../src/features/media/ui/assetStore";
 import {
   addSynthVoice,
   createStarterSynth,
@@ -57,6 +58,28 @@ describe("stable media assets", () => {
     });
     expect(asset.defaultPresentation).toBe("overlay");
     expect(asset.intrinsicWidth).toBe(32);
+  });
+
+  it("uses metadata from hosted content while a repository fallback with the same identity exists", () => {
+    const hosted = createMediaAsset({
+      id: "repo:/assets/sprites/openeye.svg",
+      name: "replacement-eye.svg",
+      mimeType: "image/svg+xml",
+      contentKey: "hosted_eye_content",
+      byteLength: 777,
+      intrinsicWidth: 320,
+      intrinsicHeight: 180,
+      defaultPresentation: "overlay",
+      authoringMode: "file",
+    });
+    const resolved = configuredAssetStore.resolve(project({ mediaAssets: [hosted] }), hosted.id);
+    expect(resolved).toMatchObject({
+      contentKey: "hosted_eye_content",
+      byteLength: 777,
+      intrinsicWidth: 320,
+      intrinsicHeight: 180,
+      defaultPresentation: "overlay",
+    });
   });
 
   it("keeps a simple audible starter expandable through bounded advanced controls", () => {
