@@ -5,9 +5,10 @@ import {
   giveInventoryItem,
   compatibleBodySlots,
   entryOccupiesInventoryGrid,
+  equipmentAssignmentForSlot,
   INVENTORY_COLUMNS,
   INVENTORY_ROWS,
-  itemCanEquipToSlot,
+  occupiedEquipmentSlotKeys,
   setActiveBodyType,
 } from "../runtime";
 import type {
@@ -69,6 +70,7 @@ export function Inventory({
   const selectedVariable = selected?.kind === "variable" ? snapshot.variables.find((item) => item.id === selected.id) : undefined;
   const selectedComputed = selected?.kind === "computed" ? snapshot.computedValues.find((item) => item.id === selected.id) : undefined;
   const activeBodyType = bodyTypes.find((bodyType) => bodyType.id === state.bodyBackgroundId);
+  const activeSlots = activeBodyType?.slots ?? [];
   const normalizedDefinitionQuery = definitionQuery.trim().toLowerCase();
   const visibleDefinitions = snapshot.items.filter((item) => !normalizedDefinitionQuery || [
     item.name,
@@ -79,6 +81,7 @@ export function Inventory({
   const minimumStartingQuantity = (itemId: string) => Math.max(0, ...bodyTypes.map((bodyType) =>
     (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === itemId).length,
   ));
+  const bodySlotName = (key: string) => activeSlots.find((slot) => slot.key === key)?.name ?? key;
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
@@ -157,7 +160,7 @@ export function Inventory({
     <header><span>BODY TYPES</span></header>
     <div className="inventory-definition-controls">
       <button type="button" className="inventory-definition-back" onClick={() => setScreen("play")}>[← INVENTORY]</button>
-      <div className="inventory-definition-help">Choose the body type used by new playthroughs, then open that body type to assign starting equipment to its slots. Triggers can switch the active body type during play; matching slot keys preserve equipment.</div>
+      <div className="inventory-definition-help">Choose the body type used by new playthroughs, then open that body type to assign starting equipment to its slots. Triggers can switch the active body type during play; matching placement slots preserve equipment.</div>
       <label className="body-background-starting">STARTING BODY TYPE
         <select aria-label="Starting body type for new playthroughs" value={snapshot.startingBodyBackgroundId ?? ""} onChange={(event) => void onSave([
           { type: "bodyBackground.starting", id: event.target.value || null },
@@ -190,9 +193,12 @@ export function Inventory({
 
   const selectedItemOperations = selectedItem?.operations ?? DEFAULT_ITEM_OPERATIONS;
   const compatibleSlots = selectedItem ? compatibleBodySlots(snapshot, state, selectedItem) : [];
-  const equippedSlot = selectedEntry?.equippedSlotKey
-    ? (activeBodyType?.slots ?? []).find((slot) => slot.key === selectedEntry.equippedSlotKey)
+  const equippedAnchor = selectedEntry?.equipment
+    ? activeSlots.find((slot) => slot.key === selectedEntry.equipment?.anchorSlotKey)
     : undefined;
+  const selectedOccupiedNames = selectedEntry?.equipment
+    ? selectedEntry.equipment.occupiedSlotKeys.map(bodySlotName)
+    : [];
 
   return <section className="inventory-surface inventory-play-workspace" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>INVENTORY / STATUS</span></header>
@@ -222,22 +228,28 @@ export function Inventory({
           {selectedEntry && selectedItem ? <>
             <div className="inventory-inspector-heading"><strong>{selectedItem.name}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
             <p>{selectedItem.description}</p>
-            {equippedSlot ? <p className="inventory-equipped-status">EQUIPPED · {equippedSlot.name}</p> : null}
+            {equippedAnchor ? <p className="inventory-equipped-status">
+              EQUIPPED · {equippedAnchor.name}{selectedOccupiedNames.length > 1 ? ` · OCCUPIES ${selectedOccupiedNames.join(" + ")}` : ""}
+            </p> : null}
             {statusOperationButtons(
               { kind: "item", id: selectedEntry.instanceId },
               selectedItemOperations.filter((operation) => operation !== "equip" && operation !== "unequip"),
             )}
             {selectedItemOperations.includes("equip") ? <div className="inventory-equip-choices">
-              <span>EQUIP TO</span>
-              {compatibleSlots.map((slot) => <button
-                type="button"
-                key={slot.id}
-                aria-pressed={selectedEntry.equippedSlotKey === slot.key}
-                onClick={() => equipToSlot(selectedEntry.instanceId, slot.key)}
-              >[{slot.name.toUpperCase()}]</button>)}
-              {!compatibleSlots.length ? <small>NO COMPATIBLE SLOTS ON THIS BODY TYPE.</small> : null}
+              <span>EQUIP PLACEMENT</span>
+              {compatibleSlots.map((slot) => {
+                const placement = equipmentAssignmentForSlot(snapshot, state, selectedItem, slot.key);
+                const additional = placement?.occupiedSlotKeys.filter((key) => key !== slot.key).map(bodySlotName) ?? [];
+                return <button
+                  type="button"
+                  key={slot.id}
+                  aria-pressed={selectedEntry.equipment?.anchorSlotKey === slot.key}
+                  onClick={() => equipToSlot(selectedEntry.instanceId, slot.key)}
+                >[{slot.name.toUpperCase()}{additional.length ? ` + ${additional.map((name) => name.toUpperCase()).join(" + ")}` : ""}]</button>;
+              })}
+              {!compatibleSlots.length ? <small>NO COMPLETE PLACEMENT FITS THIS BODY TYPE.</small> : null}
             </div> : null}
-            {selectedItemOperations.includes("unequip") && selectedEntry.equippedSlotKey ? <button type="button" onClick={() => operate({ operation: "unequip", target: { kind: "item", id: selectedEntry.instanceId } })}>[UNEQUIP]</button> : null}
+            {selectedItemOperations.includes("unequip") && selectedEntry.equipment ? <button type="button" onClick={() => operate({ operation: "unequip", target: { kind: "item", id: selectedEntry.instanceId } })}>[UNEQUIP]</button> : null}
             {authorMode ? <button type="button" onClick={() => onEditItem(selectedItem)}>[EDIT DEFINITION]</button> : null}
           </> : selectedVariable ? <>
             <div className="inventory-inspector-heading"><strong>{selectedVariable.label}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
@@ -269,13 +281,13 @@ export function Inventory({
             const item = snapshot.items.find((candidate) => candidate.id === entry.itemId);
             if (!item) return null;
             const moveEnabled = (item.interactable ?? true) && (item.operations ?? DEFAULT_ITEM_OPERATIONS).includes("move");
-            return <button type="button" draggable={moveEnabled} className={`inventory-item${selected?.kind === "item" && selected.id === entry.instanceId ? " selected" : ""}${entry.equippedSlotKey ? " equipped" : ""}`} key={entry.instanceId}
+            return <button type="button" draggable={moveEnabled} className={`inventory-item${selected?.kind === "item" && selected.id === entry.instanceId ? " selected" : ""}${entry.equipment ? " equipped" : ""}`} key={entry.instanceId}
               style={{ "--x": entry.x, "--y": entry.y, "--w": item.width, "--h": item.height } as CSSProperties}
               onDragStart={(event) => event.dataTransfer.setData("text/pre-programmed-instance", entry.instanceId)}
               onClick={(event) => { event.stopPropagation(); if (item.interactable ?? true) setSelected({ kind: "item", id: entry.instanceId }); }}>
               {assetUrlFor(item.assetId) ? <img src={assetUrlFor(item.assetId)} alt="" draggable={false} /> : <span>{item.name.slice(0, 3).toUpperCase()}</span>}
               {entry.quantity > 1 ? <b>{entry.quantity}</b> : null}
-              {entry.equippedSlotKey ? <i aria-label={`Equipped to ${entry.equippedSlotKey}`}>E</i> : null}
+              {entry.equipment ? <i aria-label={`Equipped; occupies ${occupiedEquipmentSlotKeys(entry).map(bodySlotName).join(", ")}`}>E</i> : null}
             </button>;
           })}
         </div>
@@ -288,21 +300,22 @@ export function Inventory({
           style={assetUrlFor(activeBodyType?.assetId) ? { backgroundImage: `url("${assetUrlFor(activeBodyType?.assetId)}")` } : undefined}
         >
           {!assetUrlFor(activeBodyType?.assetId) ? <span>{bodyTypes.length ? "NO ACTIVE BODY IMAGE" : "BODY TYPE NOT CONFIGURED"}</span> : null}
-          {(activeBodyType?.slots ?? []).map((slot) => {
-            const equippedEntry = state.inventory.find((entry) => entry.equippedSlotKey === slot.key);
+          {activeSlots.map((slot) => {
+            const equippedEntry = state.inventory.find((entry) => entry.equipment?.occupiedSlotKeys.includes(slot.key));
             const equippedItem = snapshot.items.find((item) => item.id === equippedEntry?.itemId);
+            const anchor = equippedEntry?.equipment?.anchorSlotKey === slot.key;
             const selectedCanEquip = Boolean(
               selectedEntry
               && selectedItem
               && selectedItemOperations.includes("equip")
-              && itemCanEquipToSlot(selectedItem, slot),
+              && compatibleSlots.some((candidate) => candidate.key === slot.key),
             );
             return <button
               type="button"
-              className={`inventory-body-slot${equippedEntry ? " occupied" : ""}${selectedCanEquip ? " can-equip" : ""}`}
+              className={`inventory-body-slot${equippedEntry ? " occupied" : ""}${equippedEntry && !anchor ? " occupied-secondary" : ""}${selectedCanEquip ? " can-equip" : ""}`}
               key={slot.id}
               style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%` }}
-              aria-label={equippedItem ? `${slot.name}: ${equippedItem.name}` : `${slot.name}: empty`}
+              aria-label={equippedItem ? `${slot.name}: ${anchor ? equippedItem.name : `occupied by ${equippedItem.name}`}` : `${slot.name}: empty`}
               onDragOver={(event) => event.preventDefault()}
               onDrop={(event) => {
                 event.preventDefault();
@@ -317,8 +330,8 @@ export function Inventory({
                 if (selectedEntry && selectedCanEquip) equipToSlot(selectedEntry.instanceId, slot.key);
               }}
             >
-              {assetUrlFor(equippedItem?.assetId) ? <img src={assetUrlFor(equippedItem?.assetId)} alt="" draggable={false} /> : equippedItem ? <strong>{equippedItem.name.slice(0, 3).toUpperCase()}</strong> : null}
-              <small>{slot.name}</small>
+              {anchor && assetUrlFor(equippedItem?.assetId) ? <img src={assetUrlFor(equippedItem?.assetId)} alt="" draggable={false} /> : anchor && equippedItem ? <strong>{equippedItem.name.slice(0, 3).toUpperCase()}</strong> : equippedItem ? <strong>USED</strong> : null}
+              <small>{equippedItem && !anchor ? `${slot.name} · ${equippedItem.name}` : slot.name}</small>
             </button>;
           })}
         </div>
