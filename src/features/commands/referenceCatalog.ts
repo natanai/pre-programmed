@@ -1,5 +1,5 @@
 import { INVENTORY_COMMAND_REFERENCE_SOURCES } from "../inventory/commandReferences";
-import { STATE_COMMAND_REFERENCE_SOURCES } from "../state/commandReferences";
+import { VALUES_COMMAND_REFERENCE_SOURCES } from "../values/commandReferences";
 import { WORLD_COMMAND_REFERENCE_SOURCES } from "../world/commandReferences";
 import type { CommandReferenceSource } from "./referenceSource";
 
@@ -14,7 +14,7 @@ export function commandReferenceSources() {
   return [
     ...WORLD_COMMAND_REFERENCE_SOURCES,
     ...INVENTORY_COMMAND_REFERENCE_SOURCES,
-    ...STATE_COMMAND_REFERENCE_SOURCES,
+    ...VALUES_COMMAND_REFERENCE_SOURCES,
   ] satisfies readonly CommandReferenceSource[];
 }
 

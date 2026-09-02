@@ -155,7 +155,7 @@ export function normalizeProjectSnapshot(snapshot: unknown): ProjectSnapshot {
   }));
   const interactions = migrateInteractionEffects(root.interactions);
 
-  const next = {
+  const next: Record<string, any> = {
     ...root,
     settings: normalizeProjectSettings(root.settings),
     interactions,

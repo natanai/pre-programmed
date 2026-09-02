@@ -17,6 +17,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const selectedEntry = selected?.kind === "item" ? state.inventory.find((entry) => entry.instanceId === selected.id) : undefined;
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
+  const gridPresentation = snapshot.inventoryPresentation.mode === "grid" ? snapshot.inventoryPresentation : null;
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
@@ -44,20 +45,20 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
     </button>;
   };
 
-  const outsideGrid = snapshot.inventoryPresentation.mode === "grid"
+  const outsideGrid = gridPresentation
     ? state.inventory.filter((entry) => !state.inventoryPositions[entry.instanceId])
     : [];
 
   return <div className="inventory-player-surface">
     <div className="inventory-primary-container">
-      {snapshot.inventoryPresentation.mode === "grid" ? <>
+      {gridPresentation ? <>
         <div
           className="inventory-grid-v2"
-          style={{ "--inventory-columns": snapshot.inventoryPresentation.columns, "--inventory-rows": snapshot.inventoryPresentation.rows } as CSSProperties}
+          style={{ "--inventory-columns": gridPresentation.columns, "--inventory-rows": gridPresentation.rows } as CSSProperties}
         >
-          {Array.from({ length: snapshot.inventoryPresentation.columns * snapshot.inventoryPresentation.rows }, (_, index) => {
-            const x = index % snapshot.inventoryPresentation.columns;
-            const y = Math.floor(index / snapshot.inventoryPresentation.columns);
+          {Array.from({ length: gridPresentation.columns * gridPresentation.rows }, (_, index) => {
+            const x = index % gridPresentation.columns;
+            const y = Math.floor(index / gridPresentation.columns);
             return <button type="button" className="inventory-cell" key={`${x}:${y}`} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => {
               if (selected?.kind === "item") operate({ operation: "move", target: selected, placement: { x, y } });
             }} />;
@@ -82,7 +83,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
       <div className="operation-buttons">
         {(selectedItem.operations ?? []).filter((operation) => operation !== "move").map((operation) => <button type="button" key={operation} onClick={() => operate({ operation, target: { kind: "item", id: selectedEntry.instanceId } })}>[{operation.toUpperCase()}]</button>)}
       </div>
-      {snapshot.inventoryPresentation.mode === "grid" ? <small>To move this item, tap its destination cell.</small> : null}
+      {gridPresentation ? <small>To move this item, tap its destination cell.</small> : null}
     </aside> : <aside className="inventory-inspector-v2"><small>Select an item to inspect or use it.</small></aside>}
   </div>;
 }

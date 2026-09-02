@@ -92,28 +92,25 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         ...item.tags,
         ...(item.operations ?? []),
         JSON.stringify(item.hooks ?? []),
-        ...(item.equipmentSlotKeys ?? []),
-        item.equippedStorage ?? "inventory",
-        item.equipOnGiveSlotKey ?? "",
       ].join(" "),
     })),
-    ...snapshot.variables.map((definition) => ({
+    ...snapshot.valueDefinitions.map((definition) => ({
       id: definition.id,
       kind: "variable" as const,
       label: definition.label,
       searchText: `${definition.key} ${definition.label} ${definition.valueType} ${definition.timeRate ?? 0} ${definition.timeUnit ?? ""} ${(definition.operations ?? []).join(" ")} ${JSON.stringify(definition.hooks ?? [])}`,
     })),
-    ...snapshot.computedValues.map((definition) => ({
+    ...snapshot.derivedValueDefinitions.map((definition) => ({
       id: definition.id,
       kind: "computed" as const,
       label: definition.label,
-      searchText: `${definition.key} ${definition.label} ${definition.source} ${(definition.operations ?? []).join(" ")} ${JSON.stringify(definition.hooks ?? [])}`,
+      searchText: `${definition.key} ${definition.label} ${definition.source.provider}:${definition.source.metric} ${(definition.operations ?? []).join(" ")} ${JSON.stringify(definition.hooks ?? [])}`,
     })),
-    ...(snapshot.bodyBackgrounds ?? []).map((bodyType) => ({
+    ...snapshot.bodyTypes.map((bodyType) => ({
       id: bodyType.id,
       kind: "body-type" as const,
       label: bodyType.name,
-      searchText: `${bodyType.name} ${bodyType.assetId} ${(bodyType.slots ?? []).flatMap((slot) => [slot.name, slot.key]).join(" ")} ${(bodyType.startingEquipment ?? []).flatMap((assignment) => [assignment.slotKey, assignment.itemId]).join(" ")} ${snapshot.startingBodyBackgroundId === bodyType.id ? "starting default active body" : ""}`,
+      searchText: `${bodyType.name} ${bodyType.assetId} ${(bodyType.slots ?? []).flatMap((slot) => [slot.name, slot.key]).join(" ")} ${(bodyType.startingEquipment ?? []).flatMap((assignment) => [assignment.slotKey, assignment.itemId]).join(" ")} ${snapshot.startingBodyTypeId === bodyType.id ? "starting default active body" : ""}`,
     })),
     ...snapshot.settings.commands.commands.map((command) => ({
       id: command.id,
