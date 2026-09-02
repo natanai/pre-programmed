@@ -158,6 +158,14 @@
   border-top: 1px dotted var(--dos-line);
 }
 
+.interaction-outcome-composer {
+  margin: .8em 0;
+}
+
+.outcome-after-workspace > .guided-section:first-child {
+  margin-top: 0;
+}
+
 .guided-response-actions button,
 .guided-presets button {
   min-height: 2.5em;

@@ -97,6 +97,7 @@ export function ReferenceField({
         {resources.canCreate(kind) ? <button type="button" onClick={createResource}>[+ CREATE {label.toUpperCase()}]</button> : null}
         <button type="button" onClick={closeChooser}>[CLOSE]</button>
       </div>
+      {resources.canCreate(kind) ? <small className="author-reference-return-help">Creating opens a nested Author task. Save there to return here with the new {label.toLowerCase()} selected.</small> : null}
     </section> : null}
     {!options.length && resources.canCreate(kind) && !open ? <small className="author-reference-empty">No {label.toLowerCase()} exists yet. Create one here.</small> : null}
   </div>;

@@ -14,6 +14,11 @@ import {
 
 export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
+  describeTask(route) {
+    if (route.type === "workspace") return route.view === "history" ? "History" : "Saved locations";
+    if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
+    return null;
+  },
   conditions: [
     alwaysConditionAdapter,
     allConditionAdapter,

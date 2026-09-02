@@ -10,6 +10,20 @@ import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "media") return null;
+    if (route.workspace === "assets") return "Media assets";
+    if (route.workspace === "synth") return "Synth sounds";
+    if (route.workspace === "asset") {
+      const asset = snapshot.mediaAssets.find((candidate) => candidate.id === route.data?.assetId);
+      return asset?.name || `New ${route.data?.kind === "image" ? "image" : "sound"}`;
+    }
+    if (route.workspace === "synth-sound") {
+      const sound = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
+      return sound?.label || sound?.key || "New synth sound";
+    }
+    return null;
+  },
   effects: [synthEffectAdapter, audioEffectAdapter, artEffectAdapter],
   textCues: MEDIA_TEXT_CUE_AUTHOR_ADAPTERS,
   searchDocuments: [mediaSearchDocuments],

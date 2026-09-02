@@ -4,8 +4,11 @@ import type {
 } from "../../engine/rules/model";
 import type { ProjectSnapshot } from "../../engine/project/model";
 import type { OperationHook, OperationId } from "../../features/operations/model";
-import { ConditionEditor } from "../ConditionEditor";
-import { EffectsEditor } from "../EffectsEditor";
+import {
+  OutcomeComposerSection,
+  OutcomeConditionEditor,
+  OutcomeEffectsEditor,
+} from "../outcomes/OutcomeComposer";
 import { ValueMentionField } from "../ValueMentionField";
 import { authorOperationDefinitions } from "./catalog";
 import "./operationHooksEditor.css";
@@ -16,7 +19,7 @@ export type OperationCapabilityDraft = {
   hooks: OperationHook[];
 };
 
-type HookScreen = "list" | "hook" | "when" | "effects";
+type HookScreen = "list" | "hook";
 
 function emptyHook(operation: OperationId, order: number): OperationHook {
   return {
@@ -130,10 +133,6 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
   };
 
   const back = () => {
-    if (screen === "when" || screen === "effects") {
-      setScreen("hook");
-      return;
-    }
     setSelectedHookId(null);
     setScreen("list");
   };
@@ -188,33 +187,26 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                 <button type="button" className="operation-add-hook" onClick={() => addHook(operation.value)}>[+ {operation.label.toUpperCase()} RESPONSE]</button>
               </section>;
             })}
+            {!cardDefinitions.length ? <div className="operation-card-empty">No operation vocabulary is installed for this target yet. Create targeted wording in Player Interactions to add one.</div> : null}
           </div>
         </> : null}
       </> : selectedHook ? <>
-        <button type="button" className="operation-hook-back" onClick={back}>[{screen === "hook" ? "← BACK TO RESPONSES" : "← BACK TO RESPONSE"}]</button>
+        <button type="button" className="operation-hook-back" onClick={back}>[← BACK TO RESPONSES]</button>
         {screen === "hook" ? <HookWorkspace hook={selectedHook} snapshot={snapshot} targetKind={targetKind}
           onChange={(hook) => replaceHook(selectedHook.id, hook)}
           onOperationChange={(operation) => setHookOperation(selectedHook.id, operation)}
-          onOpenWhen={() => setScreen("when")}
-          onOpenEffects={() => setScreen("effects")}
           onRemove={removeSelected} /> : null}
-        {screen === "when" ? <WhenWorkspace hook={selectedHook} snapshot={snapshot}
-          onChange={(condition) => replaceHook(selectedHook.id, { ...selectedHook, condition })} /> : null}
-        {screen === "effects" ? <EffectsWorkspace hook={selectedHook} snapshot={snapshot}
-          onChange={(effects) => replaceHook(selectedHook.id, { ...selectedHook, effects })} /> : null}
       </> : null}
     </div>
   </details>;
 }
 
-function HookWorkspace({ hook, snapshot, targetKind, onChange, onOperationChange, onOpenWhen, onOpenEffects, onRemove }: {
+function HookWorkspace({ hook, snapshot, targetKind, onChange, onOperationChange, onRemove }: {
   hook: OperationHook;
   snapshot: ProjectSnapshot;
   targetKind: string;
   onChange: (hook: OperationHook) => void;
   onOperationChange: (operation: OperationId) => void;
-  onOpenWhen: () => void;
-  onOpenEffects: () => void;
   onRemove: () => void;
 }) {
   const operationDefinitions = operationDefinitionsFor(snapshot, targetKind, hook.operation);
@@ -226,32 +218,23 @@ function HookWorkspace({ hook, snapshot, targetKind, onChange, onOperationChange
       onChange={(event) => onChange({ ...hook, success: event.target.checked })} /> operation succeeds</label>
     <label>RESPONSE TEXT <ValueMentionField snapshot={snapshot} multiline rows={3} value={hook.responseText}
       onValueChange={(responseText) => onChange({ ...hook, responseText })} /></label>
-    <button type="button" className="operation-drill-row" onClick={onOpenWhen}>
-      <span><strong>WHEN</strong><small>{conditionSummary(hook.condition)}</small></span><span aria-hidden="true">›</span>
-    </button>
-    <button type="button" className="operation-drill-row" onClick={onOpenEffects}>
-      <span><strong>EFFECTS</strong><small>{hook.effects.length ? `${hook.effects.length} configured` : "None"}</small></span><span aria-hidden="true">›</span>
-    </button>
-    <button type="button" className="operation-remove-hook" onClick={onRemove}>[REMOVE RESPONSE]</button>
-  </div>;
-}
-
-function WhenWorkspace({ hook, snapshot, onChange }: { hook: OperationHook; snapshot: ProjectSnapshot; onChange: (condition: Condition) => void }) {
-  return <div className="operation-subworkspace">
-    <h3>WHEN SHOULD THIS RESPONSE HAPPEN?</h3>
-    <div className="attempt-presets">
-      <button type="button" onClick={() => onChange({ type: "always" })}>[ALWAYS]</button>
-      <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 1 })}>[FIRST]</button>
-      <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 2 })}>[SECOND]</button>
-      <button type="button" onClick={() => onChange({ type: "attempt", operator: "gte", value: 2 })}>[2+]</button>
+    <div className="operation-outcome-composer" aria-label="Response conditions and effects">
+      <OutcomeComposerSection title="WHEN" summary={conditionSummary(hook.condition)}>
+        <OutcomeConditionEditor
+          condition={hook.condition}
+          snapshot={snapshot}
+          language="attempt"
+          onChange={(condition) => onChange({ ...hook, condition })}
+        />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="EFFECTS" summary={hook.effects.length ? `${hook.effects.length} configured` : "None"}>
+        <OutcomeEffectsEditor
+          effects={hook.effects}
+          snapshot={snapshot}
+          onChange={(effects) => onChange({ ...hook, effects })}
+        />
+      </OutcomeComposerSection>
     </div>
-    <ConditionEditor condition={hook.condition} snapshot={snapshot} onChange={onChange} />
-  </div>;
-}
-
-function EffectsWorkspace({ hook, snapshot, onChange }: { hook: OperationHook; snapshot: ProjectSnapshot; onChange: (effects: OperationHook["effects"]) => void }) {
-  return <div className="operation-subworkspace">
-    <h3>EFFECTS · RUN IN THIS ORDER</h3>
-    <EffectsEditor effects={hook.effects} snapshot={snapshot} onChange={onChange} />
+    <button type="button" className="operation-remove-hook" onClick={onRemove}>[REMOVE RESPONSE]</button>
   </div>;
 }

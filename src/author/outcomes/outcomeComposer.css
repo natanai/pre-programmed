@@ -1,0 +1,70 @@
+.outcome-composer-section {
+  border: 1px solid var(--dos-line);
+  border-bottom: 0;
+}
+
+.outcome-composer-section:last-child {
+  border-bottom: 1px solid var(--dos-line);
+}
+
+.outcome-composer-section > summary {
+  display: grid;
+  grid-template-columns: minmax(6em, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .55em .8em;
+  min-height: 3.15em;
+  padding: .55em .65em;
+  cursor: pointer;
+  list-style: none;
+}
+
+.outcome-composer-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.outcome-composer-section > summary small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-muted);
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.outcome-composer-section[open] > summary {
+  border-bottom: 1px dotted var(--dos-line);
+  color: var(--dos-bright);
+}
+
+.outcome-composer-section[open] > summary > span:last-child {
+  transform: rotate(90deg);
+}
+
+.outcome-composer-section-body {
+  padding: .7em;
+}
+
+.outcome-condition-editor > p,
+.outcome-effects-editor > p {
+  margin: 0 0 .7em;
+  color: var(--dos-muted);
+  line-height: 1.2;
+}
+
+.outcome-condition-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .7em;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .outcome-composer-section > summary {
+    grid-template-columns: minmax(5em, auto) minmax(0, 1fr) auto;
+    min-height: 3.65em;
+    font-size: max(16px, 1em);
+  }
+
+  .outcome-composer-section > summary small {
+    white-space: normal;
+  }
+}

@@ -18,6 +18,20 @@ const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "str
 
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "narrative") return null;
+    if (route.workspace === "structure") return "Story structure";
+    if (route.workspace === "node") {
+      const node = snapshot.nodes.find((candidate) => candidate.id === route.data?.nodeId);
+      return node ? `Node #${node.nodeNumber}` : "New node";
+    }
+    if (route.workspace === "interaction") {
+      const interaction = snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId);
+      if (route.data?.fallback === "true" || interaction?.matchMode === "fallback") return "Invalid input response";
+      return interaction?.wording || interaction?.aliases[0] || route.data?.command || "New scene input";
+    }
+    return null;
+  },
   conditions: [visitedConditionAdapter],
   effects: [interactionVisibilityEffectAdapter, transitionEffectAdapter],
   references: [narrativeProjectReferences],

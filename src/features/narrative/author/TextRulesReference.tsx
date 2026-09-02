@@ -11,9 +11,9 @@ export type InlineTextRule = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "pause" |
  */
 export function TextRulesReference({ onApply }: { onApply?: (rule: InlineTextRule) => void }) {
   return <details className="text-rules-reference">
-    <summary>[? TEXT RULES]</summary>
+    <summary>[? INLINE TEXT STYLES]</summary>
     <div className="text-rules-reference-body">
-      <p>Write these directly in the text. They change how words are delivered; they do not run game/world effects.</p>
+      <p>These marks live inside the writing and travel with those words. They style delivery only; they never run game/world effects or schedule media.</p>
       {onApply ? <div className="text-rule-actions" aria-label="Insert text rule">
         <button type="button" onClick={() => onApply("l")}>[SLOW]</button>
         <button type="button" onClick={() => onApply("f")}>[FAST]</button>

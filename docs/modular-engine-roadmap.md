@@ -31,6 +31,7 @@ The estimate remains intentionally conservative. The exact percentage is less im
 - State timing and project-change reconciliation reach App through generic lifecycle contracts rather than feature-specific App behavior.
 - Generic floating notifications are core-owned; Media owns synth/audio/art behavior.
 - Optional feature search documents, advanced text cues, Author workspaces, and Author shortcuts contribute through generic boundaries.
+- Persistent Author search, human task trails, nested-resource return context, shared outcome composition, and command-target authoring now compose without a screen-owned target roster.
 - Unmatched-input Author drafting is feature-contributed; App no longer constructs Narrative draft interactions itself.
 - Narrative's contextual Author input surface is feature-contributed rather than directly imported by App.
 - Author tool context is feature-neutral; Narrative derives its own current-node/fallback/interaction-notation state.

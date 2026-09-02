@@ -86,13 +86,14 @@ function variableTypeForResource(kind?: StateAuthorResourceKind): VariableDefini
   return undefined;
 }
 
-export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty, resourceKind, resourceId }: {
+export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty, resourceKind, resourceId, preferredOperation }: {
   snapshot: ProjectSnapshot;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onClose: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
   resourceKind?: StateAuthorResourceKind;
   resourceId?: string;
+  preferredOperation?: string;
 }) {
   const resourceMode = Boolean(resourceKind);
   const lockedVariableType = variableTypeForResource(resourceKind);
@@ -261,9 +262,9 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
       {editing ? <div className="definitions-detail-pane">
         <button type="button" className="definition-back" onClick={cancelEditor}>[← {resourceMode ? "CANCEL" : backLabel}]</button>
         <div className="definition-detail-scroll">
-          {variable ? <VariableEditor variable={variable} snapshot={snapshot} lockedValueType={lockedVariableType} onChange={setVariable} /> : null}
-          {computed ? <ComputedEditor computed={computed} snapshot={snapshot} onChange={setComputed} /> : null}
-          {entity ? <EntityEditor entity={entity} snapshot={snapshot} lockedType={lockedEntityType} onChange={setEntity} /> : null}
+          {variable ? <VariableEditor variable={variable} snapshot={snapshot} lockedValueType={lockedVariableType} preferredOperation={preferredOperation} onChange={setVariable} /> : null}
+          {computed ? <ComputedEditor computed={computed} snapshot={snapshot} preferredOperation={preferredOperation} onChange={setComputed} /> : null}
+          {entity ? <EntityEditor entity={entity} snapshot={snapshot} lockedType={lockedEntityType} preferredOperation={preferredOperation} onChange={setEntity} /> : null}
         </div>
         {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={cancelEditor} /> : null}
         {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={cancelEditor} /> : null}
@@ -380,10 +381,11 @@ function DefinitionKind({ title, items, onOpen, selectedId, empty }: { title: st
   </section>;
 }
 
-function VariableEditor({ variable, snapshot, lockedValueType, onChange }: {
+function VariableEditor({ variable, snapshot, lockedValueType, preferredOperation, onChange }: {
   variable: VariableDefinition;
   snapshot: ProjectSnapshot;
   lockedValueType?: VariableDefinition["valueType"];
+  preferredOperation?: string;
   onChange: (value: VariableDefinition) => void;
 }) {
   return <div className="definition-form focused-definition-form">
@@ -398,26 +400,27 @@ function VariableEditor({ variable, snapshot, lockedValueType, onChange }: {
       <label>PER <select aria-label="Time change unit" value={variable.timeUnit ?? "second"} onChange={(event) => onChange({ ...variable, timeUnit: event.target.value as "second" | "minute" | "hour" })}><option value="second">second</option><option value="minute">minute</option><option value="hour">hour</option></select></label>
     </div> : null}
     <label className="check-label"><input type="checkbox" checked={variable.showInStatus} onChange={(event) => onChange({ ...variable, showInStatus: event.target.checked })} /> show in inventory/status</label>
-    {variable.showInStatus ? <OperationHooksEditor snapshot={snapshot} targetKind="state.variable" capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => onChange({ ...variable, ...capability })} /> : null}
+    <OperationHooksEditor snapshot={snapshot} targetKind="state.variable" defaultOpen={Boolean(preferredOperation)} preferredOperation={preferredOperation} capability={{ interactable: variable.interactable, operations: variable.operations, hooks: variable.hooks }} onChange={(capability) => onChange({ ...variable, ...capability })} />
     <GeneratedKeyField source={variable.label} value={variable.key} onChange={(key) => onChange({ ...variable, key })} />
   </div>;
 }
 
-function ComputedEditor({ computed, snapshot, onChange }: { computed: ComputedDefinition; snapshot: ProjectSnapshot; onChange: (value: ComputedDefinition) => void }) {
+function ComputedEditor({ computed, snapshot, preferredOperation, onChange }: { computed: ComputedDefinition; snapshot: ProjectSnapshot; preferredOperation?: string; onChange: (value: ComputedDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
     <label>LABEL <input value={computed.label} onChange={(event) => onChange({ ...computed, label: event.target.value })} autoFocus /></label>
     <label>SAFE RUNTIME SOURCE <select value={computed.source} onChange={(event) => onChange({ ...computed, source: event.target.value as ComputedDefinition["source"] })}><option value="elapsed_seconds">elapsed client-session seconds</option><option value="commands_entered">commands entered</option><option value="inventory_slots_used">inventory slots used</option><option value="visited_nodes">distinct visited nodes</option></select></label>
     <label>FORMAT <select value={computed.format} onChange={(event) => onChange({ ...computed, format: event.target.value as ComputedDefinition["format"] })}><option value="raw">raw</option><option value="integer">rounded integer</option><option value="seconds">seconds with unit</option></select></label>
     <label className="check-label"><input type="checkbox" checked={computed.showInStatus} onChange={(event) => onChange({ ...computed, showInStatus: event.target.checked })} /> show in inventory/status</label>
-    {computed.showInStatus ? <OperationHooksEditor snapshot={snapshot} targetKind="state.computed" capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => onChange({ ...computed, ...capability })} /> : null}
+    <OperationHooksEditor snapshot={snapshot} targetKind="state.computed" defaultOpen={Boolean(preferredOperation)} preferredOperation={preferredOperation} capability={{ interactable: computed.interactable, operations: computed.operations, hooks: computed.hooks }} onChange={(capability) => onChange({ ...computed, ...capability })} />
     <GeneratedKeyField source={computed.label} value={computed.key} onChange={(key) => onChange({ ...computed, key })} />
   </div>;
 }
 
-function EntityEditor({ entity, snapshot, lockedType, onChange }: {
+function EntityEditor({ entity, snapshot, lockedType, preferredOperation, onChange }: {
   entity: EntityDefinition;
   snapshot: ProjectSnapshot;
   lockedType?: EntityDefinition["type"];
+  preferredOperation?: string;
   onChange: (value: EntityDefinition) => void;
 }) {
   return <div className="definition-form focused-definition-form">
@@ -428,6 +431,8 @@ function EntityEditor({ entity, snapshot, lockedType, onChange }: {
     <OperationHooksEditor
       snapshot={snapshot}
       targetKind={(lockedType ?? entity.type) === "character" ? "world.character" : "world.location"}
+      defaultOpen={Boolean(preferredOperation)}
+      preferredOperation={preferredOperation}
       capability={{
         interactable: entity.interactable ?? false,
         operations: entity.operations ?? [],

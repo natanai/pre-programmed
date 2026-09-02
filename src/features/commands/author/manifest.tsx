@@ -6,6 +6,20 @@ import {
 
 export const commandsAuthorFeature: AuthorFeatureManifest = {
   id: "commands",
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "commands") return null;
+    if (route.workspace === "interactions") return "Player interactions";
+    if (route.workspace === "grammar") return "Player commands";
+    if (route.workspace === "references") return "Target names + aliases";
+    if (route.workspace === "reference-source") return route.data?.sourceKind || "Target names";
+    if (route.workspace === "capabilities") return "Application actions";
+    if (route.workspace === "target-behaviors") return `${route.data?.commandLabel || route.data?.operation || "Command"} · target behavior`;
+    if (route.workspace === "command") {
+      const command = snapshot.settings.commands.commands.find((candidate) => candidate.id === route.data?.commandId);
+      return command?.label || route.data?.operation || "New player command";
+    }
+    return null;
+  },
   tools: (context) => [{
     groupId: "scene",
     groupLabel: "CURRENT SCENE",

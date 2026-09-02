@@ -128,6 +128,11 @@
   line-height: 1.35;
 }
 
+.author-reference-return-help {
+  color: var(--dos-muted);
+  line-height: 1.35;
+}
+
 @media (max-width: 640px), (pointer: coarse) {
   .author-reference-trigger,
   .author-reference-options > button,

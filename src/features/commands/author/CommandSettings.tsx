@@ -285,7 +285,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [enablingSource, setEnablingSource] = useState("");
-  const [continuedToTargets, setContinuedToTargets] = useState(Boolean(existing));
+  const [continuedToTargets, setContinuedToTargets] = useState(false);
   const currentForDirty = { ...draft, patterns: patternLines(patternsText) };
   const dirty = JSON.stringify(currentForDirty) !== baseline;
   const slotNames = placeholderNames(currentForDirty.patterns);
@@ -295,6 +295,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
       .filter((source) => source.enabled)
       .map((source) => source.sourceKind),
   );
+  const savedTarget = existing?.targetSlot ? existing.slots.find((slot) => slot.name === existing.targetSlot) : undefined;
 
   useEffect(() => {
     context.setWorkspaceDirty(dirty);
@@ -392,7 +393,8 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>PLAYER COMMAND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body command-editor-body">
-      <p className="command-settings-note">Example: name the command “Polish,” add the pattern <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. If Inventory Items is marked OFF, enable it under Target Names + Aliases.</p>
+      <p className="command-settings-journey"><strong>1 · WORDING</strong><span>→</span><strong>2 · TARGET</strong><span>→</span><strong>3 · TARGET BEHAVIOR</strong></p>
+      <p className="command-settings-note">Example: name the command “Polish,” add <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. Saving then takes you to each item’s Polish response, where you write text and add effects.</p>
       <label>COMMAND NAME
         <input value={draft.label} autoFocus onChange={(event) => {
           const label = event.target.value;
@@ -433,12 +435,18 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
         </label>
       </div> : null}
       {existing ? <div className="command-delete-zone">
+        {savedTarget && savedTarget.sourceKind !== "text" ? <button type="button" onClick={() => context.pushTask({
+          type: "feature",
+          feature: "commands",
+          workspace: "target-behaviors",
+          data: { sourceKind: savedTarget.sourceKind, operation: existing.operation, commandLabel: existing.label },
+        })}>[DEFINE TARGET BEHAVIOR]</button> : null}
         {confirmDelete
           ? <><span>DELETE THIS COMMAND?</span><button type="button" onClick={() => void remove()}>[DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></>
           : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE COMMAND]</button>}
       </div> : null}
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={!dirty || saving || !draft.label.trim() || !OPERATION_ID_PATTERN.test(draft.operation) || !patternLines(patternsText).length} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button></div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={!dirty || saving || !draft.label.trim() || !OPERATION_ID_PATTERN.test(draft.operation) || !patternLines(patternsText).length} onClick={() => void save()}>[{saving ? "SAVING..." : draft.targetSlot ? "SAVE + DEFINE TARGET BEHAVIOR" : "SAVE"}]</button></div>
   </section>;
 }
 
@@ -448,24 +456,19 @@ function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel
   operation: string;
   commandLabel: string;
 }) {
-  const isItem = sourceKind === "inventory.item";
+  const adapter = context.resolveCommandTarget(sourceKind);
+  const targets = adapter?.list(context.snapshot, operation) ?? [];
   return <section className="author-panel author-panel-frame command-settings-workspace target-behaviors-workspace">
     <header><span>{commandLabel || operation.toUpperCase()} · TARGET BEHAVIOR</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">The player wording is ready. Choose a target to define what its {operation} operation says, changes, or triggers. Targets without a response can still reject the attempt or use feature-owned defaults.</p>
-      {isItem ? context.snapshot.items.map((item) => {
-        const enabled = (item.operations ?? []).includes(operation);
-        const responses = (item.hooks ?? []).filter((hook) => hook.operation === operation).length;
-        return <button type="button" key={item.id} onClick={() => context.pushTask({
-          type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations", operation },
-        })}>
-          <span><strong>{item.name || item.key || "Untitled item"}</strong><small>{enabled ? "available" : "not available"} · {responses} response{responses === 1 ? "" : "s"}</small></span><span>›</span>
-        </button>;
-      }) : <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" })}>
-        <span><strong>OPEN TARGET DEFINITIONS</strong><small>Choose a character, location, or state value and add this operation’s response.</small></span><span>›</span>
-      </button>}
-      {isItem && !context.snapshot.items.length ? <div className="command-settings-empty">NO ITEMS EXIST YET.</div> : null}
+      <p className="command-settings-note">The player wording is ready. Choose a {adapter?.label ?? "target"} to define what its <strong>{operation}</strong> operation says, changes, or triggers. You can create the needed target without leaving this journey.</p>
+      {targets.map((target) => <button type="button" key={target.id} onClick={() => adapter && context.pushTask(adapter.editRoute(target.id, operation))}>
+        <span><strong>{target.label}</strong><small>{target.available ? "available" : "not available"} · {target.responseCount} response{target.responseCount === 1 ? "" : "s"}{target.detail ? ` · ${target.detail}` : ""}</small></span><span>›</span>
+      </button>)}
+      {!adapter ? <div className="command-settings-empty">THIS TARGET MODULE DOES NOT PROVIDE AN AUTHORING ROUTE.</div> : null}
+      {adapter && !targets.length ? <div className="command-settings-empty">NO {adapter.label.toUpperCase()}S EXIST YET.</div> : null}
     </div>
+    {adapter?.createRoute ? <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask(adapter.createRoute!(operation))}>[+ CREATE {adapter.label.toUpperCase()}]</button></div> : null}
   </section>;
 }
 

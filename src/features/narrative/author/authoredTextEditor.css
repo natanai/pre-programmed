@@ -64,6 +64,15 @@
   color: var(--dos-muted);
 }
 
+.authored-text-cue-group {
+  display: grid;
+  gap: .35em;
+}
+
+.authored-text-cue-group > strong {
+  color: var(--dos-muted);
+}
+
 .authored-text-cue-list {
   display: grid;
   gap: 1px;

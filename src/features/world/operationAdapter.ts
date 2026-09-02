@@ -1,6 +1,12 @@
-import type { OperationTargetAdapter } from "../operations/targetAdapter";
+import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
 
 export const WORLD_ENTITY_OPERATION_TARGET_KIND = "world.entity";
+
+export const WORLD_AUTHOR_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
+  { value: "inspect", label: "inspect", targetKinds: ["world.character", "world.location"] },
+  { value: "talk", label: "talk", targetKinds: ["world.character"] },
+  { value: "enter", label: "enter", targetKinds: ["world.location"] },
+];
 
 /**
  * Characters and locations share one stable runtime target kind. Their World

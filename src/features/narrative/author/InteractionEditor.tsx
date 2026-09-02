@@ -16,8 +16,11 @@ import type {
   InteractionChoiceVisibility,
   InteractionOutcome,
 } from "../model";
-import { ConditionEditor } from "../../../author/ConditionEditor";
-import { EffectsEditor } from "../../../author/EffectsEditor";
+import {
+  OutcomeComposerSection,
+  OutcomeConditionEditor,
+  OutcomeEffectsEditor,
+} from "../../../author/outcomes/OutcomeComposer";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
@@ -33,10 +36,6 @@ const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; 
 type EditorScreen =
   | { type: "overview" }
   | { type: "response"; outcomeId: string }
-  | { type: "when"; outcomeId: string }
-  | { type: "after"; outcomeId: string }
-  | { type: "effects"; outcomeId: string }
-  | { type: "author-details"; outcomeId: string }
   | { type: "input-settings" };
 
 export function aliasesForUserInput(userInputText: string, aliases: string[]) {
@@ -206,7 +205,7 @@ export function InteractionEditor({
     );
     if (incompleteTransition) {
       setError("Choose an existing destination or write the text for a new node.");
-      setScreen({ type: "after", outcomeId: incompleteTransition.id });
+      setScreen({ type: "response", outcomeId: incompleteTransition.id });
       return;
     }
     const invalidText = draft.outcomes.find((outcome) => validateTextNotation(outcome.responseText).length);
@@ -270,16 +269,13 @@ export function InteractionEditor({
 
   const back = () => {
     setError("");
-    if (screen.type === "response" || screen.type === "input-settings") setScreen({ type: "overview" });
-    else if ("outcomeId" in screen) setScreen({ type: "response", outcomeId: screen.outcomeId });
+    setScreen({ type: "overview" });
   };
 
   const title = screen.type === "overview"
     ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
-    : screen.type === "response" ? `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`
-    : screen.type === "author-details" ? "AUTHOR DETAILS"
-    : screen.type.toUpperCase();
+    : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
   return <section className="author-panel author-panel-frame interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="guided-editor-header">
@@ -316,35 +312,12 @@ export function InteractionEditor({
         onPerformance={(responsePerformance) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responsePerformance }))}
         onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
         onPreview={onPreview ? () => onPreview(selectedOutcome) : undefined}
-        onOpen={(type) => setScreen({ type, outcomeId: selectedOutcome.id })}
-        onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
-        onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
-      /> : null}
-
-      {screen.type === "when" && selectedOutcome ? <WhenWorkspace
-        outcome={selectedOutcome}
-        snapshot={snapshot}
-        onChange={(condition) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, condition }))}
-      /> : null}
-
-      {screen.type === "after" && selectedOutcome ? <AfterWorkspace
-        outcome={selectedOutcome}
-        snapshot={snapshot}
         playState={playState}
         newNodeText={newNodeText[selectedOutcome.id] ?? ""}
         onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [selectedOutcome.id]: text }))}
         onChange={(change) => configureOutcome(selectedOutcome.id, change)}
-      /> : null}
-
-      {screen.type === "effects" && selectedOutcome ? <EffectsWorkspace
-        outcome={selectedOutcome}
-        snapshot={snapshot}
-        onChange={(effects) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, effects }))}
-      /> : null}
-
-      {screen.type === "author-details" && selectedOutcome ? <ResponseAuthorDetailsWorkspace
-        outcome={selectedOutcome}
-        onChange={(change) => configureOutcome(selectedOutcome.id, change)}
+        onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
+        onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
       /> : null}
 
       {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
@@ -450,17 +423,20 @@ function InputSettings({ draft, fallbackMode, onChange }: {
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, onPerformance, onSpeaker, onPreview, onOpen, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, newNodeText, onNewNodeText, onText, onPerformance, onSpeaker, onPreview, onChange, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
+  playState: PlayState;
   index: number;
   total: number;
   notation: string;
+  newNodeText: string;
+  onNewNodeText: (text: string) => void;
   onText: (text: string) => void;
   onPerformance: (performance: InteractionOutcome["responsePerformance"]) => void;
   onSpeaker: (speakerId: string | null) => void;
   onPreview?: () => void;
-  onOpen: (screen: "when" | "after" | "effects" | "author-details") => void;
+  onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
 }) {
@@ -490,36 +466,26 @@ function ResponseWorkspace({ outcome, snapshot, index, total, notation, onText, 
         onPreview={onPreview ? () => onPreview() : undefined}
       />
     </section>
-    <section className="guided-section guided-drill-list">
-      <button type="button" className="guided-drill-row" onClick={() => onOpen("when")}><span>WHEN</span><span className="guided-row-value">{conditionSummary(outcome.condition)}</span><span>›</span></button>
-      <button type="button" className="guided-drill-row" onClick={() => onOpen("after")}><span>AFTER</span><span className="guided-row-value">{destinationLabel(snapshot, outcome)}</span><span>›</span></button>
-      <button type="button" className="guided-drill-row" onClick={() => onOpen("effects")}><span>EFFECTS</span><span className="guided-row-value">{outcome.effects.length || "None"}</span><span>›</span></button>
-      <button type="button" className="guided-drill-row" onClick={() => onOpen("author-details")}><span>AUTHOR DETAILS</span><span className="guided-row-value">{outcome.label.trim() || "Optional label"}</span><span>›</span></button>
-    </section>
+    <div className="interaction-outcome-composer" aria-label="Complete response outcome">
+      <OutcomeComposerSection title="WHEN" summary={conditionSummary(outcome.condition)}>
+        <OutcomeConditionEditor condition={outcome.condition} snapshot={snapshot} onChange={(condition) => onChange((current) => ({ ...current, condition }))} />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="AFTER" summary={destinationLabel(snapshot, outcome)}>
+        <AfterWorkspace outcome={outcome} snapshot={snapshot} playState={playState} newNodeText={newNodeText} onNewNodeText={onNewNodeText} onChange={onChange} />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="EFFECTS" summary={outcome.effects.length ? `${outcome.effects.length} configured` : "None"}>
+        <OutcomeEffectsEditor effects={outcome.effects} snapshot={snapshot} onChange={(effects) => onChange((current) => ({ ...current, effects }))} />
+      </OutcomeComposerSection>
+      <OutcomeComposerSection title="AUTHOR DETAILS" summary={outcome.label.trim() || "Optional label"}>
+        <p className="guided-context-copy">Private organization for this response. It is never shown to the player.</p>
+        <label>RESPONSE LABEL <input value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></label>
+      </OutcomeComposerSection>
+    </div>
     <div className="guided-response-actions">
       <button type="button" onClick={() => onMove(-1)} disabled={index === 0}>[MOVE UP]</button>
       <button type="button" onClick={() => onMove(1)} disabled={index === total - 1}>[MOVE DOWN]</button>
       {onRemove ? <button type="button" onClick={onRemove}>[REMOVE RESPONSE]</button> : null}
     </div>
-  </div>;
-}
-
-function WhenWorkspace({ outcome, snapshot, onChange }: {
-  outcome: InteractionOutcome;
-  snapshot: ProjectSnapshot;
-  onChange: (condition: Condition) => void;
-}) {
-  return <div className="guided-subworkspace">
-    <section className="guided-section">
-      <h3>WHEN SHOULD THIS RESPONSE HAPPEN?</h3>
-      <div className="attempt-presets guided-presets">
-        <button type="button" onClick={() => onChange({ type: "always" })}>[ALWAYS]</button>
-        <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 1 })}>[FIRST TIME]</button>
-        <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 2 })}>[SECOND TIME]</button>
-        <button type="button" onClick={() => onChange({ type: "attempt", operator: "gte", value: 2 })}>[SECOND+]</button>
-      </div>
-      <ConditionEditor condition={outcome.condition} onChange={onChange} snapshot={snapshot} />
-    </section>
   </div>;
 }
 
@@ -542,7 +508,7 @@ function AfterWorkspace({ outcome, snapshot, playState, newNodeText, onNewNodeTe
     : "[D]";
   const destination = snapshot.nodes.find((node) => node.id === outcome.destinationNodeId);
 
-  return <div className="guided-subworkspace">
+  return <div className="guided-subworkspace outcome-after-workspace">
     <section className="guided-section">
       <h3>WHAT HAPPENS AFTER THIS RESPONSE?</h3>
       <div className="guided-option-list">
@@ -571,31 +537,5 @@ function AfterWorkspace({ outcome, snapshot, playState, newNodeText, onNewNodeTe
         }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>) : <span className="search-empty">No existing match. Saving will create this as a new node.</span>}
       </div> : null}
     </section> : null}
-  </div>;
-}
-
-function EffectsWorkspace({ outcome, snapshot, onChange }: {
-  outcome: InteractionOutcome;
-  snapshot: ProjectSnapshot;
-  onChange: (effects: InteractionOutcome["effects"]) => void;
-}) {
-  return <div className="guided-subworkspace">
-    <section className="guided-section">
-      <h3>EFFECTS — RUN TOP TO BOTTOM</h3>
-      <EffectsEditor effects={outcome.effects} onChange={onChange} snapshot={snapshot} />
-    </section>
-  </div>;
-}
-
-function ResponseAuthorDetailsWorkspace({ outcome, onChange }: {
-  outcome: InteractionOutcome;
-  onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
-}) {
-  return <div className="guided-subworkspace">
-    <section className="guided-section">
-      <h3>AUTHOR DETAILS</h3>
-      <p className="guided-context-copy">Optional private organization for this response. It is not shown to the player and does not affect response selection.</p>
-      <label>RESPONSE LABEL <input value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></label>
-    </section>
   </div>;
 }

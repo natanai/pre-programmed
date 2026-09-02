@@ -2,7 +2,6 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { DefinitionsPanel, type StateAuthorResourceKind } from "./DefinitionsPanel";
 import { stateAuthorSearch, stateAuthorTools } from "./tools";
 import { STATE_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
-import { WORLD_COMMAND_REFERENCE_SOURCES } from "../../world/commandReferences";
 import {
   clearFlagEffectAdapter,
   decrementEffectAdapter,
@@ -23,6 +22,7 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
     workspace: "definitions",
     data: {
       resourceKind: kind,
+      resourceTask: kind,
       ...(id ? { resourceId: id } : {}),
     },
   };
@@ -30,7 +30,69 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
 
 export const stateAuthorFeature: AuthorFeatureManifest = {
   id: "state",
-  commandReferences: [...WORLD_COMMAND_REFERENCE_SOURCES, ...STATE_COMMAND_REFERENCE_SOURCES],
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "state" || route.workspace !== "definitions") return null;
+    const id = route.data?.resourceId;
+    const variable = snapshot.variables.find((candidate) => candidate.id === id);
+    const computed = snapshot.computedValues.find((candidate) => candidate.id === id);
+    const entity = snapshot.entities.find((candidate) => candidate.id === id);
+    if (variable) return variable.label || variable.key;
+    if (computed) return computed.label || computed.key;
+    if (entity) return entity.name || entity.key;
+    const kind = route.data?.resourceKind;
+    return kind ? `New ${kind.replaceAll("-", " ")}` : "State + people";
+  },
+  commandReferences: STATE_COMMAND_REFERENCE_SOURCES,
+  commandTargets: [
+    {
+      sourceKind: "world.character",
+      label: "character",
+      list: (snapshot, operation) => snapshot.entities.filter((entity) => entity.type === "character").map((entity) => ({
+        id: entity.id,
+        label: entity.name || entity.key || "Untitled character",
+        available: (entity.operations ?? []).includes(operation),
+        responseCount: (entity.hooks ?? []).filter((hook) => hook.operation === operation).length,
+      })),
+      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "character", resourceTask: "character", resourceId: id, preferredOperation: operation } }),
+      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "character", resourceTask: "character", preferredOperation: operation } }),
+    },
+    {
+      sourceKind: "world.location",
+      label: "location",
+      list: (snapshot, operation) => snapshot.entities.filter((entity) => entity.type === "location").map((entity) => ({
+        id: entity.id,
+        label: entity.name || entity.key || "Untitled location",
+        available: (entity.operations ?? []).includes(operation),
+        responseCount: (entity.hooks ?? []).filter((hook) => hook.operation === operation).length,
+      })),
+      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "location", resourceTask: "location", resourceId: id, preferredOperation: operation } }),
+      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "location", resourceTask: "location", preferredOperation: operation } }),
+    },
+    {
+      sourceKind: "state.variable",
+      label: "variable",
+      list: (snapshot, operation) => snapshot.variables.map((definition) => ({
+        id: definition.id,
+        label: definition.label || definition.key || "Untitled variable",
+        available: definition.operations.includes(operation),
+        responseCount: definition.hooks.filter((hook) => hook.operation === operation).length,
+      })),
+      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "variable", resourceTask: "variable", resourceId: id, preferredOperation: operation } }),
+      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "variable", resourceTask: "variable", preferredOperation: operation } }),
+    },
+    {
+      sourceKind: "state.computed",
+      label: "computed value",
+      list: (snapshot, operation) => snapshot.computedValues.map((definition) => ({
+        id: definition.id,
+        label: definition.label || definition.key || "Untitled computed value",
+        available: definition.operations.includes(operation),
+        responseCount: definition.hooks.filter((hook) => hook.operation === operation).length,
+      })),
+      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "computed", resourceTask: "computed", resourceId: id, preferredOperation: operation } }),
+      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "computed", resourceTask: "computed", preferredOperation: operation } }),
+    },
+  ],
   conditions: [flagConditionAdapter, variableConditionAdapter],
   effects: [setFlagEffectAdapter, clearFlagEffectAdapter, setValueEffectAdapter, incrementEffectAdapter, decrementEffectAdapter],
   references: [stateProjectReferences],
@@ -98,6 +160,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       snapshot={context.snapshot}
       resourceKind={resourceKind}
       resourceId={route.data?.resourceId}
+      preferredOperation={route.data?.preferredOperation}
       onSave={async (operations, description) => {
         const result = await context.persist(operations, description);
         if (!resourceKind || (result.status !== "saved" && result.status !== "queued")) return result;

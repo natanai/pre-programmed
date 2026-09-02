@@ -19,6 +19,7 @@ import type { AuthorToolContributor } from "../tools/types";
 import type { CommandReferenceSource } from "../../features/commands/referenceSource";
 import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
 import type { TextCueAuthorAdapter } from "../textCues/types";
+import type { AuthorCommandTargetAdapter } from "../commands/types";
 
 export type AuthorPersist = (
   operations: MutationOperation[],
@@ -53,6 +54,8 @@ export type AuthorWorkspaceContext = {
   setWorkspaceDirty: (dirty: boolean) => void;
   pushTask: (route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => string;
   resources: AuthorResourceTools;
+  /** Resolve feature-owned command-target authoring without coupling Commands to feature internals. */
+  resolveCommandTarget: (sourceKind: string) => AuthorCommandTargetAdapter | undefined;
   runtime: AuthorRuntimeSurface;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
   onRestore: (bookmark: AuthorBookmark) => void;
@@ -90,6 +93,8 @@ export type AuthorFeatureManifest = {
   resources?: readonly AuthorResourceProvider[];
   /** Player-command target vocabularies owned by this feature. */
   commandReferences?: readonly CommandReferenceSource[];
+  /** Feature-owned destinations for authoring behavior on command targets. */
+  commandTargets?: readonly AuthorCommandTargetAdapter[];
   /** Operations this feature exposes on semantic target kinds. */
   operations?: readonly AuthorOperationDefinition[];
   /** Feature-owned condition editors composed by the generic rule UI. */
@@ -106,6 +111,8 @@ export type AuthorFeatureManifest = {
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */
   terminalShortcuts?: readonly AuthorTerminalShortcut[];
+  /** Feature-owned, human-readable context for routes shown in the shared task trail. */
+  describeTask?: (route: AuthorTaskRoute, snapshot: ProjectSnapshot) => string | null;
   /** Semantic requests this feature can fulfill without direct feature imports. */
   capabilities?: readonly AuthorCapability[];
   /** Optional contextual Author controls rendered beside the live play surface. */

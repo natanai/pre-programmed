@@ -83,6 +83,8 @@ It should move away from responsibility for:
 
 Do not add a new feature-specific `if`/`switch` branch to App when a contribution/adapter can own it instead.
 
+Commands follows the same boundary in Author mode: target modules contribute command-target authoring adapters and their operation vocabulary. The shared command journey may route to them, but it must not enumerate item/character/location/state editor branches. Shared outcome composition likewise arranges canonical condition/effect editors without taking ownership of their feature rules.
+
 ## 6. Worker persistence is transitional
 
 `worker/projectStore.ts` currently has too much feature knowledge. Do not treat that as the desired pattern for new systems.

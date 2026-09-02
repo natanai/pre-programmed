@@ -42,10 +42,7 @@ export function AuthoredTextEditor({
     () => compileTextNotation(value.text, value.performance),
     [value.text, value.performance],
   );
-  const availableCueTypes: readonly TextCueType[] = [
-    ...CORE_CUE_TYPES,
-    ...featureTextCueAuthorAdapters().map((adapter) => adapter.type),
-  ];
+  const mediaCueAdapters = featureTextCueAuthorAdapters();
   const selectionLength = Math.max(0, selection.end - selection.start);
 
   const focusSelection = (start: number, end = start) => window.requestAnimationFrame(() => {
@@ -134,13 +131,21 @@ export function AuthoredTextEditor({
     </div> : null}
     <div className="authored-text-actions">
       <button type="button" onClick={() => setAdvancedOpen((open) => !open)}>
-        [{advancedOpen ? "HIDE" : "ADVANCED"} CUES · {value.performance.cues.length}]
+        [{advancedOpen ? "HIDE TIMELINE + MEDIA" : "TIMELINE + MEDIA"} · {value.performance.cues.length}]
       </button>
       {onPreview ? <button type="button" disabled={Boolean(issues.length)} onClick={() => onPreview(value)}>[PREVIEW IN PLAY]</button> : null}
     </div>
     {advancedOpen ? <section className="authored-text-cues">
-      <p>{selectionLength ? `${selectionLength} selected · ${selection.start}:${selection.end}` : `Cursor ${selection.start}`}. Select text first, then add a cue.</p>
-      <div className="authored-text-cue-buttons">{availableCueTypes.map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
+      <p>Use this timeline for precise positions and media events. Inline Text Styles above are faster when an effect belongs directly to written words.</p>
+      <p>{selectionLength ? `${selectionLength} selected · ${selection.start}:${selection.end}` : `Cursor ${selection.start}`}. Select text first, then add an event.</p>
+      <div className="authored-text-cue-group">
+        <strong>PRECISE DELIVERY</strong>
+        <div className="authored-text-cue-buttons">{CORE_CUE_TYPES.map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
+      </div>
+      {mediaCueAdapters.length ? <div className="authored-text-cue-group">
+        <strong>MEDIA EVENTS</strong>
+        <div className="authored-text-cue-buttons">{mediaCueAdapters.map((adapter) => <button type="button" key={adapter.type} onClick={() => addCue(adapter.type)}>[+ {adapter.type.toUpperCase()}]</button>)}</div>
+      </div> : null}
       <div className="authored-text-cue-list">
         {value.performance.cues.map((cue, index) => {
           const featureAdapter = featureTextCueAuthorAdapter(cue.type);
@@ -151,7 +156,7 @@ export function AuthoredTextEditor({
             <button type="button" onClick={() => onChange({ ...value, performance: { ...value.performance, cues: value.performance.cues.filter((item) => item.id !== cue.id) } })}>[REMOVE]</button>
           </div>;
         })}
-        {!value.performance.cues.length ? <span className="muted">NO ADVANCED CUES CONFIGURED.</span> : null}
+        {!value.performance.cues.length ? <span className="muted">NO TIMELINE OR MEDIA EVENTS CONFIGURED.</span> : null}
       </div>
     </section> : null}
     <div className="performance-preview" aria-label={`${label} preview`}><PerformanceText text={compiled.text} performance={compiled.performance} /></div>

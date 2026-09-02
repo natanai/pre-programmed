@@ -52,9 +52,9 @@ describe("author operation target scopes", () => {
 
   it("keeps commands within their exact semantic author target", () => {
     expect(authorOperationDefinitions(snapshot, "world.character").map((definition) => definition.value))
-      .toEqual(["greet"]);
+      .toEqual(["inspect", "talk", "greet"]);
     expect(authorOperationDefinitions(snapshot, "world.location").map((definition) => definition.value))
-      .toEqual(["visit"]);
+      .toEqual(["inspect", "enter", "visit"]);
     expect(authorOperationDefinitions(snapshot, "state.variable").map((definition) => definition.value))
       .toEqual(["adjust"]);
     expect(authorOperationDefinitions(snapshot, "state.computed")).toEqual([]);

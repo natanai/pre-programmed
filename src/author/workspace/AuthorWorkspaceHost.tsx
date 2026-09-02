@@ -3,7 +3,8 @@ import { createPortal } from "react-dom";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import type { AuthorSearchEntry } from "../search/types";
-import { renderAuthorFeatureWorkspace } from "../features/registry";
+import { describeAuthorTask, getAuthorCommandTargetAdapter, renderAuthorFeatureWorkspace } from "../features/registry";
+import { AuthorQuickFind } from "../search/AuthorQuickFind";
 import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext } from "../features/types";
 import { AuthorResourceProvider } from "../resources/context";
 import { buildAuthorResourceTools } from "../resources/runtime";
@@ -74,6 +75,7 @@ function AuthorTaskSurface({
     setWorkspaceDirty,
     pushTask,
     resources,
+    resolveCommandTarget: getAuthorCommandTargetAdapter,
     runtime,
     onSnapshot,
     onRestore,
@@ -117,6 +119,10 @@ export function AuthorWorkspaceHost({
 }) {
   if (!tasks.length) return null;
   const resources = buildAuthorResourceTools(shared.snapshot, shared.pushTask);
+  const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot) }));
+  const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
+  const parentLabel = taskLabels.at(-2)?.label;
+  const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
 
   return createPortal(
     <div
@@ -125,14 +131,23 @@ export function AuthorWorkspaceHost({
       onPointerDown={(event) => event.stopPropagation()}
     >
       <nav className="author-workspace-navigation" aria-label="Author task navigation">
-        <button
-          type="button"
-          className="author-workspace-back"
-          onClick={() => shared.requestBack(activeTaskId ?? undefined)}
-        >
-          [← BACK]
-        </button>
-        {tasks.length > 1 ? <span className="author-task-depth" aria-label={`${tasks.length} nested Author tasks`}>TASK {tasks.length}</span> : null}
+        <div className="author-workspace-navigation-actions">
+          <button
+            type="button"
+            className="author-workspace-back"
+            onClick={() => shared.requestBack(activeTaskId ?? undefined)}
+          >
+            [← BACK]
+          </button>
+          {activeTask?.route.type !== "tools" ? <button type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+          <AuthorQuickFind entries={shared.searchEntries} />
+        </div>
+        <ol className="author-task-trail" aria-label="Author task trail">
+          {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
+            <span>{task.label}</span>
+          </li>)}
+        </ol>
+        {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
       </nav>
       <div className="author-workspace-content">
         {tasks.map((task) => <AuthorTaskSurface

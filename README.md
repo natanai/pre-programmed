@@ -104,7 +104,7 @@ Effects run in the order shown in the editor.
 
 ## Inline text-performance notation
 
-Node text and normal User Input response text can contain terse slash notation. The notation stays in the authored source string but is removed before the player sees the text; it compiles into the same text-performance cues used by the advanced editor.
+Node text and normal User Input response text can contain terse slash notation. The notation stays in the authored source string but is removed before the player sees the text; it compiles into the same performance data used by the Timeline + Media editor.
 
 ```text
 /p          pause 350 ms
@@ -130,7 +130,7 @@ No, wait— /f{RUN.}
 The door /h{SLAMS} shut.
 ```
 
-Braces make the affected span explicit, so there is no separate “turn the effect off” marker to remember. The controls can be mixed into ordinary prose, and the advanced cue editor remains available for visual/audio/sprite cues or precise manual selection.
+Braces make the affected span explicit, so there is no separate “turn the effect off” marker to remember. The controls can be mixed into ordinary prose. Use Timeline + Media for visual/audio/sprite events or precise manual positions.
 
 `/p` only acts as a pause command when it is a standalone control or followed by a millisecond number. A normal word such as `/place` stays literal. Use `//` when you intentionally want a visible slash before something that otherwise looks like notation.
 
@@ -255,7 +255,7 @@ Variables are values stored in the play state. They may be numbers, booleans/fla
 
 Computed values are read from safe runtime facts such as elapsed session seconds or commands entered.
 
-Variables and computed values can be exposed in the inventory/status area, and exposed status values can be made interactable with operation hooks.
+Variables and computed values can be exposed in the inventory/status area. Player operations are authored independently, so a value does not have to be visible in status before it can receive a targeted command.
 
 ### Characters and locations
 

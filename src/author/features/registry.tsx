@@ -4,6 +4,7 @@ import { inventoryAuthorFeature } from "../../features/inventory/author/manifest
 import { mediaAuthorFeature } from "../../features/media/author/manifest";
 import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
+import { worldAuthorFeature } from "../../features/world/author/manifest";
 import type { AuthorResourceProvider } from "../resources/types";
 import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import type { AuthorTaskRoute } from "../tasks/types";
@@ -23,6 +24,7 @@ import type {
  */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
+  worldAuthorFeature,
   stateAuthorFeature,
   inventoryAuthorFeature,
   mediaAuthorFeature,
@@ -40,6 +42,12 @@ export function getAuthorResourceProvider(kind: string): AuthorResourceProvider 
 
 export function getAuthorCommandReferenceSources() {
   return AUTHOR_FEATURES.flatMap((feature) => feature.commandReferences ?? []);
+}
+
+export function getAuthorCommandTargetAdapter(sourceKind: string) {
+  return AUTHOR_FEATURES
+    .flatMap((feature) => feature.commandTargets ?? [])
+    .find((adapter) => adapter.sourceKind === sourceKind);
 }
 
 export function getAuthorOperationDefinitions() {
@@ -97,4 +105,20 @@ export function renderAuthorFeatureWorkspace(
     if (workspace !== null && workspace !== undefined) return workspace;
   }
   return null;
+}
+
+/**
+ * Describe a task without teaching the shell any feature-specific routes.
+ * Feature manifests own their vocabulary; the shell only composes the trail.
+ */
+export function describeAuthorTask(route: AuthorTaskRoute, snapshot: AuthorWorkspaceContext["snapshot"]): string {
+  if (route.type === "tools") return "Author tools";
+  if (route.type === "workspace") return route.view === "history" ? "History" : "Saved locations";
+  for (const feature of AUTHOR_FEATURES) {
+    const label = feature.describeTask?.(route, snapshot);
+    if (label) return label;
+  }
+  return route.type === "feature"
+    ? `${route.feature} · ${route.workspace}`.replaceAll("-", " ")
+    : "Author task";
 }

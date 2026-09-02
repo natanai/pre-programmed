@@ -17,7 +17,35 @@ import { inventoryProjectReferences } from "./references";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
   id: "inventory",
+  describeTask(route, snapshot) {
+    if (route.type !== "feature" || route.feature !== "inventory") return null;
+    if (route.workspace === "inventory") return "Inventory + body";
+    if (route.workspace === "item") {
+      const item = snapshot.items.find((candidate) => candidate.id === route.data?.itemId);
+      const operation = route.data?.operation;
+      const label = item?.name || item?.key || "New item";
+      return operation ? `${label} · ${operation}` : label;
+    }
+    if (route.workspace === "body-type") {
+      const bodyType = (snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId);
+      return bodyType?.name || "New body type";
+    }
+    return null;
+  },
   commandReferences: INVENTORY_COMMAND_REFERENCE_SOURCES,
+  commandTargets: [{
+    sourceKind: "inventory.item",
+    label: "item",
+    list: (snapshot, operation) => snapshot.items.map((item) => ({
+      id: item.id,
+      label: item.name || item.key || "Untitled item",
+      detail: item.key,
+      available: (item.operations ?? []).includes(operation),
+      responseCount: (item.hooks ?? []).filter((hook) => hook.operation === operation).length,
+    })),
+    editRoute: (id, operation) => ({ type: "feature", feature: "inventory", workspace: "item", data: { itemId: id, section: "operations", operation, resourceTask: "item" } }),
+    createRoute: (operation) => ({ type: "feature", feature: "inventory", workspace: "item", data: { section: "operations", operation, resourceTask: "item" } }),
+  }],
   operations: INVENTORY_OPERATION_DEFINITIONS,
   conditions: [hasItemConditionAdapter, lacksItemConditionAdapter],
   effects: [giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter, setBodyBackgroundEffectAdapter],
