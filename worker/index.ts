@@ -49,7 +49,9 @@ export async function handleApi(request: Request, env: Env) {
       service: "pre-programmed",
       apiVersion: 2,
       persistence: "d1",
-      mediaPersistence: env.ASSET_CONTENT ? "r2" : "unconfigured",
+      mediaPersistence: env.ASSET_CONTENT ? "d1-text+r2" : "d1-text",
+      mediaTextPersistence: "d1",
+      mediaBlobPersistence: env.ASSET_CONTENT ? "r2" : "unconfigured",
       authorConfigured: Boolean(env.ADMIN_KEY),
     });
   }
@@ -63,7 +65,10 @@ export async function handleApi(request: Request, env: Env) {
   }
 
   const publicContentKey = mediaContentKey(url.pathname, "/api/media/content/");
-  if (publicContentKey && request.method === "GET") return getMediaContent(env.ASSET_CONTENT, publicContentKey);
+  if (publicContentKey && request.method === "GET") {
+    await ensureSchema(env.DB);
+    return getMediaContent(env.DB, env.ASSET_CONTENT, publicContentKey);
+  }
 
   if (url.pathname === "/api/author/login" && request.method === "POST") return loginAuthor(request, env);
   if (url.pathname === "/api/author/check" && request.method === "POST") {
@@ -75,7 +80,7 @@ export async function handleApi(request: Request, env: Env) {
   await ensureSchema(env.DB);
 
   const authorContentKey = mediaContentKey(url.pathname, "/api/author/media/content/");
-  if (authorContentKey && request.method === "PUT") return putMediaContent(env.ASSET_CONTENT, authorContentKey, request);
+  if (authorContentKey && request.method === "PUT") return putMediaContent(env.DB, env.ASSET_CONTENT, authorContentKey, request);
 
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
