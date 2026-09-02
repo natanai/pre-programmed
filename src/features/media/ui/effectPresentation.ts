@@ -18,8 +18,8 @@ export const presentMediaEffectEvent: EffectEventPresenter = (event, context) =>
     case "art": {
       const asset = configuredAssetStore.resolve(context.snapshot, event.assetId);
       if (!asset?.url) return true;
-      if (asset.defaultPresentation === "inline") context.surface.appendInlineAsset(asset.url);
-      else context.surface.showOverlayAsset(asset.url);
+      if (asset.defaultPresentation === "inline") context.surface.appendInlineAsset(event.assetId);
+      else context.surface.showOverlayAsset(event.assetId);
       return true;
     }
     default:
