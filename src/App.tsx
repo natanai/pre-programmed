@@ -28,6 +28,14 @@ import {
   loadCachedSnapshot,
   saveCachedSnapshot,
 } from "./data/localProject";
+import {
+  clearPlaySession,
+  isPlaySessionCompatible,
+  loadPlaySession,
+  savePlaySession,
+  type PersistedPlaySession,
+  type PersistedTranscriptLine,
+} from "./data/localPlaySession";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "./engine/application/catalog";
 import {
   advanceProjectClocks,
@@ -46,6 +54,7 @@ import {
   reconcilePlayState,
   reconcilePlayStateAfterProjectChange,
   resumeAuthorBookmark,
+  resumePlayState,
 } from "./engine/project/playState";
 import type {
   AuthorBookmark,
@@ -65,18 +74,12 @@ import {
   type TerminalCommandChoice,
   type TerminalCommandComposerHandle,
 } from "./ui/TerminalCommandComposer";
+import { PlayerSessionGate } from "./ui/PlayerSessionGate";
 import { useTerminalViewport } from "./ui/useTerminalViewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
 
-type TranscriptLine = {
-  id: string;
-  text: string;
-  nodeId?: string;
-  speakerId?: string | null;
-  command?: boolean;
-  artUrl?: string;
-};
+type TranscriptLine = PersistedTranscriptLine;
 
 function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
   return {
@@ -138,6 +141,8 @@ export default function App() {
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
   const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
+  const [pendingPlaySession, setPendingPlaySession] = useState<PersistedPlaySession | null>(null);
+  const [playSessionReady, setPlaySessionReady] = useState(false);
   const [parserResult, setParserResult] = useState<ParserResult | null>(null);
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string }>>([]);
   const [eventArt, setEventArt] = useState("");
@@ -184,11 +189,11 @@ export default function App() {
   }, [projectClockSchedule]);
 
   useEffect(() => {
-    if (!typewriter.complete || pendingDestinationNodeId || panel) return;
+    if (!typewriter.complete || pendingDestinationNodeId || panel || pendingPlaySession) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [typewriter.complete, pendingDestinationNodeId, panel, requestingKey]);
+  }, [typewriter.complete, pendingDestinationNodeId, panel, pendingPlaySession, requestingKey]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -228,6 +233,65 @@ export default function App() {
     setActivePerformance(compiled.performance);
   };
 
+  const continuePlaySession = () => {
+    if (!snapshot || !pendingPlaySession) return;
+    const session = pendingPlaySession;
+    const state = resumePlayState(snapshot, session.playState, session.savedAt);
+    const sameRevision = session.projectRevision === snapshot.revision;
+    setPlayState(state);
+    setTranscript(session.presentation.transcript);
+    setCommand("");
+    setParserResult(null);
+    setNotifications([]);
+    setEventArt("");
+    firedCueIds.current = new Set();
+    completedPendingDestination.current = "";
+    if (sameRevision) {
+      setActiveText(session.presentation.activeText);
+      setActiveNodeId(session.presentation.activeNodeId && snapshot.nodes.some((node) => node.id === session.presentation.activeNodeId)
+        ? session.presentation.activeNodeId
+        : undefined);
+      setActiveSpeakerId(session.presentation.activeSpeakerId);
+      setActivePerformance(session.presentation.activePerformance);
+      setPendingDestinationNodeId(session.presentation.pendingDestinationNodeId && snapshot.nodes.some((node) => node.id === session.presentation.pendingDestinationNodeId)
+        ? session.presentation.pendingDestinationNodeId
+        : null);
+    } else {
+      setActiveText("");
+      setActiveNodeId(undefined);
+      setActiveSpeakerId(null);
+      setPendingDestinationNodeId(null);
+      const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
+      if (node) showNode(snapshot, node, state);
+    }
+    setPendingPlaySession(null);
+    setPlaySessionReady(true);
+    window.requestAnimationFrame(scrollHistoryToPresent);
+  };
+
+  const startNewGame = () => {
+    if (!snapshot) return;
+    const state = createEmptyPlayState(snapshot);
+    setPlayState(state);
+    setTranscript([]);
+    setCommand("");
+    setParserResult(null);
+    setNotifications([]);
+    setEventArt("");
+    setActiveText("");
+    setActiveNodeId(undefined);
+    setActiveSpeakerId(null);
+    setActivePerformance({ charactersPerSecond: 18, cues: [] });
+    setPendingDestinationNodeId(null);
+    firedCueIds.current = new Set();
+    completedPendingDestination.current = "";
+    const node = snapshot.nodes.find((candidate) => candidate.id === snapshot.startNodeId);
+    if (node) showNode(snapshot, node, state);
+    setPendingPlaySession(null);
+    setPlaySessionReady(true);
+    void clearPlaySession();
+  };
+
   useEffect(() => {
     if (!typewriter.complete || !pendingDestinationNodeId || !snapshot || !playState || !activeText) return;
     const completionKey = `${pendingDestinationNodeId}:${activeText}`;
@@ -244,7 +308,16 @@ export default function App() {
     let cancelled = false;
     const controller = new AbortController();
     void (async () => {
-      const cached = await loadCachedSnapshot();
+      const [cached, savedSession] = await Promise.all([loadCachedSnapshot(), loadPlaySession()]);
+      const offerSession = (project: ProjectSnapshot) => {
+        if (savedSession && isPlaySessionCompatible(project, savedSession)) {
+          setPendingPlaySession(savedSession);
+          setPlaySessionReady(false);
+        } else {
+          setPendingPlaySession(null);
+          setPlaySessionReady(true);
+        }
+      };
       if (cached && !cancelled) {
         setConnectionState("ready");
         const state = createEmptyPlayState(cached);
@@ -252,6 +325,7 @@ export default function App() {
         setPlayState(state);
         const node = cached.nodes.find((item) => item.id === cached.startNodeId);
         if (node) showNode(cached, node, state);
+        offerSession(cached);
       }
       try {
         const project = await waitForProjectSnapshot({
@@ -271,6 +345,8 @@ export default function App() {
           if (node) showNode(project, node, state);
           return state;
         });
+        offerSession(project);
+        if (savedSession && !isPlaySessionCompatible(project, savedSession)) void clearPlaySession();
         await saveCachedSnapshot(project);
       } catch (error) {
         if (!cached && !cancelled && (!(error instanceof Error) || error.name !== "AbortError")) {
@@ -283,6 +359,41 @@ export default function App() {
       controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorMode || authorTasks.hasTasks) return;
+    const timer = window.setTimeout(() => {
+      void savePlaySession({
+        version: 1,
+        schemaVersion: snapshot.schemaVersion,
+        projectRevision: snapshot.revision,
+        savedAt: new Date().toISOString(),
+        playState,
+        presentation: {
+          transcript,
+          activeText,
+          activeNodeId,
+          activeSpeakerId,
+          activePerformance,
+          pendingDestinationNodeId,
+        },
+      });
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [
+    snapshot,
+    playState,
+    playSessionReady,
+    pendingPlaySession,
+    authorMode,
+    authorTasks.hasTasks,
+    transcript,
+    activeText,
+    activeNodeId,
+    activeSpeakerId,
+    activePerformance,
+    pendingDestinationNodeId,
+  ]);
 
   const clearAuthorSession = () => {
     sessionStorage.removeItem(AUTHOR_TOKEN_KEY);
@@ -482,7 +593,7 @@ export default function App() {
   }, [typewriter.count, activePerformance]);
 
   const handleTerminalValue = async (value: string) => {
-    if (!snapshot || !playState) return;
+    if (!snapshot || !playState || pendingPlaySession) return;
     historyPinnedToPresentRef.current = true;
     scrollHistoryToPresent();
     const normalized = value.trim().toLowerCase();
@@ -674,7 +785,7 @@ export default function App() {
         </div>
       </div>
 
-      {typewriter.complete && !pendingDestinationNodeId && !panel ? <TerminalCommandComposer
+      {typewriter.complete && !pendingDestinationNodeId && !panel && !pendingPlaySession ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
         value={command}
@@ -687,7 +798,7 @@ export default function App() {
       /> : null}
 
       <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel && !pendingPlaySession
           ? renderAuthorFeaturePlaySurfaces({
             snapshot,
             playState,
@@ -696,7 +807,7 @@ export default function App() {
           })
           : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel ? <AuthorHome
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel && !pendingPlaySession ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
@@ -756,13 +867,14 @@ export default function App() {
       </div>
     </div>
     {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author tasks and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={authorTasks.requestClose}>[X]</button> : null}
-    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen} onToggleAuthorView={() => {
+    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !pendingPlaySession} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       authorTasks.closeAll();
       setAuthorMessage("");
     }} onTextSpeedMultiplierChange={setTextSpeedMultiplier} />
     <div className="floating-notifications" aria-live="polite">{notifications.filter((item) => !item.anchorLineId).map((item) => <div key={item.id}>{item.text}</div>)}</div>
     {eventArt ? <div className="event-art" onPointerDown={(event) => event.stopPropagation()}><img src={eventArt} alt="" /><button type="button" onClick={() => setEventArt("")}>[CLOSE]</button></div> : null}
+    {pendingPlaySession ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
   </main>;
 }
 
