@@ -36,15 +36,20 @@ export const configuredAssetStore: AssetStore = {
     for (const entry of ASSET_MANIFEST) {
       const repository = repositoryAsset(entry);
       const project = projectById.get(entry.id);
-      const merged = project ? {
-        ...project,
-        // The repository file is the content currently shipped to players, so
-        // content-derived metadata comes from that file while authored behavior stays stable.
-        mimeType: repository.mimeType,
-        byteLength: repository.byteLength,
-        intrinsicWidth: repository.intrinsicWidth,
-        intrinsicHeight: repository.intrinsicHeight,
-      } : repository;
+      const merged = project
+        ? project.contentKey
+          // Hosted content is active, so its persisted content metadata remains authoritative.
+          ? project
+          // A null content key explicitly selects the repository copy; repository-derived
+          // MIME/dimension/size metadata must then follow the shipped file.
+          : {
+              ...project,
+              mimeType: repository.mimeType,
+              byteLength: repository.byteLength,
+              intrinsicWidth: repository.intrinsicWidth,
+              intrinsicHeight: repository.intrinsicHeight,
+            }
+        : repository;
       assets.set(entry.id, descriptor(merged, true));
     }
 
