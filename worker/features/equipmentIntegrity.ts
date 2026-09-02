@@ -23,20 +23,43 @@ function issues(snapshot: ProjectSnapshot) {
   const found: Issue[] = [];
   const bodyIds = new Set(snapshot.bodyTypes.map((body) => body.id));
   const itemIds = new Set(snapshot.items.map((item) => item.id));
+  const equipmentRules = new Map(snapshot.equipmentRules.map((rule) => [rule.itemId, rule]));
+
+  if (snapshot.startingBodyTypeId && !bodyIds.has(snapshot.startingBodyTypeId)) {
+    found.push({
+      key: `starting-body.${snapshot.startingBodyTypeId}`,
+      message: "The starting body type has not been saved.",
+    });
+  }
 
   for (const body of snapshot.bodyTypes) {
     for (const assignment of body.startingEquipment) {
       if (!itemIds.has(assignment.itemId)) {
-        found.push({ key: `body.${body.id}.item.${assignment.itemId}`, message: "Starting equipment references an item that has not been saved." });
+        found.push({
+          key: `body.${body.id}.item.${assignment.itemId}`,
+          message: "Starting equipment references an item that has not been saved.",
+        });
       }
       if (!body.slots.some((slot) => slot.key === assignment.slotKey)) {
-        found.push({ key: `body.${body.id}.slot.${assignment.slotKey}`, message: "Starting equipment references a slot that does not exist on that body type." });
+        found.push({
+          key: `body.${body.id}.slot.${assignment.slotKey}`,
+          message: "Starting equipment references a slot that does not exist on that body type.",
+        });
+      }
+      const rule = equipmentRules.get(assignment.itemId);
+      if (rule?.slotKeys.length && !rule.slotKeys.includes(assignment.slotKey)) {
+        found.push({
+          key: `body.${body.id}.compatibility.${assignment.slotKey}.${assignment.itemId}`,
+          message: "Starting equipment uses a slot that the item's Equipment rule does not allow.",
+        });
       }
     }
   }
 
   for (const rule of snapshot.equipmentRules) {
-    if (!itemIds.has(rule.itemId)) found.push({ key: `rule.${rule.itemId}`, message: "An equipment rule references an item that has not been saved." });
+    if (!itemIds.has(rule.itemId)) {
+      found.push({ key: `rule.${rule.itemId}`, message: "An equipment rule references an item that has not been saved." });
+    }
   }
 
   for (const interaction of snapshot.interactions) {
@@ -44,7 +67,9 @@ function issues(snapshot: ProjectSnapshot) {
   }
   for (const item of snapshot.items) inspectHooks(item.hooks ?? [], `item.${item.id}`, bodyIds, found);
   for (const entity of snapshot.entities) inspectHooks(entity.hooks ?? [], `entity.${entity.id}`, bodyIds, found);
-  for (const value of [...snapshot.valueDefinitions, ...snapshot.derivedValueDefinitions]) inspectHooks(value.hooks ?? [], `value.${value.id}`, bodyIds, found);
+  for (const value of [...snapshot.valueDefinitions, ...snapshot.derivedValueDefinitions]) {
+    inspectHooks(value.hooks ?? [], `value.${value.id}`, bodyIds, found);
+  }
 
   return found;
 }
