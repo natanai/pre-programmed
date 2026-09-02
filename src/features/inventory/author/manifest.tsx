@@ -14,6 +14,7 @@ import {
   setItemStateEffectAdapter,
 } from "./ruleAdapters";
 import { inventoryProjectReferences } from "./references";
+import "./equipmentPlacement.css";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
   id: "inventory",
