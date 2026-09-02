@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "./assetStore";
 import "./mediaPlayer.css";
@@ -44,15 +44,26 @@ export function MediaAssetViewer({
   onClose: () => void;
 }) {
   const [zoom, setZoom] = useState(1);
+  const viewerRef = useRef<HTMLElement>(null);
   const asset = configuredAssetStore.resolve(snapshot, assetId);
 
   useEffect(() => setZoom(1), [assetId]);
   useEffect(() => {
+    const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    viewerRef.current?.focus({ preventScroll: true });
+    return () => previousFocus?.focus({ preventScroll: true });
+  }, [assetId]);
+  useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      let handled = true;
       if (event.key === "Escape") onClose();
-      if (event.key === "+" || event.key === "=") setZoom((value) => clampZoom(value + ZOOM_STEP));
-      if (event.key === "-") setZoom((value) => clampZoom(value - ZOOM_STEP));
-      if (event.key === "0") setZoom(1);
+      else if (event.key === "+" || event.key === "=") setZoom((value) => clampZoom(value + ZOOM_STEP));
+      else if (event.key === "-") setZoom((value) => clampZoom(value - ZOOM_STEP));
+      else if (event.key === "0") setZoom(1);
+      else handled = false;
+      if (!handled) return;
+      event.preventDefault();
+      event.stopPropagation();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -61,10 +72,12 @@ export function MediaAssetViewer({
   if (!asset?.url || asset.kind !== "image") return null;
 
   return <section
+    ref={viewerRef}
     className="media-asset-viewer"
     role="dialog"
     aria-modal="true"
     aria-label={asset.name}
+    tabIndex={-1}
     onPointerDown={(event) => event.stopPropagation()}
   >
     <header className="media-asset-viewer-toolbar">
