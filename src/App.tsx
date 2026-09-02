@@ -152,6 +152,7 @@ export default function App() {
   const firedCueIds = useRef(new Set<string>());
   const completedPendingDestination = useRef("");
   const flushingQueue = useRef(false);
+  const playSessionDecisionRef = useRef<"continue" | "new" | null>(null);
   const typewriter = useTypewriter(activeText, activePerformance, textSpeedMultiplier);
   useTerminalViewport();
 
@@ -236,6 +237,7 @@ export default function App() {
   const continuePlaySession = () => {
     if (!snapshot || !pendingPlaySession) return;
     const session = pendingPlaySession;
+    playSessionDecisionRef.current = "continue";
     const state = resumePlayState(snapshot, session.playState, session.savedAt);
     const sameRevision = session.projectRevision === snapshot.revision;
     setPlayState(state);
@@ -271,6 +273,7 @@ export default function App() {
 
   const startNewGame = () => {
     if (!snapshot) return;
+    playSessionDecisionRef.current = "new";
     const state = createEmptyPlayState(snapshot);
     setPlayState(state);
     setTranscript([]);
@@ -310,6 +313,11 @@ export default function App() {
     void (async () => {
       const [cached, savedSession] = await Promise.all([loadCachedSnapshot(), loadPlaySession()]);
       const offerSession = (project: ProjectSnapshot) => {
+        if (playSessionDecisionRef.current) {
+          setPendingPlaySession(null);
+          setPlaySessionReady(true);
+          return;
+        }
         if (savedSession && isPlaySessionCompatible(project, savedSession)) {
           setPendingPlaySession(savedSession);
           setPlaySessionReady(false);
@@ -338,15 +346,22 @@ export default function App() {
         setConnectionState("ready");
         setSnapshot(project);
         setPlayState((existing) => {
-          const state = existing && project.nodes.some((node) => node.id === existing.currentNodeId)
+          const existingCompatible = Boolean(existing && project.nodes.some((node) => node.id === existing.currentNodeId));
+          const state = existing && existingCompatible
             ? reconcilePlayState(project, existing)
             : createEmptyPlayState(project);
-          const node = project.nodes.find((item) => item.id === state.currentNodeId);
-          if (node) showNode(project, node, state);
+          const decision = playSessionDecisionRef.current;
+          const shouldRefreshPresentation = !decision
+            || !existingCompatible
+            || (decision === "continue" && Boolean(savedSession) && savedSession!.projectRevision !== project.revision);
+          if (shouldRefreshPresentation) {
+            const node = project.nodes.find((item) => item.id === state.currentNodeId);
+            if (node) showNode(project, node, state);
+          }
           return state;
         });
         offerSession(project);
-        if (savedSession && !isPlaySessionCompatible(project, savedSession)) void clearPlaySession();
+        if (savedSession && !isPlaySessionCompatible(project, savedSession) && !playSessionDecisionRef.current) void clearPlaySession();
         await saveCachedSnapshot(project);
       } catch (error) {
         if (!cached && !cancelled && (!(error instanceof Error) || error.name !== "AbortError")) {
@@ -361,7 +376,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorMode || authorTasks.hasTasks) return;
+    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorTasks.hasTasks) return;
     const timer = window.setTimeout(() => {
       void savePlaySession({
         version: 1,
@@ -385,7 +400,6 @@ export default function App() {
     playState,
     playSessionReady,
     pendingPlaySession,
-    authorMode,
     authorTasks.hasTasks,
     transcript,
     activeText,
