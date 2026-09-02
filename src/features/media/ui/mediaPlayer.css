@@ -21,10 +21,6 @@
   object-fit: contain;
 }
 
-.media-inline-asset.is-grid32 img {
-  image-rendering: pixelated;
-}
-
 .media-asset-viewer {
   position: fixed;
   inset: 0;
@@ -111,7 +107,6 @@
   width: min(70vmin, 32rem);
   max-width: none;
   max-height: none;
-  image-rendering: pixelated;
 }
 
 @media (max-width: 700px), (pointer: coarse) {
