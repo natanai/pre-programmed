@@ -1,7 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { Inventory } from "../ui/Inventory";
 import { BodyTypeEditor } from "./BodyBackgroundEditor";
-import { ItemEditor } from "./ItemEditor";
+import { inventoryItemWorkspaces } from "./itemWorkspaces";
 import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
 import { INVENTORY_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
 import { INVENTORY_OPERATION_DEFINITIONS } from "../operationAdapter";
@@ -26,6 +26,8 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       const label = item?.name || item?.key || "New item";
       return operation ? `${label} · ${operation}` : label;
     }
+    if (route.workspace === "item-equipment") return `${route.data?.itemName || "Item"} · equipment`;
+    if (route.workspace === "item-equipment-placement") return `${route.data?.itemName || "Item"} · placement`;
     if (route.workspace === "body-type") {
       const bodyType = (snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId);
       return bodyType?.name || "New body type";
@@ -99,6 +101,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       }),
     },
   ],
+  workspaces: inventoryItemWorkspaces,
   renderWorkspace(route, context) {
     if (route.type === "feature" && route.feature === "inventory" && route.workspace === "inventory") return <Inventory
       snapshot={context.snapshot}
@@ -134,36 +137,6 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       }}
       onClose={context.leaveCurrentTask}
     />;
-
-    if (route.type === "feature" && route.feature === "inventory" && route.workspace === "item") {
-      const item = route.data?.itemId
-        ? context.snapshot.items.find((candidate) => candidate.id === route.data?.itemId)
-        : undefined;
-      const resourceTask = route.data?.resourceTask === "item";
-      return <ItemEditor
-        snapshot={context.snapshot}
-        initial={item}
-        openOperations={route.data?.section === "operations"}
-        preferredOperation={route.data?.operation}
-        onRegisterSave={context.registerWorkspaceSave}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceTask && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "item.upsert");
-            if (operation?.type === "item.upsert") context.completeTask({
-              type: "resource",
-              kind: "item",
-              id: operation.item.id,
-              value: operation.item.id,
-              label: operation.item.name || operation.item.key || "Untitled item",
-            });
-          }
-          return result;
-        }}
-        onCancel={context.leaveCurrentTask}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-      />;
-    }
 
     if (route.type === "feature" && route.feature === "inventory" && route.workspace === "body-type") {
       const bodyType = route.data?.bodyTypeId
