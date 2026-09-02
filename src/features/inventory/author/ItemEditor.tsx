@@ -45,7 +45,7 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
   openOperations?: boolean;
   preferredOperation?: string;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onCancel: () => void;
+  onCancel?: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
   onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
 }) {
@@ -119,7 +119,7 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
     setSaving(true);
     try {
       const result = await onSave([{ type: "item.delete", id: initial.id }], `Deleted item ${initial.name}`);
-      if (result.status === "saved" || result.status === "queued") onCancel();
+      if (result.status === "saved" || result.status === "queued") onCancel?.();
     } finally { setSaving(false); }
   };
 
@@ -189,6 +189,6 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </ItemEditorDisclosure>
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>{onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
   </section>;
 }
