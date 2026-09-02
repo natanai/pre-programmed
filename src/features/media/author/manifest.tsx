@@ -3,11 +3,12 @@ import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
-import { mediaAuthorTools } from "./tools";
+import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
   tools: mediaAuthorTools,
+  search: mediaAuthorSearch,
   resources: [
     {
       kind: "synth-sound",

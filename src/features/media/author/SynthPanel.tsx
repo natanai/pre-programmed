@@ -4,7 +4,19 @@ import { resolveAuthorKey } from "../../../author/generatedKey";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import type { SynthSound } from "../model";
-import { applySynthPreset, createStarterSynth, type SynthPresetId } from "../synth";
+import {
+  addSynthVoice,
+  applySynthPreset,
+  createStarterSynth,
+  duplicateSynthVoice,
+  MAX_SYNTH_STEPS,
+  MAX_SYNTH_VOICES,
+  removeSynthVoice,
+  resizeSynthSequence,
+  synthSequenceLength,
+  type SynthPresetId,
+  validateSynth,
+} from "../synth";
 import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 
@@ -35,8 +47,11 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
   const [draft, setDraft] = useState<SynthSound>(() => structuredClone(initial ?? { ...createStarterSynth(), key: "", label: "" }));
   const [baseline, setBaseline] = useState(() => JSON.stringify(draft));
   const [voiceIndex, setVoiceIndex] = useState(0);
+  const [advanced, setAdvanced] = useState(false);
   const [saving, setSaving] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
+  const validationErrors = useMemo(() => validateSynth(draft), [draft]);
+  const sequenceLength = synthSequenceLength(draft);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -79,16 +94,41 @@ export function SynthEditor({ snapshot, initial, onSave, setWorkspaceDirty }: {
           <GeneratedKeyField source={draft.label} value={draft.key} onChange={(key) => setDraft({ ...draft, key })} />
         </section>
         <section className="synth-section">
-          <h3>VOICES</h3>
-          <div className="synth-quick-start"><span>QUICK START</span>{(["blip", "chime", "alert", "hit"] as SynthPresetId[]).map((preset) => <button type="button" key={preset} onClick={() => { setDraft(applySynthPreset(draft, preset)); setVoiceIndex(0); void playSynthSound(applySynthPreset(draft, preset)); }}>[{preset.toUpperCase()}]</button>)}</div>
-          <nav className="voice-tabs">{draft.voices.map((voice, index) => <button type="button" aria-pressed={voiceIndex === index} key={index} onClick={() => setVoiceIndex(index)}>[V{index + 1} {voice.waveform}]</button>)}</nav>
-          {draft.voices[voiceIndex] ? <VoiceEditor sound={draft} voiceIndex={voiceIndex} onChange={setDraft} /> : <div className="workspace-empty">NO VOICE SELECTED.</div>}
+          <h3>QUICK START</h3>
+          <p className="synth-help">Choose a working sound, name it, and save. Open Advanced only when you want to shape the recipe.</p>
+          <div className="synth-quick-start">{(["blip", "chime", "alert", "hit"] as SynthPresetId[]).map((preset) => <button type="button" key={preset} onClick={() => {
+            const next = applySynthPreset(draft, preset);
+            setDraft(next);
+            setVoiceIndex(0);
+            void playSynthSound(next);
+          }}>[{preset.toUpperCase()}]</button>)}</div>
+          <div className="synth-complexity-summary">
+            <span>{draft.voices.length} VOICE{draft.voices.length === 1 ? "" : "S"} · {sequenceLength} STEPS</span>
+            <button type="button" aria-expanded={advanced} onClick={() => setAdvanced((value) => !value)}>[{advanced ? "HIDE ADVANCED" : "ADVANCED OPTIONS"}]</button>
+          </div>
         </section>
+        {advanced ? <section className="synth-section synth-advanced" aria-label="Advanced synth options">
+          <h3>ADVANCED VOICES + SEQUENCE</h3>
+          <div className="synth-structure-controls">
+            <label>SEQUENCE LENGTH
+              <input type="number" min={1} max={MAX_SYNTH_STEPS} value={sequenceLength} onChange={(event) => setDraft(resizeSynthSequence(draft, Number(event.target.value)))} />
+              <small>Applied to every voice. Maximum {MAX_SYNTH_STEPS} steps.</small>
+            </label>
+            <div className="author-actions synth-voice-actions">
+              <button type="button" disabled={draft.voices.length >= MAX_SYNTH_VOICES} onClick={() => { setDraft(addSynthVoice(draft)); setVoiceIndex(draft.voices.length); }}>[+ VOICE]</button>
+              <button type="button" disabled={draft.voices.length >= MAX_SYNTH_VOICES} onClick={() => { setDraft(duplicateSynthVoice(draft, voiceIndex)); setVoiceIndex(draft.voices.length); }}>[DUPLICATE]</button>
+              <button type="button" disabled={draft.voices.length <= 1} onClick={() => { setDraft(removeSynthVoice(draft, voiceIndex)); setVoiceIndex(Math.max(0, Math.min(voiceIndex, draft.voices.length - 2))); }}>[REMOVE VOICE]</button>
+            </div>
+          </div>
+          <nav className="voice-tabs" aria-label="Synth voices">{draft.voices.map((voice, index) => <button type="button" aria-pressed={voiceIndex === index} key={index} onClick={() => setVoiceIndex(index)}>[V{index + 1} {voice.waveform}]</button>)}</nav>
+          {draft.voices[voiceIndex] ? <VoiceEditor sound={draft} voiceIndex={voiceIndex} onChange={setDraft} /> : <div className="workspace-empty">NO VOICE SELECTED.</div>}
+        </section> : null}
+        {validationErrors.length ? <div className="synth-validation" role="alert">{validationErrors.map((error) => <span key={error}>{error}</span>)}</div> : null}
       </div>
     </div>
     <div className="author-panel-footer author-actions">
       <button type="button" onClick={() => void playSynthSound(draft)}>[PLAY]</button>
-      <button type="button" disabled={saving || !dirty || !draft.label.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
+      <button type="button" disabled={saving || !dirty || !draft.label.trim() || validationErrors.length > 0} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
     </div>
   </section>;
 }
@@ -102,6 +142,10 @@ function VoiceEditor({ sound, voiceIndex, onChange }: { sound: SynthSound; voice
       <label>ATTACK <input type="number" step="0.01" min={0} max={1} value={voice.attack} onChange={(event) => updateVoice({ ...voice, attack: Number(event.target.value) })} /></label>
       <label>RELEASE <input type="number" step="0.01" min={0} max={1} value={voice.release} onChange={(event) => updateVoice({ ...voice, release: Number(event.target.value) })} /></label>
     </div>
-    <div className="synth-steps">{voice.steps.map((step, index) => <div className={step.active ? "active" : ""} key={index}><button type="button" aria-label={`Toggle step ${index + 1}`} onClick={() => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, active: !item.active } : item) })}>{String(index + 1).padStart(2, "0")}</button>{voice.waveform !== "noise" ? <select aria-label={`Step ${index + 1} note`} value={step.note} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, note: event.target.value } : item) })}>{[2,3,4,5,6,7].flatMap((octave) => ["C","D","E","F","G","A","B"].map((note) => <option key={`${note}${octave}`} value={`${note}${octave}`}>{note}{octave}</option>))}</select> : null}</div>)}</div>
+    <div className="synth-steps">{voice.steps.map((step, index) => <div className={step.active ? "active" : ""} key={index}>
+      <button type="button" aria-label={`Toggle step ${index + 1}`} aria-pressed={step.active} onClick={() => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, active: !item.active } : item) })}>{String(index + 1).padStart(2, "0")}</button>
+      {voice.waveform !== "noise" ? <select aria-label={`Step ${index + 1} note`} value={step.note} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, note: event.target.value } : item) })}>{[2,3,4,5,6,7].flatMap((octave) => ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"].map((note) => <option key={`${note}${octave}`} value={`${note}${octave}`}>{note}{octave}</option>))}</select> : <span className="synth-noise-step">NOISE</span>}
+      <label className="synth-step-volume"><span>VOL {Math.round(step.volume * 100)}</span><input aria-label={`Step ${index + 1} volume`} type="range" min={0} max={1} step={0.05} value={step.volume} onChange={(event) => updateVoice({ ...voice, steps: voice.steps.map((item, itemIndex) => itemIndex === index ? { ...item, volume: Number(event.target.value) } : item) })} /></label>
+    </div>)}</div>
   </div>;
 }

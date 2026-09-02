@@ -9,13 +9,14 @@ import { InteractionEditor } from "./InteractionEditor";
 import { NodeEditor } from "./NodeEditor";
 import { notationForNarrativeInteraction } from "./notation";
 import { StructureNavigator } from "./StructureNavigator";
-import { narrativeAuthorTools } from "./tools";
+import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
 
 const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
 
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
   tools: narrativeAuthorTools,
+  search: narrativeAuthorSearch,
   resources: [
     {
       kind: "node",

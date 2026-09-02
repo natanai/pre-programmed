@@ -10,6 +10,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "locations",
       label: "SAVED LOCATIONS",
       description: "Save or restore a play location while authoring.",
+      searchText: "bookmark bookmarks position current scene checkpoint resume load",
       onSelect: () => context.pushTask({ type: "workspace", view: "locations" }),
     },
   },
@@ -22,6 +23,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "settings",
       label: "ADVANCED SETTINGS",
       description: "Configure project-wide engine behavior, references, and terminal grammar.",
+      searchText: "player language command commands label aliases grammar prompt settings configuration rules",
       onSelect: () => context.pushTask({ type: "feature", feature: "project", workspace: "settings" }),
     },
   },
@@ -34,6 +36,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "history",
       label: "HISTORY",
       description: "Review revisions and project history.",
+      searchText: "revision revisions undo change changes restore timeline",
       onSelect: () => context.pushTask({ type: "workspace", view: "history" }),
     },
   },
@@ -46,6 +49,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
       id: "backup",
       label: "BACKUP",
       description: "Download a complete project backup.",
+      searchText: "export download save database data project",
       onSelect: () => {
         context.closeAll();
         void context.downloadBackup();

@@ -5,6 +5,8 @@ export type AuthorToolDefinition = {
   id: string;
   label: string;
   description: string;
+  /** Feature-owned concepts and control names reachable through this tool. */
+  searchText?: string;
   tone?: "normal" | "draft";
   onSelect: () => void;
 };

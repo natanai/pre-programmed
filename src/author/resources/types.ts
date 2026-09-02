@@ -13,6 +13,8 @@ export type AuthorResourceProvider = {
   kind: string;
   label: string;
   pluralLabel?: string;
+  /** False for reference-only aliases that would duplicate a canonical resource in global search. */
+  searchable?: boolean;
   list: (snapshot: ProjectSnapshot) => AuthorResourceOption[];
   createRoute?: () => AuthorTaskRoute;
   editRoute?: (resource: AuthorResourceOption) => AuthorTaskRoute | null;

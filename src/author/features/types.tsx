@@ -10,6 +10,7 @@ import type {
 } from "../../game/model";
 import type { AuthorPersistResult } from "../persistence/authorProjectPersistence";
 import type { AuthorResourceProvider, AuthorResourceTools } from "../resources/types";
+import type { AuthorSearchContributor } from "../search/types";
 import type { AuthorTaskCompletion, AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorToolContributor } from "../tools/types";
 
@@ -77,6 +78,8 @@ export type AuthorFeatureManifest = {
   id: string;
   /** Optional navigation contributions for the Author tool index. */
   tools?: AuthorToolContributor;
+  /** Nested destinations and vocabulary exposed to Author-wide search. */
+  search?: AuthorSearchContributor;
   /** Resources this feature owns and can create/edit from reference fields. */
   resources?: readonly AuthorResourceProvider[];
   /** Optional advanced project settings owned by this module. */

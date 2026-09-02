@@ -2,11 +2,12 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { Inventory } from "../ui/Inventory";
 import { BodyTypeEditor } from "./BodyBackgroundEditor";
 import { ItemEditor } from "./ItemEditor";
-import { inventoryAuthorTools } from "./tools";
+import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
   id: "inventory",
   tools: inventoryAuthorTools,
+  search: inventoryAuthorSearch,
   resources: [
     {
       kind: "item",

@@ -44,6 +44,63 @@
   gap: .4em .65em;
 }
 
+.synth-help {
+  margin: 0;
+  color: var(--dos-muted);
+}
+
+.synth-complexity-summary,
+.synth-structure-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: .65em 1em;
+  padding: .6em;
+  border: 1px dotted var(--dos-line);
+}
+
+.synth-complexity-summary > span {
+  color: var(--dos-muted);
+}
+
+.synth-structure-controls > label {
+  display: grid;
+  gap: .25em;
+  min-width: min(100%, 14em);
+}
+
+.synth-structure-controls input[type="number"] {
+  width: 7em;
+}
+
+.synth-voice-actions {
+  margin: 0;
+}
+
+.synth-validation {
+  display: grid;
+  gap: .25em;
+  color: var(--dos-warn);
+}
+
+.synth-step-volume {
+  display: grid;
+  gap: .1em;
+  color: var(--dos-muted);
+  font-size: .82em;
+}
+
+.synth-step-volume input {
+  min-width: 0;
+  width: 100%;
+}
+
+.synth-noise-step {
+  color: var(--dos-muted);
+  text-align: center;
+}
+
 .synth-quick-start > span {
   width: 100%;
   color: var(--dos-muted);
@@ -85,5 +142,10 @@
   .synth-definition-list button {
     min-height: 2.75em;
     font-size: max(16px, 1em);
+  }
+
+  .synth-complexity-summary,
+  .synth-structure-controls {
+    align-items: stretch;
   }
 }

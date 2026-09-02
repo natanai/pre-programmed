@@ -1,6 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { DefinitionsPanel, type StateAuthorResourceKind } from "./DefinitionsPanel";
-import { stateAuthorTools } from "./tools";
+import { stateAuthorSearch, stateAuthorTools } from "./tools";
 
 const DEFINITIONS_ROUTE = { type: "feature", feature: "state", workspace: "definitions" } as const;
 
@@ -19,6 +19,7 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
 export const stateAuthorFeature: AuthorFeatureManifest = {
   id: "state",
   tools: stateAuthorTools,
+  search: stateAuthorSearch,
   resources: [
     {
       kind: "variable",
@@ -32,6 +33,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       kind: "number-variable",
       label: "Number Variable",
       pluralLabel: "Number Variables",
+      searchable: false,
       list: (snapshot) => snapshot.variables.filter((item) => item.valueType === "number").map((item) => ({ id: item.id, value: item.key, label: item.label || item.key })),
       createRoute: () => stateResourceRoute("number-variable"),
       editRoute: (resource) => stateResourceRoute("number-variable", resource.id),
@@ -40,6 +42,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       kind: "flag",
       label: "Flag",
       pluralLabel: "Flags",
+      searchable: false,
       list: (snapshot) => snapshot.variables.filter((item) => item.valueType === "boolean").map((item) => ({ id: item.id, value: item.key, label: item.label || item.key })),
       createRoute: () => stateResourceRoute("flag"),
       editRoute: (resource) => stateResourceRoute("flag", resource.id),

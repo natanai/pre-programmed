@@ -2,6 +2,7 @@ import { useCallback } from "react";
 import { createPortal } from "react-dom";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../game/model";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
+import type { AuthorSearchEntry } from "../search/types";
 import { renderAuthorFeatureWorkspace } from "../features/registry";
 import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext } from "../features/types";
 import { AuthorResourceProvider } from "../resources/context";
@@ -17,6 +18,7 @@ import type {
 
 type SharedTaskProps = {
   toolGroups: AuthorToolGroup[];
+  searchEntries: AuthorSearchEntry[];
   snapshot: ProjectSnapshot;
   playState: PlayState;
   authorMode: boolean;
@@ -36,6 +38,7 @@ function AuthorTaskSurface({
   active,
   resources,
   toolGroups,
+  searchEntries,
   snapshot,
   playState,
   authorMode,
@@ -76,7 +79,7 @@ function AuthorTaskSurface({
     onRestore,
   };
   const workspace = task.route.type === "tools"
-    ? <AuthorToolIndex groups={toolGroups} />
+    ? <AuthorToolIndex groups={toolGroups} searchEntries={searchEntries} />
     : renderAuthorFeatureWorkspace(task.route, context);
   if (!workspace) return null;
 

@@ -1,6 +1,8 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import { buildSearchIndex, searchProject } from "../src/author/search/projectSearch";
+import { buildAuthorSearchEntries, searchAuthorEntries } from "../src/author/search/authorSearch";
+import { buildAuthorToolGroups } from "../src/author/tools/registry";
 import { project } from "./fixtures";
 
 describe("local author destination search", () => {
@@ -26,5 +28,26 @@ describe("local author destination search", () => {
     for (const query of ["hidden inscription", "Ada", "dusty shelves", "polished glass", "observation"]) {
       expect(searchProject(snapshot, documents, state, query, ["node"])[0]?.id).toBe("b");
     }
+  });
+
+  it("finds nested Author controls and concepts rather than only visible home cards", () => {
+    const snapshot = project({
+      items: [{ id: "cyber-leg", key: "cyber-leg", name: "Cyber Leg", description: "replacement limb", assetId: "", width: 1, height: 2, stackable: false, maxStack: 1, removable: true, startingQuantity: 0, interactable: true, operations: ["inspect"], equipmentSlotKeys: ["leg"], tags: [], initialState: {}, hooks: [] }],
+    });
+    const playState = createEmptyPlayState(snapshot);
+    const pushTask = vi.fn(() => "task");
+    const context = { snapshot, playState, pushTask, closeAll: vi.fn(), downloadBackup: vi.fn() };
+    const groups = buildAuthorToolGroups(context);
+    const entries = buildAuthorSearchEntries(context, groups);
+
+    expect(searchAuthorEntries(entries, "label").map((entry) => entry.label)).toEqual(expect.arrayContaining([
+      "INPUT RESPONSES + OUTCOME LABELS",
+      "PLAYER COMMANDS + LABELS",
+    ]));
+    expect(searchAuthorEntries(entries, "rule").map((entry) => entry.label)).toEqual(expect.arrayContaining([
+      "NODE TEXT + TEXT RULES",
+      "ITEMS + EQUIPMENT RULES",
+    ]));
+    expect(searchAuthorEntries(entries, "cyber leg")[0]?.label).toBe("Cyber Leg");
   });
 });

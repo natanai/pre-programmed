@@ -13,6 +13,7 @@ import {
 import { useAuthorTaskRuntime } from "./author/tasks/useAuthorTaskRuntime";
 import type { AuthorTaskRoute } from "./author/tasks/types";
 import { buildAuthorToolGroups } from "./author/tools/registry";
+import { buildAuthorSearchEntries } from "./author/search/authorSearch";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
@@ -642,6 +643,13 @@ export default function App() {
     closeAll: authorTasks.closeAll,
     downloadBackup,
   });
+  const authorSearchEntries = buildAuthorSearchEntries({
+    snapshot,
+    playState,
+    pushTask: authorTasks.pushTask,
+    closeAll: authorTasks.closeAll,
+    downloadBackup,
+  }, authorToolGroups);
 
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
     if (!typewriter.complete) typewriter.completeImmediately();
@@ -712,6 +720,7 @@ export default function App() {
           tasks={authorTasks.tasks}
           activeTaskId={authorTasks.activeTaskId}
           toolGroups={authorToolGroups}
+          searchEntries={authorSearchEntries}
           snapshot={snapshot}
           playState={playState}
           authorMode={authorExperience}
