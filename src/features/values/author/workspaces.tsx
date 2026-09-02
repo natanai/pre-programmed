@@ -42,7 +42,7 @@ export const valueWorkspace = defineAuthorWorkspace<ValueDefinition>({
   id: "value",
   matches: (route) => route.type === "feature" && route.feature === "values" && route.workspace === "value",
   createDraft: (route, context) => structuredClone(context.snapshot.valueDefinitions.find((candidate) => candidate.id === route.data?.resourceId) ?? defaultValue(route.data?.resourceKind)),
-  buildSpec: ({ context, draft, setDraft }) => {
+  buildSpec: ({ route, context, draft, setDraft }) => {
     const initialNode: AuthorUiNode = draft.valueType === "boolean"
       ? { type: "choice", id: "value-initial-boolean", label: "Starts", value: String(Boolean(draft.initialValue)), presentation: "segmented", onChange: (value) => setDraft((current) => ({ ...current, initialValue: value === "true" })), options: [{ value: "true", label: "TRUE" }, { value: "false", label: "FALSE" }] }
       : { type: "field", id: "value-initial", label: "Starts at", control: draft.valueType === "number" ? "number" : "text", value: draft.initialValue === null ? "" : String(draft.initialValue), onChange: (value) => setDraft((current) => ({ ...current, initialValue: current.valueType === "number" ? Number(value) : value })) };
@@ -64,7 +64,10 @@ export const valueWorkspace = defineAuthorWorkspace<ValueDefinition>({
         { type: "disclosure", id: "value-behavior", label: "Player interactions", summary: draft.interactable ? `${draft.operations.length} operations` : "Not directly interactable", children: [{
           type: "custom", id: "value-operations", role: "specialized-control", content: <OperationHooksEditor
             capability={{ interactable: draft.interactable, operations: draft.operations, hooks: draft.hooks }}
-            snapshot={context.snapshot} targetKind="values.value"
+            snapshot={context.snapshot}
+            targetKind="values.value"
+            defaultOpen={Boolean(route.data?.preferredOperation)}
+            preferredOperation={route.data?.preferredOperation}
             onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
           />,
         }] },
@@ -93,7 +96,7 @@ export const derivedValueWorkspace = defineAuthorWorkspace<DerivedValueDefinitio
   id: "derived-value",
   matches: (route) => route.type === "feature" && route.feature === "values" && route.workspace === "derived-value",
   createDraft: (route, context) => structuredClone(context.snapshot.derivedValueDefinitions.find((candidate) => candidate.id === route.data?.resourceId) ?? defaultDerived()),
-  buildSpec: ({ context, draft, setDraft }) => {
+  buildSpec: ({ route, context, draft, setDraft }) => {
     const provider = DERIVED_VALUE_PROVIDERS.find((candidate) => candidate.id === draft.source.provider) ?? DERIVED_VALUE_PROVIDERS[0];
     return {
       id: "derived-value", title: draft.label || "New derived value", context: "Read-only runtime metric",
@@ -108,7 +111,14 @@ export const derivedValueWorkspace = defineAuthorWorkspace<DerivedValueDefinitio
           { type: "choice", id: "derived-metric", label: "Metric", value: draft.source.metric, onChange: (metric) => setDraft((current) => ({ ...current, source: { ...current.source, metric } })), options: (provider?.metrics ?? []).map((metric) => ({ value: metric.id, label: metric.label })) },
           { type: "choice", id: "derived-format", label: "Display format", value: draft.format, presentation: "segmented", onChange: (format) => setDraft((current) => ({ ...current, format: format as DerivedValueDefinition["format"] })), options: [{ value: "raw", label: "RAW" }, { value: "integer", label: "INTEGER" }, { value: "seconds", label: "SECONDS" }] },
         ] },
-        { type: "disclosure", id: "derived-behavior", label: "Player interactions", summary: draft.interactable ? `${draft.operations.length} operations` : "Not directly interactable", children: [{ type: "custom", id: "derived-operations", role: "specialized-control", content: <OperationHooksEditor capability={{ interactable: draft.interactable, operations: draft.operations, hooks: draft.hooks }} snapshot={context.snapshot} targetKind="values.derived" onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))} /> }] },
+        { type: "disclosure", id: "derived-behavior", label: "Player interactions", summary: draft.interactable ? `${draft.operations.length} operations` : "Not directly interactable", children: [{ type: "custom", id: "derived-operations", role: "specialized-control", content: <OperationHooksEditor
+          capability={{ interactable: draft.interactable, operations: draft.operations, hooks: draft.hooks }}
+          snapshot={context.snapshot}
+          targetKind="values.derived"
+          defaultOpen={Boolean(route.data?.preferredOperation)}
+          preferredOperation={route.data?.preferredOperation}
+          onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
+        /> }] },
       ],
     };
   },

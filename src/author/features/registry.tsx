@@ -17,7 +17,6 @@ import type { AuthorFeatureManifest, AuthorPlaySurfaceContext, AuthorWorkspaceCo
 /** Remaining prototype feature IDs that still contain unrestricted Author workspace markup. */
 export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
   "narrative",
-  "world",
   "media",
   "commands",
   "project",

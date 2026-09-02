@@ -36,7 +36,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
   id: "world-entity",
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
   createDraft: (route, context) => structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId) ?? newEntity(route.data?.entityType === "location" ? "location" : "character")),
-  buildSpec: ({ context, draft, setDraft }) => ({
+  buildSpec: ({ route, context, draft, setDraft }) => ({
     id: "world-entity", title: draft.name || `New ${draft.type}`, context: draft.type === "character" ? "Character" : "Location",
     blocks: [
       { type: "section", id: "world-entity-identity", label: draft.type === "character" ? "Character" : "Location", importance: "primary", children: [
@@ -47,7 +47,10 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
       ] },
       { type: "disclosure", id: "world-entity-behavior", label: "Player interactions", summary: draft.interactable ? `${draft.operations?.length ?? 0} operations` : "Not directly interactable", children: [{ type: "custom", id: "world-entity-operations", role: "specialized-control", content: <OperationHooksEditor
         capability={{ interactable: draft.interactable ?? false, operations: draft.operations ?? [], hooks: draft.hooks ?? [] }}
-        snapshot={context.snapshot} targetKind={`world.${draft.type}`}
+        snapshot={context.snapshot}
+        targetKind={`world.${draft.type}`}
+        defaultOpen={Boolean(route.data?.preferredOperation)}
+        preferredOperation={route.data?.preferredOperation}
         onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
       /> }] },
     ],

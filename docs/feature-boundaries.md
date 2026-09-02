@@ -13,8 +13,10 @@ Before adding behavior, identify the feature that conceptually owns it.
 Examples:
 
 - narrative nodes, input, dialogue → `src/features/narrative/`
-- inventory and equipment → `src/features/inventory/`
-- variables and computed state → `src/features/state/`
+- player possessions and inventory presentation → `src/features/inventory/`
+- body types, equipment slots, and equipped assignments → `src/features/equipment/`
+- authored mutable values and read-only derived-value definitions → `src/features/values/`
+- player-facing groups/views of values → `src/features/status/`
 - people and places → `src/features/world/`
 - audio, artwork, vector assets, synth → `src/features/media/`
 - command grammar and resolution → `src/features/commands/`
@@ -49,6 +51,8 @@ Before adding such an import, ask whether the dependency is actually:
 - an explicit composition concern;
 - a real domain dependency that should be represented through an adapter/port.
 
+Current examples of intentional ports are the derived-value provider contract under `src/engine/values/` and possession extensions under `src/engine/possessions/`. A source feature contributes its own derived metric instead of Values importing that feature's implementation; Equipment extends possession behavior without turning Inventory into the owner of equipment semantics.
+
 Avoid aggregate compatibility facades that hide ownership and become a second feature boundary.
 
 ## 4. `App.tsx` is a shell
@@ -66,6 +70,8 @@ Worker orchestration may coordinate transactions, revisions, authentication, sch
 Feature-specific schema, persistence, mutation validation, and migration contributions belong with the owning Worker feature contribution under `worker/features/` or another explicit feature-owned boundary.
 
 Do not re-centralize feature tables or validation into a master Worker file for convenience.
+
+Historical one-way migrations may name superseded feature tables when that is necessary to move durable authored data into its new owner. That migration history is not a live compatibility API and must not require the new runtime/model to keep obsolete fields.
 
 ## 6. One Author implementation, many presentations
 

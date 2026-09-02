@@ -46,7 +46,7 @@ export const itemWorkspace = defineAuthorWorkspace<ItemDraft>({
     const layout = structuredClone(context.snapshot.itemInventoryLayouts.find((candidate) => candidate.itemId === item.id) ?? { itemId: item.id, width: 1, height: 1 });
     return { item, layout };
   },
-  buildSpec: ({ context, draft, setDraft }) => ({
+  buildSpec: ({ route, context, draft, setDraft }) => ({
     id: "inventory-item", title: draft.item.name || "New item", context: "Possession definition",
     blocks: [
       { type: "section", id: "item-identity", label: "Item", importance: "primary", children: [
@@ -68,7 +68,14 @@ export const itemWorkspace = defineAuthorWorkspace<ItemDraft>({
         { type: "field", id: "item-tags-field", label: "Tags", value: draft.item.tags.join(", "), onChange: (value) => setDraft((current) => ({ ...current, item: { ...current.item, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) } })) },
         { type: "field", id: "item-state-json", label: "Initial instance state (JSON)", control: "textarea", rows: 3, value: JSON.stringify(draft.item.initialState), help: "Optional advanced per-instance data.", onChange: (value) => { try { const initialState = JSON.parse(value); if (initialState && typeof initialState === "object" && !Array.isArray(initialState)) setDraft((current) => ({ ...current, item: { ...current.item, initialState } })); } catch {} } },
       ] },
-      { type: "disclosure", id: "item-behavior", label: "Player interactions", summary: draft.item.interactable ? `${draft.item.operations.length} operations` : "Not directly interactable", children: [{ type: "custom", id: "item-operations", role: "specialized-control", content: <OperationHooksEditor capability={{ interactable: draft.item.interactable, operations: draft.item.operations, hooks: draft.item.hooks }} snapshot={context.snapshot} targetKind="inventory.item" onChange={(capability) => setDraft((current) => ({ ...current, item: { ...current.item, ...capability } }))} /> }] },
+      { type: "disclosure", id: "item-behavior", label: "Player interactions", summary: draft.item.interactable ? `${draft.item.operations.length} operations` : "Not directly interactable", children: [{ type: "custom", id: "item-operations", role: "specialized-control", content: <OperationHooksEditor
+        capability={{ interactable: draft.item.interactable, operations: draft.item.operations, hooks: draft.item.hooks }}
+        snapshot={context.snapshot}
+        targetKind="inventory.item"
+        defaultOpen={Boolean(route.data?.preferredOperation)}
+        preferredOperation={route.data?.preferredOperation}
+        onChange={(capability) => setDraft((current) => ({ ...current, item: { ...current.item, ...capability } }))}
+      /> }] },
     ],
   }),
   async save({ route, context, draft }) {
