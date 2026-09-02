@@ -1,72 +1,39 @@
 import type { Value } from "../../engine/rules/model";
 import type { OperationHook, OperationId } from "../operations/model";
 
+/** A thing that can be possessed. Spatial layout and equipment are separate concerns. */
 export type ItemDefinition = {
   id: string;
   key: string;
   name: string;
   description: string;
   assetId: string;
-  width: number;
-  height: number;
   stackable: boolean;
   maxStack: number;
   removable: boolean;
   startingQuantity: number;
   interactable: boolean;
   operations: OperationId[];
-  /** Empty/missing means the item may equip to any authored body-slot key. */
-  equipmentSlotKeys?: string[];
-  /** Whether an equipped instance still occupies the inventory grid. */
-  equippedStorage?: "inventory" | "slot";
-  /** Stable body-slot key that a newly granted instance should equip to. */
-  equipOnGiveSlotKey?: string | null;
   tags: string[];
   initialState: Record<string, Value>;
   hooks: OperationHook[];
-};
-
-export type StartingEquipmentDefinition = {
-  slotKey: string;
-  itemId: string;
 };
 
 export type InventoryEntry = {
   instanceId: string;
   itemId: string;
   quantity: number;
-  x: number;
-  y: number;
-  /** Stable slot key occupied on the current body type, or null when carried only. */
-  equippedSlotKey?: string | null;
   state: Record<string, Value>;
 };
 
-export type BodySlotDefinition = {
-  id: string;
-  /** Stable across body types when equipment should carry between forms. */
-  key: string;
-  name: string;
-  /** Percentage coordinates within the body canvas. */
-  x: number;
-  y: number;
+export type ItemInventoryLayout = {
+  itemId: string;
   width: number;
   height: number;
 };
 
-/**
- * Inventory-owned body/equipment layout. Historical persistence calls these
- * "body backgrounds"; at runtime each definition is a complete body type.
- */
-export type BodyTypeDefinition = {
-  id: string;
-  name: string;
-  assetId: string;
-  /** Missing only on legacy snapshots created before body slots existed. */
-  slots?: BodySlotDefinition[];
-  /** Equipment drawn from authored starting quantities for a new playthrough. */
-  startingEquipment?: StartingEquipmentDefinition[];
-};
+export type InventoryPresentation =
+  | { mode: "list" }
+  | { mode: "grid"; columns: number; rows: number };
 
-/** Source-compatible name retained while historical schema identifiers remain immutable. */
-export type BodyBackgroundDefinition = BodyTypeDefinition;
+export type InventoryPosition = { x: number; y: number };

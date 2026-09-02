@@ -66,7 +66,7 @@ The normal authoring loop is:
 4. Preview or return to play.
 5. Exercise the authored behavior through the real runtime.
 
-Author mode can work with narrative nodes and responses, characters and locations, variables, inventory, operations, commands, Media, project settings, and other feature-owned resources installed in the build.
+Author mode can work with narrative nodes and responses, characters and locations, values, Status collections, inventory, equipment, operations, commands, Media, project settings, and other feature-owned resources installed in the build.
 
 The shared Author UI rules are documented in [`docs/author-ui-grammar.md`](docs/author-ui-grammar.md).
 
@@ -76,9 +76,23 @@ The shared Author UI rules are documented in [`docs/author-ui-grammar.md`](docs/
 
 A node is a playable narrative state. Authored user input can select ordered outcomes. Outcomes can return text, use a speaker, apply effects, stay at the current node, or transition elsewhere. Conditions determine which outcome applies.
 
-### State and operations
+### Values and derived values
 
-Variables and computed values provide reusable project state. Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
+Values are authored mutable number, boolean, or text state. Rules can compare and change them, and numeric values may change over active play time. Derived values are read-only metrics contributed by the feature that owns the source data, such as visited nodes or inventory occupancy; Values does not reach into those feature implementations to calculate them.
+
+### Status
+
+Status is an independent player-facing projection of Values and derived values. Authors can group information however their game needs and use ordinary conditions to decide when a group or entry is visible. A Value does not become player-facing merely because it exists.
+
+### Inventory and equipment
+
+Inventory owns possessions and their inventory presentation. Possessions can be listed or arranged through an optional grid without making spatial dimensions part of every item definition.
+
+Equipment separately owns body types, slots, compatibility, equipped assignments, and starting loadouts. It extends possession behavior through a shared engine contract rather than making Inventory the owner of body/equipment semantics.
+
+### Operations
+
+Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
 
 ### Commands
 
