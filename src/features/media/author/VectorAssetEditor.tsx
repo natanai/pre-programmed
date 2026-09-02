@@ -49,6 +49,8 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
   const activePointer = useRef<number | null>(null);
   const dirty = JSON.stringify({ name, presentation, cells }) !== baseline;
   const usages = initial ? referencesTo(snapshot, "media-image", initial.id) : [];
+  const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
+  const repositoryAvailable = configuredAssetContentStore.hasRepository(assetId);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -166,16 +168,26 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     }
   };
 
-  const remove = async () => {
-    if (!initial || usages.length || !window.confirm(`Delete media asset “${initial.name}”?`)) return;
+  const resetOrDelete = async () => {
+    if (!initial || !hasProjectMetadata) return;
+    const resetting = repositoryAvailable;
+    if (!resetting && usages.length) return;
+    const prompt = resetting
+      ? `Reset media asset “${initial.name}” to its repository definition?`
+      : `Delete media asset “${initial.name}”?`;
+    if (!window.confirm(prompt)) return;
     setSaving(true);
     try {
-      const result = await onSave([{ type: "mediaAsset.delete", id: initial.id }], `Deleted media asset ${initial.name}`);
+      const result = await onSave(
+        [{ type: "mediaAsset.delete", id: initial.id }],
+        resetting ? `Reset media asset ${initial.name} to repository copy` : `Deleted media asset ${initial.name}`,
+      );
       if (result.status === "saved" || result.status === "queued") onCancel();
     } finally { setSaving(false); }
   };
 
   const exportAsset = async () => {
+    if (dirty) return;
     const resolved = configuredAssetStore.resolve(snapshot, assetId);
     if (!resolved) return;
     setError("");
@@ -184,6 +196,8 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
   };
 
   const gridLines = Array.from({ length: VECTOR_GRID_SIZE - 1 }, (_, index) => index + 1);
+  const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
+  const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
 
   return <section className="author-panel author-panel-frame vector-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>32×32 VECTOR · {name || "NEW"}</span></header>
@@ -234,9 +248,15 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     </div>
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={saving || loading || !dirty || !name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE VECTOR"}]</button>
-      {initial ? <button type="button" disabled={saving} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
+      {initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
       <button type="button" onClick={onCancel}>[CANCEL]</button>
-      {initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
+      {initial && hasProjectMetadata ? <button
+        type="button"
+        className="danger"
+        disabled={lifecycleDisabled}
+        title={!repositoryAvailable && usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined}
+        onClick={() => void resetOrDelete()}
+      >[{lifecycleLabel}{!repositoryAvailable && usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>
   </section>;
 }

@@ -36,13 +36,15 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
 }) {
   const [draft, setDraft] = useState<MediaAsset | null>(() => initial ? structuredClone(initial) : null);
   const [pendingContent, setPendingContent] = useState<File | null>(null);
+  const [uploadedContentKey, setUploadedContentKey] = useState<string | null>(null);
   const [baseline, setBaseline] = useState(() => JSON.stringify(initial ?? null));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const dirty = Boolean(pendingContent) || JSON.stringify(draft) !== baseline;
   const usages = initial ? referencesTo(snapshot, `media-${initial.kind}`, initial.id) : [];
-  const stored = draft ? configuredAssetStore.resolve(snapshot, draft.id) : null;
-  const repositoryAvailable = Boolean(draft && configuredAssetContentStore.hasRepository(draft.id));
+  const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
+  const repositoryMetadata = draft ? configuredAssetContentStore.repositoryMetadata(draft.id) : null;
+  const repositoryAvailable = Boolean(repositoryMetadata);
 
   const previewUrl = useMemo(() => {
     if (pendingContent) return URL.createObjectURL(pendingContent);
@@ -84,6 +86,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
       authoringMode: "file",
     }));
     setPendingContent(file);
+    setUploadedContentKey(null);
     setError("");
   };
 
@@ -94,7 +97,10 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
     try {
       if (pendingContent) {
         if (!draft.contentKey) throw new Error("Asset content has no content key.");
-        await configuredAssetContentStore.upload(authorToken, draft.contentKey, pendingContent);
+        if (uploadedContentKey !== draft.contentKey) {
+          await configuredAssetContentStore.upload(authorToken, draft.contentKey, pendingContent);
+          setUploadedContentKey(draft.contentKey);
+        }
       }
       const result = await onSave(
         [{ type: "mediaAsset.upsert", asset: draft }],
@@ -103,6 +109,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
       if (result.status === "saved" || result.status === "queued") {
         setBaseline(JSON.stringify(draft));
         setPendingContent(null);
+        setUploadedContentKey(null);
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Asset save failed.");
@@ -111,35 +118,46 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
     }
   };
 
-  const remove = async () => {
-    if (!initial || usages.length || !window.confirm(`Delete media asset “${initial.name}”?`)) return;
+  const resetOrDelete = async () => {
+    if (!initial || !hasProjectMetadata) return;
+    const resetting = repositoryAvailable;
+    if (!resetting && usages.length) return;
+    const prompt = resetting
+      ? `Reset media asset “${initial.name}” to its repository definition?`
+      : `Delete media asset “${initial.name}”?`;
+    if (!window.confirm(prompt)) return;
     setSaving(true);
     try {
-      const result = await onSave([{ type: "mediaAsset.delete", id: initial.id }], `Deleted media asset ${initial.name}`);
+      const result = await onSave(
+        [{ type: "mediaAsset.delete", id: initial.id }],
+        resetting ? `Reset media asset ${initial.name} to repository copy` : `Deleted media asset ${initial.name}`,
+      );
       if (result.status === "saved" || result.status === "queued") onCancel();
     } finally { setSaving(false); }
   };
 
   const useRepositoryCopy = () => {
-    if (!draft || !stored || !repositoryAvailable) return;
+    if (!draft || !repositoryMetadata) return;
     setDraft({
       ...draft,
       contentKey: null,
-      mimeType: stored.mimeType,
-      byteLength: stored.byteLength,
-      intrinsicWidth: stored.intrinsicWidth,
-      intrinsicHeight: stored.intrinsicHeight,
+      ...repositoryMetadata,
     });
     setPendingContent(null);
+    setUploadedContentKey(null);
   };
 
   const exportAsset = async () => {
-    const resolved = draft ? configuredAssetStore.resolve(snapshot, draft.id) ?? stored : null;
+    if (!draft || dirty) return;
+    const resolved = configuredAssetStore.resolve(snapshot, draft.id);
     if (!resolved) return;
     setError("");
     try { await configuredAssetContentStore.exportAsset(resolved); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Asset export failed."); }
   };
+
+  const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
+  const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
 
   return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} ASSET · {draft?.name ?? "NEW"}</span></header>
@@ -165,10 +183,16 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
     </div>
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim() || (!draft.contentKey && !pendingContent && !repositoryAvailable)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE ASSET"}]</button>
-      {initial ? <button type="button" disabled={saving} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
+      {initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
       {draft?.contentKey && repositoryAvailable ? <button type="button" disabled={saving} onClick={useRepositoryCopy}>[USE REPOSITORY COPY]</button> : null}
       <button type="button" onClick={onCancel}>[CANCEL]</button>
-      {initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
+      {initial && hasProjectMetadata ? <button
+        type="button"
+        className="danger"
+        disabled={lifecycleDisabled}
+        title={!repositoryAvailable && usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined}
+        onClick={() => void resetOrDelete()}
+      >[{lifecycleLabel}{!repositoryAvailable && usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>
   </section>;
 }

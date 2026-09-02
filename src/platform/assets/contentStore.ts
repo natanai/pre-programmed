@@ -4,7 +4,7 @@ import type { MediaAsset } from "../../features/media/model";
 import { assetUrl } from "../../data/assets";
 import { ApiError, apiUrl } from "../cloudflare/http";
 
-const repositoryPathByAssetId = new Map(ASSET_MANIFEST.map((asset) => [asset.id, asset.runtimePath] as const));
+const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((asset) => [asset.id, asset] as const));
 
 function hostedContentUrl(contentKey: string) {
   return apiUrl(`/api/media/content/${encodeURIComponent(contentKey)}`);
@@ -33,12 +33,23 @@ function downloadBlob(blob: Blob, filename: string) {
 export const configuredAssetContentStore = {
   urlFor(asset: Pick<MediaAsset, "id" | "contentKey">) {
     if (asset.contentKey) return hostedContentUrl(asset.contentKey);
-    const repositoryPath = repositoryPathByAssetId.get(asset.id);
+    const repositoryPath = repositoryEntryByAssetId.get(asset.id)?.runtimePath;
     return repositoryPath ? assetUrl(repositoryPath) : "";
   },
 
   hasRepository(assetId: string) {
-    return repositoryPathByAssetId.has(assetId);
+    return repositoryEntryByAssetId.has(assetId);
+  },
+
+  repositoryMetadata(assetId: string) {
+    const entry = repositoryEntryByAssetId.get(assetId);
+    if (!entry) return null;
+    return {
+      mimeType: entry.mimeType,
+      byteLength: entry.byteLength,
+      intrinsicWidth: entry.dimensions?.width ?? null,
+      intrinsicHeight: entry.dimensions?.height ?? null,
+    };
   },
 
   async upload(authorization: string, contentKey: string, content: Blob) {

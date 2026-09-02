@@ -55,6 +55,28 @@ export function MediaAssetViewer({
   }, [assetId]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        const viewer = viewerRef.current;
+        if (!viewer) return;
+        const controls = [...viewer.querySelectorAll<HTMLButtonElement>("button:not(:disabled)")];
+        if (!controls.length) {
+          event.preventDefault();
+          viewer.focus({ preventScroll: true });
+          return;
+        }
+        const first = controls[0];
+        const last = controls.at(-1)!;
+        const active = document.activeElement;
+        if (event.shiftKey && (active === first || !viewer.contains(active))) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+        return;
+      }
+
       let handled = true;
       if (event.key === "Escape") onClose();
       else if (event.key === "+" || event.key === "=") setZoom((value) => clampZoom(value + ZOOM_STEP));

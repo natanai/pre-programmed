@@ -36,10 +36,15 @@ export async function putMediaContent(bucket: R2Bucket | undefined, contentKey: 
   }
   const content = await request.arrayBuffer();
   if (content.byteLength > MAX_MEDIA_BYTES) return json({ error: "Media content must be no larger than 20 MB." }, { status: 413 });
-  await bucket.put(objectKey(contentKey), content, {
+
+  // Content keys are versions, not mutable filenames. Refuse replacement so a
+  // revision that points to an older key can always recover the same bytes.
+  const stored = await bucket.put(objectKey(contentKey), content, {
+    onlyIf: new Headers({ "If-None-Match": "*" }),
     httpMetadata: {
       contentType: request.headers.get("content-type") || "application/octet-stream",
     },
   });
+  if (!stored) return json({ error: "Media content key already exists." }, { status: 409 });
   return new Response(null, { status: 204 });
 }
