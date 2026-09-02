@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
@@ -180,9 +180,8 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
-  if (!source) return <section className="author-panel author-panel-frame"><header>REFERENCE SOURCE</header><p>UNKNOWN SOURCE.</p></section>;
-
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
+    if (!source) return false;
     setSaving(true);
     try {
       const commands = updateReferenceSetting(context.snapshot.settings.commands, draft);
@@ -190,11 +189,20 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
       if (result.status === "saved" || result.status === "queued") {
         setBaseline(JSON.stringify(draft));
         context.setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    context.registerWorkspaceSave(source ? save : null);
+    return () => context.registerWorkspaceSave(null);
+  });
+
+  if (!source) return <section className="author-panel author-panel-frame"><header>REFERENCE SOURCE</header><p>UNKNOWN SOURCE.</p></section>;
 
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>TARGET NAMES · {source.label}</span></header>
@@ -285,7 +293,6 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [pendingSourceKinds, setPendingSourceKinds] = useState<string[]>([]);
-  const [continuedToTargets, setContinuedToTargets] = useState(false);
   const currentForDirty = { ...draft, patterns: patternLines(patternsText) };
   const dirty = JSON.stringify(currentForDirty) !== baseline || pendingSourceKinds.length > 0;
   const slotNames = placeholderNames(currentForDirty.patterns);
@@ -296,7 +303,8 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
       .map((source) => source.sourceKind),
     ...pendingSourceKinds,
   ]);
-  const savedTarget = existing?.targetSlot ? existing.slots.find((slot) => slot.name === existing.targetSlot) : undefined;
+  const savedCommand = context.snapshot.settings.commands.commands.find((candidate) => candidate.id === draft.id);
+  const savedTarget = savedCommand?.targetSlot ? savedCommand.slots.find((slot) => slot.name === savedCommand.targetSlot) : undefined;
 
   useEffect(() => {
     context.setWorkspaceDirty(dirty);
@@ -308,10 +316,10 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
     return names.map((name) => current.find((slot) => slot.name === name) ?? { name, sourceKind: "text" });
   };
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     const patterns = patternLines(patternsText);
     const operation = draft.operation.trim();
-    if (!draft.label.trim() || !OPERATION_ID_PATTERN.test(operation) || !patterns.length) return;
+    if (!draft.label.trim() || !OPERATION_ID_PATTERN.test(operation) || !patterns.length) return false;
     const command: CommandDefinition = {
       ...draft,
       label: draft.label.trim(),
@@ -340,21 +348,18 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
         setBaseline(JSON.stringify(command));
         setPendingSourceKinds([]);
         context.setWorkspaceDirty(false);
-        const target = command.targetSlot ? command.slots.find((slot) => slot.name === command.targetSlot) : undefined;
-        if (!continuedToTargets && target && target.sourceKind !== "text") {
-          setContinuedToTargets(true);
-          context.pushTask({
-            type: "feature",
-            feature: "commands",
-            workspace: "target-behaviors",
-            data: { sourceKind: target.sourceKind, operation: command.operation, commandLabel: command.label },
-          });
-        }
+        return true;
       }
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    context.registerWorkspaceSave(save);
+    return () => context.registerWorkspaceSave(null);
+  });
 
   const stageSource = (sourceKind: string) => {
     if (!commandReferenceSourceByKind(sourceKind) || enabledSourceKinds.has(sourceKind)) return;
@@ -362,12 +367,12 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   };
 
   const remove = async () => {
-    if (!existing) return;
+    if (!savedCommand) return;
     const commands = {
       ...context.snapshot.settings.commands,
-      commands: context.snapshot.settings.commands.commands.filter((candidate) => candidate.id !== existing.id),
+      commands: context.snapshot.settings.commands.commands.filter((candidate) => candidate.id !== savedCommand.id),
     };
-    const result = await persistCommands(context, commands, `Deleted command ${existing.label}`);
+    const result = await persistCommands(context, commands, `Deleted command ${savedCommand.label}`);
     if (result.status === "saved" || result.status === "queued") {
       context.setWorkspaceDirty(false);
       context.leaveCurrentTask();
@@ -389,7 +394,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
     <header><span>PLAYER COMMAND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body command-editor-body">
       <p className="command-settings-journey"><strong>1 · WORDING</strong><span>→</span><strong>2 · TARGET</strong><span>→</span><strong>3 · TARGET BEHAVIOR</strong></p>
-      <p className="command-settings-note">Example: name the command “Polish,” add <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. Saving then takes you to each item’s Polish response, where you write text and add effects.</p>
+      <p className="command-settings-note">Example: name the command “Polish,” add <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. Save the wording and target first; target behavior is then an explicit next action.</p>
       <label>COMMAND NAME
         <input value={draft.label} autoFocus={!existing} onChange={(event) => {
           const label = event.target.value;
@@ -431,19 +436,19 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
           <small>The resolved target that receives this operation. With no target, an installed application capability can handle the operation.</small>
         </label>
       </div> : null}
-      {existing ? <div className="command-delete-zone">
+      {savedCommand ? <div className="command-delete-zone">
         {savedTarget && savedTarget.sourceKind !== "text" ? <button type="button" onClick={() => context.pushTask({
           type: "feature",
           feature: "commands",
           workspace: "target-behaviors",
-          data: { sourceKind: savedTarget.sourceKind, operation: existing.operation, commandLabel: existing.label },
+          data: { sourceKind: savedTarget.sourceKind, operation: savedCommand.operation, commandLabel: savedCommand.label },
         })}>[DEFINE TARGET BEHAVIOR]</button> : null}
         {confirmDelete
           ? <><span>DELETE THIS COMMAND?</span><button type="button" onClick={() => void remove()}>[DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></>
           : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE COMMAND]</button>}
       </div> : null}
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={!dirty || saving || !draft.label.trim() || !OPERATION_ID_PATTERN.test(draft.operation) || !patternLines(patternsText).length} onClick={() => void save()}>[{saving ? "SAVING..." : draft.targetSlot ? "SAVE + DEFINE TARGET BEHAVIOR" : "SAVE"}]</button></div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={!dirty || saving || !draft.label.trim() || !OPERATION_ID_PATTERN.test(draft.operation) || !patternLines(patternsText).length} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button></div>
   </section>;
 }
 
