@@ -72,3 +72,21 @@
     text-align: left;
   }
 }
+
+html[data-keyboard-open="true"] .item-editor-body {
+  gap: .35em;
+}
+
+html[data-keyboard-open="true"] .item-editor-disclosure > summary {
+  min-height: 2.25em;
+  padding: .25em .4em;
+}
+
+html[data-keyboard-open="true"] .item-editor-disclosure > summary > small {
+  display: none;
+}
+
+html[data-keyboard-open="true"] .item-editor-disclosure-body {
+  gap: .45em;
+  padding: .45em;
+}

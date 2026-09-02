@@ -177,9 +177,7 @@ export function AuthorWorkspaceHost({
   const resources = buildAuthorResourceTools(shared.snapshot, shared.pushTask);
   const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot) }));
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
-  const activeLabel = taskLabels.find((task) => task.id === activeTask?.id)?.label ?? "AUTHOR";
   const parentLabel = taskLabels.at(-2)?.label;
-  const behindCount = Math.max(0, taskLabels.length - 1);
   const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
   const taskShared = { ...shared, runtime: authorRuntime };
 
@@ -193,18 +191,23 @@ export function AuthorWorkspaceHost({
         onPointerDown={(event) => event.stopPropagation()}
       >
         <nav className="author-workspace-navigation" aria-label="Author task navigation">
-          <div className="author-workspace-navigation-standard">
-            <div className="author-workspace-navigation-actions">
-              <button
-                type="button"
-                className="author-workspace-back"
-                onClick={() => shared.requestBack(activeTaskId ?? undefined)}
-              >
-                [← BACK]
-              </button>
-              {activeTask?.route.type !== "tools" ? <button type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+          <div className="author-workspace-primary-actions">
+            <button
+              type="button"
+              className="author-workspace-back"
+              onClick={() => shared.requestBack(activeTaskId ?? undefined)}
+            >
+              <span className="author-workspace-back-wide">[← BACK]</span>
+              <span className="author-workspace-back-compact">[BACK]</span>
+            </button>
+            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+            <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
             </div>
+            <button className="author-workspace-stack-toggle" type="button" aria-expanded={stackOpen} onClick={() => setStackOpen((open) => !open)}>[STACK]</button>
+          </div>
+
+          <div className="author-workspace-navigation-context">
             <ol className="author-task-trail" aria-label="Author task trail">
               {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
                 <span>{task.label}</span>
@@ -213,23 +216,8 @@ export function AuthorWorkspaceHost({
             {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
           </div>
 
-          <div className="author-workspace-keyboard-bar" aria-label="Compact Author task navigation">
-            <button
-              type="button"
-              className="author-workspace-back"
-              onClick={() => shared.requestBack(activeTaskId ?? undefined)}
-            >[BACK]</button>
-            <span className="author-workspace-current-task" title={activeLabel}>
-              <strong>{activeLabel}</strong>{behindCount ? <small> · {behindCount} behind</small> : null}
-            </span>
-            <button type="button" aria-expanded={stackOpen} onClick={() => setStackOpen((open) => !open)}>[STACK]</button>
-          </div>
-
           {stackOpen ? <div className="author-workspace-stack-panel">
-            <div className="author-workspace-navigation-actions">
-              {activeTask?.route.type !== "tools" ? <button type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
-              <AuthorQuickFind entries={shared.searchEntries} />
-            </div>
+            <span className="author-workspace-stack-heading">TASK STACK · {taskLabels.length} {taskLabels.length === 1 ? "TASK" : "TASKS"}</span>
             <ol className="author-task-trail" aria-label="Full Author task stack">
               {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
                 <span>{task.label}</span>
