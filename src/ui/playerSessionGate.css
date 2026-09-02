@@ -1,0 +1,67 @@
+.player-session-shade {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: max(1em, env(safe-area-inset-top)) max(1em, env(safe-area-inset-right)) max(1em, env(safe-area-inset-bottom)) max(1em, env(safe-area-inset-left));
+  background: rgb(0 0 0 / .9);
+  color: var(--dos-text);
+  font-family: "PreProgrammed VGA", monospace;
+}
+
+.player-session-gate {
+  display: grid;
+  gap: .8em;
+  width: min(100%, 34em);
+  padding: 1em;
+  border: 1px solid var(--dos-bright);
+  background: #000;
+  line-height: 1.25;
+}
+
+.player-session-gate h1,
+.player-session-gate p {
+  margin: 0;
+  font: inherit;
+}
+
+.player-session-gate h1 {
+  color: var(--dos-bright);
+}
+
+.player-session-gate p,
+.player-session-gate small {
+  color: var(--dos-muted);
+}
+
+.player-session-revision {
+  font-size: .85em;
+}
+
+.player-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6em 1em;
+}
+
+.player-session-actions button {
+  min-height: 2.75em;
+  padding: 0;
+  border: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .player-session-actions {
+    display: grid;
+  }
+
+  .player-session-actions button,
+  .player-session-gate {
+    font-size: max(16px, 1em);
+  }
+}
