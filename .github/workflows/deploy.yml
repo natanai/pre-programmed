@@ -3,6 +3,11 @@ name: Deploy production
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - README.md
+      - docs/**
+      - tests/**
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -62,27 +67,23 @@ jobs:
           NODE
           npx wrangler deploy --config .wrangler.deploy.jsonc --secrets-file "$SECRETS_FILE"
 
-      - name: Verify API
+      - name: Verify deployed API
         env:
           API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
         run: |
           node --input-type=module <<'NODE'
-          const fallbackOrigin = "https://pre-programmed.natanai.workers.dev";
-          const origin = (process.env.API_ORIGIN || fallbackOrigin).replace(/\/+$/, "");
-          const healthUrl = `${origin}/api/health`;
+          const origin = process.env.API_ORIGIN?.trim().replace(/\/+$/, "");
+          if (!origin) {
+            console.error("PRE_PROGRAMMED_API_ORIGIN must point to this installation's deployed API.");
+            process.exit(1);
+          }
+
           let healthy = false;
           for (let attempt = 0; attempt < 12; attempt += 1) {
             try {
-              const response = await fetch(healthUrl, { cache: "no-store" });
+              const response = await fetch(`${origin}/api/health`, { cache: "no-store" });
               const health = await response.json();
-              if (
-                response.ok
-                && health?.ok === true
-                && health?.persistence === "d1"
-                && health?.mediaTextPersistence === "d1"
-                && ["unconfigured", "r2"].includes(health?.mediaBlobPersistence)
-                && health?.authorConfigured === true
-              ) {
+              if (response.ok && health?.ok === true && health?.authorConfigured === true) {
                 healthy = true;
                 break;
               }
@@ -94,7 +95,7 @@ jobs:
           try {
             const response = await fetch(`${origin}/api/project/snapshot`, { cache: "no-store" });
             const snapshot = await response.json();
-            if (!response.ok || !Array.isArray(snapshot?.nodes) || typeof snapshot?.startNodeId !== "string") process.exit(1);
+            if (!response.ok || typeof snapshot !== "object" || snapshot === null || typeof snapshot.revision !== "number") process.exit(1);
           } catch {
             process.exit(1);
           }

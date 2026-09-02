@@ -1,24 +1,24 @@
-# Run Pre-Programmed entirely on a local machine
+# Run Pre-Programmed Locally
 
-This is the first supported local distribution path. It uses the same Worker, D1 schema/migrations, project model, mutation handlers, Author UI, history, undo, and save semantics as the hosted build, but runs them locally through Wrangler/Miniflare.
+Local mode runs the same Worker, project schema, mutation system, Author UI, and game runtime used by the hosted engine, but keeps D1 state on the local machine.
 
-It does **not** connect to the production D1 database.
+It does **not** connect to the production database.
 
 ## Requirements
 
 - Node.js 22+
 - npm
 
-No Cloudflare account or remote D1 database is required for the local runtime itself.
+No Cloudflare account is required.
 
 ## Start
 
-```bash
+```sh
 npm install
 npm run local
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:5173
@@ -36,35 +36,39 @@ The default local Author key is:
 local
 ```
 
-## Where local saves live
+## Local persistence
 
-The local Worker runs with `wrangler.local.jsonc` and persists its local-only D1 state under:
+The local Worker uses `wrangler.local.jsonc` and persists local D1 state under:
 
 ```text
 .wrangler/local-runtime
 ```
 
-`.wrangler/` is ignored by Git. Closing and reopening `npm run local` should preserve authored project data on the same machine.
+`.wrangler/` is ignored by Git. Stopping and reopening `npm run local` should preserve authored project data on the same machine.
 
-To deliberately reset the local project, stop the runtime and delete `.wrangler/local-runtime`.
+To reset the local project deliberately, stop the runtime and delete `.wrangler/local-runtime`.
 
-## Separation from hosted production
+## Isolation rule
 
-The tracked `wrangler.local.jsonc` contains only a fixed local-development identity. Production deployment does not use it. Hosted deployment continues to generate `.wrangler.deploy.jsonc` from the installation's real Worker/D1 binding.
+Do not add `remote: true` to the local D1 binding.
 
-Do not add `remote: true` to the local D1 binding. Local mode is intended to stay isolated from hosted data.
+Local mode is the portability path for running the real engine without remote infrastructure. It should not become a second save engine or a reduced Author implementation.
 
-## Current acceptance status
+## Persistence verification
 
-The architecture reuses the hosted Worker and canonical schema, so local mode does not fork game/save behavior. Before calling local portability complete, run the full acceptance path on a clean machine/check-out:
+To run the automated local restart check:
 
-1. `npm install`;
-2. `npm run local`;
-3. verify the starter project loads;
-4. enter Author mode with the local key;
-5. save an edit;
-6. stop both processes completely;
-7. run `npm run local` again;
-8. confirm the edit remains.
+```sh
+npm run verify:local
+```
 
-Any friction discovered by that run should be fixed in this path rather than by creating a separate local Author implementation.
+For a manual check:
+
+1. run `npm run local`;
+2. enter Author mode;
+3. save a visible project edit;
+4. stop the runtime completely;
+5. start `npm run local` again;
+6. confirm the edit remains.
+
+If local behavior diverges from hosted behavior, fix the shared engine/platform boundary rather than creating a local-only feature implementation.

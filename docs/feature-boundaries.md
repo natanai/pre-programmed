@@ -6,182 +6,144 @@ The architectural target is:
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
 
-The practical acceptance test is the deletion test described in `docs/modular-engine-roadmap.md`.
+## 1. Put behavior with its owner
 
-## 1. New behavior belongs with its owner
-
-When adding behavior, first identify which system conceptually owns it.
+Before adding behavior, identify the feature that conceptually owns it.
 
 Examples:
 
-- inventory item behavior → `src/features/inventory/`
-- narrative nodes/interactions/dialogue → `src/features/narrative/`
-- variables/computed state → `src/features/state/`
-- people/places → `src/features/world/`
-- audio/art/synth behavior → `src/features/media/`
-- player command grammar/resolution → `src/features/commands/`
+- narrative nodes, input, dialogue → `src/features/narrative/`
+- inventory and equipment → `src/features/inventory/`
+- variables and computed state → `src/features/state/`
+- people and places → `src/features/world/`
+- audio, artwork, vector assets, synth → `src/features/media/`
+- command grammar and resolution → `src/features/commands/`
 - generic target operations → `src/features/operations/`
 
-Do not add a feature-specific branch to `App.tsx`, `worker/projectStore.ts`, or a shared facade merely because those files can currently see everything. If a central integration point is still required, add the smallest explicit contribution/adapter and keep implementation behavior in the feature.
+A feature should own its model, runtime behavior, Author contribution, validation, persistence contribution, and player presentation where applicable.
 
-## 2. Composition roots are allowed to know which features exist
+Do not put feature internals in `App.tsx`, shared Author shells, generic engine registries, or Worker orchestration merely because those files can see everything.
 
-Modularity does **not** require runtime discovery or hiding the set of built-in modules.
+## 2. Composition roots may know which features are installed
 
-An explicit composition root may import feature contributions and assemble them. Examples already present include:
+Modularity does not require runtime discovery.
 
-- Author feature manifest registry
-- condition/effect catalogs
-- operation target catalog
-- command capability/reference catalogs
-
-A composition root should answer only questions such as:
+Explicit composition roots may import feature contributions and assemble them. A composition root may answer:
 
 > Which contributions are installed in this build?
 
 It should not answer:
 
-> How does Inventory execute `give_item`?
+> How does this feature execute its behavior?
 
-The first is composition. The second is feature implementation.
+The first is composition. The second belongs to the feature.
 
-## 3. Cross-feature implementation imports are suspect
+## 3. Prefer shared contracts over cross-feature implementation imports
 
-A feature should prefer stable shared/core contracts over importing another feature's internal runtime/UI files.
+A feature importing another feature's internal UI/runtime code is a warning sign.
 
-Before adding a cross-feature import, ask whether the dependency is actually one of these:
+Before adding such an import, ask whether the dependency is actually:
 
-- a generic engine contract that should live in `src/engine/`;
+- a generic engine contract that belongs in `src/engine/`;
 - a generic operation/capability contract;
 - an explicit composition concern;
-- a genuine domain dependency that should be represented by an adapter/port rather than direct implementation knowledge.
+- a real domain dependency that should be represented through an adapter/port.
 
-Do not create circular feature ownership merely to avoid writing a small stable contract.
+Avoid aggregate compatibility facades that hide ownership and become a second feature boundary.
 
-## 4. Import the owning module directly
+## 4. `App.tsx` is a shell
 
-The prototype-era `src/game/*` compatibility layer has been removed. Engine contracts come from `src/engine/*`; feature models and behavior come from the feature that owns them. Do not recreate aggregate facades that hide ownership or let unrelated modules accumulate behind one import path.
+`App.tsx` may compose application/session behavior, connect the player runtime to shared contracts, connect Author mode to shared contracts, and own top-level presentation lifecycle.
 
-## 5. `App.tsx` is an application shell, not a feature home
+It should not become the implementation home for feature-specific persistence, initialization, commands, mutations, validation, or editors.
 
-`App.tsx` is still transitional and currently coordinates too much.
+If a new feature requires a central `if`/`switch`, first look for a contribution or adapter boundary that lets the feature own the behavior instead.
 
-New work should move it toward responsibility for:
+## 5. Worker persistence composes feature ownership
 
-- application/session composition;
-- connecting the live game experience to shared runtime contracts;
-- connecting Author experience to shared Author contracts;
-- top-level presentation/session lifecycle.
+Worker orchestration may coordinate transactions, revisions, authentication, schema initialization, and generic project reads/writes.
 
-It should move away from responsibility for:
+Feature-specific schema, persistence, mutation validation, and migration contributions belong with the owning Worker feature contribution under `worker/features/` or another explicit feature-owned boundary.
 
-- feature-specific persistence;
-- feature-specific initialization;
-- feature-specific commands;
-- feature-specific mutation semantics;
-- feature-specific Author editors.
+Do not re-centralize feature tables or validation into a master Worker file for convenience.
 
-Do not add a new feature-specific `if`/`switch` branch to App when a contribution/adapter can own it instead.
+## 6. One Author implementation, many presentations
 
-Commands follows the same boundary in Author mode: target modules contribute command-target authoring adapters and their operation vocabulary. The shared command journey may route to them, but it must not enumerate item/character/location/state editor branches. Shared outcome composition likewise arranges canonical condition/effect editors without taking ownership of their feature rules.
+Desktop and mobile must use the same Author task state, navigation semantics, editors, mutations, validation, persistence, and save behavior.
 
-## 6. Worker persistence is transitional
-
-`worker/projectStore.ts` currently has too much feature knowledge. Do not treat that as the desired pattern for new systems.
-
-Until feature persistence contributions are introduced:
-
-- avoid adding unrelated persistence behavior there unless required to make a feature durable;
-- isolate new schema/read/write logic so it can move beside the owning feature later;
-- do not create client-side repair layers to compensate for what persistence generated;
-- keep revision/concurrency/transaction concerns distinct from feature record semantics.
-
-The roadmap's persistence phase will move read/write/restore ownership behind feature contributions.
-
-## 7. One Author implementation, many layouts
-
-Desktop and mobile must not fork Author behavior.
-
-Allowed:
+Allowed responsive differences include:
 
 - media queries;
-- layout shells;
-- responsive sizing/reflow;
-- presentation-only controls whose action invokes an existing shared Author command/navigation path.
+- reflow and sizing;
+- desktop split-pane presentation;
+- mobile focused presentation;
+- keyboard/visual-viewport adaptations;
+- presentation-only controls that invoke existing shared Author actions.
 
-Not allowed:
+Do not create separate desktop/mobile editors, mutation paths, save logic, or navigation stacks.
 
-- separate desktop/mobile editors for the same feature;
-- separate desktop/mobile save logic;
-- duplicate navigation stacks;
-- desktop-only mutation semantics;
-- copying an existing mobile component and evolving the copy independently.
+## 7. Installation configuration is not engine behavior
 
-The desktop left suite must remain a presentation of the same Author workspaces used on mobile.
+Worker names, database identities, repository paths, API origins, Author credentials, and optional provider configuration belong to installation/platform adapters.
 
-## 8. Instance configuration and providers are not engine behavior
+Feature/project data should store stable project identities and content keys, not provider URLs or installation-specific IDs.
 
-A fork's Worker URL, database ID/name, repository Pages path, credentials, Author key, and optional storage-provider configuration belong to installation/setup adapters.
+An optional provider may enable one capability; its absence must not disable unrelated engine features.
 
-Do not hard-code a new installation's values into feature/runtime behavior.
+## 8. Replace unsuitable prototypes
 
-A provider-specific service may implement a capability, but a feature must not make an optional provider a prerequisite for the entire engine. In particular:
-
-- stable project data stores provider-neutral identities/keys rather than provider URLs;
-- platform adapters decide how those keys resolve;
-- absence of an optional provider disables only the capability that truly requires it;
-- local/default installations must remain useful without optional paid services;
-- deployment must not fail merely because an optional provider is absent;
-- adding or replacing a provider must not require mobile/desktop forks or feature-specific compatibility branches.
-
-For Media, D1-backed textual content, repository assets, and an optional blob provider all satisfy parts of one content boundary. R2 is one possible blob adapter, not a Media-domain concept.
-
-Current hard-coded production fallbacks are transitional compatibility and should shrink as bootstrap/setup work is completed.
-
-## 9. Prefer replacement over repair layers during prototyping
-
-When a prototype system is conceptually wrong, do not preserve it solely because other systems have coupled themselves to it.
-
-Prefer this sequence:
+When a prototype foundation is conceptually wrong:
 
 1. identify the intended stable contract;
 2. isolate consumers behind that contract;
 3. replace the owning implementation;
-4. migrate durable authored data explicitly if needed;
-5. delete the superseded implementation.
+4. migrate durable authored data only when needed;
+5. delete the superseded implementation and obsolete compatibility code.
 
-Avoid:
+Avoid two sources of truth, repair layers around an obsolete subsystem, and permanent compatibility branches for unshipped prototype behavior.
 
-- runtime post-processors that repair another subsystem's output;
-- two competing sources of truth;
-- permanent compatibility branches for unshipped prototype behavior;
-- CSS/JS layers whose purpose is to make an obsolete architecture appear correct.
+Compatibility code is acceptable only as a deliberate one-way migration mechanism toward deletion.
 
-Compatibility code may be used deliberately during migration, but it must have one-way direction toward deletion.
+## 9. Delete by feature boundary
+
+A useful modularity check for a substantial feature replacement is:
+
+1. remove the feature implementation;
+2. remove its explicit registrations/composition entries;
+3. do not repair unrelated feature internals;
+4. a project that does not use the feature should still typecheck/build/run;
+5. shared UI should not retain dead feature-specific entry points.
+
+Do this when replacing a feature, not as permanent CI theater.
 
 ## 10. Verification must remain replaceable too
 
-Tests and CI are part of the architecture. They must not make an experimental feature harder to remove than the runtime does.
+Tests and CI are architecture. They must not make an experimental feature harder to replace than the runtime does.
 
 During rapid prototyping:
 
 - production deployment on `main` is the only automatic workflow;
-- full typecheck/test/build verification is an explicit checkpoint, not a tax on every branch update;
-- prefer targeted checks while iterating and run the full `npm run verify` before a meaningful merge/deployment checkpoint;
-- feature-specific tests should live with or clearly belong to the feature and may be deleted or rewritten with that feature;
-- core tests should protect stable core contracts, not enumerate every feature currently installed;
-- do not add permanent tests whose primary purpose is to freeze today's feature roster, route list, mutation list, or UI implementation;
-- physical feature-deletion probes are temporary diagnostic branches, not permanent CI fixtures;
-- persistence integrity, migrations, authentication, backup/restore, and other data-safety boundaries may justify stronger long-lived tests because their failure can corrupt or strand authored work.
+- full verification is an explicit checkpoint through `npm run verify`;
+- use targeted checks while iterating;
+- feature-specific tests may be deleted or rewritten with the feature;
+- centralized tests should focus on cross-cutting safety contracts rather than enumerate the current feature roster;
+- do not add tests whose main purpose is to freeze current routes, UI markup, feature lists, mutation lists, or prototype implementation details;
+- stronger long-lived tests are justified for authentication, persistence, migrations, backup/restore, authored-data integrity, and similar boundaries whose failure can strand or corrupt work.
 
-Existing centralized feature tests are transitional. Move or simplify them when the owning feature is substantially changed rather than creating a separate migration project solely to rearrange tests.
+A failed test during an intentional replacement is evidence to inspect, not proof that the old behavior must be preserved.
 
-A failed test during an intentional prototype replacement is evidence to inspect, not proof that the old behavior must be preserved.
+## 11. Documentation describes the current engine
 
-## Review question for every substantial change
+Tracked documentation is part of the developer interface.
 
-Before merging, ask:
+Do not keep dated completion percentages, temporary probe results, branch-specific instructions, or historical implementation notes in the current developer docs after they stop describing the repository.
 
-> If we replaced this feature next week, did this change make that replacement easier, neutral, or harder?
+The Git history and pull requests preserve archaeology. The repository itself should describe what exists now and how to extend it safely.
 
-If the answer is "harder," the change needs an explicit architectural reason rather than convenience alone.
+## Review question
+
+Before merging a substantial change, ask:
+
+> If this feature were replaced next week, did this change make replacement easier, neutral, or harder?
+
+If the answer is "harder," there should be an explicit architectural reason rather than convenience alone.

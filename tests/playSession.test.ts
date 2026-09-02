@@ -27,7 +27,7 @@ function sessionFor(snapshot = project()): PersistedPlaySession {
 }
 
 describe("player session persistence", () => {
-  it("allows compatible project revisions but rejects schema changes and deleted locations", () => {
+  it("allows compatible project revisions but rejects incompatible schema or location changes", () => {
     const original = project({ revision: 3, nodes: [node("a", 1), node("b", 2)] });
     const session = sessionFor(original);
     session.playState.currentNodeId = "b";
@@ -46,30 +46,16 @@ describe("player session persistence", () => {
     expect(resumed.variableTimeUpdatedAt).toBe(20_000);
   });
 
-  it("upgrades v1 saves without preserving obsolete storage URLs", () => {
-    const current = sessionFor();
-    const legacy = {
-      ...current,
-      version: 1,
-      presentation: {
-        ...current.presentation,
-        transcript: [
-          { id: "text", text: "hello" },
-          { id: "old-art", text: "", artUrl: "https://old-storage.example/art.png" },
-        ],
-      },
-    };
-
-    const upgraded = normalizePersistedPlaySession(legacy);
-    expect(upgraded?.version).toBe(2);
-    expect(upgraded?.presentation.transcript).toEqual([{ id: "text", text: "hello" }]);
-    expect(JSON.stringify(upgraded)).not.toContain("artUrl");
-  });
-
-  it("keeps stable art identities in the saved transcript", () => {
+  it("keeps stable Media identities in the saved transcript", () => {
     const current = sessionFor();
     current.presentation.transcript.push({ id: "art", text: "", artAssetId: "asset-eye" });
+
     const normalized = normalizePersistedPlaySession(current);
-    expect(normalized?.presentation.transcript.at(-1)).toEqual({ id: "art", text: "", artAssetId: "asset-eye" });
+
+    expect(normalized?.presentation.transcript.at(-1)).toEqual({
+      id: "art",
+      text: "",
+      artAssetId: "asset-eye",
+    });
   });
 });

@@ -1,119 +1,110 @@
 # Pre-Programmed
 
-A browser-based text RPG and live authoring engine. The central idea is that authors can **play and build the game at the same time**: ordinary game content is created through Author mode rather than by hand-editing source code or databases.
+Pre-Programmed is a browser-based text adventure engine built around one idea: **play the game and author it at the same time**.
 
-The engine is intentionally modular and still in rapid prototyping. Experimental foundations should be replaceable instead of accumulating compatibility layers.
+Authors create ordinary game content from the running game through Author mode instead of editing source files or database rows by hand. The engine is still in rapid prototyping, so replaceable systems are preferred over compatibility layers that preserve obsolete prototypes.
 
-## Live installation
+## Quick start
 
-- App: https://natanai.github.io/pre-programmed/
-- API: https://pre-programmed.natanai.workers.dev/api/*
+Requirements:
 
-## The short version
+- Node.js 22+
+- npm
 
-| Thing | Default location |
-| --- | --- |
-| Engine code, UI, fonts, repository-managed Media | Git repository |
-| Mutable project structure and Media metadata | D1 through the configured project-persistence adapter |
-| Author-created SVG/vector text | D1 through the Media content adapter |
-| Uploaded binary Media | Optional blob provider such as R2, or repository Media |
-| Temporary cache, player autosave, queued edits | Browser storage |
+Run the complete engine locally:
 
-**R2 is optional.** The engine, Author mode, SVG authoring, player runtime, and production deployment do not require an R2 account or bucket.
+```sh
+npm install
+npm run local
+```
 
-Normal authoring happens **inside the running game**.
-
-## Author mode
-
-On the live game, type:
+Open `http://127.0.0.1:5173`, type:
 
 ```text
 admin
 ```
 
-Then enter the Author key.
-
-The same running game gains Author controls. The ordinary loop is:
-
-1. Stand at the part of the game you want to work on.
-2. Open or create the relevant node, User Input, response, item, character, state, Media asset, or other resource.
-3. Save that Author task.
-4. Continue editing, preview, or use the master Author exit to return to play.
-5. Exercise the authored behavior through the real runtime.
-
-Desktop and mobile use the same Author features, task system, save paths, and runtime. Responsive layout changes presentation rather than capability.
-
-## Core game concepts
-
-### Node
-
-A node is a playable narrative state: the text the player is currently at. A node can have many User Inputs that stay at that node, transition elsewhere, or cause effects without moving.
-
-### User Input and response
-
-A User Input is text the player can type at the current node. Each input can have ordered outcomes. An outcome can return response text, select a speaker, apply effects, stay in place, or transition to another node. Conditions decide which outcome applies.
-
-### Effects
-
-Effects are feature-contributed runtime actions. Current examples include state changes, inventory changes, interaction visibility, notifications, synth playback, recorded audio, artwork presentation, and transitions.
-
-Feature code owns the meaning of its effect. Shared rule/runtime code composes those contributions rather than hard-wiring feature combinations.
-
-## Inline text-performance notation
-
-Node text and response text can contain terse slash notation. The notation compiles into the same performance model used by Author tooling and is removed before the player sees the text.
+and use the local Author key:
 
 ```text
-/p          pause 350 ms
-/p800       pause 800 ms
-/f{...}     fast text
-/s{...}     emphasized/shaking text
-/h{...}     instant hard hit
-/w{...}     wave
-/b{...}     blink
-/i{...}     instant reveal
-//          literal slash
+local
 ```
+
+Local mode uses the same Worker, schema, Author UI, mutation system, and game runtime as hosted mode. Its D1 data stays local under `.wrangler/local-runtime`.
+
+## Engine principles
+
+### One engine, one Author system
+
+Desktop and mobile expose the same capabilities, task state, save paths, feature logic, and authored-data meaning. Responsive behavior may change layout and presentation, but it must not fork the product into desktop and mobile implementations.
+
+### Feature-owned vertical slices
+
+A feature should own its model, runtime behavior, Author contribution, validation, persistence contribution, and player presentation where applicable. Shared engine code composes those contributions; it should not grow feature-specific implementation branches.
+
+See [`docs/feature-boundaries.md`](docs/feature-boundaries.md) before substantial engine changes.
+
+### Replace prototypes instead of preserving them
+
+This repository is intentionally allowed to evolve quickly. When a prototype foundation is no longer suitable, replace it and delete the superseded implementation. Tests, documentation, adapters, and UI rules should evolve with the systems they protect rather than forcing removed behavior to survive.
+
+## Author mode
+
+On a running game, type:
+
+```text
+admin
+```
+
+Then enter the configured Author key.
+
+The normal authoring loop is:
+
+1. Play to the part of the game you want to work on.
+2. Open or create the relevant resource in Author mode.
+3. Save the task.
+4. Preview or return to play.
+5. Exercise the authored behavior through the real runtime.
+
+Author mode can work with narrative nodes and responses, characters and locations, variables, inventory, operations, commands, Media, project settings, and other feature-owned resources installed in the build.
+
+The shared Author UI rules are documented in [`docs/author-ui-grammar.md`](docs/author-ui-grammar.md).
+
+## Core runtime concepts
+
+### Nodes, input, and outcomes
+
+A node is a playable narrative state. Authored user input can select ordered outcomes. Outcomes can return text, use a speaker, apply effects, stay at the current node, or transition elsewhere. Conditions determine which outcome applies.
+
+### State and operations
+
+Variables and computed values provide reusable project state. Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
+
+### Commands
+
+Project command grammar can map reusable wording to feature-owned targets and operations. Local scene aliases remain available for specific narrative interactions.
+
+### Player progress
+
+Player progress is stored locally in the browser. Saved state uses project identities rather than storage-provider URLs so project assets and authored references can move between providers without rewriting player data.
 
 ## Media
 
-Media is a feature-owned vertical slice. Game systems reference **stable Media asset IDs**; they do not store repository paths, D1 URLs, R2 URLs, data URLs, or browser-local object URLs.
+Game systems reference **stable Media asset IDs**. They do not store repository paths, D1 URLs, R2 URLs, data URLs, or browser object URLs as project identity.
 
-A Media asset contains project identity and behavior such as:
+A Media asset stores identity and presentation metadata. Content resolution is handled by platform adapters.
 
-- stable `id`;
-- name and kind (`image` or `audio`);
-- MIME type;
-- immutable `contentKey`, or `null` when the repository copy is active;
-- byte length and intrinsic dimensions when applicable;
-- default player presentation (`inline` or `overlay`);
-- authoring mode (`file` or `grid32`).
+The default engine can resolve content from:
 
-The platform content adapter resolves where a `contentKey` lives.
+- **D1 text content** for textual/vector Media such as Author-created SVG;
+- **repository Media** under `public/assets/`;
+- **optional blob storage** for hosted binary uploads.
 
-### Storage-neutral content
-
-The current default adapters resolve content through three independent capabilities:
-
-1. **D1 text content** — textual/vector Media such as SVG.
-2. **Repository Media** — source-controlled files under `public/assets`.
-3. **Optional blob content** — larger/binary uploads, with Cloudflare R2 supplied as one adapter when configured.
-
-The stable project model does not distinguish those locations. Moving content between providers therefore does not require rewriting narrative cues, inventory references, effects, player saves, or other authored data.
+The included Cloudflare adapter can use R2 for optional binary storage, but R2 is not part of the Media domain contract and is not required for text authoring, SVG authoring, repository Media, or the core engine.
 
 ### 32×32 vector authoring
 
-The Media tool includes a 32×32 drawing editor with pencil, eraser, fill, color, Undo/Redo, and clear controls.
-
-The 32×32 grid is an **authoring coordinate system**, not a player pixel-size rule. It serializes to SVG with:
-
-```text
-viewBox="0 0 32 32"
-```
-
-and no fixed rendered width or height. Player presentation can therefore scale it cleanly as vector artwork.
-
-Author-created SVG text is saved in the existing D1-backed database system. It does not require R2.
+The Media tool includes a 32×32 vector drawing surface. The grid is an authoring coordinate system, not a fixed display size. Generated SVG uses a `0 0 32 32` viewBox and can scale cleanly in the player.
 
 ### Repository Media
 
@@ -123,164 +114,69 @@ Repository-managed files live under:
 public/assets/
 ```
 
-Recommended organization:
+A repository asset may have a neighboring `.asset.json` identity sidecar. Stable identity lets an asset move between hosted content and repository content without rewriting every game reference.
+
+## Storage model
+
+| Data | Default responsibility |
+| --- | --- |
+| Engine source and repository Media | Git repository |
+| Mutable project structure and Media metadata | Project persistence adapter; Cloudflare D1 in the bundled hosted adapter |
+| Author-created textual/vector Media | Media content adapter; D1 text storage in the bundled hosted adapter |
+| Optional hosted binary Media | Optional blob provider such as R2 |
+| Player-local progress, cache, queued edits | Browser storage |
+
+Cloudflare is a bundled platform implementation, not the definition of the engine. Feature code should depend on engine/platform contracts rather than Cloudflare APIs.
+
+## Repository layout
 
 ```text
-public/assets/
-├── sprites/
-├── images/
-└── audio/
-```
-
-Supported build-detected formats include PNG, WebP, GIF, SVG, MP3, WAV, and OGG.
-
-Every shipped Media file has an identity sidecar beside it, for example:
-
-```text
-openeye.svg
-openeye.svg.asset.json
-```
-
-The sidecar carries stable asset identity/presentation metadata. Moving an exported hosted asset into the repository does not require changing references elsewhere in the game.
-
-### Optional binary uploads
-
-Binary file uploads need a blob/content provider if they are not promoted to repository Media. The bundled Cloudflare adapter supports R2, but R2 is deliberately **not part of the engine contract**.
-
-If no blob provider is configured:
-
-- text/game authoring continues normally;
-- SVG/vector authoring continues normally through D1;
-- repository images/audio continue normally;
-- binary upload attempts report that optional blob storage is unavailable.
-
-A future installation can provide another blob adapter without changing feature modules or the `MediaAsset` model.
-
-### Import / export
-
-The Author Media tool can export an asset together with its `.asset.json` identity sidecar. This provides a supported promotion path from hosted content into repository-managed content while preserving the same asset ID.
-
-### Player presentation
-
-Image presentation is explicit metadata, independent of intrinsic dimensions:
-
-- `inline` places the image in the terminal transcript;
-- `overlay` opens the Media-owned large viewer.
-
-Player autosave stores stable Media IDs rather than resolved URLs.
-
-### Audio
-
-Recorded audio uses the same Media identity/content boundary. Synth sounds are structured project data generated by the browser audio runtime and do not require blob storage.
-
-## Inventory, state, people, and commands
-
-Inventory items can carry Media references, quantities, stacking, equipment rules, operations, and authored operation responses/effects.
-
-Variables and computed values support normal state changes, time-based change, conditions, status exposure, and target operations. Characters and locations are reusable world entities.
-
-Player command grammar can map reusable wording to feature-owned target operations without moving operation behavior into the Commands feature.
-
-## Player saves and Author history
-
-Player progress is stored locally in the browser. Current node, state, inventory, transcript/presentation data, and stable Media references can resume through Continue/New Game behavior.
-
-Durable Author changes create project revisions. Media revisions retain prior immutable `contentKey` references, while the content layer preserves versioned content independently of the current asset metadata.
-
-## Backup
-
-In Author mode, use the Backup control or type:
-
-```text
-backup
-```
-
-or:
-
-```text
-/backup
-```
-
-The canonical backup always includes the D1 database. Because D1-backed SVG content is ordinary database data, it is included automatically. If an optional blob provider is configured, its hosted Media objects are also included. Repository Media remains source-controlled and does not need to be duplicated into hosted storage just for backup.
-
-## Architecture
-
-The core rule is:
-
-> A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
-
-Important paths:
-
-```text
-public/assets/             repository-managed Media + identity sidecars
+public/assets/             repository-managed Media
 src/App.tsx                application/session composition shell
+src/engine/                shared contracts and composition roots
 src/features/              feature-owned vertical slices
-src/features/media/        Media model, rules, authoring, player presentation
-src/engine/                generic contracts and composition roots
-src/author/                shared Author task/UI composition
-src/platform/              environment/platform adapters
-worker/features/           feature-owned D1 persistence and validation
-worker/mediaContent.ts     storage-neutral hosted Media content boundary
-worker/db/                 schema composition + historical migrations
-scripts/                   setup/build/deployment helpers
-.github/workflows/         production deploy + opt-in verification
+src/author/                shared Author task/UI system
+src/platform/              client/platform adapters
+worker/features/           feature-owned Worker persistence/validation contributions
+worker/db/                 schema composition and migrations
+worker/mediaContent.ts     hosted Media content boundary
+scripts/                   setup, local-runtime, build, and deployment helpers
+tests/                     small cross-cutting safety/contract suite
+.github/workflows/         production deployment only
 ```
 
-Read `docs/feature-boundaries.md` before substantial engine changes. `docs/installation.md` is the supported fork/clone setup path.
+## Verification policy
 
-## Running locally
+Rapid prototyping should not require a growing compatibility test suite.
 
-```sh
-npm install
-npm run local
-```
+The retained centralized tests focus on cross-cutting contracts that can strand or corrupt authored work, such as authentication, persistence, backup, migrations, player-save compatibility, API synchronization, and hosted Media content safety. Feature-specific tests may be deleted, rewritten, or moved with the feature they protect.
 
-The checked-in local runtime deliberately uses local D1 **without an R2 binding**. This is the default portability proof, not a reduced mode.
-
-For persistence acceptance across a local restart:
+Useful checks:
 
 ```sh
+npm run typecheck
+npm test
+npm run build
+npm run verify
 npm run verify:local
 ```
 
-That check persists project data and SVG content through D1, restarts the runtime, and verifies both survive with no object-storage service.
+`npm run verify` is the explicit full checkpoint. Ordinary branch work does not automatically run a full verification workflow.
 
-Useful targeted commands:
+## New installation
 
-```sh
-npm run build
-npm run build:pages
-npm run typecheck
-npm test
-npm run verify
-```
+For a new fork or clone intended to become its own game installation, follow [`docs/installation.md`](docs/installation.md).
 
-Full verification is intentionally an explicit checkpoint during rapid prototyping rather than an automatic tax on every branch update.
+The supported goal is:
 
-## Installation and production deployment
+> clone or fork → connect the installation's own persistence/runtime → enter Author mode → build a complete game without ordinary source-code edits
 
-A base installation needs:
+Local-only use does not require a Cloudflare account. Hosted deployment currently ships with Cloudflare Worker/D1 adapters and optional R2 support, but those services remain behind replaceable platform boundaries.
 
-- a runtime/Worker identity;
-- a project database;
-- an Author key;
-- an API origin;
-- client hosting/base-path configuration.
+## Production workflow
 
-An R2/blob bucket is optional.
+`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow builds the client, prepares installation-specific Worker configuration, deploys the Worker, verifies the configured API, and publishes GitHub Pages.
 
-Use:
+A cloned installation must provide its own deployment variables and secrets. The workflow must never fall back to this repository owner's production API.
 
-```sh
-npm run setup:installation
-```
-
-for the supported setup journey. See `docs/installation.md` for fork/direct-clone safety and platform configuration.
-
-For the included Cloudflare adapter, D1 remains the current hosted project-database implementation. That is an adapter choice, not permission for feature modules to depend directly on Cloudflare APIs. A future developer should be able to replace persistence adapters without changing authored game references or feature logic.
-
-## Media migration from the prototype
-
-Migration 20 removed the old `data_url`/base64 payload from the Media metadata table. Migration 21 adds a separate immutable **text-content table** for SVG and similar supported text Media.
-
-This does not restore the old embedded-data-URL architecture. Asset identity still points to an immutable `contentKey`; the content adapter decides whether that key resolves from D1 text storage, an optional blob store, or a repository copy.
+See [`docs/installation.md`](docs/installation.md) for the required configuration and [`docs/local-runtime.md`](docs/local-runtime.md) for the no-cloud local path.
