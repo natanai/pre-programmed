@@ -1,13 +1,15 @@
 import type { ProjectMutation } from "../src/engine/project/model";
 import { createAuthorToken, isAuthor } from "./auth";
-import { collectD1Backup } from "./backup";
+import { collectProjectBackup } from "./backup";
 import { ensureSchema } from "./db/schema";
 import { json, withCors } from "./http";
+import { getMediaContent, mediaContentKey, putMediaContent } from "./mediaContent";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
 import { validateMutationBody } from "./validation";
 
 export type Env = {
   DB: D1Database;
+  ASSET_CONTENT?: R2Bucket;
   ADMIN_KEY?: string;
 };
 
@@ -27,7 +29,7 @@ async function loginAuthor(request: Request, env: Env) {
 }
 
 async function downloadBackup(env: Env) {
-  const backup = await collectD1Backup(env.DB);
+  const backup = await collectProjectBackup(env.DB, env.ASSET_CONTENT);
   const filename = `pre-programmed-backup-${backup.exportedAt.replace(/[:.]/g, "-")}.json`;
   return new Response(JSON.stringify(backup, null, 2), {
     headers: {
@@ -45,8 +47,9 @@ export async function handleApi(request: Request, env: Env) {
     return json({
       ok: true,
       service: "pre-programmed",
-      apiVersion: 1,
+      apiVersion: 2,
       persistence: "d1",
+      mediaPersistence: env.ASSET_CONTENT ? "r2" : "unconfigured",
       authorConfigured: Boolean(env.ADMIN_KEY),
     });
   }
@@ -58,6 +61,10 @@ export async function handleApi(request: Request, env: Env) {
       return json({ error: "Project has not been initialized." }, { status: 503 });
     }
   }
+
+  const publicContentKey = mediaContentKey(url.pathname, "/api/media/content/");
+  if (publicContentKey && request.method === "GET") return getMediaContent(env.ASSET_CONTENT, publicContentKey);
+
   if (url.pathname === "/api/author/login" && request.method === "POST") return loginAuthor(request, env);
   if (url.pathname === "/api/author/check" && request.method === "POST") {
     return (await isAuthor(request, env)) ? new Response(null, { status: 204 }) : json({ error: "Unauthorized" }, { status: 401 });
@@ -66,6 +73,9 @@ export async function handleApi(request: Request, env: Env) {
   const author = await isAuthor(request, env);
   if (!author && url.pathname.startsWith("/api/author/")) return json({ error: "Unauthorized" }, { status: 401 });
   await ensureSchema(env.DB);
+
+  const authorContentKey = mediaContentKey(url.pathname, "/api/author/media/content/");
+  if (authorContentKey && request.method === "PUT") return putMediaContent(env.ASSET_CONTENT, authorContentKey, request);
 
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));

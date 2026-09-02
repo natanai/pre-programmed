@@ -13,20 +13,13 @@ const repoRoot = fileURLToPath(new URL("../", import.meta.url));
 const upstreamRepository = "natanai/pre-programmed";
 
 function parseJsonConfig(text, label) {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new Error(`${label} is expected to remain JSON-compatible JSONC for the setup helper.`, { cause: error });
-  }
+  try { return JSON.parse(text); }
+  catch (error) { throw new Error(`${label} is expected to remain JSON-compatible JSONC for the setup helper.`, { cause: error }); }
 }
 
 async function readExistingWrangler() {
-  try {
-    return parseJsonConfig(await readFile(wranglerPath, "utf8"), "wrangler.jsonc");
-  } catch (error) {
-    if (error?.code === "ENOENT") return null;
-    throw error;
-  }
+  try { return parseJsonConfig(await readFile(wranglerPath, "utf8"), "wrangler.jsonc"); }
+  catch (error) { if (error?.code === "ENOENT") return null; throw error; }
 }
 
 function repositoryFromRemote(remote) {
@@ -37,9 +30,7 @@ function repositoryFromRemote(remote) {
     const url = new URL(value);
     if (url.hostname.toLowerCase() !== "github.com") return "";
     return url.pathname.replace(/^\/+|\/+$/g, "").toLowerCase();
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 }
 
 async function readOriginRepository() {
@@ -50,24 +41,11 @@ async function readOriginRepository() {
   });
 }
 
-const [existing, originRepository] = await Promise.all([
-  readExistingWrangler(),
-  readOriginRepository(),
-]);
+const [existing, originRepository] = await Promise.all([readExistingWrangler(), readOriginRepository()]);
 const configuredD1 = existing?.d1_databases?.some((binding) => binding?.database_id || binding?.database_name);
-const inheritedUpstreamConfiguration = Boolean(
-  configuredD1
-  && originRepository
-  && originRepository !== upstreamRepository
-  && existing?.name === "pre-programmed",
-);
-const upstreamConfiguredCheckout = Boolean(
-  configuredD1
-  && originRepository === upstreamRepository
-  && existing?.name === "pre-programmed",
-);
-const replacingKnownUpstreamConfiguration = inheritedUpstreamConfiguration
-  || (upstreamConfiguredCheckout && newInstallation);
+const inheritedUpstreamConfiguration = Boolean(configuredD1 && originRepository && originRepository !== upstreamRepository && existing?.name === "pre-programmed");
+const upstreamConfiguredCheckout = Boolean(configuredD1 && originRepository === upstreamRepository && existing?.name === "pre-programmed");
+const replacingKnownUpstreamConfiguration = inheritedUpstreamConfiguration || (upstreamConfiguredCheckout && newInstallation);
 
 if (originRepository === upstreamRepository && !configuredD1 && !newInstallation) {
   console.error([
@@ -98,20 +76,14 @@ if (configuredD1 && !force && !replacingKnownUpstreamConfiguration) {
   process.exit(2);
 }
 
-if (inheritedUpstreamConfiguration) {
-  console.log("Detected an older upstream installation configuration inherited by this fork; replacing it with new installation settings.");
-}
-if (originRepository === upstreamRepository && newInstallation) {
-  console.log("Treating this upstream clone as a new installation; local installation settings will be created without changing the upstream deployment identity.");
-}
+if (inheritedUpstreamConfiguration) console.log("Detected an older upstream installation configuration inherited by this fork; replacing it with new installation settings.");
+if (originRepository === upstreamRepository && newInstallation) console.log("Treating this upstream clone as a new installation; local installation settings will be created without changing the upstream deployment identity.");
 
 const template = parseJsonConfig(await readFile(templatePath, "utf8"), "wrangler.template.jsonc");
 const interactive = Boolean(input.isTTY && output.isTTY);
 const rl = interactive ? createInterface({ input, output }) : null;
 const inferredRepositoryName = originRepository.split("/").at(-1) || "pre-programmed";
-const defaultWorkerName = originRepository && originRepository !== upstreamRepository
-  ? inferredRepositoryName
-  : `my-${inferredRepositoryName}`;
+const defaultWorkerName = originRepository && originRepository !== upstreamRepository ? inferredRepositoryName : `my-${inferredRepositoryName}`;
 
 async function answer(envName, prompt, fallback = "") {
   const configured = process.env[envName]?.trim();
@@ -124,11 +96,13 @@ async function answer(envName, prompt, fallback = "") {
 try {
   const workerName = await answer("PRE_PROGRAMMED_WORKER_NAME", "Worker name", defaultWorkerName);
   const databaseName = await answer("PRE_PROGRAMMED_D1_DATABASE_NAME", "D1 database name", `${workerName}-db`);
+  const assetBucketName = await answer("PRE_PROGRAMMED_ASSET_BUCKET_NAME", "R2 media bucket name", `${workerName}-assets`);
   const apiOrigin = await answer("PRE_PROGRAMMED_API_ORIGIN", "Hosted Worker origin (optional until first deploy)", "");
   const repositoryName = await answer("PRE_PROGRAMMED_REPOSITORY_NAME", "GitHub repository name", inferredRepositoryName);
   const basePath = await answer("PRE_PROGRAMMED_BASE_PATH", "Pages base path", `/${repositoryName}/`);
 
   template.name = workerName;
+  template.r2_buckets = [{ binding: "ASSET_CONTENT", bucket_name: assetBucketName }];
   await writeFile(wranglerPath, `${JSON.stringify(template, null, 2)}\n`, "utf8");
 
   const normalizedBasePath = `${basePath.startsWith("/") ? basePath : `/${basePath}`}${basePath.endsWith("/") ? "" : "/"}`;
@@ -140,21 +114,21 @@ try {
   ];
   await writeFile(envPath, envLines.join("\n"), "utf8");
 
-  const databaseArgument = JSON.stringify(databaseName);
   console.log([
     "Installation files prepared.",
     `Worker: ${workerName}`,
     `D1 to create: ${databaseName}`,
+    `R2 media bucket to create: ${assetBucketName}`,
     `Pages base: ${normalizedBasePath}`,
     "",
     "Next:",
     "1. Authenticate Wrangler with the Cloudflare account that should own this game.",
-    `2. Create and persist this installation's D1 binding: npx wrangler d1 create ${databaseArgument} --binding DB --update-config`,
-    "   Wrangler should add database_name and database_id to the local, ignored wrangler.jsonc.",
-    "3. Configure ADMIN_KEY for the Worker/deployment.",
-    "4. Run `npx wrangler deploy` once locally so this Worker owns the D1 binding.",
-    "5. Set PRE_PROGRAMMED_API_ORIGIN / VITE_API_ORIGIN once the Worker URL is known.",
-    "6. For GitHub Actions, set PRE_PROGRAMMED_WORKER_NAME and PRE_PROGRAMMED_D1_DATABASE_NAME if they differ from the repository-derived defaults.",
+    `2. Create and persist this installation's D1 binding: npx wrangler d1 create ${JSON.stringify(databaseName)} --binding DB --update-config`,
+    `3. Create the media-content bucket: npx wrangler r2 bucket create ${JSON.stringify(assetBucketName)}`,
+    "4. Configure ADMIN_KEY for the Worker/deployment.",
+    "5. Run `npx wrangler deploy` once locally so this Worker owns both bindings.",
+    "6. Set PRE_PROGRAMMED_API_ORIGIN / VITE_API_ORIGIN once the Worker URL is known.",
+    "7. For GitHub Actions, set PRE_PROGRAMMED_WORKER_NAME, PRE_PROGRAMMED_D1_DATABASE_NAME, and PRE_PROGRAMMED_ASSET_BUCKET_NAME if they differ from defaults.",
   ].join("\n"));
 } finally {
   rl?.close();

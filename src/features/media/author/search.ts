@@ -12,6 +12,6 @@ export const mediaSearchDocuments: SearchDocumentContribution = (snapshot) =>
       id: asset.id,
       kind: `media-${asset.kind}`,
       label: asset.name,
-      searchText: `${asset.name} ${asset.kind} ${asset.mimeType} embedded ${asset.width ?? ""} ${asset.height ?? ""}`,
+      searchText: `${asset.name} ${asset.kind} ${asset.mimeType} ${asset.defaultPresentation} ${asset.authoringMode} ${asset.intrinsicWidth ?? ""} ${asset.intrinsicHeight ?? ""}`,
     })),
   ];

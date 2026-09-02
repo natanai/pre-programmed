@@ -1,23 +1,24 @@
 # Pre-Programmed
 
-A browser-based text RPG and live authoring engine. This README is an owner’s map of how the project works, not a contributor rulebook.
+A browser-based text RPG and live authoring engine. The central idea is that authors can **play and build the game at the same time**: ordinary game content is created through Author mode rather than by hand-editing source code or databases.
 
-## The short version
+The engine is intentionally modular and still in rapid prototyping. Experimental foundations should be replaceable instead of accumulating compatibility layers.
 
-The public game is here:
+## Live installation
 
 - App: https://natanai.github.io/pre-programmed/
 - API: https://pre-programmed.natanai.workers.dev/api/*
 
-The project is split into three practical pieces:
+## The short version
 
 | Thing | Where it lives |
 | --- | --- |
-| App code, visual UI, game-engine code, fonts, images, audio | GitHub repo |
-| Mutable authored game data | Cloudflare D1 |
-| Temporary local cache / queued edits | The browser |
+| Engine code, UI, fonts, and repository-managed Media | GitHub repository |
+| Mutable project structure and Media metadata | Cloudflare D1 |
+| Uploaded/Author-created Media bytes | Cloudflare R2 |
+| Temporary cache, player autosave, and queued edits | Browser storage |
 
-Normal authoring happens **inside the live game**, not by hand-editing D1 or source files.
+Normal authoring happens **inside the live game**.
 
 ## Author mode
 
@@ -27,132 +28,91 @@ On the live game, type:
 admin
 ```
 
-Then enter the author key.
+Then enter the Author key.
 
-Once authenticated, the same game you are playing gains author controls. The basic editing loop is:
+The same running game gains Author controls. The ordinary loop is:
 
-1. Stand at the part of the game you want to edit.
-2. Add or edit a **User Input** from that point.
-3. Define what happens when the player types it.
-4. Save.
-5. Immediately type it into the terminal and test it.
+1. Stand at the part of the game you want to work on.
+2. Open or create the relevant node, User Input, response, item, character, state, Media asset, or other resource.
+3. Save.
+4. Return to play or preview.
+5. Exercise the authored behavior through the real runtime.
 
-The square control in the upper-right toggles between the Author view and a cleaner player preview. The gear opens local display settings.
+Desktop and mobile use the same Author features and save/runtime code. Responsive layout may change how those controls are presented, but not which capabilities exist.
 
-## The main concepts
+## Core game concepts
 
 ### Node
 
-A node is a playable narrative state: the text the player is currently at.
-
-`EDIT NODE-TEXT` changes the current node’s text.
-
-A node can have many User Inputs leading away from it, staying on it, or doing other things without moving anywhere.
+A node is a playable narrative state: the text the player is currently at. A node can have many User Inputs that stay at that node, transition elsewhere, or cause effects without moving.
 
 ### User Input
 
-A User Input is something the player can type at the current node.
-
-Examples:
+A User Input is something the player can type at the current node, for example:
 
 ```text
 cry
 look around
-wiggle toes
 open the door
 ```
 
-The primary input text is what the parser accepts. Optional alternate phrasings can point to the same behavior instead of duplicating it.
-
-Internally the engine still calls those alternate phrasings **aliases**. In practical terms, an alias just means “also accept this wording.”
+Optional alternate phrasings can point to the same interaction rather than duplicating behavior.
 
 ### Outcome / response
 
-A User Input can have one or more outcomes.
-
-The simplest outcome is:
-
-```text
-USER INPUT
-cry
-
-→ RESPONSE
-You cried.
-
-→ AFTERWARD
-stay here
-```
-
-An outcome can instead move to another node, and it can have conditions such as first attempt, second attempt, a variable value, possession of an item, or whether another node has been visited.
+A User Input can have one or more ordered outcomes. An outcome can return response text, select a speaker, run effects, stay in place, or transition to another node. Conditions decide which outcome applies.
 
 ### Effects
 
-An outcome can also run effects. Current effect types include:
+Effects are feature-contributed runtime actions. Current examples include state changes, inventory changes, interaction visibility, notifications, synth playback, recorded audio, artwork presentation, and transitions.
 
-- set or clear a flag
-- set, increment, or decrement a value
-- give or remove an item
-- change item state
-- show or hide another interaction
-- show a floating notification
-- play a synth sound
-- play a repository audio file
-- show sprite/art
-- transition to another node
-
-Effects run in the order shown in the editor.
+Feature code owns the meaning of its effect. Shared rule/runtime code composes those contributions rather than hard-wiring every feature combination.
 
 ## Inline text-performance notation
 
-Node text and normal User Input response text can contain terse slash notation. The notation stays in the authored source string but is removed before the player sees the text; it compiles into the same performance data used by the Timeline + Media editor.
+Node text and normal response text can contain terse slash notation. The notation is compiled into the same performance model used by Author tooling and is removed before the player sees the text.
 
 ```text
 /p          pause 350 ms
 /p800       pause 800 ms
 /f{...}     fast text
-/s{...}     shout/emphasis: faster + shake
-/h{...}     hard hit: reveal the phrase at once + shake
+/s{...}     emphasized/shaking text
+/h{...}     instant hard hit
 /w{...}     wave
 /b{...}     blink
 /i{...}     instant reveal
-//          show a literal /
+//          literal slash
 ```
 
-Examples:
+Braces define the affected span explicitly. The local player speed multiplier scales typing speed but does not rewrite authored timing.
 
-```text
-You hear something. /p It is getting closer.
+## Media
 
-No, wait— /f{RUN.}
+Media is a complete feature-owned vertical slice. Game systems reference **stable Media asset IDs**; they do not store repository paths, data URLs, R2 object URLs, or browser-local file locations.
 
-/s{GET DOWN!}
+A Media asset contains project-level identity and behavior such as:
 
-The door /h{SLAMS} shut.
-```
+- stable `id`;
+- name and kind (`image` or `audio`);
+- MIME type;
+- immutable hosted `contentKey`, or `null` when the repository copy is active;
+- byte length and intrinsic dimensions when applicable;
+- default player presentation (`inline` or `overlay`);
+- authoring mode (`file` or `grid32`).
 
-Braces make the affected span explicit, so there is no separate “turn the effect off” marker to remember. The controls can be mixed into ordinary prose. Use Timeline + Media for visual/audio/sprite events or precise manual positions.
+Content location is resolved behind the Media platform boundary at runtime.
 
-`/p` only acts as a pause command when it is a standalone control or followed by a millisecond number. A normal word such as `/place` stays literal. Use `//` when you intentionally want a visible slash before something that otherwise looks like notation.
+### Uploaded and Author-created Media
 
-The local text-speed multiplier in the gear multiplies normal and `/f`/`/s` typing speeds. Pause durations remain authored milliseconds rather than being shortened by the multiplier.
+File imports and 32×32 authored vectors upload their bytes to the installation's `ASSET_CONTENT` R2 bucket. D1 stores only metadata and the immutable `contentKey`.
 
-## A few Author labels that are easy to confuse
+Replacing content creates a new content key rather than overwriting the previous object. That allows revision Undo to restore a prior Media version simply by restoring its prior metadata reference.
 
-- **USER INPUTS FROM HERE** — things the player can type at the current node.
-- **[D]** on a User Input — the interaction still has draft/unconfigured behavior.
-- **[H]** — the configured result stays at the current node.
-- **MATCH** — parser diagnostic showing what matched the player’s last command. This is author/debug information, not player-facing text.
-- **INVALID INPUT** — the optional fallback behavior for commands that do not match any normal User Input at this node.
+Files are currently limited to 20 MB each.
 
-The Structure tool contains additional relationship notation for navigating the game graph. You do not need that notation just to write ordinary responses.
+### Repository Media
 
-## Assets
-
-In Author mode, choose an Image or Sound reference wherever one is needed. The same chooser can create an asset without leaving the node, response, effect, item, or body type you are editing. Embedded assets are saved with the project under stable IDs, so they survive browsers, backups, local runs, and hosted deployments without depending on a typed path.
-
-The current portable embedded store accepts files up to 1 MB each. It is one implementation of the engine's `AssetStore` contract, not part of effect or inventory semantics; a future hosted object-store adapter can replace it without changing authored references.
-
-Repository-managed assets remain available as a read-only provider. Put them under:
+Repository-managed files live under:
 
 ```text
 public/assets/
@@ -167,62 +127,58 @@ public/assets/
 └── audio/
 ```
 
-The build scans everything below `public/assets/` recursively.
-
-Supported formats:
+Supported build-detected formats:
 
 ```text
 Images: PNG, WebP, GIF, SVG
 Audio:  MP3, WAV, OGG
 ```
 
-For example:
+Every shipped Media file also has an identity sidecar beside it:
 
 ```text
-public/assets/sprites/openeye.svg
+openeye.svg
+openeye.svg.asset.json
 ```
 
-is served by the built app as:
+The sidecar carries the stable asset ID and presentation metadata. The build fails if a repository Media file lacks identity metadata or duplicates another asset ID.
+
+This separation matters: moving an exported hosted asset into `public/assets` does **not** require changing every narrative cue, item, effect, or other reference that uses it.
+
+The generated asset manifest is build output and is recreated automatically.
+
+### Import / export
+
+The Author Media tool can import normal audio/image files and export an asset together with its `.asset.json` identity sidecar. Exporting an asset is therefore a supported promotion path from hosted content into repository-managed content without minting a new identity.
+
+If an asset has both hosted content and a repository copy, its metadata selects which content is active. Other game modules still reference only the same asset ID.
+
+### 32×32 vector authoring
+
+The Media tool also includes a 32×32 drawing editor with pencil, eraser, fill, color, Undo/Redo, and clear controls.
+
+The 32×32 grid is an **authoring coordinate system**, not a player pixel-size rule. It serializes to SVG with:
 
 ```text
-/assets/sprites/openeye.svg
+viewBox="0 0 32 32"
 ```
 
-You do **not** hand-write that path in Author editing. Detected files appear in the same asset chooser after the file has been committed and deployed, each represented by a stable repository asset ID.
+and no fixed rendered width or height. The player can therefore scale it as vector artwork rather than stretching a fixed 32-pixel bitmap.
 
-The generated asset manifest is build output. Do not maintain it by hand; the build recreates it from `public/assets/`.
+### Player presentation
 
-## Small sprites vs larger artwork
+Image presentation is explicit metadata, independent of intrinsic dimensions:
 
-Image size decides how a `show sprite/art` effect is presented automatically:
+- `inline` places the image in the terminal transcript and keeps its stable asset ID in player autosave/history.
+- `overlay` opens the Media-owned large viewer.
 
-- **32×32 pixels or smaller in both dimensions** → appears inline in the terminal transcript and remains in the scrollback history.
-- **Anything larger than 32 pixels in either dimension** → uses the large artwork pop-out with a Close control.
-- If an image’s dimensions cannot be determined, it falls back to the large pop-out rather than accidentally treating large art as a sprite.
+Inline images can be opened into the same viewer. The viewer supports zoom/reset/close on desktop and touch layouts through the same implementation.
 
-This means a small file such as `sprites/openeye.svg` behaves like a graphical interruption inside the text log, while larger scene or illustration art gets the more dramatic full presentation.
+Player autosave stores `artAssetId`, never the resolved asset URL. If content moves between R2 and the repository, resumed player sessions resolve the current content through the same stable identity.
 
-PNG, GIF, WebP, and normal SVG dimension information is detected during the build. SVGs can use explicit width/height or a viewBox.
+### Audio
 
-## Audio
-
-There are three sound sources behind the same authoring flow.
-
-### Embedded audio
-
-Create a Sound from an effect or cue and choose a file. It is stored with the project and can be selected immediately.
-
-### Repository audio
-
-Recorded audio may also live under `public/assets/audio/` and becomes selectable from a `play sound` effect after deployment.
-
-Use this for music, ambience, recorded effects, or anything that already exists as an audio file.
-
-### Synth sounds
-
-The Sound author tool creates small browser-rendered synth/chip sounds. Those are structured game data rather than uploaded audio files.
-
-Use this when you want the game itself to generate the sound.
+Recorded audio files use the Media asset system described above. Synth sounds are separate structured game data generated by the browser audio runtime; they remain a Media feature resource but do not need R2 bytes.
 
 ## Inventory and status
 
@@ -233,51 +189,29 @@ inventory
 inv
 ```
 
-### Items
+Item definitions can have a name, description, Media image reference, grid dimensions, stacking/default quantity, operation capabilities, equipment compatibility, state, and authored operation responses/effects.
 
-Item definitions can have:
+Variables and computed values can also be exposed in status and can independently support authored operations.
 
-- a name and description
-- an optional detected image asset
-- grid width / height
-- stacking rules
-- a default starting quantity
-- supported operations such as inspect, use, move, or remove
-- custom responses/effects when an operation is attempted
+## Characters, locations, structure, and state
 
-A nonzero **default quantity** means new playthroughs begin with that item already present.
+Characters and locations are reusable world entities. Variables and computed values are reusable state definitions. Structure provides an author-side view of graph relationships without requiring authors to manage a giant canvas before writing ordinary interactions.
 
-### Variables and computed values
+Feature-specific behavior remains with its owning module; shared navigation and operation contracts compose those features.
 
-`STATE + PEOPLE` contains state definitions.
+## Locations, history, player saves, and backup
 
-Variables are values stored in the play state. They may be numbers, booleans/flags, or text values. Numeric variables can also change automatically over time.
+### Author locations
 
-Computed values are read from safe runtime facts such as elapsed session seconds or commands entered.
+Author bookmarks capture useful testing positions so an author can return to a particular project/play state.
 
-Variables and computed values can be exposed in the inventory/status area. Player operations are authored independently, so a value does not have to be visible in status before it can receive a targeted command.
+### History / Undo
 
-### Characters and locations
+Durable Author changes create revisions. Revision payloads store the prior project snapshot. Media revisions therefore retain prior `contentKey` references; immutable R2 objects remain available so Undo can restore prior Media content as well as metadata.
 
-Characters and locations are reusable named entities stored with the project. They are currently managed alongside state definitions under `STATE + PEOPLE`.
+### Player autosave
 
-## Structure
-
-`STRUCTURE` is the author-side navigator for seeing how the current point relates to the rest of the game.
-
-It is meant for navigating and inspecting connections, not as a giant Twine-style canvas that you must manage before writing.
-
-For ordinary writing, stay focused on the current node and its User Inputs; open Structure when you actually need to understand or jump through connections.
-
-## Locations, history, and backup
-
-### Locations
-
-Author locations/bookmarks capture a useful testing position so you can return to a particular game state later.
-
-### History
-
-Durable author changes create revisions. The History tool is where revision/restore functionality lives.
+Player progress is stored locally in the browser. Presentation data uses stable Media IDs rather than storage URLs. Older v1 saves are upgraded to the current format; obsolete URL-only artwork lines are discarded without discarding otherwise compatible play progress.
 
 ### Backup
 
@@ -293,53 +227,46 @@ or:
 /backup
 ```
 
-This downloads a JSON backup generated from the D1 data.
+The canonical backup contains both:
+
+- D1 relational project state;
+- hosted R2 Media objects.
+
+Repository Media is already part of source control and therefore does not need to be duplicated as R2 content merely for backup.
 
 ## Saving and browser behavior
 
-Author edits update the local UI immediately, are cached in the browser, and are sent to D1.
+Author edits update the local UI optimistically and are persisted through the project persistence adapter. If the network is unavailable, supported mutations can queue locally for later synchronization. Revision conflicts synchronize to the newer server project instead of silently overwriting it.
 
-If the network is temporarily unavailable, the app can retain a queued local mutation and synchronize it later. If a newer server revision conflicts with the edit, the app refreshes to the newer project rather than silently overwriting it.
-
-The browser cache is there for responsiveness and temporary resilience. **D1 is still the durable mutable game data.**
+D1 is the durable mutable project/metadata store. R2 is the durable hosted Media-content store. Browser storage is for responsiveness, player-local state, and temporary resilience—not as the canonical Media database.
 
 ## Display settings
 
-The gear in the upper-right is available to the player as a local display/playback control. In Author mode, the neighboring square still toggles Author vs player preview.
+Player display/playback settings are browser-local because they are preferences rather than game content. Current settings include text size, text-speed multiplier, and reduced motion.
 
-Current settings:
-
-- text size, 12–24px
-- text-speed multiplier, 0.25×–4×, default 1×
-- reduce motion
-
-The speed multiplier changes playback without rewriting the per-node or per-response authored speeds. It is useful for globally slowing down or speeding up the game while preserving the relative character of individually authored text.
-
-These settings live in the local browser, not in D1, because they are display/playback preferences rather than game content.
-
-## Working directly in the repo
-
-The architecture is feature-first. The important paths are:
-
-```text
-public/assets/             repository-managed images/audio/art
-src/App.tsx                live terminal/session composition shell
-src/features/              feature-owned vertical slices and Author implementations
-src/engine/                generic contracts plus explicit installed-feature composition roots
-src/author/                shared Author navigation/workspace/runtime composition
-src/data/                  API and browser-cache helpers
-src/platform/              host/platform adapters such as Cloudflare persistence
-src/components/            application-level display controls
-worker/features/           feature-owned D1 persistence and mutation validation
-worker/db/                 canonical schema owner + immutable historical migration data
-worker/projectStore.ts     core D1/revision/bookmark orchestration
-scripts/                   installation/build helpers
-.github/workflows/         one automatic production deploy + opt-in verification
-```
+## Architecture
 
 The architecture rule is:
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
+
+Important paths:
+
+```text
+public/assets/             repository-managed Media + identity sidecars
+src/App.tsx                application/session composition shell
+src/features/              feature-owned vertical slices and Author implementations
+src/features/media/        Media model, rules, authoring, player presentation
+src/engine/                generic contracts and composition roots
+src/author/                shared Author navigation/workspace composition
+src/platform/              environment/platform adapters
+worker/features/           feature-owned D1 persistence and validation
+worker/mediaContent.ts     R2 Media-content boundary
+worker/db/                 schema composition + historical migrations
+worker/projectStore.ts     revision/concurrency/bookmark orchestration
+scripts/                   setup/build/deployment helpers
+.github/workflows/         production deploy + opt-in verification
+```
 
 Read `docs/feature-boundaries.md` before substantial engine changes. `docs/modular-engine-roadmap.md` records remaining modularity work, and `docs/installation.md` is the supported fork/clone setup path.
 
@@ -347,10 +274,16 @@ Read `docs/feature-boundaries.md` before substantial engine changes. `docs/modul
 
 ```sh
 npm install
-npm run dev
+npm run local
 ```
 
-The asset manifest is generated automatically before development/build commands that need it.
+`npm run local` starts the client plus isolated local Worker storage, including local D1 and R2 bindings.
+
+For a real persistence acceptance across a local restart:
+
+```sh
+npm run verify:local
+```
 
 Useful targeted commands:
 
@@ -367,31 +300,33 @@ For an explicit full checkpoint:
 npm run verify
 ```
 
-Full verification is intentionally not an automatic tax on ordinary prototype branch updates.
+Full verification is intentionally not an automatic tax on every prototype branch update.
 
-## Production deployment
+## Installation and production deployment
 
-Production has one deployment owner: GitHub Actions.
+A new installation owns its own:
 
-Pushing or merging to `main` runs:
+- Worker identity;
+- D1 database;
+- R2 Media bucket;
+- Author key;
+- API origin;
+- Pages/base-path configuration.
 
-```text
-main
-  ↓
-build GitHub Pages client
-  ↓
-deploy Cloudflare API Worker
-  ↓
-verify live API + project snapshot
-  ↓
-publish GitHub Pages
+Use:
+
+```sh
+npm run setup:installation
 ```
 
-The Cloudflare Git-build integration should remain disconnected; Cloudflare is the runtime/API host, not a second source-controlled deployment pipeline.
+for the supported setup journey. See `docs/installation.md` for fork/direct-clone safety and Cloudflare/GitHub configuration.
 
-The live URLs are:
+Production has one automatic deployment owner: GitHub Actions. A `main` deployment builds the Pages client, ensures the configured Media bucket exists, prepares the Worker bindings, deploys the Worker, verifies D1 + R2 health and a project snapshot, and then publishes Pages.
 
-- https://natanai.github.io/pre-programmed/
-- https://pre-programmed.natanai.workers.dev/api/*
+The Cloudflare Git-build integration should remain disconnected; Cloudflare is the runtime/storage platform, not a second source-controlled deployment pipeline.
 
-If a just-deployed UI appears stale, first hard-refresh the Pages site so the browser is not showing an older client bundle.
+## Media migration from the prototype
+
+Migration 20 intentionally removes the old embedded `data_url` bytes from D1 while retaining Media identity and metadata. Previously embedded files therefore require a **one-time re-upload** after migration.
+
+This is deliberate: the old base64-in-D1 implementation is not kept alive as a second Media system. Durable references now point to stable asset identity while the Media feature resolves content location behind that contract.

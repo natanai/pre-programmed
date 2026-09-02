@@ -30,6 +30,14 @@ jobs:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
+      - name: Ensure media storage
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
+          PRE_PROGRAMMED_ASSET_BUCKET_NAME: ${{ vars.PRE_PROGRAMMED_ASSET_BUCKET_NAME }}
+        run: node scripts/ensure-deployment-r2.mjs
+
       - name: Prepare deployment configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -37,6 +45,7 @@ jobs:
           PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_NAME: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_ID: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_ID }}
+          PRE_PROGRAMMED_ASSET_BUCKET_NAME: ${{ vars.PRE_PROGRAMMED_ASSET_BUCKET_NAME }}
         run: node scripts/prepare-deployment-wrangler.mjs .wrangler.deploy.jsonc
 
       - name: Deploy API Worker
@@ -67,7 +76,7 @@ jobs:
             try {
               const response = await fetch(healthUrl, { cache: "no-store" });
               const health = await response.json();
-              if (response.ok && health?.ok === true && health?.persistence === "d1" && health?.authorConfigured === true) {
+              if (response.ok && health?.ok === true && health?.persistence === "d1" && health?.mediaPersistence === "r2" && health?.authorConfigured === true) {
                 healthy = true;
                 break;
               }

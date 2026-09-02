@@ -5,6 +5,7 @@ const DB_NAME = "pre-programmed-player";
 const DB_VERSION = 1;
 const SESSION_STORE = "sessions";
 const AUTOSAVE_KEY = "autosave";
+const CURRENT_SESSION_VERSION = 2 as const;
 
 export type PersistedTranscriptLine = {
   id: string;
@@ -12,7 +13,8 @@ export type PersistedTranscriptLine = {
   nodeId?: string;
   speakerId?: string | null;
   command?: boolean;
-  artUrl?: string;
+  /** Stable media identity. Content location is resolved when the line renders. */
+  artAssetId?: string;
 };
 
 export type PersistedPlayPresentation = {
@@ -25,7 +27,7 @@ export type PersistedPlayPresentation = {
 };
 
 export type PersistedPlaySession = {
-  version: 1;
+  version: typeof CURRENT_SESSION_VERSION;
   schemaVersion: number;
   projectRevision: number;
   savedAt: string;
@@ -60,21 +62,71 @@ async function withSessionStore<T>(
   });
 }
 
-function isPersistedPlaySession(value: unknown): value is PersistedPlaySession {
-  if (!value || typeof value !== "object") return false;
-  const session = value as Partial<PersistedPlaySession>;
-  return session.version === 1
-    && typeof session.schemaVersion === "number"
-    && typeof session.projectRevision === "number"
-    && typeof session.savedAt === "string"
-    && Boolean(session.playState)
-    && Boolean(session.presentation);
+function object(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null {
+  if (!object(value) || typeof value.id !== "string" || typeof value.text !== "string") return null;
+
+  // v1 stored resolved storage URLs. There is no safe way to recover stable identity
+  // from an arbitrary old URL, so discard only those obsolete presentation-only lines.
+  if (typeof value.artUrl === "string" && typeof value.artAssetId !== "string") return null;
+
+  return {
+    id: value.id,
+    text: value.text,
+    ...(typeof value.nodeId === "string" ? { nodeId: value.nodeId } : {}),
+    ...(typeof value.speakerId === "string" || value.speakerId === null ? { speakerId: value.speakerId } : {}),
+    ...(typeof value.command === "boolean" ? { command: value.command } : {}),
+    ...(typeof value.artAssetId === "string" ? { artAssetId: value.artAssetId } : {}),
+  };
+}
+
+/**
+ * Upgrade persisted presentation without throwing away compatible game progress.
+ * v1 URL-only art lines are presentation residue and are intentionally omitted;
+ * all semantic play state and text transcript lines are preserved.
+ */
+export function normalizePersistedPlaySession(value: unknown): PersistedPlaySession | undefined {
+  if (!object(value) || (value.version !== 1 && value.version !== CURRENT_SESSION_VERSION)) return undefined;
+  if (typeof value.schemaVersion !== "number"
+    || typeof value.projectRevision !== "number"
+    || typeof value.savedAt !== "string"
+    || !object(value.playState)
+    || !object(value.presentation)) return undefined;
+
+  const presentation = value.presentation;
+  if (!Array.isArray(presentation.transcript)
+    || typeof presentation.activeText !== "string"
+    || !object(presentation.activePerformance)) return undefined;
+
+  return {
+    version: CURRENT_SESSION_VERSION,
+    schemaVersion: value.schemaVersion,
+    projectRevision: value.projectRevision,
+    savedAt: value.savedAt,
+    playState: value.playState as PlayState,
+    presentation: {
+      transcript: presentation.transcript
+        .map(normalizeTranscriptLine)
+        .filter((line): line is PersistedTranscriptLine => Boolean(line)),
+      activeText: presentation.activeText,
+      ...(typeof presentation.activeNodeId === "string" ? { activeNodeId: presentation.activeNodeId } : {}),
+      activeSpeakerId: typeof presentation.activeSpeakerId === "string" ? presentation.activeSpeakerId : null,
+      activePerformance: presentation.activePerformance as TextPerformance,
+      pendingDestinationNodeId: typeof presentation.pendingDestinationNodeId === "string"
+        ? presentation.pendingDestinationNodeId
+        : null,
+    },
+  };
 }
 
 export async function loadPlaySession() {
   try {
     const value = await withSessionStore("readonly", (store) => store.get(AUTOSAVE_KEY));
-    return isPersistedPlaySession(value) ? structuredClone(value) : undefined;
+    const normalized = normalizePersistedPlaySession(value);
+    return normalized ? structuredClone(normalized) : undefined;
   } catch {
     return undefined;
   }

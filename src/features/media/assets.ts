@@ -1,57 +1,50 @@
 import type { ProjectSnapshot } from "../../engine/project/model";
-import type { MediaAsset, MediaAssetKind } from "./model";
+import type {
+  MediaAsset,
+  MediaAssetAuthoringMode,
+  MediaAssetKind,
+  MediaAssetPresentation,
+} from "./model";
 
-export type MediaAssetDescriptor = {
-  id: string;
-  name: string;
-  kind: MediaAssetKind;
-  source: "repository" | "embedded";
+export type MediaAssetDescriptor = MediaAsset & {
+  /** Runtime-only browser handle. Never persisted into project data. */
   url: string;
-  size: number;
-  width: number | null;
-  height: number | null;
+  editable: boolean;
 };
 
 export type MediaAssetImport = {
+  id?: string;
   name: string;
   mimeType: string;
-  dataUrl: string;
-  size: number;
-  width?: number | null;
-  height?: number | null;
+  contentKey: string | null;
+  byteLength: number;
+  intrinsicWidth?: number | null;
+  intrinsicHeight?: number | null;
+  defaultPresentation?: MediaAssetPresentation;
+  authoringMode?: MediaAssetAuthoringMode;
 };
 
-/** Platform-neutral port for stable media references. */
+/** Browser-facing catalog port for stable media references. */
 export interface AssetStore {
   list(snapshot: ProjectSnapshot, kind?: MediaAssetKind): MediaAssetDescriptor[];
   resolve(snapshot: ProjectSnapshot, assetId: string): MediaAssetDescriptor | null;
-  createEmbedded(input: MediaAssetImport): MediaAsset;
 }
 
-export function embeddedDescriptor(asset: MediaAsset): MediaAssetDescriptor {
-  return {
-    id: asset.id,
-    name: asset.name,
-    kind: asset.kind,
-    source: asset.source,
-    url: asset.dataUrl,
-    size: asset.size,
-    width: asset.width,
-    height: asset.height,
-  };
+export function mediaKindForMimeType(mimeType: string): MediaAssetKind {
+  return mimeType.toLowerCase().startsWith("audio/") ? "audio" : "image";
 }
 
-export function createEmbeddedAsset(input: MediaAssetImport): MediaAsset {
-  const kind: MediaAssetKind = input.mimeType.startsWith("image/") ? "image" : "audio";
+export function createMediaAsset(input: MediaAssetImport): MediaAsset {
   return {
-    id: crypto.randomUUID(),
+    id: input.id ?? crypto.randomUUID(),
     name: input.name,
-    kind,
-    source: "embedded",
-    dataUrl: input.dataUrl,
+    kind: mediaKindForMimeType(input.mimeType),
     mimeType: input.mimeType,
-    size: input.size,
-    width: input.width ?? null,
-    height: input.height ?? null,
+    contentKey: input.contentKey,
+    byteLength: input.byteLength,
+    intrinsicWidth: input.intrinsicWidth ?? null,
+    intrinsicHeight: input.intrinsicHeight ?? null,
+    defaultPresentation: input.defaultPresentation ?? "overlay",
+    authoringMode: input.authoringMode ?? "file",
   };
 }

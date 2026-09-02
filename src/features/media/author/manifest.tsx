@@ -2,6 +2,7 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
+import { VectorAssetEditor } from "./VectorAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
@@ -14,9 +15,9 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "feature" || route.feature !== "media") return null;
     if (route.workspace === "assets") return "Media assets";
     if (route.workspace === "synth") return "Synth sounds";
-    if (route.workspace === "asset") {
-      const asset = snapshot.mediaAssets.find((candidate) => candidate.id === route.data?.assetId);
-      return asset?.name || `New ${route.data?.kind === "image" ? "image" : "sound"}`;
+    if (route.workspace === "asset" || route.workspace === "vector-asset") {
+      const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
+      return asset?.name || (route.workspace === "vector-asset" ? "New 32×32 vector" : `New ${route.data?.kind === "image" ? "image" : "sound"}`);
     }
     if (route.workspace === "synth-sound") {
       const sound = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
@@ -61,7 +62,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         id: asset.id,
         value: asset.id,
         label: asset.name,
-        detail: `${asset.source} · ${asset.size} bytes`,
+        detail: `${asset.mimeType} · ${asset.defaultPresentation}`,
       })),
       createRoute: () => ({
         type: "feature" as const,
@@ -69,7 +70,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: "asset",
         data: { kind, resourceTask: `media-${kind}` },
       }),
-      editRoute: (resource: { id: string }) => resource.id.startsWith("repo:") ? null : ({
+      editRoute: (resource: { id: string }) => ({
         type: "feature" as const,
         feature: "media",
         workspace: "asset",
@@ -85,21 +86,67 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
       snapshot={context.snapshot}
       onClose={context.leaveCurrentTask}
-      onOpenAsset={(assetId, kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { assetId, kind } })}
+      onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
+        type: "feature",
+        feature: "media",
+        workspace: authoringMode === "grid32" ? "vector-asset" : "asset",
+        data: { assetId, kind },
+      })}
       onNewAsset={(kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { kind } })}
+      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "vector-asset", data: { kind: "image" } })}
       onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
     />;
 
     if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
       const kind = route.data?.kind === "image" ? "image" : "audio";
       const initial = route.data?.assetId
-        ? context.snapshot.mediaAssets.find((asset) => asset.id === route.data?.assetId)
+        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
         : undefined;
       const resourceKind = route.data?.resourceTask;
+      const saveResource = async (operations: Parameters<typeof context.persist>[0], description: string) => {
+        const result = await context.persist(operations, description);
+        if (resourceKind && (result.status === "saved" || result.status === "queued")) {
+          const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
+          if (operation?.type === "mediaAsset.upsert") context.completeTask({
+            type: "resource",
+            kind: resourceKind,
+            id: operation.asset.id,
+            value: operation.asset.id,
+            label: operation.asset.name,
+          });
+        }
+        return result;
+      };
+
+      if (kind === "image" && initial?.authoringMode === "grid32") return <VectorAssetEditor
+        snapshot={context.snapshot}
+        initial={initial}
+        authorToken={context.authorToken}
+        setWorkspaceDirty={context.setWorkspaceDirty}
+        onCancel={context.leaveCurrentTask}
+        onSave={saveResource}
+      />;
+
       return <MediaAssetEditor
         snapshot={context.snapshot}
         kind={kind}
         initial={initial}
+        authorToken={context.authorToken}
+        setWorkspaceDirty={context.setWorkspaceDirty}
+        onCancel={context.leaveCurrentTask}
+        onSave={saveResource}
+      />;
+    }
+
+    if (route.type === "feature" && route.feature === "media" && route.workspace === "vector-asset") {
+      const initial = route.data?.assetId
+        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
+        : undefined;
+      const resourceKind = route.data?.resourceTask;
+      return <VectorAssetEditor
+        snapshot={context.snapshot}
+        initial={initial}
+        authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}
         onSave={async (operations, description) => {

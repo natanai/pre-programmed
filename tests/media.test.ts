@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { applyOperations } from "../src/engine/project/mutations";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import { executeEffects } from "../src/engine/rules/executeEffects";
-import { createEmbeddedAsset } from "../src/features/media/assets";
-import { legacyAssetId } from "../src/features/media/assetReference";
+import { createMediaAsset } from "../src/features/media/assets";
+import { configuredAssetStore } from "../src/features/media/ui/assetStore";
 import {
   addSynthVoice,
   createStarterSynth,
@@ -14,12 +14,74 @@ import {
   resizeSynthSequence,
   validateSynth,
 } from "../src/features/media/synth";
+import { emptyVectorGrid, paintVectorCell, parseVectorGrid, serializeVectorGrid } from "../src/features/media/vectorAsset";
 import { project } from "./fixtures";
 
 describe("stable media assets", () => {
-  it("converts path-only prototype references into deterministic repository IDs", () => {
-    expect(legacyAssetId("/assets/audio/chime.ogg")).toBe("repo:/assets/audio/chime.ogg");
-    expect(legacyAssetId("repo:/assets/audio/chime.ogg")).toBe("repo:/assets/audio/chime.ogg");
+  it("keeps media identity separate from content location", () => {
+    const asset = createMediaAsset({
+      id: "asset-chime",
+      name: "chime.wav",
+      mimeType: "audio/wav",
+      contentKey: "content_chime_01",
+      byteLength: 128,
+    });
+    expect(asset).toMatchObject({ id: "asset-chime", kind: "audio", contentKey: "content_chime_01" });
+    expect(asset).not.toHaveProperty("url");
+    expect(asset).not.toHaveProperty("dataUrl");
+    expect(asset).not.toHaveProperty("source");
+  });
+
+  it("serializes and parses the 32x32 editor without a browser DOM dependency", () => {
+    let cells = emptyVectorGrid();
+    cells = paintVectorCell(cells, 0, 0, "#ffffff");
+    cells = paintVectorCell(cells, 1, 0, "#ffffff");
+    const svg = serializeVectorGrid(cells);
+    expect(svg).toContain('viewBox="0 0 32 32"');
+    expect(svg).toContain('shape-rendering="crispEdges"');
+    expect(svg).toContain('<rect x="0" y="0" width="2" height="1" fill="#ffffff"/>');
+    expect(svg).not.toMatch(/<svg[^>]+\swidth=/);
+    expect(svg).not.toMatch(/<svg[^>]+\sheight=/);
+    expect(parseVectorGrid(svg)).toEqual(cells);
+    expect(parseVectorGrid('<svg viewBox="0 0 32 32"><circle cx="1" cy="1" r="1"/></svg>')).toBeNull();
+  });
+
+  it("keeps presentation role independent from intrinsic dimensions", () => {
+    const asset = createMediaAsset({
+      id: "asset-vector",
+      name: "vector.svg",
+      mimeType: "image/svg+xml",
+      contentKey: "content_vector_01",
+      byteLength: 80,
+      intrinsicWidth: 32,
+      intrinsicHeight: 32,
+      defaultPresentation: "overlay",
+      authoringMode: "grid32",
+    });
+    expect(asset.defaultPresentation).toBe("overlay");
+    expect(asset.intrinsicWidth).toBe(32);
+  });
+
+  it("uses metadata from hosted content while a repository fallback with the same identity exists", () => {
+    const hosted = createMediaAsset({
+      id: "repo:/assets/sprites/openeye.svg",
+      name: "replacement-eye.svg",
+      mimeType: "image/svg+xml",
+      contentKey: "hosted_eye_content",
+      byteLength: 777,
+      intrinsicWidth: 320,
+      intrinsicHeight: 180,
+      defaultPresentation: "overlay",
+      authoringMode: "file",
+    });
+    const resolved = configuredAssetStore.resolve(project({ mediaAssets: [hosted] }), hosted.id);
+    expect(resolved).toMatchObject({
+      contentKey: "hosted_eye_content",
+      byteLength: 777,
+      intrinsicWidth: 320,
+      intrinsicHeight: 180,
+      defaultPresentation: "overlay",
+    });
   });
 
   it("keeps a simple audible starter expandable through bounded advanced controls", () => {
@@ -40,38 +102,29 @@ describe("stable media assets", () => {
     expect(sound.voices).toHaveLength(MAX_SYNTH_VOICES - 1);
   });
 
-  it("persists an embedded asset as feature-owned project data", () => {
-    const asset = createEmbeddedAsset({
+  it("persists only media metadata as feature-owned project data", () => {
+    const asset = createMediaAsset({
       name: "chime.wav",
       mimeType: "audio/wav",
-      dataUrl: "data:audio/wav;base64,AA==",
-      size: 1,
+      contentKey: "content_chime_02",
+      byteLength: 1,
     });
     const updated = applyOperations(project(), [{ type: "mediaAsset.upsert", asset }]);
-    expect(updated.mediaAssets).toEqual([expect.objectContaining({
-      id: asset.id,
-      name: "chime.wav",
-      kind: "audio",
-      source: "embedded",
-    })]);
+    expect(updated.mediaAssets).toEqual([asset]);
   });
 
   it("deletes media resources through their feature-owned mutation handlers", () => {
     const sound = createStarterSynth("sound");
-    const asset = createEmbeddedAsset({ name: "chime.wav", mimeType: "audio/wav", dataUrl: "data:audio/wav;base64,AA==", size: 1 });
+    const asset = createMediaAsset({ name: "chime.wav", mimeType: "audio/wav", contentKey: "content_chime_03", byteLength: 1 });
     const snapshot = project({ synthSounds: [sound], mediaAssets: [asset] });
     const updated = applyOperations(snapshot, [{ type: "synth.delete", id: sound.id }, { type: "mediaAsset.delete", id: asset.id }]);
     expect(updated.synthSounds).toEqual([]);
     expect(updated.mediaAssets).toEqual([]);
   });
 
-  it("keeps runtime effects on stable IDs instead of storage URLs", () => {
+  it("keeps runtime effects on stable IDs instead of storage locations", () => {
     const snapshot = project();
-    const execution = executeEffects(snapshot, createEmptyPlayState(snapshot), [{
-      id: "play-chime",
-      type: "audio",
-      assetId: "asset-chime",
-    }]);
+    const execution = executeEffects(snapshot, createEmptyPlayState(snapshot), [{ id: "play-chime", type: "audio", assetId: "asset-chime" }]);
     expect(execution.events).toContainEqual({ type: "audio", assetId: "asset-chime" });
   });
 });
