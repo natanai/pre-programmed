@@ -114,6 +114,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     const existing = resourceId ? snapshot.entities.find((item) => item.id === resourceId) : undefined;
     return existing ? normalizedEntity(existing) : newEntity(resourceKind);
   });
+  const [focusPrimaryField, setFocusPrimaryField] = useState(() => Boolean(resourceKind && !resourceId));
   const [saving, setSaving] = useState(false);
   const [baseline, setBaseline] = useState(() => JSON.stringify(variable ?? computed ?? entity));
   const editing = Boolean(variable || computed || entity);
@@ -130,33 +131,37 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     setVariable(null);
     setComputed(null);
     setEntity(null);
+    setFocusPrimaryField(false);
     setBaseline(JSON.stringify(null));
   };
 
-  const openVariable = (item: VariableDefinition) => {
+  const openVariable = (item: VariableDefinition, focusPrimary = false) => {
     const next = normalizedVariable(item);
     setComputed(null);
     setEntity(null);
     setMode("variables");
     setVariable(next);
+    setFocusPrimaryField(focusPrimary);
     setBaseline(JSON.stringify(next));
   };
 
-  const openComputed = (item: ComputedDefinition) => {
+  const openComputed = (item: ComputedDefinition, focusPrimary = false) => {
     const next = normalizedComputed(item);
     setVariable(null);
     setEntity(null);
     setMode("computed");
     setComputed(next);
+    setFocusPrimaryField(focusPrimary);
     setBaseline(JSON.stringify(next));
   };
 
-  const openEntity = (item: EntityDefinition) => {
+  const openEntity = (item: EntityDefinition, focusPrimary = false) => {
     const next = normalizedEntity(item);
     setVariable(null);
     setComputed(null);
     setMode("entities");
     setEntity(next);
+    setFocusPrimaryField(focusPrimary);
     setBaseline(JSON.stringify(next));
   };
 
@@ -177,6 +182,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     try {
       const result = await onSave([{ type: "variable.upsert", definition }], `Changed variable ${definition.label}`);
       if (result.status === "saved" || result.status === "queued") {
+        setFocusPrimaryField(false);
         setBaseline(JSON.stringify(definition));
         setWorkspaceDirty(false);
       }
@@ -199,6 +205,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     try {
       const result = await onSave([{ type: "computed.upsert", definition }], `Changed computed value ${definition.label}`);
       if (result.status === "saved" || result.status === "queued") {
+        setFocusPrimaryField(false);
         setBaseline(JSON.stringify(definition));
         setWorkspaceDirty(false);
       }
@@ -222,6 +229,7 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
     try {
       const result = await onSave([{ type: "entity.upsert", entity: savedEntity }], `Changed ${savedEntity.type} ${savedEntity.name}`);
       if (result.status === "saved" || result.status === "queued") {
+        setFocusPrimaryField(false);
         setBaseline(JSON.stringify(savedEntity));
         setWorkspaceDirty(false);
       }
@@ -254,17 +262,17 @@ export function DefinitionsPanel({ snapshot, onSave, onClose, setWorkspaceDirty,
           onVariable={openVariable}
           onComputed={openComputed}
           onEntity={openEntity}
-          onNewVariable={() => openVariable(newVariable())}
-          onNewComputed={() => openComputed(newComputed())}
-          onNewEntity={(type) => openEntity(newEntity(type))}
+          onNewVariable={() => openVariable(newVariable(), true)}
+          onNewComputed={() => openComputed(newComputed(), true)}
+          onNewEntity={(type) => openEntity(newEntity(type), true)}
         />
       </div> : null}
       {editing ? <div className="definitions-detail-pane">
         <button type="button" className="definition-back" onClick={cancelEditor}>[← {resourceMode ? "CANCEL" : backLabel}]</button>
         <div className="definition-detail-scroll">
-          {variable ? <VariableEditor variable={variable} snapshot={snapshot} lockedValueType={lockedVariableType} preferredOperation={preferredOperation} onChange={setVariable} /> : null}
-          {computed ? <ComputedEditor computed={computed} snapshot={snapshot} preferredOperation={preferredOperation} onChange={setComputed} /> : null}
-          {entity ? <EntityEditor entity={entity} snapshot={snapshot} lockedType={lockedEntityType} preferredOperation={preferredOperation} onChange={setEntity} /> : null}
+          {variable ? <VariableEditor variable={variable} snapshot={snapshot} autoFocus={focusPrimaryField} lockedValueType={lockedVariableType} preferredOperation={preferredOperation} onChange={setVariable} /> : null}
+          {computed ? <ComputedEditor computed={computed} snapshot={snapshot} autoFocus={focusPrimaryField} preferredOperation={preferredOperation} onChange={setComputed} /> : null}
+          {entity ? <EntityEditor entity={entity} snapshot={snapshot} autoFocus={focusPrimaryField} lockedType={lockedEntityType} preferredOperation={preferredOperation} onChange={setEntity} /> : null}
         </div>
         {variable ? <EditorFooter saving={saving} onSave={() => void saveVariable()} onCancel={cancelEditor} /> : null}
         {computed ? <EditorFooter saving={saving} onSave={() => void saveComputed()} onCancel={cancelEditor} /> : null}
@@ -381,15 +389,16 @@ function DefinitionKind({ title, items, onOpen, selectedId, empty }: { title: st
   </section>;
 }
 
-function VariableEditor({ variable, snapshot, lockedValueType, preferredOperation, onChange }: {
+function VariableEditor({ variable, snapshot, autoFocus, lockedValueType, preferredOperation, onChange }: {
   variable: VariableDefinition;
   snapshot: ProjectSnapshot;
+  autoFocus: boolean;
   lockedValueType?: VariableDefinition["valueType"];
   preferredOperation?: string;
   onChange: (value: VariableDefinition) => void;
 }) {
   return <div className="definition-form focused-definition-form">
-    <label>LABEL <input value={variable.label} onChange={(event) => onChange({ ...variable, label: event.target.value })} autoFocus /></label>
+    <label>LABEL <input value={variable.label} onChange={(event) => onChange({ ...variable, label: event.target.value })} autoFocus={autoFocus} /></label>
     <label>TYPE <select disabled={Boolean(lockedValueType)} value={lockedValueType ?? variable.valueType} onChange={(event) => {
       const valueType = event.target.value as VariableDefinition["valueType"];
       onChange({ ...variable, valueType, initialValue: valueType === "number" ? 0 : valueType === "boolean" ? false : "", timeRate: valueType === "number" ? variable.timeRate ?? 0 : 0 });
@@ -405,9 +414,9 @@ function VariableEditor({ variable, snapshot, lockedValueType, preferredOperatio
   </div>;
 }
 
-function ComputedEditor({ computed, snapshot, preferredOperation, onChange }: { computed: ComputedDefinition; snapshot: ProjectSnapshot; preferredOperation?: string; onChange: (value: ComputedDefinition) => void }) {
+function ComputedEditor({ computed, snapshot, autoFocus, preferredOperation, onChange }: { computed: ComputedDefinition; snapshot: ProjectSnapshot; autoFocus: boolean; preferredOperation?: string; onChange: (value: ComputedDefinition) => void }) {
   return <div className="definition-form focused-definition-form">
-    <label>LABEL <input value={computed.label} onChange={(event) => onChange({ ...computed, label: event.target.value })} autoFocus /></label>
+    <label>LABEL <input value={computed.label} onChange={(event) => onChange({ ...computed, label: event.target.value })} autoFocus={autoFocus} /></label>
     <label>SAFE RUNTIME SOURCE <select value={computed.source} onChange={(event) => onChange({ ...computed, source: event.target.value as ComputedDefinition["source"] })}><option value="elapsed_seconds">elapsed client-session seconds</option><option value="commands_entered">commands entered</option><option value="inventory_slots_used">inventory slots used</option><option value="visited_nodes">distinct visited nodes</option></select></label>
     <label>FORMAT <select value={computed.format} onChange={(event) => onChange({ ...computed, format: event.target.value as ComputedDefinition["format"] })}><option value="raw">raw</option><option value="integer">rounded integer</option><option value="seconds">seconds with unit</option></select></label>
     <label className="check-label"><input type="checkbox" checked={computed.showInStatus} onChange={(event) => onChange({ ...computed, showInStatus: event.target.checked })} /> show in inventory/status</label>
@@ -416,15 +425,16 @@ function ComputedEditor({ computed, snapshot, preferredOperation, onChange }: { 
   </div>;
 }
 
-function EntityEditor({ entity, snapshot, lockedType, preferredOperation, onChange }: {
+function EntityEditor({ entity, snapshot, autoFocus, lockedType, preferredOperation, onChange }: {
   entity: EntityDefinition;
   snapshot: ProjectSnapshot;
+  autoFocus: boolean;
   lockedType?: EntityDefinition["type"];
   preferredOperation?: string;
   onChange: (value: EntityDefinition) => void;
 }) {
   return <div className="definition-form focused-definition-form">
-    <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} autoFocus /></label>
+    <label>NAME <input value={entity.name} onChange={(event) => onChange({ ...entity, name: event.target.value })} autoFocus={autoFocus} /></label>
     <label>TYPE <select disabled={Boolean(lockedType)} value={lockedType ?? entity.type} onChange={(event) => onChange({ ...entity, type: event.target.value as EntityDefinition["type"] })}><option value="character">character</option><option value="location">location</option></select></label>
     <label>DESCRIPTION <textarea rows={3} value={entity.description} onChange={(event) => onChange({ ...entity, description: event.target.value })} /></label>
     <label>TAGS <input value={entity.tags.join(", ")} onChange={(event) => onChange({ ...entity, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
