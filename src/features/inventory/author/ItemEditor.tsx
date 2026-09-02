@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
@@ -38,7 +39,7 @@ function ItemEditorDisclosure({ title, summary, defaultOpen = false, children }:
   </details>;
 }
 
-export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty }: {
+export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty, onRegisterSave }: {
   snapshot: ProjectSnapshot;
   initial?: ItemDefinition;
   openOperations?: boolean;
@@ -46,6 +47,7 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
+  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
 }) {
   const [draft, setDraft] = useState(() => ({
     ...structuredClone(initial ?? emptyItem()),
@@ -81,8 +83,8 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
     return () => setWorkspaceDirty(false);
   }, [dirty, setWorkspaceDirty]);
 
-  const save = async () => {
-    if (!draft.name.trim()) return;
+  const save = async (): Promise<boolean> => {
+    if (!draft.name.trim()) return false;
     const item = {
       ...draft,
       equipmentSlotKeys: [...(draft.equipmentSlotKeys ?? [])],
@@ -100,9 +102,17 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
       if (result.status === "saved" || result.status === "queued") {
         setBaseline(JSON.stringify(item));
         setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally { setSaving(false); }
   };
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    onRegisterSave(save);
+    return () => onRegisterSave(null);
+  });
 
   const remove = async () => {
     if (!initial || usages.length || !window.confirm(`Delete item “${initial.name}”?`)) return;
