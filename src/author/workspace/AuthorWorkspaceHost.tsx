@@ -46,6 +46,7 @@ function afterReactTurn() {
 function AuthorTaskSurface({
   task,
   active,
+  hasParentTask,
   resources,
   registerTaskSave,
   toolGroups,
@@ -65,6 +66,7 @@ function AuthorTaskSurface({
 }: SharedTaskProps & {
   task: AuthorTaskEntry;
   active: boolean;
+  hasParentTask: boolean;
   resources: AuthorResourceTools;
   registerTaskSave: (taskId: string, handler: AuthorWorkspaceSaveHandler | null) => void;
 }) {
@@ -86,6 +88,7 @@ function AuthorTaskSurface({
 
   const context: AuthorWorkspaceContext = {
     taskId: task.id,
+    hasParentTask,
     snapshot,
     playState,
     authorMode,
@@ -207,8 +210,6 @@ export function AuthorWorkspaceHost({
     setSavingAll(true);
     setSaveAllError("");
     try {
-      // Deepest-first is essential. A child resource may complete into its
-      // suspended parent's draft, and the parent must save after receiving it.
       const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
       for (const task of dirtyTasks) {
         const save = saveHandlersRef.current.get(task.id);
@@ -245,20 +246,21 @@ export function AuthorWorkspaceHost({
       <div
         ref={workspaceLayerRef}
         className={`author-workspace-layer${previewing ? " is-previewing" : ""}`}
+        data-task-depth={tasks.length}
         role="presentation"
         aria-hidden={previewing || undefined}
         onPointerDown={(event) => event.stopPropagation()}
       >
         <nav className="author-workspace-navigation" aria-label="Author task navigation">
           <div className="author-workspace-primary-actions">
-            <button
+            {tasks.length > 1 ? <button
               type="button"
               className="author-workspace-back"
               onClick={() => shared.requestBack(activeTaskId ?? undefined)}
             >
               <span className="author-workspace-back-wide">[← BACK]</span>
               <span className="author-workspace-back-compact">[BACK]</span>
-            </button>
+            </button> : null}
             {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
             <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
@@ -286,11 +288,12 @@ export function AuthorWorkspaceHost({
           </div> : null}
         </nav>
         <div className="author-workspace-content">
-          {tasks.map((task) => <AuthorTaskSurface
+          {tasks.map((task, index) => <AuthorTaskSurface
             key={task.id}
             {...taskShared}
             task={task}
             active={task.id === activeTaskId}
+            hasParentTask={index > 0}
             resources={resources}
             registerTaskSave={registerTaskSave}
           />)}
