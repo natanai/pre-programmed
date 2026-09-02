@@ -165,9 +165,6 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           onSave={async (operations, description) => {
             const result = await context.persist(operations, description);
             if (result.status !== "saved" && result.status !== "queued") return result;
-            // Resource tasks save into their parent journey, so completion returns
-            // exactly one level. Ordinary interaction saves remain in the current
-            // editor; only the master Author X returns all the way to live play.
             if (resourceTask) {
               const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
               if (operation?.type === "interaction.upsert") context.completeTask({
@@ -180,7 +177,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
             }
             return result;
           }}
-          onCancel={context.leaveCurrentTask}
+          onCancel={context.hasParentTask ? context.leaveCurrentTask : undefined}
           onDirtyChange={context.setWorkspaceDirty}
         />
       </div>;
