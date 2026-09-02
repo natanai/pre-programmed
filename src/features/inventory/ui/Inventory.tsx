@@ -36,7 +36,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents, onEdit
     const asset = item.assetId ? configuredAssetStore.resolve(snapshot, item.assetId) : null;
     return <button
       type="button"
-      className={`inventory-item${selected?.id === entry.instanceId ? " is-selected" : ""}`}
+      className={`inventory-v2-item${selected?.id === entry.instanceId ? " is-selected" : ""}`}
       style={style}
       key={entry.instanceId}
       onClick={() => setSelected({ kind: "item", id: entry.instanceId })}
@@ -62,7 +62,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents, onEdit
             {Array.from({ length: gridPresentation.columns * gridPresentation.rows }, (_, index) => {
               const x = index % gridPresentation.columns;
               const y = Math.floor(index / gridPresentation.columns);
-              return <button type="button" className="inventory-cell" key={`${x}:${y}`} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => {
+              return <button type="button" className="inventory-v2-cell" key={`${x}:${y}`} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => {
                 if (selected?.kind === "item") operate({ operation: "move", target: selected, placement: { x, y } });
               }} />;
             })}
