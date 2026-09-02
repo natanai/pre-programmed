@@ -140,6 +140,7 @@ export function InteractionEditor({
   const sourceSpeakerId = snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.characterId ?? null;
   const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode, sourceSpeakerId));
   const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
+  const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify({ draft, newNodeText: {} }));
   const [screen, setScreen] = useState<EditorScreen>({ type: "overview" });
   const [saving, setSaving] = useState(false);
@@ -165,6 +166,7 @@ export function InteractionEditor({
   const addResponseDraft = () => {
     const outcome = { ...createDraftOutcome(draft.outcomes.length), speakerId: sourceSpeakerId };
     setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
+    setNewOutcomeIds((current) => new Set(current).add(outcome.id));
     setScreen({ type: "response", outcomeId: outcome.id });
   };
 
@@ -184,6 +186,11 @@ export function InteractionEditor({
       ...current,
       outcomes: current.outcomes.filter((outcome) => outcome.id !== outcomeId).map((outcome, order) => ({ ...outcome, order })),
     }));
+    setNewOutcomeIds((current) => {
+      const next = new Set(current);
+      next.delete(outcomeId);
+      return next;
+    });
     setScreen({ type: "overview" });
   };
 
@@ -256,6 +263,7 @@ export function InteractionEditor({
       if (result.status === "saved" || result.status === "queued") {
         setDraft(interaction);
         setNewNodeText({});
+        setNewOutcomeIds(new Set());
         setSavedSignature(JSON.stringify({ draft: interaction, newNodeText: {} }));
       }
     } finally {
@@ -290,6 +298,7 @@ export function InteractionEditor({
         fallbackMode={fallbackMode}
         snapshot={snapshot}
         notationForOutcome={notationForOutcome}
+        autoFocusWording={!initial}
         onWording={(wording) => setDraft({ ...draft, wording })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
         onAddResponse={addResponseDraft}
@@ -308,6 +317,7 @@ export function InteractionEditor({
         index={draft.outcomes.findIndex((outcome) => outcome.id === selectedOutcome.id)}
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
+        autoFocusText={!initial || newOutcomeIds.has(selectedOutcome.id)}
         onText={(responseText) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responseText }))}
         onPerformance={(responsePerformance) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responsePerformance }))}
         onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
@@ -340,6 +350,7 @@ function InteractionOverview({
   fallbackMode,
   snapshot,
   notationForOutcome,
+  autoFocusWording,
   onWording,
   onOpenResponse,
   onAddResponse,
@@ -349,6 +360,7 @@ function InteractionOverview({
   fallbackMode: boolean;
   snapshot: ProjectSnapshot;
   notationForOutcome: (outcome: InteractionOutcome) => string;
+  autoFocusWording: boolean;
   onWording: (wording: string) => void;
   onOpenResponse: (outcomeId: string) => void;
   onAddResponse: () => void;
@@ -356,7 +368,7 @@ function InteractionOverview({
 }) {
   return <div className="interaction-overview">
     {!fallbackMode ? <label className="user-input-field">PLAYER ENTERS
-      <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={!draft.wording.trim()} enterKeyHint="done" />
+      <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
     </label> : <div className="guided-context-copy">This is what can happen when the player's text does not match any valid input at this node.</div>}
 
     <section className="guided-section">
@@ -423,13 +435,14 @@ function InputSettings({ draft, fallbackMode, onChange }: {
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, newNodeText, onNewNodeText, onText, onPerformance, onSpeaker, onPreview, onChange, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, newNodeText, onNewNodeText, onText, onPerformance, onSpeaker, onPreview, onChange, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
   index: number;
   total: number;
   notation: string;
+  autoFocusText: boolean;
   newNodeText: string;
   onNewNodeText: (text: string) => void;
   onText: (text: string) => void;
@@ -458,7 +471,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
         snapshot={snapshot}
         label={`RESPONSE TEXT ${index + 1}`}
         rows={5}
-        autoFocus
+        autoFocus={autoFocusText}
         onChange={(value: AuthoredTextValue) => {
           onText(value.text);
           onPerformance(value.performance);
@@ -497,11 +510,12 @@ function AfterWorkspace({ outcome, snapshot, playState, newNodeText, onNewNodeTe
   onNewNodeText: (text: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
 }) {
+  const [existingNodeQuery, setExistingNodeQuery] = useState("");
   const documents = useMemo(() => buildSearchIndex(snapshot), [snapshot]);
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const matches = useMemo(
-    () => searchProject(snapshot, documents, playState, newNodeText, ["node"], 12),
-    [snapshot, documents, playState, newNodeText],
+    () => searchProject(snapshot, documents, playState, existingNodeQuery, ["node"], 12),
+    [snapshot, documents, playState, existingNodeQuery],
   );
   const destinationNotation = outcome.destinationNodeId
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destinationNodeId).join("") || "[A1]"
@@ -512,7 +526,11 @@ function AfterWorkspace({ outcome, snapshot, playState, newNodeText, onNewNodeTe
     <section className="guided-section">
       <h3>WHAT HAPPENS AFTER THIS RESPONSE?</h3>
       <div className="guided-option-list">
-        <button type="button" className="guided-option-row" aria-pressed={outcome.disposition === "stay"} onClick={() => onChange((current) => ({ ...current, disposition: "stay", destinationNodeId: null }))}>
+        <button type="button" className="guided-option-row" aria-pressed={outcome.disposition === "stay"} onClick={() => {
+          onNewNodeText("");
+          setExistingNodeQuery("");
+          onChange((current) => ({ ...current, disposition: "stay", destinationNodeId: null }));
+        }}>
           <span>{outcome.disposition === "stay" ? "[X]" : "[ ]"} STAY HERE</span><small>Keep the player at the current node.</small>
         </button>
         <button type="button" className="guided-option-row" aria-pressed={outcome.disposition === "transition"} onClick={() => onChange((current) => ({ ...current, disposition: "transition" }))}>
@@ -526,16 +544,39 @@ function AfterWorkspace({ outcome, snapshot, playState, newNodeText, onNewNodeTe
       {outcome.destinationNodeId ? <div className="selected-destination">
         <span>LINKED {destinationNotation}: {destination?.text ?? outcome.destinationNodeId}</span>
         <button type="button" onClick={() => onChange((current) => ({ ...current, destinationNodeId: null }))}>[UNLINK]</button>
-      </div> : null}
-      <label>FIND AN EXISTING NODE OR WRITE A NEW NODE
-        <textarea rows={4} value={newNodeText} onChange={(event) => onNewNodeText(event.target.value)} placeholder="Type the text that should appear next; matching existing nodes appear below." />
-      </label>
-      {newNodeText.trim() && !outcome.destinationNodeId ? <div className="search-strip guided-destination-results" role="listbox" aria-label="Existing destination matches">
-        {matches.length ? matches.map((result) => <button type="button" role="option" key={result.id} onClick={() => {
-          onChange((current) => ({ ...current, destinationNodeId: result.id }));
-          onNewNodeText("");
-        }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>) : <span className="search-empty">No existing match. Saving will create this as a new node.</span>}
-      </div> : null}
+      </div> : <>
+        <div className="guided-destination-choice">
+          <h4>CREATE NEW NODE</h4>
+          <label>NEW NODE TEXT
+            <textarea
+              rows={4}
+              value={newNodeText}
+              onChange={(event) => onNewNodeText(event.target.value)}
+              placeholder="Write the text for the new destination. Saving this input will create the node."
+            />
+          </label>
+          {newNodeText.trim() ? <div className="guided-context-copy">CREATE NEW: {newNodeText.trim()}</div> : null}
+        </div>
+
+        <div className="guided-destination-choice">
+          <h4>LINK EXISTING NODE</h4>
+          <label>FIND NODE
+            <input
+              type="search"
+              value={existingNodeQuery}
+              onChange={(event) => setExistingNodeQuery(event.target.value)}
+              placeholder="Search existing node text or context"
+            />
+          </label>
+          {existingNodeQuery.trim() ? <div className="search-strip guided-destination-results" role="listbox" aria-label="Existing destination matches">
+            {matches.length ? matches.map((result) => <button type="button" role="option" key={result.id} onClick={() => {
+              onNewNodeText("");
+              setExistingNodeQuery("");
+              onChange((current) => ({ ...current, destinationNodeId: result.id }));
+            }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>) : <span className="search-empty">No existing node matches this search.</span>}
+          </div> : null}
+        </div>
+      </>}
     </section> : null}
   </div>;
 }
