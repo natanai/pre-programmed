@@ -9,8 +9,8 @@ export type AuthorTaskValue =
 export type AuthorTaskData = Record<string, AuthorTaskValue>;
 
 export type AuthorTaskRoute =
-  | { type: "tools" }
-  | { type: "workspace"; view?: "locations" | "history" }
+  | { type: "tools"; data?: never }
+  | { type: "workspace"; view?: "locations" | "history"; data?: never }
   | { type: "feature"; feature: string; workspace: string; data?: Record<string, string> };
 
 export type AuthorResourceResult = {
