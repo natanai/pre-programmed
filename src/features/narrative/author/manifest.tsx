@@ -156,6 +156,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           initial={initial}
           initialCommand={route.data?.command ?? ""}
           fallback={fallback}
+          onRegisterSave={context.registerWorkspaceSave}
           onPreview={(outcome) => context.runtime.preview({
             text: outcome.responseText,
             performance: outcome.responsePerformance,
@@ -165,24 +166,18 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           onSave={async (operations, description) => {
             const result = await context.persist(operations, description);
             if (result.status !== "saved" && result.status !== "queued") return result;
+            // Resource tasks save into their parent journey, so completion returns
+            // exactly one level. Ordinary interaction saves remain in the current
+            // editor; only the master Author X returns all the way to live play.
             if (resourceTask) {
               const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
-              if (operation?.type === "interaction.upsert") {
-                context.completeTask({
-                  type: "resource",
-                  kind: "interaction",
-                  id: operation.interaction.id,
-                  value: operation.interaction.id,
-                  label: operation.interaction.wording || operation.interaction.aliases[0] || "Invalid input response",
-                });
-                return result;
-              }
-            }
-            const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
-            context.completeTask({ type: "saved" });
-            if (operation?.type === "interaction.upsert" && operation.interaction.matchMode !== "fallback") {
-              const input = operation.interaction.aliases[0] || operation.interaction.wording;
-              if (input) context.runtime.tryInput(input);
+              if (operation?.type === "interaction.upsert") context.completeTask({
+                type: "resource",
+                kind: "interaction",
+                id: operation.interaction.id,
+                value: operation.interaction.id,
+                label: operation.interaction.wording || operation.interaction.aliases[0] || "Invalid input response",
+              });
             }
             return result;
           }}
