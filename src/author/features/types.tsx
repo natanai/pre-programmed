@@ -20,6 +20,7 @@ import type { CommandReferenceSource } from "../../features/commands/referenceSo
 import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
 import type { TextCueAuthorAdapter } from "../textCues/types";
 import type { AuthorCommandTargetAdapter } from "../commands/types";
+import type { RegisteredAuthorWorkspaceDefinition } from "../ui/workspaceDefinition";
 
 export type AuthorPersist = (
   operations: MutationOperation[],
@@ -122,6 +123,11 @@ export type AuthorFeatureManifest = {
   capabilities?: readonly AuthorCapability[];
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
+  /**
+   * Preferred data-first Author workspaces. Core owns their task lifecycle and
+   * visual hierarchy; features own draft data and save semantics.
+   */
+  workspaces?: readonly RegisteredAuthorWorkspaceDefinition[];
   /**
    * Transitional escape hatch for prototype workspaces not yet migrated to the
    * shared Author UI grammar. New features should not add unrestricted workspace
