@@ -30,6 +30,14 @@ jobs:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
           VITE_BASE_PATH: /${{ github.event.repository.name }}/
 
+      - name: Ensure media storage
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
+          PRE_PROGRAMMED_ASSET_BUCKET_NAME: ${{ vars.PRE_PROGRAMMED_ASSET_BUCKET_NAME }}
+        run: node scripts/ensure-deployment-r2.mjs
+
       - name: Prepare deployment configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
