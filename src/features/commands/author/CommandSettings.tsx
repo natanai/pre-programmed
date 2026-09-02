@@ -284,17 +284,18 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const [operationTouched, setOperationTouched] = useState(Boolean(existing || initialOperation));
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [enablingSource, setEnablingSource] = useState("");
+  const [pendingSourceKinds, setPendingSourceKinds] = useState<string[]>([]);
   const [continuedToTargets, setContinuedToTargets] = useState(false);
   const currentForDirty = { ...draft, patterns: patternLines(patternsText) };
-  const dirty = JSON.stringify(currentForDirty) !== baseline;
+  const dirty = JSON.stringify(currentForDirty) !== baseline || pendingSourceKinds.length > 0;
   const slotNames = placeholderNames(currentForDirty.patterns);
   const availableSources = commandReferenceSources();
-  const enabledSourceKinds = new Set(
-    context.snapshot.settings.commands.referenceSources
+  const enabledSourceKinds = new Set([
+    ...context.snapshot.settings.commands.referenceSources
       .filter((source) => source.enabled)
       .map((source) => source.sourceKind),
-  );
+    ...pendingSourceKinds,
+  ]);
   const savedTarget = existing?.targetSlot ? existing.slots.find((slot) => slot.name === existing.targetSlot) : undefined;
 
   useEffect(() => {
@@ -320,12 +321,16 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
       targetSlot: slotNames.includes(draft.targetSlot) ? draft.targetSlot : "",
     };
     const current = context.snapshot.settings.commands.commands;
-    const commands = {
+    let commands: CommandProjectSettings = {
       ...context.snapshot.settings.commands,
       commands: current.some((candidate) => candidate.id === command.id)
         ? current.map((candidate) => candidate.id === command.id ? command : candidate)
         : [...current, command],
     };
+    for (const sourceKind of pendingSourceKinds) {
+      const setting = referenceSetting(commands, sourceKind);
+      commands = updateReferenceSetting(commands, { ...setting, enabled: true });
+    }
     setSaving(true);
     try {
       const result = await persistCommands(context, commands, `${existing ? "Changed" : "Created"} command ${command.label}`);
@@ -333,6 +338,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
         setDraft(command);
         setPatternsText(command.patterns.join("\n"));
         setBaseline(JSON.stringify(command));
+        setPendingSourceKinds([]);
         context.setWorkspaceDirty(false);
         const target = command.targetSlot ? command.slots.find((slot) => slot.name === command.targetSlot) : undefined;
         if (!continuedToTargets && target && target.sourceKind !== "text") {
@@ -350,20 +356,9 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
     }
   };
 
-  const enableSource = async (sourceKind: string) => {
-    const source = commandReferenceSourceByKind(sourceKind);
-    if (!source || enablingSource) return;
-    setEnablingSource(sourceKind);
-    try {
-      const setting = referenceSetting(context.snapshot.settings.commands, sourceKind);
-      await persistCommands(
-        context,
-        updateReferenceSetting(context.snapshot.settings.commands, { ...setting, enabled: true }),
-        `Enabled ${source.label} player-command targets`,
-      );
-    } finally {
-      setEnablingSource("");
-    }
+  const stageSource = (sourceKind: string) => {
+    if (!commandReferenceSourceByKind(sourceKind) || enabledSourceKinds.has(sourceKind)) return;
+    setPendingSourceKinds((current) => current.includes(sourceKind) ? current : [...current, sourceKind]);
   };
 
   const remove = async () => {
@@ -396,7 +391,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
       <p className="command-settings-journey"><strong>1 · WORDING</strong><span>→</span><strong>2 · TARGET</strong><span>→</span><strong>3 · TARGET BEHAVIOR</strong></p>
       <p className="command-settings-note">Example: name the command “Polish,” add <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. Saving then takes you to each item’s Polish response, where you write text and add effects.</p>
       <label>COMMAND NAME
-        <input value={draft.label} autoFocus onChange={(event) => {
+        <input value={draft.label} autoFocus={!existing} onChange={(event) => {
           const label = event.target.value;
           setDraft({ ...draft, label, operation: operationTouched ? draft.operation : operationIdFromLabel(label) });
         }} />
@@ -423,8 +418,10 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
             {availableSources.map((source) => <option key={source.kind} value={source.kind}>{source.label}{enabledSourceKinds.has(source.kind) ? "" : " · OFF"}</option>)}
           </select>
           {slot.sourceKind !== "text" && !enabledSourceKinds.has(slot.sourceKind)
-            ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} is not recognized yet. <button type="button" disabled={Boolean(enablingSource)} onClick={() => void enableSource(slot.sourceKind)}>[{enablingSource === slot.sourceKind ? "ENABLING..." : `ENABLE HERE`}]</button></small>
-            : null}
+            ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} is not recognized yet. <button type="button" onClick={() => stageSource(slot.sourceKind)}>[ENABLE WITH SAVE]</button></small>
+            : pendingSourceKinds.includes(slot.sourceKind)
+              ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} will be enabled when this command is saved.</small>
+              : null}
         </label>)}
         <label>PRIMARY TARGET
           <select value={draft.targetSlot} onChange={(event) => setDraft({ ...draft, targetSlot: event.target.value })}>
