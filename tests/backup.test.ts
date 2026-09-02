@@ -65,7 +65,7 @@ describe("canonical project backup", () => {
     expect(backup.mediaObjects).toEqual([{
       key: "media/content_one",
       contentType: "application/octet-stream",
-      dataBase64: Buffer.from(content).toString("base64"),
+      dataBase64: "bWVkaWEgYnl0ZXM=",
     }]);
   });
 });
