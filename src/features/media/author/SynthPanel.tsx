@@ -98,7 +98,7 @@ export function SynthEditor({ snapshot, initial, onSave, onCancel, setWorkspaceD
       <div className="synth-editor focused-synth-editor">
         <section className="synth-section">
           <h3>RECIPE</h3>
-          <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} autoFocus /></label>
+          <label>LABEL <input value={draft.label} onChange={(event) => setDraft({ ...draft, label: event.target.value })} autoFocus={!initial} /></label>
           <div className="form-grid">
             <label>TEMPO <input type="number" min={30} max={300} value={draft.tempo} onChange={(event) => setDraft({ ...draft, tempo: Number(event.target.value) })} /></label>
             <label className="check-label"><input type="checkbox" checked={draft.loop} onChange={(event) => setDraft({ ...draft, loop: event.target.checked })} /> loop recipe</label>
