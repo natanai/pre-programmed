@@ -1,100 +1,105 @@
 # Author UI Grammar
 
-Pre-Programmed's Author experience is a recursive task system, not a collection of feature-owned pages.
+Pre-Programmed's Author experience is a recursive task system, not a collection of unrelated feature pages.
 
-The engine may be deeply composable internally, but that depth must not be reproduced as arbitrary visual heading depth. Feature data architecture therefore separates **authoring intent** from **presentation**.
+The engine may be deeply composable internally, but implementation depth should not become visual depth. Feature modules describe **authoring intent**; the shared Author system decides how that intent is presented at the current width and usable height.
 
 ## Stable rule
 
-> Features describe what the author is doing. The shared Author system decides how that intent is presented at the current width and usable height.
+> Features describe what the author is doing. The shared Author system decides how that task is presented.
 
-Mobile and desktop use the same task model, draft model, controls, save semantics, and feature capabilities. Responsive presentation may reflow or compress those controls, including when the iOS visual viewport shrinks for the keyboard.
+Mobile and desktop use the same task model, draft state, controls, save semantics, feature capabilities, and persistence paths. Responsive presentation may reflow or compress those controls, including when a mobile visual viewport shrinks for the keyboard.
 
 ## Semantic workspace primitives
 
-Data-first Author workspaces return `AuthorWorkspaceSpec` values built from a deliberately small vocabulary:
+Data-first Author workspaces should express ordinary tasks through a small semantic vocabulary:
 
 - `field` — edit one value;
 - `choice` — choose one mutually exclusive path;
-- `section` — one root-level conceptual group inside the task;
+- `section` — one root-level conceptual group;
 - `disclosure` — optional/advanced material without adding navigation depth;
-- `status` — validation or feedback, not another heading;
-- `custom` — a specialized control that cannot be represented by ordinary primitives.
+- `status` — validation or feedback;
+- `custom` — a specialized control that cannot reasonably be represented by ordinary primitives.
 
-A custom control is an escape hatch for things such as a rule tree, inventory grid, sequencer, or resource-results list. It does not own task headers, task footers, global navigation, or exit behavior.
+A custom control may own specialized interaction such as a rule tree, inventory grid, sequencer, drawing surface, or resource results. It should not duplicate global task navigation, task headers, Author exit behavior, or persistence semantics.
 
 ## Finite visual hierarchy
 
 A task owns one task title and one task-level action area.
 
-A section cannot contain another section. Deeper conceptual work should become either:
+A section should not manufacture another section hierarchy beneath itself. Deeper conceptual work should become either:
 
 - a semantic choice/disclosure inside the current task; or
-- a genuine recursive Author subtask when it represents separately suspendable work.
+- a real recursive Author subtask when it represents separately suspendable work.
 
-This prevents domain nesting from manufacturing UI such as:
+For example, a destination decision should read as one decision such as:
 
-`RESPONSE → DESTINATION → CREATE NEW NODE → NEW NODE TEXT`
+```text
+AFTER → [STAY HERE] [CREATE NEW] [LINK EXISTING]
+```
 
-The intended representation is one semantic decision:
-
-`AFTER → [STAY HERE] [CREATE NEW] [LINK EXISTING]`
-
-Only the selected branch's controls are rendered.
+rather than a stack of headings that mirrors object nesting.
 
 ## Labels describe information, not DOM depth
 
-Fields keep accessible names, but a visible field label may be `sr-only` when the selected choice and placeholder already make its purpose unambiguous.
+Fields keep accessible names. A visible label may be accessibility-only when the surrounding choice and placeholder already make the purpose unambiguous.
 
-Workspace validation rejects a visible field label that merely repeats its parent option label. This makes redundant hierarchy an invalid data shape instead of something CSS must hide after the fact.
+Avoid repeated parent/child labels whose only effect is visual nesting.
 
 ## Task persistence and exit semantics
 
-Persistence, preview/testing, navigation, and exiting Author are separate concepts.
+Persistence, preview/testing, navigation, and leaving Author mode are separate concepts.
 
-- `SAVE` persists the current task in context. It does not return to the player.
-- Saving a newly created child resource may complete exactly that child task and return its typed resource result to its suspended parent.
-- Preview temporarily exposes the player and always provides `RESUME EDITING`; it does not destroy the task stack.
-- The master `[X]` is the Author-to-player exit boundary.
-- If `[X]` is used with dirty tasks, the shared host offers `SAVE ALL & RETURN`, `DISCARD ALL & RETURN`, or `KEEP EDITING`.
-- Save All processes dirty tasks deepest-first so a child resource can persist and complete into its parent before the parent is saved.
+- `SAVE` persists the current task in context.
+- Saving a newly created child resource may complete that child task and return its typed result to the suspended parent.
+- Preview temporarily exposes the player without destroying the task stack.
+- The master Author exit is the Author-to-player boundary.
+- Dirty-task exit handling belongs to the shared host rather than individual features.
+- Multi-task save behavior should preserve dependency order so child resources can persist before parents that reference them.
 
-Feature code can register its task save boundary with the shared host. Data-first workspaces receive this automatically through `StructuredAuthorWorkspace`.
+Feature code owns feature-domain save semantics; the shared Author host owns task lifecycle semantics.
 
-## Project mutations inside unsaved tasks
+## Mutations inside unsaved tasks
 
-Nested controls should not publish unrelated project-wide mutations immediately from an unsaved parent task.
+A nested control should not silently publish unrelated project-wide mutations from inside an unsaved parent task.
 
-`useAuthorTaskTransaction` provides task-local staged mutations for controls whose changes belong to the parent's eventual transaction. A child control stages by stable key; the owning task commits the combined operations.
+When a change belongs to the parent's eventual transaction, stage it with the task. When it has an independent lifecycle, open a recursive subtask.
 
-When a change must be its own task because it has an independent lifecycle, open a recursive Author subtask instead of silently persisting from a leaf control.
+The goal is for the author to understand what is saved, what is still draft, and what action will complete the current task.
 
 ## New feature contract
 
-New feature modules should contribute `feature.workspaces` definitions created with `defineAuthorWorkspace`.
+New feature workspaces should prefer data-first workspace definitions that separate:
 
-A definition owns:
+1. draft creation;
+2. semantic UI specification;
+3. feature-owned save semantics.
 
-1. `createDraft` — feature-domain draft data;
-2. `buildSpec` — semantic Author UI data;
-3. `save` — feature-owned persistence semantics.
+The shared workspace host should own ordinary draft lifecycle, dirty state, validation, rendering, task presentation, and shared save/exit behavior.
 
-The shared `StructuredAuthorWorkspace` owns React draft lifecycle, dirty state, Save-All registration, validation/rendering, and task presentation.
+Some existing feature surfaces may still use unrestricted custom workspace rendering. That is a current implementation detail, not a compatibility promise. Do not preserve an unsuitable editor merely to keep old JSX structure stable, and do not make unrestricted rendering the default for new features.
 
-The old `renderWorkspace()` manifest field is a migration-only escape hatch. The current prototype feature ids are listed centrally in `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`; new features must not expand that list casually. Tests fail when a new feature introduces unrestricted workspace rendering without an explicit core-policy change.
+## Responsive authenticity test
 
-## Migration strategy
+For any desktop/mobile Author change:
 
-Do not preserve a prototype editor merely to keep old JSX structure stable.
+1. open the same project and task at both presentations;
+2. confirm both presentations use the same underlying workspace/task state;
+3. confirm edits produce the same mutation and persistence semantics;
+4. resize across presentation breakpoints with unsaved work present;
+5. verify layout changes do not alter authored-data meaning or discard the task.
 
-When an editor is substantially changed:
+Responsive layout exists to improve visibility, not to create a second Author product.
 
-1. identify its semantic task and draft;
-2. flatten mutually exclusive branches into `choice` data;
-3. convert optional complexity into `disclosure`;
-4. move genuinely separate work into recursive tasks;
-5. expose a task save boundary;
-6. remove its legacy heading/footer markup;
-7. remove the feature/workspace from the legacy exception surface when its migration is complete.
+## Replacement rule
 
-This is intentionally one-way. The goal is for the legacy Author presentation foundation to shrink as features evolve, while the semantic grammar remains stable.
+When an Author editor is substantially redesigned, treat the current implementation as replaceable:
+
+1. identify the semantic task and draft;
+2. flatten mutually exclusive branches into choices;
+3. move optional complexity into disclosures;
+4. move independently suspendable work into subtasks;
+5. keep feature-domain persistence with the feature;
+6. delete superseded presentation structure and tests that only protected that structure.
+
+The shared grammar should become more durable over time while prototype-specific markup remains free to disappear.
