@@ -5,6 +5,20 @@ function validStringArray(value: unknown) {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string" && entry.length > 0);
 }
 
+function validEquipmentPlacements(value: unknown) {
+  if (!Array.isArray(value)) return false;
+  const anchors = new Set<string>();
+  for (const placement of value) {
+    if (!object(placement)) return false;
+    if (typeof placement.anchorSlotKey !== "string" || !placement.anchorSlotKey.trim() || anchors.has(placement.anchorSlotKey)) return false;
+    if (!validStringArray(placement.occupiedSlotKeys)) return false;
+    const occupied = placement.occupiedSlotKeys as string[];
+    if (new Set(occupied).size !== occupied.length || !occupied.includes(placement.anchorSlotKey)) return false;
+    anchors.add(placement.anchorSlotKey);
+  }
+  return true;
+}
+
 function validBodySlots(value: unknown) {
   if (!Array.isArray(value)) return false;
   const ids = new Set<string>();
@@ -54,8 +68,8 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       )) {
         return "Item starting quantity must be a non-negative integer.";
       }
-      if (item.equipmentSlotKeys !== undefined && !validStringArray(item.equipmentSlotKeys)) {
-        return "Item equipment slot keys are invalid.";
+      if (item.equipmentPlacements !== undefined && !validEquipmentPlacements(item.equipmentPlacements)) {
+        return "Item equipment placements are invalid.";
       }
       if (item.equippedStorage !== undefined && item.equippedStorage !== "inventory" && item.equippedStorage !== "slot") {
         return "Item equipped storage policy is invalid.";
@@ -67,11 +81,11 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       }
       if (
         typeof item.equipOnGiveSlotKey === "string"
-        && Array.isArray(item.equipmentSlotKeys)
-        && item.equipmentSlotKeys.length > 0
-        && !item.equipmentSlotKeys.includes(item.equipOnGiveSlotKey)
+        && Array.isArray(item.equipmentPlacements)
+        && item.equipmentPlacements.length > 0
+        && !item.equipmentPlacements.some((placement) => object(placement) && placement.anchorSlotKey === item.equipOnGiveSlotKey)
       ) {
-        return "Item equip-on-give slot must be one of its compatible slots.";
+        return "Item equip-on-give slot must be one of its equipment placement anchors.";
       }
       return validateOperationCapabilities(item) ?? validateHooks(item);
     }
