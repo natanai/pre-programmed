@@ -151,13 +151,16 @@ export function searchProject(
   return documents
     .filter((document) => !kinds || kinds.includes(document.kind))
     .map((document): SearchResult => {
+      const lexicalScore = textScore(query, document);
       const distance = document.nodeId
         ? shortestDistance(graph, state.currentNodeId, document.nodeId)
         : null;
-      const structuralBonus = distance === null ? 0 : Math.max(0, 80 - distance * 8);
+      const structuralBonus = lexicalScore > 0 && distance !== null
+        ? Math.max(0, 80 - distance * 8)
+        : 0;
       return {
         ...document,
-        score: textScore(query, document) + structuralBonus,
+        score: lexicalScore > 0 ? lexicalScore + structuralBonus : 0,
         notation: document.nodeId
           ? notationForNode(snapshot, graph, state.currentNodeId, state.traversal, document.nodeId)
           : [],
