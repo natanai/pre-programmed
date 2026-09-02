@@ -2,6 +2,7 @@ export const VECTOR_GRID_SIZE = 32;
 export type VectorCell = string | null;
 
 const COLOR = /^#[0-9a-f]{6}$/i;
+const ATTRIBUTE = /\s+([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gy;
 
 export function emptyVectorGrid(): VectorCell[] {
   return Array.from({ length: VECTOR_GRID_SIZE * VECTOR_GRID_SIZE }, () => null);
@@ -62,21 +63,54 @@ export function serializeVectorGrid(cells: readonly VectorCell[]) {
   ].join("");
 }
 
+function parseAttributes(source: string) {
+  const attributes = new Map<string, string>();
+  let position = 0;
+  while (position < source.length) {
+    if (!source.slice(position).trim()) break;
+    ATTRIBUTE.lastIndex = position;
+    const match = ATTRIBUTE.exec(source);
+    if (!match) return null;
+    const name = match[1];
+    if (attributes.has(name)) return null;
+    attributes.set(name, match[2] ?? match[3] ?? "");
+    position = ATTRIBUTE.lastIndex;
+  }
+  return attributes;
+}
+
+/**
+ * Parse only the small deterministic SVG subset emitted by serializeVectorGrid.
+ * This feature model is shared by browser and non-DOM verification runtimes, so
+ * it deliberately does not depend on DOMParser or a browser repair parser.
+ */
 export function parseVectorGrid(svgText: string): VectorCell[] | null {
-  const parser = new DOMParser();
-  const document = parser.parseFromString(svgText, "image/svg+xml");
-  if (document.querySelector("parsererror")) return null;
-  const svg = document.documentElement;
-  const viewBox = svg.getAttribute("viewBox")?.trim().split(/[\s,]+/).map(Number);
+  const root = svgText.match(/^\s*<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/i);
+  if (!root) return null;
+  const rootAttributes = parseAttributes(root[1]);
+  if (!rootAttributes) return null;
+  const viewBox = rootAttributes.get("viewBox")?.trim().split(/[\s,]+/).map(Number);
   if (!viewBox || viewBox.length !== 4 || viewBox[0] !== 0 || viewBox[1] !== 0 || viewBox[2] !== VECTOR_GRID_SIZE || viewBox[3] !== VECTOR_GRID_SIZE) return null;
+
   const cells = emptyVectorGrid();
-  for (const element of Array.from(svg.children)) {
-    if (element.tagName.toLowerCase() !== "rect") return null;
-    const x = Number(element.getAttribute("x"));
-    const y = Number(element.getAttribute("y"));
-    const width = Number(element.getAttribute("width"));
-    const height = Number(element.getAttribute("height"));
-    const fill = element.getAttribute("fill") ?? "";
+  const body = root[2];
+  const rectangle = /\s*<rect\b([^>]*)\/>\s*/gy;
+  let position = 0;
+  while (position < body.length) {
+    if (!body.slice(position).trim()) break;
+    rectangle.lastIndex = position;
+    const match = rectangle.exec(body);
+    if (!match) return null;
+    position = rectangle.lastIndex;
+
+    const attributes = parseAttributes(match[1]);
+    if (!attributes || attributes.size !== 5) return null;
+    if (!["x", "y", "width", "height", "fill"].every((name) => attributes.has(name))) return null;
+    const x = Number(attributes.get("x"));
+    const y = Number(attributes.get("y"));
+    const width = Number(attributes.get("width"));
+    const height = Number(attributes.get("height"));
+    const fill = attributes.get("fill") ?? "";
     if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(width) || !Number.isInteger(height)
       || x < 0 || y < 0 || width < 1 || height < 1 || x + width > VECTOR_GRID_SIZE || y + height > VECTOR_GRID_SIZE
       || !COLOR.test(fill)) return null;

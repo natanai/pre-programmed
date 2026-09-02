@@ -14,7 +14,7 @@ import {
   resizeSynthSequence,
   validateSynth,
 } from "../src/features/media/synth";
-import { emptyVectorGrid, paintVectorCell, serializeVectorGrid } from "../src/features/media/vectorAsset";
+import { emptyVectorGrid, paintVectorCell, parseVectorGrid, serializeVectorGrid } from "../src/features/media/vectorAsset";
 import { project } from "./fixtures";
 
 describe("stable media assets", () => {
@@ -32,7 +32,7 @@ describe("stable media assets", () => {
     expect(asset).not.toHaveProperty("source");
   });
 
-  it("serializes the 32x32 editor as scalable SVG without a fixed rendered size", () => {
+  it("serializes and parses the 32x32 editor without a browser DOM dependency", () => {
     let cells = emptyVectorGrid();
     cells = paintVectorCell(cells, 0, 0, "#ffffff");
     cells = paintVectorCell(cells, 1, 0, "#ffffff");
@@ -42,6 +42,8 @@ describe("stable media assets", () => {
     expect(svg).toContain('<rect x="0" y="0" width="2" height="1" fill="#ffffff"/>');
     expect(svg).not.toMatch(/<svg[^>]+\swidth=/);
     expect(svg).not.toMatch(/<svg[^>]+\sheight=/);
+    expect(parseVectorGrid(svg)).toEqual(cells);
+    expect(parseVectorGrid('<svg viewBox="0 0 32 32"><circle cx="1" cy="1" r="1"/></svg>')).toBeNull();
   });
 
   it("keeps presentation role independent from intrinsic dimensions", () => {
