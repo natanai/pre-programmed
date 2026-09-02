@@ -145,6 +145,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
         initial={item}
         openOperations={route.data?.section === "operations"}
         preferredOperation={route.data?.operation}
+        onRegisterSave={context.registerWorkspaceSave}
         onSave={async (operations, description) => {
           const result = await context.persist(operations, description);
           if (resourceTask && (result.status === "saved" || result.status === "queued")) {

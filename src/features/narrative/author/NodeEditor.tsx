@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
@@ -8,13 +9,14 @@ import "./nodeEditor.css";
 
 type NodeScreen = "text" | "context";
 
-export function NodeEditor({ node, snapshot, autoFocusText = false, onSave, onCancel, onDirtyChange, onPreview }: {
+export function NodeEditor({ node, snapshot, autoFocusText = false, onSave, onCancel, onDirtyChange, onRegisterSave, onPreview }: {
   node: GameNode;
   snapshot: ProjectSnapshot;
   autoFocusText?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   onDirtyChange: (dirty: boolean) => void;
+  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
 }) {
   const [draft, setDraft] = useState(() => structuredClone(node));
@@ -28,15 +30,25 @@ export function NodeEditor({ node, snapshot, autoFocusText = false, onSave, onCa
     return () => onDirtyChange(false);
   }, [draftSignature, savedSignature, onDirtyChange]);
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     setSaving(true);
     try {
       const result = await onSave([{ type: "node.upsert", node: draft }], `Changed node #${draft.nodeNumber}`);
-      if (result.status === "saved" || result.status === "queued") setSavedSignature(draftSignature);
+      if (result.status === "saved" || result.status === "queued") {
+        setSavedSignature(draftSignature);
+        return true;
+      }
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    onRegisterSave(save);
+    return () => onRegisterSave(null);
+  });
 
   const speaker = snapshot.entities.find((entity) => entity.id === draft.characterId)?.name ?? "None";
   const location = snapshot.entities.find((entity) => entity.id === draft.locationId)?.name ?? "None";

@@ -20,6 +20,10 @@ function taskFor(route: AuthorTaskRoute): AuthorTaskEntry {
  * editor state survives nested creation/editing. Dirty state and completion
  * are addressed by task id, so a suspended async task cannot alter or dismiss
  * whichever child happens to be active later.
+ *
+ * Back and task completion are strictly task-to-parent navigation. The root task
+ * has no Author parent, so neither can pop it; the master close command owns the
+ * intentional Author -> player transition.
  */
 export function useAuthorTaskRuntime() {
   const [tasks, setTasks] = useState<AuthorTaskEntry[]>([]);
@@ -62,7 +66,10 @@ export function useAuthorTaskRuntime() {
   }, [commitTasks]);
 
   const completeTask = useCallback((taskId: string, result?: AuthorTaskResult) => {
-    popTask(taskId, result);
+    const current = tasksRef.current;
+    const active = current.at(-1);
+    if (!active || active.id !== taskId || current.length <= 1) return false;
+    return popTask(taskId, result);
   }, [popTask]);
 
   const closeAll = useCallback(() => {
@@ -77,8 +84,10 @@ export function useAuthorTaskRuntime() {
   }, [commitTasks]);
 
   const requestBack = useCallback((taskId?: string) => {
-    const active = tasksRef.current.at(-1);
+    const current = tasksRef.current;
+    const active = current.at(-1);
     if (!active || (taskId && active.id !== taskId)) return;
+    if (current.length <= 1) return;
     if (active.dirty) {
       setLeaveConfirmation({ action: "back", dirtyCount: 1, taskId: active.id });
       return;

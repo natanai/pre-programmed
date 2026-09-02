@@ -5,7 +5,7 @@ import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import type { AuthorSearchEntry } from "../search/types";
 import { describeAuthorTask, getAuthorCommandTargetAdapter, renderAuthorFeatureWorkspace } from "../features/registry";
 import { AuthorQuickFind } from "../search/AuthorQuickFind";
-import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext } from "../features/types";
+import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext, AuthorWorkspaceSaveHandler } from "../features/types";
 import { AuthorResourceProvider } from "../resources/context";
 import { buildAuthorResourceTools } from "../resources/runtime";
 import type { AuthorResourceTools } from "../resources/types";
@@ -39,10 +39,16 @@ type PreservedWorkspaceView = {
   scrollPositions: Array<{ element: HTMLElement; top: number; left: number }>;
 };
 
+function afterReactTurn() {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, 0));
+}
+
 function AuthorTaskSurface({
   task,
   active,
+  hasParentTask,
   resources,
+  registerTaskSave,
   toolGroups,
   searchEntries,
   snapshot,
@@ -57,7 +63,13 @@ function AuthorTaskSurface({
   runtime,
   onSnapshot,
   onRestore,
-}: SharedTaskProps & { task: AuthorTaskEntry; active: boolean; resources: AuthorResourceTools }) {
+}: SharedTaskProps & {
+  task: AuthorTaskEntry;
+  active: boolean;
+  hasParentTask: boolean;
+  resources: AuthorResourceTools;
+  registerTaskSave: (taskId: string, handler: AuthorWorkspaceSaveHandler | null) => void;
+}) {
   const completeCurrentTask = useCallback(
     (result?: AuthorTaskResult) => completeTask(task.id, result),
     [completeTask, task.id],
@@ -67,9 +79,16 @@ function AuthorTaskSurface({
     (dirty: boolean) => setTaskDirty(task.id, dirty),
     [setTaskDirty, task.id],
   );
+  const registerWorkspaceSave = useCallback(
+    (handler: AuthorWorkspaceSaveHandler | null) => registerTaskSave(task.id, handler),
+    [registerTaskSave, task.id],
+  );
+
+  useEffect(() => () => registerTaskSave(task.id, null), [registerTaskSave, task.id]);
 
   const context: AuthorWorkspaceContext = {
     taskId: task.id,
+    hasParentTask,
     snapshot,
     playState,
     authorMode,
@@ -78,6 +97,7 @@ function AuthorTaskSurface({
     completeTask: completeCurrentTask,
     leaveCurrentTask,
     setWorkspaceDirty,
+    registerWorkspaceSave,
     pushTask,
     resources,
     resolveCommandTarget: getAuthorCommandTargetAdapter,
@@ -118,9 +138,9 @@ function scrollableWorkspaceElements(layer: HTMLElement) {
  * Root host for nested Author tasks.
  *
  * Suspended tasks remain mounted under stable task ids, preserving local draft
- * state exactly as the author left it. Only the top task is visible. Each task
- * receives task-scoped completion and dirty ownership plus the same generic
- * resource runtime, so a suspended task cannot accidentally affect its child.
+ * state exactly as the author left it. The host owns the generic Save-All
+ * registry because it is the one layer that can see every mounted task without
+ * learning any feature-specific persistence behavior.
  */
 export function AuthorWorkspaceHost({
   tasks,
@@ -138,10 +158,24 @@ export function AuthorWorkspaceHost({
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [savingAll, setSavingAll] = useState(false);
+  const [saveAllError, setSaveAllError] = useState("");
   const workspaceLayerRef = useRef<HTMLDivElement>(null);
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
+  const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
 
   useEffect(() => setStackOpen(false), [activeTaskId]);
+  useEffect(() => {
+    const liveTaskIds = new Set(tasks.map((task) => task.id));
+    for (const taskId of saveHandlersRef.current.keys()) {
+      if (!liveTaskIds.has(taskId)) saveHandlersRef.current.delete(taskId);
+    }
+  }, [tasks]);
+
+  const registerTaskSave = useCallback((taskId: string, handler: AuthorWorkspaceSaveHandler | null) => {
+    if (handler) saveHandlersRef.current.set(taskId, handler);
+    else saveHandlersRef.current.delete(taskId);
+  }, []);
 
   const preview = useCallback<AuthorRuntimeSurface["preview"]>((presentation) => {
     const layer = workspaceLayerRef.current;
@@ -171,6 +205,32 @@ export function AuthorWorkspaceHost({
     });
   }, []);
 
+  const saveAllAndReturn = useCallback(async () => {
+    if (savingAll) return;
+    setSavingAll(true);
+    setSaveAllError("");
+    try {
+      const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
+      for (const task of dirtyTasks) {
+        const save = saveHandlersRef.current.get(task.id);
+        if (!save) {
+          setSaveAllError("One unsaved task has not migrated to the shared Save boundary yet. Save that task normally, then use X again.");
+          return;
+        }
+        const accepted = await save();
+        if (!accepted) {
+          setSaveAllError("A task could not be saved. Nothing was discarded; fix that task and try again.");
+          return;
+        }
+        shared.setTaskDirty(task.id, false);
+        await afterReactTurn();
+      }
+      onConfirmLeave();
+    } finally {
+      setSavingAll(false);
+    }
+  }, [onConfirmLeave, savingAll, shared, tasks]);
+
   const authorRuntime = useMemo<AuthorRuntimeSurface>(() => ({ ...shared.runtime, preview }), [preview, shared.runtime]);
 
   if (!tasks.length) return null;
@@ -186,20 +246,21 @@ export function AuthorWorkspaceHost({
       <div
         ref={workspaceLayerRef}
         className={`author-workspace-layer${previewing ? " is-previewing" : ""}`}
+        data-task-depth={tasks.length}
         role="presentation"
         aria-hidden={previewing || undefined}
         onPointerDown={(event) => event.stopPropagation()}
       >
         <nav className="author-workspace-navigation" aria-label="Author task navigation">
           <div className="author-workspace-primary-actions">
-            <button
+            {tasks.length > 1 ? <button
               type="button"
               className="author-workspace-back"
               onClick={() => shared.requestBack(activeTaskId ?? undefined)}
             >
               <span className="author-workspace-back-wide">[← BACK]</span>
               <span className="author-workspace-back-compact">[BACK]</span>
-            </button>
+            </button> : null}
             {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
             <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
@@ -227,12 +288,14 @@ export function AuthorWorkspaceHost({
           </div> : null}
         </nav>
         <div className="author-workspace-content">
-          {tasks.map((task) => <AuthorTaskSurface
+          {tasks.map((task, index) => <AuthorTaskSurface
             key={task.id}
             {...taskShared}
             task={task}
             active={task.id === activeTaskId}
+            hasParentTask={index > 0}
             resources={resources}
+            registerTaskSave={registerTaskSave}
           />)}
         </div>
         {leaveConfirmation ? <div className="author-leave-shade">
@@ -243,15 +306,17 @@ export function AuthorWorkspaceHost({
             aria-labelledby="author-leave-title"
             aria-describedby="author-leave-copy"
           >
-            <h2 id="author-leave-title">UNSAVED CHANGES</h2>
+            <h2 id="author-leave-title">{leaveConfirmation.action === "close" ? "RETURN TO PLAYER" : "UNSAVED CHANGES"}</h2>
             <p id="author-leave-copy">
-              {leaveConfirmation.action === "close" && leaveConfirmation.dirtyCount > 1
-                ? `${leaveConfirmation.dirtyCount} Author tasks contain unsaved changes.`
+              {leaveConfirmation.action === "close"
+                ? `${leaveConfirmation.dirtyCount} Author ${leaveConfirmation.dirtyCount === 1 ? "task has" : "tasks have"} unsaved work. Save all work before returning to play, or discard it.`
                 : "This Author task contains unsaved changes."}
             </p>
+            {saveAllError ? <p className="author-leave-error" role="alert">{saveAllError}</p> : null}
             <div className="author-leave-actions">
-              <button type="button" autoFocus onClick={onCancelLeave}>[KEEP EDITING]</button>
-              <button type="button" onClick={onConfirmLeave}>[DISCARD CHANGES]</button>
+              <button type="button" autoFocus disabled={savingAll} onClick={() => { setSaveAllError(""); onCancelLeave(); }}>[KEEP EDITING]</button>
+              {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={() => void saveAllAndReturn()}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
+              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
             </div>
           </section>
         </div> : null}

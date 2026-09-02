@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import { GeneratedKeyField } from "../../../author/GeneratedKeyField";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { resolveAuthorKey } from "../../../author/generatedKey";
@@ -38,14 +39,15 @@ function ItemEditorDisclosure({ title, summary, defaultOpen = false, children }:
   </details>;
 }
 
-export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty }: {
+export function ItemEditor({ snapshot, initial, openOperations = false, preferredOperation, onSave, onCancel, setWorkspaceDirty, onRegisterSave }: {
   snapshot: ProjectSnapshot;
   initial?: ItemDefinition;
   openOperations?: boolean;
   preferredOperation?: string;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onCancel: () => void;
+  onCancel?: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
+  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
 }) {
   const [draft, setDraft] = useState(() => ({
     ...structuredClone(initial ?? emptyItem()),
@@ -81,8 +83,8 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
     return () => setWorkspaceDirty(false);
   }, [dirty, setWorkspaceDirty]);
 
-  const save = async () => {
-    if (!draft.name.trim()) return;
+  const save = async (): Promise<boolean> => {
+    if (!draft.name.trim()) return false;
     const item = {
       ...draft,
       equipmentSlotKeys: [...(draft.equipmentSlotKeys ?? [])],
@@ -100,16 +102,24 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
       if (result.status === "saved" || result.status === "queued") {
         setBaseline(JSON.stringify(item));
         setWorkspaceDirty(false);
+        return true;
       }
+      return false;
     } finally { setSaving(false); }
   };
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    onRegisterSave(save);
+    return () => onRegisterSave(null);
+  });
 
   const remove = async () => {
     if (!initial || usages.length || !window.confirm(`Delete item “${initial.name}”?`)) return;
     setSaving(true);
     try {
       const result = await onSave([{ type: "item.delete", id: initial.id }], `Deleted item ${initial.name}`);
-      if (result.status === "saved" || result.status === "queued") onCancel();
+      if (result.status === "saved" || result.status === "queued") onCancel?.();
     } finally { setSaving(false); }
   };
 
@@ -179,6 +189,6 @@ export function ItemEditor({ snapshot, initial, openOperations = false, preferre
           onChange={(capability) => setDraft({ ...draft, ...capability })} />
       </ItemEditorDisclosure>
     </div>
-    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button><button type="button" onClick={onCancel}>[CANCEL]</button>{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
+    <div className="author-actions author-panel-footer"><button type="button" disabled={saving || !dirty} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>{onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}{initial ? <button type="button" className="danger" disabled={saving || usages.length > 0} title={usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined} onClick={() => void remove()}>[DELETE{usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}</div>
   </section>;
 }

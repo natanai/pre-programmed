@@ -161,6 +161,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       resourceKind={resourceKind}
       resourceId={route.data?.resourceId}
       preferredOperation={route.data?.preferredOperation}
+      onRegisterSave={context.registerWorkspaceSave}
       onSave={async (operations, description) => {
         const result = await context.persist(operations, description);
         if (!resourceKind || (result.status !== "saved" && result.status !== "queued")) return result;
@@ -198,7 +199,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
         }
         return result;
       }}
-      onClose={context.leaveCurrentTask}
+      onClose={context.hasParentTask ? context.leaveCurrentTask : undefined}
       setWorkspaceDirty={context.setWorkspaceDirty}
     />;
   },
