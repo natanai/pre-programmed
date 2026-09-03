@@ -11,7 +11,25 @@ const upsertComputed: MutationHandler = (snapshot, operation) => {
   snapshot.computedValues = upsertById(snapshot.computedValues, operation.definition);
 };
 
+const upsertStateGroup: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "stateGroup.upsert") return;
+  snapshot.stateGroups = upsertById(snapshot.stateGroups, operation.group);
+};
+
+const deleteStateGroup: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "stateGroup.delete") return;
+  snapshot.stateGroups = snapshot.stateGroups.filter((group) => group.id !== operation.id);
+  snapshot.variables = snapshot.variables.map((definition) => definition.playerPresentation?.groupId === operation.id
+    ? { ...definition, playerPresentation: null }
+    : definition);
+  snapshot.computedValues = snapshot.computedValues.map((definition) => definition.playerPresentation?.groupId === operation.id
+    ? { ...definition, playerPresentation: null }
+    : definition);
+};
+
 export const STATE_MUTATION_HANDLERS: Readonly<Record<string, MutationHandler>> = {
   "variable.upsert": upsertVariable,
   "computed.upsert": upsertComputed,
+  "stateGroup.upsert": upsertStateGroup,
+  "stateGroup.delete": deleteStateGroup,
 };
