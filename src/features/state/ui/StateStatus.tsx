@@ -31,18 +31,18 @@ export function StateStatus({
 }) {
   const [now, setNow] = useState(() => Date.now());
   const groups = useMemo(() => visibleStateGroups(snapshot, state, now), [snapshot, state, now]);
+  const hasElapsedTime = groups.some(({ entries }) => entries.some((entry) =>
+    entry.kind === "computed" && entry.definition.source === "elapsed_seconds"));
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const selectedGroup = groups.find(({ group }) => group.id === selectedGroupId) ?? null;
   const selectedEntry = selectedGroup?.entries.find(({ definition }) => definition.id === selectedEntryId) ?? null;
 
   useEffect(() => {
-    const hasElapsedTime = groups.some(({ entries }) => entries.some((entry) =>
-      entry.kind === "computed" && entry.definition.source === "elapsed_seconds"));
     if (!hasElapsedTime) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [groups]);
+  }, [hasElapsedTime]);
 
   const operate = (entry: VisibleStateEntry, operation: OperationId) => {
     const execution = executeOperation(snapshot, state, { operation, target: targetForEntry(entry) });
