@@ -13,7 +13,7 @@ export type TextCueAuthorAdapter = {
   label: string;
   category: string;
   description: string;
-  references?: (value: string) => readonly ResourceReference[];
+  references?: (value: string, snapshot: ProjectSnapshot) => readonly ResourceReference[];
   renderValue?: (context: {
     value: string;
     snapshot: ProjectSnapshot;

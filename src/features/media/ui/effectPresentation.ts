@@ -6,19 +6,23 @@ function reportMissingSound(id: string) {
   console.warn(`[MEDIA] Sound ${id} has no playable synth or repository file.`);
 }
 
+function findSynth(context: Parameters<EffectEventPresenter>[1], reference: string) {
+  return context.snapshot.synthSounds.find((candidate) => candidate.id === reference || candidate.key === reference);
+}
+
 /** Media owns the browser meaning of Media-generated effect events. */
 export const presentMediaEffectEvent: EffectEventPresenter = (event, context) => {
   switch (event.type) {
     case "synth": {
-      const sound = context.snapshot.synthSounds.find((candidate) => candidate.id === event.synthId);
+      const sound = findSynth(context, event.synthId);
       if (sound) void playSynthSound(sound).catch((error) => console.warn(`[MEDIA] Synth ${event.synthId} could not play.`, error));
       else reportMissingSound(event.synthId);
       return true;
     }
     case "audio": {
-      // "audio" is the persisted prototype effect name; its stable ID now resolves
+      // "audio" is the persisted prototype effect name; its stable reference now resolves
       // against the single author-facing sound catalog: D1 synths first, then files.
-      const synth = context.snapshot.synthSounds.find((candidate) => candidate.id === event.assetId);
+      const synth = findSynth(context, event.assetId);
       if (synth) {
         void playSynthSound(synth).catch((error) => console.warn(`[MEDIA] Synth ${event.assetId} could not play.`, error));
         return true;
