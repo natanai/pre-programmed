@@ -1,0 +1,80 @@
+.player-workspace-layer {
+  position: fixed;
+  top: var(--terminal-viewport-top, 0px);
+  right: 0;
+  bottom: auto;
+  left: 0;
+  z-index: 45;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  height: var(--terminal-viewport-height, 100dvh);
+  min-height: 0;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  overflow: hidden;
+  background: #000;
+  color: var(--dos-text);
+  font-family: "PreProgrammed VGA", monospace;
+  font-size: var(--terminal-font-size, 16px);
+  line-height: 1;
+  white-space: normal;
+  cursor: default;
+}
+
+.player-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  min-height: 2.75em;
+  padding: 0 0 .45em;
+  border-bottom: 1px solid var(--dos-line);
+}
+
+.player-workspace-header strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.player-workspace-header button {
+  flex: none;
+  min-width: 2.75em;
+  min-height: 2.75em;
+  padding: 0;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.player-workspace-content {
+  min-width: 0;
+  min-height: 0;
+  padding-top: .65em;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.player-workspace-content > * {
+  width: 100%;
+  min-height: 0;
+}
+
+.player-workspace-error {
+  margin: 0;
+  color: var(--dos-warn);
+}
+
+@media (min-width: 1000px) and (pointer: fine) {
+  .player-workspace-layer {
+    padding: 1rem;
+  }
+
+  .player-workspace-content {
+    width: min(100%, 76rem);
+    margin: 0 auto;
+  }
+}
