@@ -23,19 +23,22 @@ function effectReferences(effects: readonly Effect[]): readonly ResourceReferenc
     .find((adapter) => adapter.type === effect.type)?.references?.(effect) ?? []);
 }
 
-function textReferences(text: string): readonly ResourceReference[] {
+function textReferences(text: string, snapshot: ProjectSnapshot): readonly ResourceReference[] {
   return scanInlineTextCommands(text).flatMap((command) => getAuthorTextCueAdapters()
-    .find((adapter) => adapter.inlineCode === command.definition.code)?.references?.(command.value) ?? []);
+    .find((adapter) => adapter.inlineCode === command.definition.code)?.references?.(command.value, snapshot) ?? []);
 }
 
-const referenceContext: ProjectReferenceContext = {
-  condition: conditionReferences,
-  effects: effectReferences,
-  text: textReferences,
-};
+function referenceContext(snapshot: ProjectSnapshot): ProjectReferenceContext {
+  return {
+    condition: conditionReferences,
+    effects: effectReferences,
+    text: (text) => textReferences(text, snapshot),
+  };
+}
 
 export function buildProjectReferences(snapshot: ProjectSnapshot): ProjectReference[] {
-  return getAuthorReferenceContributions().flatMap((contribute) => contribute(snapshot, referenceContext));
+  const context = referenceContext(snapshot);
+  return getAuthorReferenceContributions().flatMap((contribute) => contribute(snapshot, context));
 }
 
 export function referencesTo(snapshot: ProjectSnapshot, resourceKind: string, resourceId: string): ProjectReference[] {
