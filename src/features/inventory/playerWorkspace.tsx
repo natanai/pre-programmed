@@ -1,5 +1,6 @@
 import type { PlayerWorkspaceContribution } from "../../player/workspaces/types";
 import { Inventory } from "./ui/Inventory";
+import "./ui/inventoryLiveAuthoring.css";
 
 export const inventoryPlayerWorkspaceContribution: PlayerWorkspaceContribution = {
   feature: "inventory",
