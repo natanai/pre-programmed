@@ -20,8 +20,7 @@
 }
 
 .authored-text-meta,
-.authored-text-actions,
-.authored-text-cue-buttons {
+.authored-text-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -52,48 +51,51 @@
   color: var(--dos-warn);
 }
 
-.authored-text-cues {
+.inline-command-configs {
   display: grid;
-  gap: .65em;
+  gap: .5em;
   padding: .65em;
   border: 1px dotted var(--dos-line);
 }
 
-.authored-text-cues p {
-  margin: 0;
+.inline-command-configs > strong {
   color: var(--dos-muted);
+  font-weight: 400;
 }
 
-.authored-text-cue-group {
+.inline-command-config-row {
   display: grid;
-  gap: .35em;
+  gap: .45em;
+  min-width: 0;
+  padding: .55em 0 0;
+  border-top: 1px solid var(--dos-line);
 }
 
-.authored-text-cue-group > strong {
+.inline-command-config-row:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.inline-command-config-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: .75em;
+}
+
+.inline-command-config-heading > span {
+  display: grid;
+  gap: .15em;
+  min-width: 0;
+}
+
+.inline-command-config-heading small {
   color: var(--dos-muted);
+  overflow-wrap: anywhere;
 }
 
-.authored-text-cue-list {
-  display: grid;
-  gap: 1px;
-  background: var(--dos-line);
-}
-
-.authored-text-cue-row {
-  display: grid;
-  grid-template-columns: minmax(8em, 1fr) minmax(7em, .75fr) auto;
-  align-items: center;
-  gap: .5em;
-  padding: .5em;
-  background: #050505;
-}
-
-.authored-text-cue-row > span {
-  display: grid;
-}
-
-.authored-text-cue-row small {
-  color: var(--dos-muted);
+.inline-command-config-row .author-reference-field {
+  min-width: 0;
 }
 
 @media (max-width: 700px), (pointer: coarse) {
@@ -102,13 +104,7 @@
     font-size: max(16px, 1em);
   }
 
-  .authored-text-cue-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .authored-text-cue-row > input,
-  .authored-text-cue-row > select,
-  .authored-text-cue-row > .author-reference-field {
-    grid-column: 1 / -1;
+  .inline-command-config-heading {
+    align-items: start;
   }
 }

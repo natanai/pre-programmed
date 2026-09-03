@@ -1,16 +1,15 @@
 import { useMemo, useRef, useState } from "react";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import {
-  featureTextCueAuthorAdapter,
+  featureTextCueAuthorAdapterForCode,
   featureTextCueAuthorAdapters,
 } from "../../../author/textCues/catalog";
+import { scanInlineTextCommands } from "../../../engine/presentation/inlineTextCommandCatalog";
 import type { ProjectSnapshot } from "../../../engine/project/model";
-import type { TextCueType, TextPerformance } from "../model";
+import type { TextPerformance } from "../model";
 import { compileTextNotation, validateTextNotation } from "../textNotation";
 import { TextRulesReference, type InlineTextRule } from "./TextRulesReference";
 import "./authoredTextEditor.css";
-
-const CORE_CUE_TYPES: readonly TextCueType[] = ["pause", "speed", "wave", "shake", "blink", "instant"];
 
 export type AuthoredTextValue = {
   text: string;
@@ -36,14 +35,20 @@ export function AuthoredTextEditor({
 }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const issues = useMemo(() => validateTextNotation(value.text), [value.text]);
   const compiled = useMemo(
     () => compileTextNotation(value.text, value.performance),
     [value.text, value.performance],
   );
-  const mediaCueAdapters = featureTextCueAuthorAdapters();
-  const selectionLength = Math.max(0, selection.end - selection.start);
+  const featureCommands = featureTextCueAuthorAdapters();
+  const configuredCommands = scanInlineTextCommands(value.text)
+    .map((command) => ({ command, adapter: featureTextCueAuthorAdapterForCode(command.definition.code) }))
+    .filter((entry) => Boolean(entry.adapter?.renderValue));
+
+  const emit = (next: AuthoredTextValue) => onChange({
+    ...next,
+    performance: { ...next.performance, cues: [] },
+  });
 
   const focusSelection = (start: number, end = start) => window.requestAnimationFrame(() => {
     textarea.current?.focus();
@@ -51,52 +56,57 @@ export function AuthoredTextEditor({
     setSelection({ start, end });
   });
 
+  const preserveSelectionWithoutFocus = (start: number, end = start) => window.requestAnimationFrame(() => {
+    textarea.current?.setSelectionRange(start, end);
+    setSelection({ start, end });
+  });
+
   const applyInlineRule = (rule: InlineTextRule) => {
     const selected = value.text.slice(selection.start, selection.end);
+    const prefix = rule === "shake"
+      ? "/shake{"
+      : rule === "speed"
+        ? "/speed30{"
+        : !["pause", "literal-slash"].includes(rule)
+          ? `/${rule}{`
+          : "";
     const insertion = rule === "pause"
       ? "/p"
       : rule === "literal-slash"
         ? "//"
-        : `/${rule}{${selected || "text"}}`;
+        : `${prefix}${selected || "text"}}`;
     const nextText = `${value.text.slice(0, selection.start)}${insertion}${value.text.slice(selection.end)}`;
-    onChange({ ...value, text: nextText });
-    if (!selected && !["pause", "literal-slash"].includes(rule)) {
-      const start = selection.start + 3;
+    emit({ ...value, text: nextText });
+    if (!selected && prefix) {
+      const start = selection.start + prefix.length;
       focusSelection(start, start + 4);
     } else {
       focusSelection(selection.start + insertion.length);
     }
   };
 
-  const addCue = (type: TextCueType) => {
-    const featureAdapter = featureTextCueAuthorAdapter(type);
-    const cueValue = type === "pause"
-      ? 350
-      : type === "speed"
-        ? 30
-        : featureAdapter?.createValue?.(snapshot) ?? "";
-    onChange({
-      ...value,
-      performance: {
-        ...value.performance,
-        cues: [...value.performance.cues, {
-          id: crypto.randomUUID(),
-          type,
-          start: selection.start,
-          end: selection.end,
-          value: cueValue,
-        }],
-      },
-    });
+  const applyFeatureCommand = (code: string) => {
+    const insertion = `/${code}{}`;
+    const at = selection.end;
+    const nextText = `${value.text.slice(0, at)}${insertion}${value.text.slice(at)}`;
+    emit({ ...value, text: nextText });
+    const insideBraces = at + code.length + 2;
+    preserveSelectionWithoutFocus(insideBraces);
   };
 
-  const updateCueValue = (cueId: string, cueValue: string | number | boolean | undefined) => onChange({
-    ...value,
-    performance: {
-      ...value.performance,
-      cues: value.performance.cues.map((cue) => cue.id === cueId ? { ...cue, value: cueValue } : cue),
-    },
-  });
+  const updateCommandValue = (rawEnd: number, valueStart: number, valueEnd: number, nextValue: string) => {
+    const safeValue = nextValue.replaceAll("}", "");
+    const nextText = `${value.text.slice(0, valueStart)}${safeValue}${value.text.slice(valueEnd)}`;
+    emit({ ...value, text: nextText });
+    const nextCommandEnd = rawEnd + safeValue.length - (valueEnd - valueStart);
+    preserveSelectionWithoutFocus(nextCommandEnd);
+  };
+
+  const removeCommand = (rawStart: number, rawEnd: number) => {
+    const nextText = `${value.text.slice(0, rawStart)}${value.text.slice(rawEnd)}`;
+    emit({ ...value, text: nextText });
+    preserveSelectionWithoutFocus(rawStart);
+  };
 
   return <div className="authored-text-editor">
     <label className="authored-text-field">{label}
@@ -106,7 +116,7 @@ export function AuthoredTextEditor({
         rows={rows}
         textareaRef={textarea}
         value={value.text}
-        onValueChange={(text) => onChange({ ...value, text })}
+        onValueChange={(text) => emit({ ...value, text })}
         onSelectionChange={setSelection}
         autoFocus={autoFocus}
         ariaLabel={label}
@@ -119,46 +129,48 @@ export function AuthoredTextEditor({
         min={1}
         max={120}
         value={value.performance.charactersPerSecond}
-        onChange={(event) => onChange({
+        onChange={(event) => emit({
           ...value,
           performance: { ...value.performance, charactersPerSecond: Math.max(1, Math.min(120, Number(event.target.value) || 1)) },
         })}
       /> chars/sec</label>
     </div>
-    <TextRulesReference onApply={applyInlineRule} />
+    <TextRulesReference
+      onApply={applyInlineRule}
+      featureCommands={featureCommands.map((adapter) => ({
+        code: adapter.inlineCode,
+        label: adapter.label,
+        category: adapter.category,
+        description: adapter.description,
+      }))}
+      onApplyFeatureCommand={applyFeatureCommand}
+    />
+    {configuredCommands.length ? <section className="inline-command-configs" aria-label="Inline command details">
+      <strong>COMMAND DETAILS</strong>
+      {configuredCommands.map(({ command, adapter }, index) => adapter ? <div
+        className="inline-command-config-row"
+        key={`${command.definition.code}:${command.rawStart}`}
+      >
+        <div className="inline-command-config-heading">
+          <span><strong>{index + 1}. /{command.definition.code}</strong><small>{adapter.description}</small></span>
+          <button type="button" onClick={() => removeCommand(command.rawStart, command.rawEnd)}>[REMOVE]</button>
+        </div>
+        {adapter.renderValue?.({
+          value: command.value,
+          snapshot,
+          onValueChange: (nextValue) => updateCommandValue(command.rawEnd, command.valueStart, command.valueEnd, nextValue),
+        })}
+      </div> : null)}
+    </section> : null}
     {issues.length ? <div className="authored-text-errors" role="alert">
       {issues.map((issue) => <span key={`${issue.index}:${issue.message}`}>{issue.message}</span>)}
     </div> : null}
     <div className="authored-text-actions">
-      <button type="button" onClick={() => setAdvancedOpen((open) => !open)}>
-        [{advancedOpen ? "HIDE TIMELINE + MEDIA" : "TIMELINE + MEDIA"} · {value.performance.cues.length}]
-      </button>
-      {onPreview ? <button type="button" disabled={Boolean(issues.length)} onClick={() => onPreview(value)}>[PREVIEW IN PLAY]</button> : null}
+      {onPreview ? <button type="button" disabled={Boolean(issues.length)} onClick={() => onPreview({
+        ...value,
+        performance: { ...value.performance, cues: [] },
+      })}>[PREVIEW IN PLAY]</button> : null}
     </div>
-    {advancedOpen ? <section className="authored-text-cues">
-      <p>Use this timeline for precise positions and media events. Inline Text Styles above are faster when an effect belongs directly to written words.</p>
-      <p>{selectionLength ? `${selectionLength} selected · ${selection.start}:${selection.end}` : `Cursor ${selection.start}`}. Select text first, then add an event.</p>
-      <div className="authored-text-cue-group">
-        <strong>PRECISE DELIVERY</strong>
-        <div className="authored-text-cue-buttons">{CORE_CUE_TYPES.map((type) => <button type="button" key={type} onClick={() => addCue(type)}>[+ {type.toUpperCase()}]</button>)}</div>
-      </div>
-      {mediaCueAdapters.length ? <div className="authored-text-cue-group">
-        <strong>MEDIA EVENTS</strong>
-        <div className="authored-text-cue-buttons">{mediaCueAdapters.map((adapter) => <button type="button" key={adapter.type} onClick={() => addCue(adapter.type)}>[+ {adapter.type.toUpperCase()}]</button>)}</div>
-      </div> : null}
-      <div className="authored-text-cue-list">
-        {value.performance.cues.map((cue, index) => {
-          const featureAdapter = featureTextCueAuthorAdapter(cue.type);
-          return <div className="authored-text-cue-row" key={cue.id}>
-            <span><strong>{index + 1}. {cue.type.toUpperCase()}</strong><small>{cue.start}:{cue.end}</small></span>
-            {(cue.type === "pause" || cue.type === "speed") ? <input aria-label={`${cue.type} value`} type="number" value={Number(cue.value ?? 0)} onChange={(event) => updateCueValue(cue.id, Number(event.target.value))} /> : null}
-            {featureAdapter?.renderValue({ cue, snapshot, onValueChange: (next) => updateCueValue(cue.id, next) })}
-            <button type="button" onClick={() => onChange({ ...value, performance: { ...value.performance, cues: value.performance.cues.filter((item) => item.id !== cue.id) } })}>[REMOVE]</button>
-          </div>;
-        })}
-        {!value.performance.cues.length ? <span className="muted">NO TIMELINE OR MEDIA EVENTS CONFIGURED.</span> : null}
-      </div>
-    </section> : null}
     <div className="performance-preview" aria-label={`${label} preview`}><PerformanceText text={compiled.text} performance={compiled.performance} /></div>
   </div>;
 }
@@ -167,7 +179,7 @@ function PerformanceText({ text, performance }: { text: string; performance: Tex
   const segments: Array<{ text: string; classes: string[] }> = [];
   for (let index = 0; index < text.length; index += 1) {
     const classes = performance.cues
-      .filter((cue) => cue.start <= index && (cue.end > index || cue.start === cue.end))
+      .filter((cue) => ["wave", "shake", "blink"].includes(cue.type) && cue.start <= index && cue.end > index)
       .map((cue) => `cue-${cue.type}`);
     const previous = segments.at(-1);
     if (previous && previous.classes.join(" ") === classes.join(" ")) previous.text += text[index];

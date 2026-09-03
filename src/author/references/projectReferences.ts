@@ -1,6 +1,6 @@
 import type { Condition, Effect } from "../../engine/rules/model";
+import { scanInlineTextCommands } from "../../engine/presentation/inlineTextCommandCatalog";
 import type { ProjectSnapshot } from "../../engine/project/model";
-import type { TextPerformance } from "../../features/narrative/model";
 import {
   getAuthorConditionAdapters,
   getAuthorEffectAdapters,
@@ -23,15 +23,15 @@ function effectReferences(effects: readonly Effect[]): readonly ResourceReferenc
     .find((adapter) => adapter.type === effect.type)?.references?.(effect) ?? []);
 }
 
-function performanceReferences(performance: TextPerformance): readonly ResourceReference[] {
-  return performance.cues.flatMap((cue) => getAuthorTextCueAdapters()
-    .find((adapter) => adapter.type === cue.type)?.references?.(cue) ?? []);
+function textReferences(text: string): readonly ResourceReference[] {
+  return scanInlineTextCommands(text).flatMap((command) => getAuthorTextCueAdapters()
+    .find((adapter) => adapter.inlineCode === command.definition.code)?.references?.(command.value) ?? []);
 }
 
 const referenceContext: ProjectReferenceContext = {
   condition: conditionReferences,
   effects: effectReferences,
-  performance: performanceReferences,
+  text: textReferences,
 };
 
 export function buildProjectReferences(snapshot: ProjectSnapshot): ProjectReference[] {

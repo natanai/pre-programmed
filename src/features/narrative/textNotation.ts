@@ -1,3 +1,4 @@
+import { inlineTextCommandAt } from "../../engine/presentation/inlineTextCommandCatalog";
 import type { TextCue, TextPerformance } from "./model";
 
 export type CompiledTextPerformance = {
@@ -5,12 +6,13 @@ export type CompiledTextPerformance = {
   performance: TextPerformance;
 };
 
-type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i";
+type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed";
 
 type OpenScope = {
   code: ScopeCode;
   outputStart: number;
   rawStart: number;
+  value?: number;
 };
 
 const DEFAULT_PAUSE_MS = 350;
@@ -20,31 +22,72 @@ export type TextNotationIssue = {
   message: string;
 };
 
+function commandHeadAt(rawText: string, index: number) {
+  return rawText.slice(index).match(/^\/([a-z][a-z0-9-]*)\{/i);
+}
+
 /** Validate authored inline notation before it reaches the player. */
 export function validateTextNotation(rawText: string): TextNotationIssue[] {
   const issues: TextNotationIssue[] = [];
-  const scopes: number[] = [];
+  const scopes: Array<{ index: number; code: ScopeCode }> = [];
+
   for (let index = 0; index < rawText.length; index += 1) {
     if (rawText.startsWith("//", index)) {
       index += 1;
       continue;
     }
+
+    const longScope = rawText.slice(index).match(/^\/(shake|speed(\d{1,3}))\{/);
+    if (longScope) {
+      if (longScope[1].startsWith("speed")) {
+        const speed = Number(longScope[2]);
+        if (speed < 1 || speed > 120) {
+          issues.push({ index, message: `Inline speed at character ${index + 1} must be between 1 and 120.` });
+        }
+      }
+      scopes.push({ index, code: longScope[1].startsWith("speed") ? "speed" : "shake" });
+      index += longScope[0].length - 1;
+      continue;
+    }
+
     const scope = rawText.slice(index).match(/^\/([lfshwbi])\{/);
     if (scope) {
-      scopes.push(index);
+      scopes.push({ index, code: scope[1] as ScopeCode });
       index += 2;
       continue;
     }
-    if (/^\/[a-z]\{/i.test(rawText.slice(index))) {
-      issues.push({ index, message: `Unknown text rule at character ${index + 1}.` });
+
+    const command = inlineTextCommandAt(rawText, index);
+    if (command) {
+      if (!command.closed) {
+        issues.push({ index, message: `/${command.definition.code}{...} at character ${index + 1} needs a closing }.` });
+        break;
+      }
+      if (command.definition.valueRequired && !command.value.trim()) {
+        issues.push({ index, message: `Choose a value for /${command.definition.code}{...} at character ${index + 1}.` });
+      }
+      index = command.rawEnd - 1;
       continue;
     }
-    if (rawText[index] === "}") {
-      if (scopes.length) scopes.pop();
-      else issues.push({ index, message: `Unmatched } at character ${index + 1}.` });
+
+    const unknownCommand = commandHeadAt(rawText, index);
+    if (unknownCommand) {
+      issues.push({ index, message: `Unknown inline command /${unknownCommand[1]}{...} at character ${index + 1}.` });
+      const close = rawText.indexOf("}", index + unknownCommand[0].length);
+      if (close < 0) {
+        issues.push({ index, message: `Inline command opened at character ${index + 1} needs a closing }.` });
+        break;
+      }
+      index = close;
+      continue;
     }
+
+    if (rawText[index] === "}" && scopes.length) scopes.pop();
   }
-  for (const index of scopes) issues.push({ index, message: `Text rule opened at character ${index + 1} needs a closing }.` });
+
+  for (const scope of scopes) {
+    issues.push({ index: scope.index, message: `Text rule opened at character ${scope.index + 1} needs a closing }.` });
+  }
   return issues.sort((left, right) => left.index - right.index);
 }
 
@@ -80,50 +123,72 @@ function scopeCues(scope: OpenScope, end: number, baseSpeed: number, sequence: n
       return [generatedCue(id("blink"), "blink", scope.outputStart, end)];
     case "i":
       return [generatedCue(id("instant"), "instant", scope.outputStart, end)];
+    case "shake":
+      return [generatedCue(id("shake"), "shake", scope.outputStart, end)];
+    case "speed":
+      return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(scope.value ?? baseSpeed))];
   }
 }
 
 /**
- * Compile terse slash notation embedded in authored prose into Narrative's
- * existing TextPerformance cue model. The authored source string remains
- * unchanged in storage; player-facing copy has control notation removed.
+ * Compile slash notation embedded in authored prose into the runtime cue model.
+ * The authored source string is the canonical presentation source: control
+ * notation is removed from player-facing copy and no separately positioned
+ * Author timeline is composed back in.
  */
 export function compileTextNotation(rawText: string, performance: TextPerformance): CompiledTextPerformance {
   const output: string[] = [];
-  const boundaryMap = new Array<number>(rawText.length + 1).fill(0);
   const scopes: OpenScope[] = [];
   const inlineCues: TextCue[] = [];
   let cueSequence = 0;
   let index = 0;
 
-  const mapSkipped = (start: number, count: number) => {
-    for (let offset = 0; offset <= count; offset += 1) boundaryMap[start + offset] = output.length;
-  };
-
   while (index < rawText.length) {
-    boundaryMap[index] = output.length;
-
     if (rawText.startsWith("//", index)) {
-      mapSkipped(index, 1);
       output.push("/");
       index += 2;
-      boundaryMap[index] = output.length;
+      continue;
+    }
+
+    const longScopeMatch = rawText.slice(index).match(/^\/(shake|speed(\d{1,3}))\{/);
+    if (longScopeMatch) {
+      const isSpeed = longScopeMatch[1].startsWith("speed");
+      scopes.push({
+        code: isSpeed ? "speed" : "shake",
+        outputStart: output.length,
+        rawStart: index,
+        ...(isSpeed ? { value: Number(longScopeMatch[2]) } : {}),
+      });
+      index += longScopeMatch[0].length;
       continue;
     }
 
     const scopeMatch = rawText.slice(index).match(/^\/([lfshwbi])\{/);
     if (scopeMatch) {
       scopes.push({ code: scopeMatch[1] as ScopeCode, outputStart: output.length, rawStart: index });
-      mapSkipped(index, 2);
       index += 3;
-      boundaryMap[index] = output.length;
+      continue;
+    }
+
+    const inlineCommand = inlineTextCommandAt(rawText, index);
+    if (inlineCommand?.closed) {
+      const value = inlineCommand.value.trim();
+      if (!inlineCommand.definition.valueRequired || value) {
+        inlineCues.push(generatedCue(
+          `inline:${inlineCommand.definition.code}:${inlineCommand.rawStart}:${cueSequence++}`,
+          inlineCommand.definition.cueType,
+          output.length,
+          output.length,
+          value,
+        ));
+      }
+      index = inlineCommand.rawEnd;
       continue;
     }
 
     if (rawText[index] === "}" && scopes.length) {
       const scope = scopes.pop()!;
       inlineCues.push(...scopeCues(scope, output.length, performance.charactersPerSecond, cueSequence++));
-      mapSkipped(index, 1);
       index += 1;
       continue;
     }
@@ -137,19 +202,14 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
         const length = 2 + digits.length;
         const pauseMs = digits ? Math.max(0, Math.min(9999, Number(digits))) : DEFAULT_PAUSE_MS;
         inlineCues.push(generatedCue(`inline:p:${index}:${cueSequence++}`, "pause", output.length, output.length, pauseMs));
-        mapSkipped(index, length);
         index += length;
-        if (rawText[index] === " " && output.at(-1) === " ") {
-          mapSkipped(index, 1);
-          index += 1;
-        }
+        if (rawText[index] === " " && output.at(-1) === " ") index += 1;
         continue;
       }
     }
 
     output.push(rawText[index]);
     index += 1;
-    boundaryMap[index] = output.length;
   }
 
   while (scopes.length) {
@@ -157,18 +217,11 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
     inlineCues.push(...scopeCues(scope, output.length, performance.charactersPerSecond, cueSequence++));
   }
 
-  const mapPosition = (position: number) => boundaryMap[Math.max(0, Math.min(rawText.length, position))] ?? output.length;
-  const authoredCues = performance.cues.map((cue) => ({
-    ...cue,
-    start: mapPosition(cue.start),
-    end: mapPosition(cue.end),
-  }));
-
   return {
     text: output.join(""),
     performance: {
       charactersPerSecond: performance.charactersPerSecond,
-      cues: [...authoredCues, ...inlineCues],
+      cues: inlineCues,
     },
   };
 }

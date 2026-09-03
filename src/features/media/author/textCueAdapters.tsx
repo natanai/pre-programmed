@@ -1,34 +1,30 @@
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { TextCueAuthorAdapter } from "../../../author/textCues/types";
 
-const synth: TextCueAuthorAdapter = {
-  type: "synth",
-  label: "synth",
-  createValue: () => "",
-  references: (cue) => String(cue.value ?? "") ? [{ resourceKind: "synth-sound", resourceId: String(cue.value), detail: "inline synth cue" }] : [],
-  renderValue: ({ cue, onValueChange }) => <ReferenceField
-    kind="synth-sound"
-    value={String(cue.value ?? "")}
-    onChange={onValueChange}
-  />,
-};
-
-function assetCue(type: "audio" | "sprite", resourceKind: "media-audio" | "media-image"): TextCueAuthorAdapter {
+function resourceCommand(
+  type: "synth" | "audio" | "sprite",
+  resourceKind: "synth-sound" | "media-audio" | "media-image",
+  label: string,
+  description: string,
+): TextCueAuthorAdapter {
   return {
     type,
-    label: type,
-    createValue: () => "",
-    references: (cue) => String(cue.value ?? "") ? [{ resourceKind, resourceId: String(cue.value), detail: `inline ${type} cue` }] : [],
-    renderValue: ({ cue, onValueChange }) => <ReferenceField
+    inlineCode: type,
+    label,
+    category: "MEDIA",
+    description,
+    references: (value) => value.trim() ? [{ resourceKind, resourceId: value.trim(), detail: `inline /${type} command` }] : [],
+    renderValue: ({ value, onValueChange }) => <ReferenceField
       kind={resourceKind}
-      value={String(cue.value ?? "")}
+      value={value}
       onChange={onValueChange}
+      allowEmpty={false}
     />,
   };
 }
 
 export const MEDIA_TEXT_CUE_AUTHOR_ADAPTERS: readonly TextCueAuthorAdapter[] = [
-  synth,
-  assetCue("audio", "media-audio"),
-  assetCue("sprite", "media-image"),
+  resourceCommand("synth", "synth-sound", "Synth", "Play a synth sound when delivery reaches this point."),
+  resourceCommand("audio", "media-audio", "Audio", "Play an audio asset when delivery reaches this point."),
+  resourceCommand("sprite", "media-image", "Sprite", "Show an image asset when delivery reaches this point."),
 ];

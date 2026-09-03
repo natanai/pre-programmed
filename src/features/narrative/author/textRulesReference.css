@@ -34,6 +34,23 @@
   margin-bottom: 0;
 }
 
+.text-rule-group {
+  display: grid;
+  gap: .3em;
+  margin: 0 0 .65em;
+}
+
+.text-rule-group > strong {
+  color: var(--dos-muted);
+  font-weight: 400;
+}
+
+.text-rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .65em;
+}
+
 .text-rules-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -41,11 +58,9 @@
   margin-bottom: .55em;
 }
 
-.text-rule-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .35em .65em;
-  margin: 0 0 .65em;
+.text-rules-grid span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .text-rules-grid strong,
