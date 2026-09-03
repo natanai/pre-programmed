@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../src/engine/application/catalog";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import { buildPlayerWorkspaceNavigation, resolvePlayerWorkspace } from "../src/player/workspaces/registry";
@@ -51,5 +51,32 @@ describe("player workspace boundary", () => {
     expect(navigation.map((entry) => entry.label)).toEqual(["Inventory", "Stats"]);
     expect(navigation.find((entry) => entry.label === "Stats")?.request)
       .toEqual({ feature: "state", workspace: "status", data: { groupId: "stats" } });
+  });
+
+  it("keeps player workspaces player-owned while exposing feature editing only through the optional Author bridge", () => {
+    const snapshot = project();
+    const playState = createEmptyPlayState(snapshot);
+    const request = { feature: "inventory", workspace: "inventory" } as const;
+    const inventory = resolvePlayerWorkspace(request);
+    expect(inventory).toBeDefined();
+
+    const playerContext = {
+      snapshot,
+      playState,
+      updateState: () => undefined,
+      output: () => undefined,
+      events: () => undefined,
+    };
+    expect(inventory?.authorActions?.(request, playerContext)).toEqual([]);
+
+    const openWorkspace = vi.fn();
+    const authorContext = { ...playerContext, author: { openWorkspace } };
+    const actions = inventory?.authorActions?.(request, authorContext) ?? [];
+    expect(actions.map((action) => action.label)).toEqual(["ITEM DEFINITIONS", "BODY TYPES", "+ ITEM"]);
+
+    actions[0]?.onAction();
+    expect(openWorkspace).toHaveBeenCalledWith("inventory", "items");
+    actions[1]?.onAction();
+    expect(openWorkspace).toHaveBeenCalledWith("inventory", "body-types");
   });
 });
