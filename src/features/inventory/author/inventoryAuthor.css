@@ -23,13 +23,8 @@
   align-items: stretch;
 }
 
-.inventory-primary-area .inventory-grid {
-  grid-area: grid;
-}
-
-.inventory-primary-area .inventory-inspector {
-  grid-area: inspector;
-}
+.inventory-primary-area .inventory-grid { grid-area: grid; }
+.inventory-primary-area .inventory-inspector { grid-area: inspector; }
 
 .inventory-body-area {
   display: grid;
@@ -60,23 +55,21 @@
   white-space: nowrap;
 }
 
-.inventory-body-canvas {
+/* Shared Body renderer. Geometry is SVG; HTML controls never paint slot borders. */
+.body-diagram {
   position: relative;
   display: grid;
   place-items: center;
   width: 100%;
-  min-height: 18rem;
-  aspect-ratio: 3 / 4;
+  min-height: 0;
   overflow: hidden;
-  background-color: #050505;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
+  background: #050505;
   color: var(--dos-muted);
   text-align: center;
+  isolation: isolate;
 }
 
-.inventory-body-canvas::after {
+.body-diagram::after {
   content: "";
   position: absolute;
   inset: .4em;
@@ -84,55 +77,69 @@
   pointer-events: none;
   border: 1px dotted #292929;
 }
-
-.inventory-body-canvas.has-background::after {
-  border-color: transparent;
+.body-diagram.has-background::after { border-color: transparent; }
+.body-diagram-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
-
-.inventory-body-canvas > span {
+.body-diagram-empty {
+  position: relative;
   z-index: 1;
   max-width: 12em;
   padding: 1em;
   line-height: 1.2;
 }
-
-.inventory-body-slot {
+.body-diagram-geometry {
   position: absolute;
-  z-index: 2;
-  display: grid !important;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.body-diagram-slot-rect {
+  fill: rgb(0 0 0 / .18);
+  stroke: #777;
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.body-diagram-slot-rect.can-equip {
+  fill: rgb(255 255 255 / .07);
+  stroke: var(--dos-bright);
+}
+.body-diagram-slot-rect.occupied {
+  stroke: var(--dos-bright);
+  stroke-dasharray: none;
+}
+.body-diagram-content,
+.body-diagram-hit-layer,
+.body-layout-editor-hit-layer {
+  position: absolute;
+  inset: 0;
+}
+.body-diagram-content { z-index: 2; pointer-events: none; }
+.body-diagram-slot-content {
+  position: absolute;
+  display: grid;
   place-items: center;
   min-width: 0;
   min-height: 0;
-  padding: 0 !important;
   overflow: hidden;
-  border: 1px dashed #777 !important;
-  background: rgb(0 0 0 / .18) !important;
-  color: var(--dos-muted) !important;
-  touch-action: manipulation;
+  color: var(--dos-muted);
 }
-
-.inventory-body-slot.can-equip {
-  border-color: var(--dos-bright) !important;
-  background: rgb(255 255 255 / .07) !important;
-}
-
-.inventory-body-slot.occupied {
-  border-style: solid !important;
-  color: var(--dos-bright) !important;
-}
-
-.inventory-body-slot img {
+.body-diagram-slot-content.occupied { color: var(--dos-bright); }
+.body-diagram-slot-content img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  pointer-events: none;
 }
-
-.inventory-body-slot strong {
-  font-weight: 400;
-}
-
-.inventory-body-slot small {
+.body-diagram-slot-content strong { font-weight: 400; }
+.body-diagram-slot-content small {
   position: absolute;
   right: 1px;
   bottom: 1px;
@@ -146,11 +153,22 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.inventory-item.equipped {
-  box-shadow: inset 0 0 0 1px var(--dos-bright);
+.body-diagram-hit-layer { z-index: 3; pointer-events: none; }
+.body-diagram-hit-layer > button {
+  position: absolute;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 !important;
+  border: 0 !important;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent !important;
+  color: var(--dos-bright) !important;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
+.inventory-item.equipped { box-shadow: inset 0 0 0 1px var(--dos-bright); }
 .inventory-item > i {
   position: absolute;
   top: 1px;
@@ -160,11 +178,7 @@
   font-style: normal;
   text-shadow: 1px 1px #000;
 }
-
-.inventory-equipped-status {
-  color: var(--dos-warn);
-}
-
+.inventory-equipped-status { color: var(--dos-warn); }
 .inventory-equip-choices {
   display: flex;
   flex-wrap: wrap;
@@ -174,18 +188,13 @@
   padding-top: .5em;
   border-top: 1px dotted var(--dos-line);
 }
-
 .inventory-equip-choices > span,
-.inventory-equip-choices > small {
-  color: var(--dos-muted);
-}
-
+.inventory-equip-choices > small { color: var(--dos-muted); }
 .inventory-equip-choices button[aria-pressed="true"] {
   color: var(--dos-bright);
   text-decoration: underline;
   text-underline-offset: .2em;
 }
-
 .inventory-inspector-heading {
   display: flex;
   align-items: center;
@@ -194,7 +203,6 @@
   padding-bottom: .4em;
   border-bottom: 1px dotted var(--dos-line);
 }
-
 .inventory-inspector-heading strong {
   min-width: 0;
   overflow: hidden;
@@ -203,74 +211,35 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
 .inventory-inspector-heading button {
   flex: none;
   min-height: 2.5em;
   padding: .25em .4em !important;
 }
+.inventory-inspector-help { margin: 0; color: var(--dos-muted); }
 
-.inventory-inspector-help {
-  margin: 0;
-  color: var(--dos-muted);
-}
-
-/* Specialized Body Type slot-layout control used inside the shared Author grammar. */
+/* Specialized Body Type spatial control inside the shared Author grammar. */
 .body-type-layout-control {
   display: grid;
   gap: .65em;
   min-width: 0;
+  container-type: inline-size;
 }
-
-.body-type-layout-editor {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: min(100%, 32rem);
-  aspect-ratio: 3 / 4;
-  overflow: hidden;
-  border: 1px dotted var(--dos-line);
-  background-color: #050505;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  color: var(--dos-muted);
-}
-
-.body-type-layout-empty {
-  pointer-events: none;
-}
-
-.body-slot-editor-rect {
+.body-type-layout-control > .body-diagram { width: min(100%, 32rem); }
+.body-layout-editor-hit-layer { z-index: 4; pointer-events: none; }
+.body-slot-editor-hit {
   position: absolute;
-  z-index: 2;
-  display: grid;
-  place-items: center;
   min-width: 0;
   min-height: 0;
-  border: 1px solid var(--dos-bright);
-  background: rgb(0 0 0 / .38);
-  color: var(--dos-bright);
   cursor: move;
+  pointer-events: auto;
   touch-action: none;
   user-select: none;
 }
-
-.body-slot-editor-rect.active {
+.body-slot-editor-hit.active {
   outline: 1px dotted var(--dos-bright);
   outline-offset: 2px;
 }
-
-.body-slot-editor-rect > span {
-  max-width: 100%;
-  overflow: hidden;
-  padding: .15em;
-  font-size: .8em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  pointer-events: none;
-}
-
 .body-slot-resize-handle {
   position: absolute;
   right: 0;
@@ -281,115 +250,76 @@
   height: 2em;
   min-width: 0 !important;
   min-height: 0 !important;
+  padding: 0 !important;
   border: 0 !important;
+  appearance: none;
+  -webkit-appearance: none;
   background: #000 !important;
   color: var(--dos-bright) !important;
   cursor: nwse-resize !important;
   touch-action: none;
 }
-
 .body-slot-editor-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .5em .8em;
 }
-
 .body-slot-editor-toolbar small {
-  max-width: 42em;
+  max-width: 48em;
   color: var(--dos-muted);
   line-height: 1.2;
 }
-
 .body-slot-definition-list {
   display: grid;
-  gap: .65em;
-}
-
-.body-slot-definition-row {
-  display: grid;
-  gap: .45em;
-  padding: .6em;
-  border: 1px solid var(--dos-line);
-}
-
-.body-slot-name-key,
-.body-slot-coordinate-grid {
-  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
   gap: .5em;
 }
-
-.body-slot-name-key {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+.body-slot-definition-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65em;
+  min-width: 0;
+  padding: .55em;
+  border: 1px solid var(--dos-line);
 }
-
-.body-slot-coordinate-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+.body-slot-definition-row > div {
+  display: grid;
+  gap: .2em;
+  min-width: 0;
+  text-align: left;
 }
-
-.body-slot-definition-row label {
-  margin: 0;
+.body-slot-definition-row strong,
+.body-slot-definition-row small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.body-slot-definition-row strong { color: var(--dos-bright); font-weight: 400; }
+.body-slot-definition-row small { color: var(--dos-muted); }
 
-.body-slot-definition-row > small {
-  color: var(--dos-muted);
-  line-height: 1.2;
-}
-
-.body-slot-definition-row > button {
-  width: fit-content;
+@container (max-width: 30rem) {
+  .body-slot-definition-list { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 700px), (pointer: coarse) {
-  .inventory-play-workspace .inventory-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  .inventory-play-workspace .inventory-layout { grid-template-columns: minmax(0, 1fr); }
   .inventory-primary-area {
-    grid-template-areas:
-      "inspector"
-      "grid";
+    grid-template-areas: "inspector" "grid";
     grid-template-columns: minmax(0, 1fr);
   }
-
   .inventory-play-workspace .inventory-inspector {
     min-height: 0;
     padding: .55em .65em;
     border-width: 1px;
   }
-
-  .inventory-play-workspace .inventory-inspector.has-selection {
-    border-color: var(--dos-bright);
-  }
-
-  .inventory-body-area {
-    width: 100%;
-  }
-
-  .inventory-body-canvas {
-    min-height: 0;
-    aspect-ratio: 3 / 4;
-  }
-
+  .inventory-play-workspace .inventory-inspector.has-selection { border-color: var(--dos-bright); }
+  .inventory-body-area { width: 100%; }
   .inventory-inspector-heading button,
   .inventory-equip-choices button,
   .body-slot-editor-toolbar button,
-  .body-slot-definition-row button,
-  .body-slot-definition-row :is(input, select) {
-    min-height: 2.75em;
-    font-size: max(16px, 1em);
-  }
-
-  .body-slot-name-key {
-    grid-template-columns: 1fr;
-    gap: .25em;
-  }
-
-  .body-slot-coordinate-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .body-type-layout-editor {
-    width: 100%;
-  }
+  .body-slot-definition-row button { min-height: 2.75em; font-size: max(16px, 1em); }
+  .body-type-layout-control > .body-diagram { width: 100%; }
+  .body-slot-resize-handle { width: 2.75em; height: 2.75em; }
 }
