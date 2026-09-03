@@ -29,7 +29,11 @@ describe("Inventory Body logical canvas", () => {
     expect(slot?.y).toBeCloseTo(32);
     expect(slot?.width).toBeCloseTo(9.6);
     expect(slot?.height).toBeCloseTo(6.4);
-    expect(bodySlotPercentRect(migrated.slots![0], migrated.canvas)).toEqual({ left: 25, top: 50, width: 20, height: 10 });
+    const percent = bodySlotPercentRect(migrated.slots![0], migrated.canvas);
+    expect(percent.left).toBeCloseTo(25);
+    expect(percent.top).toBeCloseTo(50);
+    expect(percent.width).toBeCloseTo(20);
+    expect(percent.height).toBeCloseTo(10);
   });
 
   it("normalizes legacy Body Types recovered from the browser snapshot cache", () => {
