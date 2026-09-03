@@ -1,4 +1,5 @@
 import { INVENTORY_APPLICATION_COMMAND_CAPABILITIES } from "../../features/inventory/applicationCommand";
+import { STATE_APPLICATION_COMMAND_CAPABILITIES } from "../../features/state/applicationCommand";
 import type { ApplicationCommandCapability } from "./capability";
 
 /**
@@ -9,6 +10,7 @@ import type { ApplicationCommandCapability } from "./capability";
  */
 export const APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCommandCapability[] = [
   ...INVENTORY_APPLICATION_COMMAND_CAPABILITIES,
+  ...STATE_APPLICATION_COMMAND_CAPABILITIES,
 ];
 
 export const APPLICATION_COMMAND_CAPABILITY_BY_OPERATION: Readonly<Record<string, ApplicationCommandCapability>> =
