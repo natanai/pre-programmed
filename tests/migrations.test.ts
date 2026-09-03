@@ -115,4 +115,40 @@ describe("D1 migration safety", () => {
       database.close();
     }
   });
+
+  it("migrates legacy grid32 media rows into the generic vector-grid mode", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const vectorMigration = migrations.find((migration) => migration.id === 30);
+    expect(vectorMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 30)) {
+        applyMigration(database, migration.sql);
+      }
+
+      database.exec(`
+        INSERT INTO media_assets
+          (id, name, kind, mime_type, content_key, byte_length, intrinsic_width, intrinsic_height, default_presentation, authoring_mode)
+        VALUES
+          ('legacy-vector', 'legacy.svg', 'image', 'image/svg+xml', 'content_legacy', 42, 32, 32, 'inline', 'grid32');
+      `);
+
+      applyMigration(database, vectorMigration!.sql);
+
+      const row = database.prepare("SELECT authoring_mode, intrinsic_width, intrinsic_height FROM media_assets WHERE id = 'legacy-vector'").get() as {
+        authoring_mode: string;
+        intrinsic_width: number;
+        intrinsic_height: number;
+      } | undefined;
+      expect(row).toEqual({ authoring_mode: "vector-grid", intrinsic_width: 32, intrinsic_height: 32 });
+      expect(() => database.exec(`
+        INSERT INTO media_assets
+          (id, name, kind, mime_type, content_key, byte_length, default_presentation, authoring_mode)
+        VALUES ('bad-old-mode', 'bad.svg', 'image', 'image/svg+xml', NULL, 0, 'inline', 'grid32');
+      `)).toThrow();
+    } finally {
+      database.close();
+    }
+  });
 });

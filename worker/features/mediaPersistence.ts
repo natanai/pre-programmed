@@ -1,4 +1,4 @@
-import type { MediaAsset, SynthSound } from "../../src/features/media/model";
+import { normalizeMediaAssetAuthoringMode, type MediaAsset, type SynthSound } from "../../src/features/media/model";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
 
@@ -13,7 +13,7 @@ type AssetRow = {
   intrinsic_width: number | null;
   intrinsic_height: number | null;
   default_presentation: MediaAsset["defaultPresentation"];
-  authoring_mode: MediaAsset["authoringMode"];
+  authoring_mode: string;
 };
 
 export const mediaFeaturePersistence: WorkerFeaturePersistence = {
@@ -94,6 +94,47 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 21 WHERE id = 1;
       `,
     },
+    {
+      id: 30,
+      name: "media-general-vector-grid",
+      sql: `
+        CREATE TABLE media_assets_v30 (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          kind TEXT NOT NULL CHECK (kind IN ('audio', 'image')),
+          mime_type TEXT NOT NULL,
+          content_key TEXT,
+          byte_length INTEGER NOT NULL CHECK (byte_length >= 0),
+          intrinsic_width REAL,
+          intrinsic_height REAL,
+          default_presentation TEXT NOT NULL DEFAULT 'overlay' CHECK (default_presentation IN ('inline', 'overlay')),
+          authoring_mode TEXT NOT NULL DEFAULT 'file' CHECK (authoring_mode IN ('file', 'vector-grid')),
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        INSERT INTO media_assets_v30
+          (id, name, kind, mime_type, content_key, byte_length, intrinsic_width, intrinsic_height, default_presentation, authoring_mode, updated_at)
+        SELECT
+          id,
+          name,
+          kind,
+          mime_type,
+          content_key,
+          byte_length,
+          intrinsic_width,
+          intrinsic_height,
+          default_presentation,
+          CASE WHEN authoring_mode = 'grid32' THEN 'vector-grid' ELSE authoring_mode END,
+          updated_at
+        FROM media_assets;
+
+        DROP TABLE media_assets;
+        ALTER TABLE media_assets_v30 RENAME TO media_assets;
+        CREATE INDEX media_assets_content_key_idx ON media_assets(content_key);
+
+        UPDATE project_meta SET schema_version = 30 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -123,7 +164,7 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
         intrinsicWidth: row.intrinsic_width,
         intrinsicHeight: row.intrinsic_height,
         defaultPresentation: row.default_presentation,
-        authoringMode: row.authoring_mode,
+        authoringMode: normalizeMediaAssetAuthoringMode(row.authoring_mode),
       })),
     };
   },

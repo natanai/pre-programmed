@@ -2,6 +2,7 @@ import type { WorkerMutationValidator } from "./validationTypes";
 import { object } from "./validationHelpers";
 import { validateSynth } from "../../src/features/media/synth";
 import type { SynthSound } from "../../src/features/media/model";
+import { VECTOR_GRID_MAX_CELLS } from "../../src/features/media/vectorAsset";
 
 function synthSound(value: unknown): value is SynthSound {
   if (!object(value)
@@ -48,8 +49,15 @@ export const mediaMutationValidator: WorkerMutationValidator = {
       if (typeof asset.byteLength !== "number" || !Number.isInteger(asset.byteLength) || asset.byteLength < 0 || asset.byteLength > 20_000_000) return "Media asset must be no larger than 20 MB.";
       if (!optionalDimension(asset.intrinsicWidth) || !optionalDimension(asset.intrinsicHeight)) return "Media asset dimensions are invalid.";
       if (!["inline", "overlay"].includes(String(asset.defaultPresentation))) return "Media asset presentation is invalid.";
-      if (!["file", "grid32"].includes(String(asset.authoringMode))) return "Media asset authoring mode is invalid.";
-      if (asset.authoringMode === "grid32" && (asset.kind !== "image" || mimeType !== "image/svg+xml")) return "32×32 grid assets must be SVG images.";
+      if (!["file", "vector-grid"].includes(String(asset.authoringMode))) return "Media asset authoring mode is invalid.";
+      if (asset.authoringMode === "vector-grid") {
+        if (asset.kind !== "image" || mimeType !== "image/svg+xml") return "Vector-grid assets must be SVG images.";
+        if (!Number.isInteger(asset.intrinsicWidth) || !Number.isInteger(asset.intrinsicHeight)
+          || Number(asset.intrinsicWidth) <= 0 || Number(asset.intrinsicHeight) <= 0
+          || Number(asset.intrinsicWidth) * Number(asset.intrinsicHeight) > VECTOR_GRID_MAX_CELLS) {
+          return `Vector-grid assets require positive whole-number dimensions totaling at most ${VECTOR_GRID_MAX_CELLS} cells.`;
+        }
+      }
     }
     if (operation.type === "synth.delete") {
       return typeof operation.id === "string" && operation.id ? null : "Synth sound id is required.";
