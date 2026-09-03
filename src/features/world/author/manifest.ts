@@ -2,6 +2,7 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { WORLD_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
 import { WORLD_AUTHOR_OPERATION_DEFINITIONS } from "../operationAdapter";
 import { WORLD_WORKSPACES, worldEntityRoute } from "./entityWorkspaces";
+import { worldProjectReferences } from "./references";
 
 export const worldAuthorFeature: AuthorFeatureManifest = {
   id: "world",
@@ -16,6 +17,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
   },
   commandReferences: WORLD_COMMAND_REFERENCE_SOURCES,
   operations: WORLD_AUTHOR_OPERATION_DEFINITIONS,
+  references: [worldProjectReferences],
   workspaces: [...WORLD_WORKSPACES],
   commandTargets: [
     {
