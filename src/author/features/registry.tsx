@@ -24,9 +24,6 @@ import type {
  */
 export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
   "narrative",
-  "world",
-  "state",
-  "inventory",
   "media",
   "commands",
   "project",
