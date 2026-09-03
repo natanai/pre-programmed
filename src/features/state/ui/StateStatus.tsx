@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { EffectEvent } from "../../../engine/rules/effectRuntime";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { OperationId, OperationTarget } from "../../operations/model";
@@ -29,12 +29,17 @@ export function StateStatus({
   onOutput: (text: string) => void;
   onEvents: (events: EffectEvent[]) => void;
 }) {
-  const now = Date.now();
+  const [now, setNow] = useState(() => Date.now());
   const groups = useMemo(() => visibleStateGroups(snapshot, state, now), [snapshot, state, now]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const selectedGroup = groups.find(({ group }) => group.id === selectedGroupId) ?? null;
   const selectedEntry = selectedGroup?.entries.find(({ definition }) => definition.id === selectedEntryId) ?? null;
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const operate = (entry: VisibleStateEntry, operation: OperationId) => {
     const execution = executeOperation(snapshot, state, { operation, target: targetForEntry(entry) });
