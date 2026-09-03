@@ -44,10 +44,10 @@ function imageDimensions(bytes, extension) {
   if (extension === ".svg") {
     const text = bytes.toString("utf8");
     const viewBox = text.match(/\bviewBox=["']([^"']+)["']/i)?.[1]?.trim().split(/[\s,]+/).map(Number);
-    if (viewBox?.length === 4 && viewBox.every(Number.isFinite)) return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
-    const width = Number.parseFloat(text.match(/\bwidth=["']([^"']+)["']/i)?.[1] ?? "");
-    const height = Number.parseFloat(text.match(/\bheight=["']([^"']+)["']/i)?.[1] ?? "");
-    if (Number.isFinite(width) && Number.isFinite(height)) return { width, height };
+    if (viewBox?.length === 4 && viewBox.every(Number.isFinite) && viewBox[2] > 0 && viewBox[3] > 0) {
+      return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
+    }
+    return null;
   }
   return null;
 }
