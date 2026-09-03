@@ -1,128 +1,84 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import { referencesTo } from "../../../author/references/projectReferences";
-import { createMediaAsset } from "../assets";
+import type { MediaAssetDescriptor } from "../assets";
 import { mediaAssetDimensions, type MediaAsset, type MediaAssetKind } from "../model";
 import { configuredAssetContentStore, configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import "./mediaAuthor.css";
 
-const MAX_ASSET_BYTES = 20_000_000;
-
-function svgViewBoxDimensions(text: string) {
-  const viewBox = text.match(/\bviewBox=["']([^"']+)["']/i)?.[1]?.trim().split(/[\s,]+/).map(Number);
-  if (viewBox?.length !== 4 || !viewBox.every(Number.isFinite) || viewBox[2] <= 0 || viewBox[3] <= 0) return null;
-  return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
+function persistedAsset(asset: MediaAssetDescriptor): MediaAsset {
+  return {
+    id: asset.id,
+    name: asset.name,
+    kind: asset.kind,
+    mimeType: asset.mimeType,
+    contentKey: asset.contentKey,
+    byteLength: asset.byteLength,
+    intrinsicWidth: asset.intrinsicWidth,
+    intrinsicHeight: asset.intrinsicHeight,
+    defaultPresentation: asset.defaultPresentation,
+    authoringMode: asset.authoringMode,
+  };
 }
 
-async function imageDimensions(file: File) {
-  if (file.type.toLowerCase() === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
-    return svgViewBoxDimensions(await file.text());
-  }
-  return new Promise<{ width: number; height: number } | null>((resolve) => {
-    const url = URL.createObjectURL(file);
-    const image = new Image();
-    image.onload = () => {
-      resolve({ width: image.naturalWidth, height: image.naturalHeight });
-      URL.revokeObjectURL(url);
-    };
-    image.onerror = () => {
-      resolve(null);
-      URL.revokeObjectURL(url);
-    };
-    image.src = url;
-  });
-}
-
-export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave, onCancel, setWorkspaceDirty }: {
+export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   kind: MediaAssetKind;
-  initial?: MediaAsset;
-  authorToken: string;
+  initial?: MediaAssetDescriptor;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
-  const [draft, setDraft] = useState<MediaAsset | null>(() => initial ? structuredClone(initial) : null);
-  const [pendingContent, setPendingContent] = useState<File | null>(null);
-  const [uploadedContentKey, setUploadedContentKey] = useState<string | null>(null);
-  const [baseline, setBaseline] = useState(() => JSON.stringify(initial ?? null));
+  const [draft, setDraft] = useState<MediaAsset | null>(() => initial ? persistedAsset(initial) : null);
+  const [baseline, setBaseline] = useState(() => JSON.stringify(initial ? persistedAsset(initial) : null));
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const dirty = Boolean(pendingContent) || JSON.stringify(draft) !== baseline;
-  const usages = initial ? referencesTo(snapshot, `media-${initial.kind}`, initial.id) : [];
+  const dirty = JSON.stringify(draft) !== baseline;
+  const usages = initial ? [
+    ...referencesTo(snapshot, `media-${initial.kind}`, initial.id),
+    ...(initial.kind === "audio" ? referencesTo(snapshot, "media-sound", initial.id) : []),
+  ] : [];
   const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
-  const repositoryMetadata = draft ? configuredAssetContentStore.repositoryMetadata(draft.id) : null;
-  const repositoryAvailable = Boolean(repositoryMetadata);
+  const repositoryAvailable = initial?.contentSource === "repository";
+  const missingContent = initial?.contentSource === "missing";
+  const previewUrl = initial?.available ? configuredAssetContentStore.urlFor(initial) : "";
   const dimensions = draft ? mediaAssetDimensions(draft) : null;
-
-  const previewUrl = useMemo(() => {
-    if (pendingContent) return URL.createObjectURL(pendingContent);
-    if (!draft) return "";
-    return configuredAssetContentStore.urlFor(draft);
-  }, [pendingContent, draft?.id, draft?.contentKey]);
-
-  useEffect(() => () => {
-    if (pendingContent && previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
-  }, [pendingContent, previewUrl]);
+  const dimensionText = dimensions
+    ? dimensions.unit === "px"
+      ? `${dimensions.width}×${dimensions.height} px`
+      : `${dimensions.width}×${dimensions.height} viewBox units`
+    : "";
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
     return () => setWorkspaceDirty(false);
   }, [dirty, setWorkspaceDirty]);
 
-  const chooseFile = async (file: File | undefined) => {
-    if (!file) return;
-    const fileKind: MediaAssetKind = file.type.startsWith("image/") ? "image" : file.type.startsWith("audio/") ? "audio" : kind;
-    if (fileKind !== kind) {
-      setError(`Choose ${kind === "audio" ? "an audio" : "an image"} file.`);
-      return;
-    }
-    if (file.size > MAX_ASSET_BYTES) {
-      setError("Assets are currently limited to 20 MB each.");
-      return;
-    }
-    const dimensions = kind === "image" ? await imageDimensions(file) : null;
-    const contentKey = crypto.randomUUID();
-    setDraft(createMediaAsset({
-      id: initial?.id ?? draft?.id,
-      name: draft?.name || file.name,
-      mimeType: file.type || (kind === "image" ? "image/png" : "audio/mpeg"),
-      contentKey,
-      byteLength: file.size,
-      intrinsicWidth: dimensions?.width ?? null,
-      intrinsicHeight: dimensions?.height ?? null,
-      defaultPresentation: draft?.defaultPresentation ?? "overlay",
-      authoringMode: "file",
-    }));
-    setPendingContent(file);
-    setUploadedContentKey(null);
-    setError("");
-  };
-
   const save = async () => {
-    if (!draft) return;
+    if (!draft || !repositoryAvailable) return;
     setSaving(true);
     setError("");
     try {
-      if (pendingContent) {
-        if (!draft.contentKey) throw new Error("Asset content has no content key.");
-        if (uploadedContentKey !== draft.contentKey) {
-          await configuredAssetContentStore.upload(authorToken, draft.contentKey, pendingContent);
-          setUploadedContentKey(draft.contentKey);
-        }
-      }
+      // Repository bytes stay in Git. This row stores only project-specific
+      // presentation/name metadata against the same stable Media ID.
+      const repositoryMetadata = configuredAssetContentStore.repositoryMetadata(draft.id);
+      if (!repositoryMetadata) throw new Error("Repository Media metadata is unavailable.");
+      const asset: MediaAsset = {
+        ...draft,
+        contentKey: null,
+        ...repositoryMetadata,
+      };
       const result = await onSave(
-        [{ type: "mediaAsset.upsert", asset: draft }],
-        `${initial ? "Changed" : "Added"} media asset ${draft.name}`,
+        [{ type: "mediaAsset.upsert", asset }],
+        `Changed repository media metadata ${asset.name}`,
       );
       if (result.status === "saved" || result.status === "queued") {
-        setBaseline(JSON.stringify(draft));
-        setPendingContent(null);
-        setUploadedContentKey(null);
+        setDraft(asset);
+        setBaseline(JSON.stringify(asset));
       }
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Asset save failed.");
+      setError(reason instanceof Error ? reason.message : "Media metadata save failed.");
     } finally {
       setSaving(false);
     }
@@ -134,78 +90,76 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
     if (!resetting && usages.length) return;
     const prompt = resetting
       ? `Reset media asset “${initial.name}” to its repository definition?`
-      : `Delete media asset “${initial.name}”?`;
+      : `Delete missing media definition “${initial.name}”?`;
     if (!window.confirm(prompt)) return;
     setSaving(true);
     try {
       const result = await onSave(
         [{ type: "mediaAsset.delete", id: initial.id }],
-        resetting ? `Reset media asset ${initial.name} to repository copy` : `Deleted media asset ${initial.name}`,
+        resetting ? `Reset media asset ${initial.name} to repository copy` : `Deleted missing media definition ${initial.name}`,
       );
       if (result.status === "saved" || result.status === "queued") onCancel();
     } finally { setSaving(false); }
   };
 
-  const useRepositoryCopy = () => {
-    if (!draft || !repositoryMetadata) return;
-    setDraft({
-      ...draft,
-      contentKey: null,
-      ...repositoryMetadata,
-    });
-    setPendingContent(null);
-    setUploadedContentKey(null);
-  };
-
   const exportAsset = async () => {
-    if (!draft || dirty) return;
+    if (!draft || dirty || !repositoryAvailable) return;
     const resolved = configuredAssetStore.resolve(snapshot, draft.id);
-    if (!resolved) return;
+    if (!resolved?.available) return;
     setError("");
     try { await configuredAssetContentStore.exportAsset(resolved); }
     catch (reason) { setError(reason instanceof Error ? reason.message : "Asset export failed."); }
   };
 
-  const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
+  const lifecycleLabel = repositoryAvailable ? "RESET REPOSITORY METADATA" : "DELETE BROKEN DEFINITION";
   const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
-  const dimensionText = dimensions
-    ? dimensions.unit === "px"
-      ? `${dimensions.width}×${dimensions.height} px`
-      : `${dimensions.width}×${dimensions.height} viewBox units`
-    : "";
 
   return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} ASSET · {draft?.name ?? "NEW"}</span></header>
+    <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} FILE · {draft?.name ?? "REPOSITORY"}</span></header>
     <div className="author-panel-body">
-      <p className="field-help">Assets keep a stable project ID. File bytes live behind the Media content store, so authored references never contain repository paths or data URLs.</p>
-      <label>FILE <input type="file" accept={kind === "audio" ? "audio/*" : "image/*"} onChange={(event) => void chooseFile(event.target.files?.[0])} /></label>
-      <small>Files are currently limited to 20 MB. Image dimensions are descriptive metadata, not a required authoring size.</small>
+      <p className="field-help">File Media lives in <code>public/assets/</code> and is shipped with the repository. Author rules store only its stable Media ID. Synths and vector SVGs are created inside Author mode and stored in D1.</p>
+
+      {!initial ? <div className="author-message">
+        ADD FILE MEDIA IN THE REPOSITORY<br />
+        Put the {kind === "audio" ? "audio" : "image"} file under <code>public/assets/</code> and add a neighboring <code>.asset.json</code> sidecar containing a stable <code>id</code>. The asset will appear here after the next build.
+      </div> : null}
+
+      {missingContent && initial ? <div className="asset-warning" role="alert">
+        <strong>MISSING REPOSITORY FILE</strong>
+        <span>This Media definition still exists, but its file content does not. It will not play or render.</span>
+        <span>To repair existing rules without changing their references, add the intended file under <code>public/assets/</code> and give its <code>.asset.json</code> sidecar this exact ID:</span>
+        <code>{initial.id}</code>
+        {usages.length ? <small>{usages.length} authored use{usages.length === 1 ? "" : "s"} still reference this ID.</small> : null}
+      </div> : null}
+
       {draft ? <>
-        <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
-        {kind === "image" ? <label>DEFAULT PLAYER PRESENTATION
-          <select value={draft.defaultPresentation} onChange={(event) => setDraft({ ...draft, defaultPresentation: event.target.value === "inline" ? "inline" : "overlay" })}>
-            <option value="inline">inline / icon</option>
-            <option value="overlay">large art / overlay</option>
-          </select>
-          <small>This is independent of the file's pixel or SVG coordinate dimensions.</small>
-        </label> : null}
-        <div className="media-asset-preview">
-          {previewUrl ? kind === "audio" ? <audio controls src={previewUrl} /> : <img src={previewUrl} alt="Asset preview" /> : <span>CONTENT NEEDS TO BE RE-UPLOADED.</span>}
-        </div>
-        <small>{draft.mimeType} · {draft.byteLength} bytes{dimensionText ? ` · ${dimensionText}` : ""}</small>
+        <label>STABLE MEDIA ID <code>{draft.id}</code></label>
+        {repositoryAvailable ? <>
+          <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
+          {kind === "image" ? <label>DEFAULT PLAYER PRESENTATION
+            <select value={draft.defaultPresentation} onChange={(event) => setDraft({ ...draft, defaultPresentation: event.target.value === "inline" ? "inline" : "overlay" })}>
+              <option value="inline">inline / icon</option>
+              <option value="overlay">large art / overlay</option>
+            </select>
+            <small>This is independent of the file's pixel or SVG coordinate dimensions.</small>
+          </label> : null}
+          <div className="media-asset-preview">
+            {previewUrl ? kind === "audio" ? <audio controls src={previewUrl} /> : <img src={previewUrl} alt="Asset preview" /> : <span>REPOSITORY FILE UNAVAILABLE.</span>}
+          </div>
+          <small>repository file · {draft.mimeType} · {draft.byteLength} bytes{dimensionText ? ` · ${dimensionText}` : ""}</small>
+        </> : null}
       </> : null}
       {error ? <div className="author-message" role="alert">{error}</div> : null}
     </div>
     <div className="author-actions author-panel-footer">
-      <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim() || (!draft.contentKey && !pendingContent && !repositoryAvailable)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE ASSET"}]</button>
-      {initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
-      {draft?.contentKey && repositoryAvailable ? <button type="button" disabled={saving} onClick={useRepositoryCopy}>[USE REPOSITORY COPY]</button> : null}
-      <button type="button" onClick={onCancel}>[CANCEL]</button>
+      {repositoryAvailable ? <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE METADATA"}]</button> : null}
+      {repositoryAvailable && initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
+      <button type="button" onClick={onCancel}>[CLOSE]</button>
       {initial && hasProjectMetadata ? <button
         type="button"
         className="danger"
         disabled={lifecycleDisabled}
-        title={!repositoryAvailable && usages.length ? `Used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined}
+        title={!repositoryAvailable && usages.length ? `Still used by ${usages.map((usage) => usage.ownerLabel).join(", ")}` : undefined}
         onClick={() => void resetOrDelete()}
       >[{lifecycleLabel}{!repositoryAvailable && usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}]</button> : null}
     </div>

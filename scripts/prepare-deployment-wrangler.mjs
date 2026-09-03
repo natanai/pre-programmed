@@ -44,7 +44,6 @@ async function recoverD1DatabaseId({ accountId, apiToken, workerName }) {
 const repositoryName = process.env.GITHUB_REPOSITORY?.split("/").at(-1)?.trim() || "";
 const workerName = required(process.env.PRE_PROGRAMMED_WORKER_NAME || repositoryName, "PRE_PROGRAMMED_WORKER_NAME");
 const databaseName = required(process.env.PRE_PROGRAMMED_D1_DATABASE_NAME || `${workerName}-db`, "PRE_PROGRAMMED_D1_DATABASE_NAME");
-const assetBucketName = process.env.PRE_PROGRAMMED_ASSET_BUCKET_NAME?.trim() || "";
 let databaseId = process.env.PRE_PROGRAMMED_D1_DATABASE_ID?.trim() || "";
 
 if (!databaseId) {
@@ -62,16 +61,7 @@ template.d1_databases = [{
   database_name: databaseName,
   database_id: databaseId,
 }];
-if (assetBucketName) {
-  template.r2_buckets = [{
-    binding: "ASSET_CONTENT",
-    bucket_name: assetBucketName,
-  }];
-} else {
-  delete template.r2_buckets;
-}
+delete template.r2_buckets;
 
 await writeFile(outputPath, `${JSON.stringify(template, null, 2)}\n`, { mode: 0o600 });
-console.log(assetBucketName
-  ? `Prepared deployment Wrangler config for ${workerName} with DB ${databaseName} and optional media bucket ${assetBucketName}.`
-  : `Prepared deployment Wrangler config for ${workerName} with DB ${databaseName}; optional blob storage is not configured.`);
+console.log(`Prepared deployment Wrangler config for ${workerName} with DB ${databaseName}. File Media is shipped from public/assets.`);

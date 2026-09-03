@@ -40,50 +40,17 @@ export async function collectD1Backup(db: BackupDatabase, exportedAt = new Date(
   };
 }
 
-function encodeBase64(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
-  const chunkSize = 0x8000;
-  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-  }
-  return btoa(binary);
-}
-
-async function collectMediaObjects(bucket: R2Bucket | undefined) {
-  if (!bucket) return [];
-  const keys: string[] = [];
-  let cursor: string | undefined;
-  do {
-    const page = await bucket.list({ prefix: "media/", cursor });
-    keys.push(...page.objects.map((object) => object.key));
-    cursor = page.truncated ? page.cursor : undefined;
-  } while (cursor);
-
-  const contents = [];
-  for (const key of keys.sort()) {
-    const object = await bucket.get(key);
-    if (!object) continue;
-    contents.push({
-      key,
-      contentType: object.httpMetadata?.contentType ?? "application/octet-stream",
-      dataBase64: encodeBase64(await object.arrayBuffer()),
-    });
-  }
-  return contents;
-}
-
-/** Complete portable backup: relational project state plus hosted media objects. */
-export async function collectProjectBackup(db: BackupDatabase, bucket?: R2Bucket, exportedAt = new Date().toISOString()) {
-  const [database, mediaObjects] = await Promise.all([
-    collectD1Backup(db, exportedAt),
-    collectMediaObjects(bucket),
-  ]);
+/**
+ * Portable authored-state backup. Generated SVG content and synth definitions are
+ * already inside D1. Binary repository Media is version-controlled with the game
+ * and therefore is intentionally outside this database export.
+ */
+export async function collectProjectBackup(db: BackupDatabase, exportedAt = new Date().toISOString()) {
   return {
     format: "pre-programmed-project-backup",
-    version: 2,
+    version: 3,
     exportedAt,
-    database,
-    mediaObjects,
+    database: await collectD1Backup(db, exportedAt),
+    repositoryMedia: "version-controlled" as const,
   };
 }
