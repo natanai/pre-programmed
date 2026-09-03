@@ -1,8 +1,0 @@
-.status-player-surface { display:grid; gap:.65em; min-width:0; }
-.status-group-list,.status-entry-list { display:grid; min-width:0; border:1px solid var(--dos-line); }
-.status-group-row,.status-entry-row { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:center; gap:1em; min-height:3em; padding:.55em .7em; border:0; border-bottom:1px dotted var(--dos-line); background:transparent; color:inherit; font:inherit; text-align:left; }
-.status-group-row:last-child,.status-entry-row:last-child { border-bottom:0; }
-.status-group-row small { color:var(--dos-muted); }
-.status-entry-row strong { color:var(--dos-bright); font-weight:400; }
-.status-back { justify-self:start; }
-.status-empty { padding:.8em; color:var(--dos-muted); }

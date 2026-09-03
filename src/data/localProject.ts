@@ -39,12 +39,27 @@ async function withStore<T>(
   });
 }
 
+function isPreReplacementSnapshot(value: unknown): value is ProjectSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ProjectSnapshot> & {
+    valueDefinitions?: unknown;
+    bodyTypes?: unknown;
+  };
+  return Array.isArray(candidate.variables)
+    && Array.isArray(candidate.computedValues)
+    && Array.isArray(candidate.items)
+    && !Array.isArray(candidate.valueDefinitions)
+    && !Array.isArray(candidate.bodyTypes);
+}
+
 export async function loadCachedSnapshot() {
   try {
-    const snapshot = (await withStore("snapshots", "readonly", (store) => store.get(SNAPSHOT_KEY))) as
-      | ProjectSnapshot
-      | undefined;
-    return snapshot ? normalizeProjectSnapshot(snapshot) : undefined;
+    const snapshot = await withStore("snapshots", "readonly", (store) => store.get(SNAPSHOT_KEY));
+    // The short-lived replacement stored a different snapshot shape in the same
+    // browser cache. Ignore that cache once after rollback and let the canonical
+    // server snapshot repopulate it instead of booting the restored runtime with
+    // fields it does not own.
+    return isPreReplacementSnapshot(snapshot) ? normalizeProjectSnapshot(snapshot) : undefined;
   } catch {
     return undefined;
   }

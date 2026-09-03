@@ -1,42 +1,61 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { addNewDefaultItemsToPlayState, createStartingInventory, findFirstPlacement } from "./runtime";
+import { addNewDefaultItemsToPlayState, createStartingInventory, reconcileEquippedItems } from "./runtime";
+
+function bodyTypes(snapshot: ProjectSnapshot) {
+  return snapshot.bodyBackgrounds ?? [];
+}
+
+function validStartingBodyTypeId(snapshot: ProjectSnapshot) {
+  const id = snapshot.startingBodyBackgroundId ?? null;
+  return id && bodyTypes(snapshot).some((bodyType) => bodyType.id === id) ? id : null;
+}
 
 export function initializeInventoryPlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
-  return createStartingInventory(snapshot, { ...state, inventory: [], inventoryPositions: {} });
+  let nextState: PlayState = {
+    ...state,
+    inventory: [],
+    bodyBackgroundId: validStartingBodyTypeId(snapshot),
+  };
+  return reconcileEquippedItems(snapshot, createStartingInventory(snapshot, nextState));
 }
 
+/** Normalize Inventory state loaded from older bookmarks/saves or changed project data. */
 export function reconcileInventoryPlayState(snapshot: ProjectSnapshot, state: PlayState): PlayState {
-  const validItemIds = new Set(snapshot.items.map((item) => item.id));
-  const inventory = state.inventory
-    .filter((entry) => validItemIds.has(entry.itemId))
-    .map((entry) => ({ ...entry, state: { ...entry.state } }));
-  const validInstanceIds = new Set(inventory.map((entry) => entry.instanceId));
-  let inventoryPositions = Object.fromEntries(
-    Object.entries(state.inventoryPositions).filter(([instanceId]) => validInstanceIds.has(instanceId)),
-  );
-  let nextState: PlayState = { ...state, inventory, inventoryPositions };
+  const hasBodyTypeState = Object.prototype.hasOwnProperty.call(state, "bodyBackgroundId");
+  const selectedId = state.bodyBackgroundId ?? null;
+  const selectedStillExists = selectedId
+    ? bodyTypes(snapshot).some((bodyType) => bodyType.id === selectedId)
+    : false;
+  const bodyBackgroundId = !hasBodyTypeState
+    ? validStartingBodyTypeId(snapshot)
+    : selectedId === null
+      ? null
+      : selectedStillExists
+        ? selectedId
+        : validStartingBodyTypeId(snapshot);
 
-  if (snapshot.inventoryPresentation.mode === "grid") {
-    for (const entry of inventory) {
-      if (nextState.inventoryPositions[entry.instanceId]) continue;
-      const placement = findFirstPlacement(snapshot, nextState, entry.itemId);
-      if (placement) {
-        inventoryPositions = { ...nextState.inventoryPositions, [entry.instanceId]: placement };
-        nextState = { ...nextState, inventoryPositions };
-      }
-    }
-  } else if (Object.keys(inventoryPositions).length) {
-    nextState = { ...nextState, inventoryPositions: {} };
-  }
-
-  return nextState;
+  return reconcileEquippedItems(snapshot, {
+    ...state,
+    inventory: (state.inventory ?? []).map((entry) => ({
+      ...entry,
+      equippedSlotKey: entry.equippedSlotKey ?? null,
+    })),
+    bodyBackgroundId,
+  });
 }
 
+/**
+ * Reconcile Inventory when authored project data changes. Existing inventory is
+ * preserved; only newly introduced item definitions contribute their authored
+ * starting quantity. The current body type is preserved while it still exists;
+ * an explicitly cleared body type stays clear. Equipment remains in stable slot
+ * keys that still exist and is unequipped when a new body type removes a slot.
+ */
 export function reconcileInventoryPlayStateAfterProjectChange(
   previousSnapshot: ProjectSnapshot,
   nextSnapshot: ProjectSnapshot,
   state: PlayState,
-) {
+): PlayState {
   return reconcileInventoryPlayState(
     nextSnapshot,
     addNewDefaultItemsToPlayState(previousSnapshot, nextSnapshot, state),

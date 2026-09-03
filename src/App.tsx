@@ -853,7 +853,6 @@ export default function App() {
           persist={persist}
           completeTask={authorTasks.completeTask}
           requestBack={authorTasks.requestBack}
-          requestClose={authorTasks.requestClose}
           setTaskDirty={authorTasks.setTaskDirty}
           pushTask={authorTasks.pushTask}
           runtime={{
@@ -883,6 +882,7 @@ export default function App() {
         />
       </div>
     </div>
+    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author tasks and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={authorTasks.requestClose}>[X]</button> : null}
     <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !pendingPlaySession} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       authorTasks.closeAll();

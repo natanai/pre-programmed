@@ -1,12 +1,12 @@
-import type { InventoryEntry, InventoryPosition, InventoryPresentation, ItemDefinition, ItemInventoryLayout } from "./model";
+import type { BodyBackgroundDefinition, InventoryEntry, ItemDefinition } from "./model";
 
 export type InventoryProjectSlice = {
   items: ItemDefinition[];
-  inventoryPresentation: InventoryPresentation;
-  itemInventoryLayouts: ItemInventoryLayout[];
+  bodyBackgrounds: BodyBackgroundDefinition[];
+  startingBodyBackgroundId: string | null;
 };
 
 export type InventoryPlayStateSlice = {
   inventory: InventoryEntry[];
-  inventoryPositions: Record<string, InventoryPosition>;
+  bodyBackgroundId: string | null;
 };

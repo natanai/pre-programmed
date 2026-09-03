@@ -43,7 +43,7 @@ describe("player session persistence", () => {
     const resumed = resumePlayState(snapshot, state, 6_000, 20_000);
 
     expect(resumed.sessionStartedAt).toBe(15_000);
-    expect(resumed.valueTimeUpdatedAt).toBe(20_000);
+    expect(resumed.variableTimeUpdatedAt).toBe(20_000);
   });
 
   it("keeps stable Media identities in the saved transcript", () => {
