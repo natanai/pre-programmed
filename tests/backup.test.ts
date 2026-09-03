@@ -39,33 +39,15 @@ describe("canonical project backup", () => {
     expect(backup.schema).toEqual(schema.slice(0, 2));
   });
 
-  it("includes immutable R2 Media objects alongside relational project state", async () => {
+  it("backs up all D1-authored state while identifying file Media as repository-owned", async () => {
     const { database } = backupDatabase();
-    const content = new TextEncoder().encode("media bytes");
-    const bucket = {
-      async list() {
-        return { objects: [{ key: "media/content_one" }], truncated: false };
-      },
-      async get(key: string) {
-        if (key !== "media/content_one") return null;
-        return {
-          httpMetadata: { contentType: "application/octet-stream" },
-          async arrayBuffer() { return content.buffer; },
-        };
-      },
-    } as unknown as R2Bucket;
-
-    const backup = await collectProjectBackup(database, bucket, "2026-09-02T00:00:00.000Z");
+    const backup = await collectProjectBackup(database, "2026-09-02T00:00:00.000Z");
     expect(backup).toMatchObject({
       format: "pre-programmed-project-backup",
-      version: 2,
+      version: 3,
       exportedAt: "2026-09-02T00:00:00.000Z",
+      repositoryMedia: "version-controlled",
     });
     expect(backup.database.tables.nodes).toEqual([{ id: "a" }]);
-    expect(backup.mediaObjects).toEqual([{
-      key: "media/content_one",
-      contentType: "application/octet-stream",
-      dataBase64: "bWVkaWEgYnl0ZXM=",
-    }]);
   });
 });

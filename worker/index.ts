@@ -9,7 +9,6 @@ import { validateMutationBody } from "./validation";
 
 export type Env = {
   DB: D1Database;
-  ASSET_CONTENT?: R2Bucket;
   ADMIN_KEY?: string;
 };
 
@@ -29,7 +28,7 @@ async function loginAuthor(request: Request, env: Env) {
 }
 
 async function downloadBackup(env: Env) {
-  const backup = await collectProjectBackup(env.DB, env.ASSET_CONTENT);
+  const backup = await collectProjectBackup(env.DB);
   const filename = `pre-programmed-backup-${backup.exportedAt.replace(/[:.]/g, "-")}.json`;
   return new Response(JSON.stringify(backup, null, 2), {
     headers: {
@@ -49,9 +48,9 @@ export async function handleApi(request: Request, env: Env) {
       service: "pre-programmed",
       apiVersion: 2,
       persistence: "d1",
-      mediaPersistence: env.ASSET_CONTENT ? "d1-text+r2" : "d1-text",
-      mediaTextPersistence: "d1",
-      mediaBlobPersistence: env.ASSET_CONTENT ? "r2" : "unconfigured",
+      mediaPersistence: "d1-generated+repository-files",
+      mediaGeneratedPersistence: "d1",
+      mediaFilePersistence: "repository",
       authorConfigured: Boolean(env.ADMIN_KEY),
     });
   }
@@ -67,7 +66,7 @@ export async function handleApi(request: Request, env: Env) {
   const publicContentKey = mediaContentKey(url.pathname, "/api/media/content/");
   if (publicContentKey && request.method === "GET") {
     await ensureSchema(env.DB);
-    return getMediaContent(env.DB, env.ASSET_CONTENT, publicContentKey);
+    return getMediaContent(env.DB, publicContentKey);
   }
 
   if (url.pathname === "/api/author/login" && request.method === "POST") return loginAuthor(request, env);
@@ -80,7 +79,7 @@ export async function handleApi(request: Request, env: Env) {
   await ensureSchema(env.DB);
 
   const authorContentKey = mediaContentKey(url.pathname, "/api/author/media/content/");
-  if (authorContentKey && request.method === "PUT") return putMediaContent(env.DB, env.ASSET_CONTENT, authorContentKey, request);
+  if (authorContentKey && request.method === "PUT") return putMediaContent(env.DB, authorContentKey, request);
 
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));

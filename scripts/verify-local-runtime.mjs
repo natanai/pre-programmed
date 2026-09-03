@@ -106,16 +106,19 @@ async function readAcceptanceMedia() {
   if (!response.headers.get("content-type")?.startsWith("image/svg+xml")) throw new Error("Local SVG content type changed unexpectedly.");
 }
 
+function mediaHealthIsCurrent(health) {
+  return health?.ok === true
+    && health?.persistence === "d1"
+    && health?.mediaGeneratedPersistence === "d1"
+    && health?.mediaFilePersistence === "repository"
+    && health?.authorConfigured === true;
+}
+
 try {
   await rm(dataDirectory, { recursive: true, force: true });
 
   startRuntime();
-  await waitForJson("/api/health", (health) =>
-    health?.ok === true
-    && health?.persistence === "d1"
-    && health?.mediaTextPersistence === "d1"
-    && health?.mediaBlobPersistence === "unconfigured"
-    && health?.authorConfigured === true);
+  await waitForJson("/api/health", mediaHealthIsCurrent);
   const initial = await waitForJson("/api/project/snapshot", (snapshot) =>
     Array.isArray(snapshot?.nodes)
     && snapshot.nodes.length > 0
@@ -137,7 +140,7 @@ try {
       intrinsicWidth: 32,
       intrinsicHeight: 32,
       defaultPresentation: "inline",
-      authoringMode: "grid32",
+      authoringMode: "vector-grid",
     },
   }], "Local D1 SVG media persistence acceptance");
   const saved = await mutate(withMedia, token, [
@@ -146,9 +149,7 @@ try {
   await stopRuntime();
 
   startRuntime();
-  await waitForJson("/api/health", (health) =>
-    health?.mediaTextPersistence === "d1"
-    && health?.mediaBlobPersistence === "unconfigured");
+  await waitForJson("/api/health", mediaHealthIsCurrent);
   const reopened = await waitForJson("/api/project/snapshot", (snapshot) =>
     Array.isArray(snapshot?.nodes)
     && snapshot.revision === saved.revision
@@ -156,7 +157,7 @@ try {
   if (reopened.startNodeId !== saved.startNodeId) throw new Error("Reopened local project changed identity unexpectedly.");
   await readAcceptanceMedia();
 
-  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with persistent D1 project state and D1-backed SVG content, without R2.`);
+  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with persistent D1 project state, D1-backed generated SVG, and repository-backed file Media.`);
 } finally {
   await stopRuntime();
   await rm(dataDirectory, { recursive: true, force: true });

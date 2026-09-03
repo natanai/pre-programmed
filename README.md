@@ -90,7 +90,7 @@ A Body Type owns an explicit logical canvas plus semantic equipment slots. The d
 
 Body slots are stored in that Body Type's logical coordinates. Stable slot keys—not screen positions—carry equipment meaning between Body Types, so a `head` or `left_hand` slot may move visually or use a different canvas while preserving authored equipment behavior. Player Inventory and Body authoring render the same slot geometry through the shared Inventory Body renderer.
 
-Body background art is an ordinary `media-image` reference. Inventory asks the Author resource system for an image rather than knowing how Media stores or creates it, so repository images, uploaded images, and Author-created vectors all use the same Body asset reference.
+Body background art is an ordinary `media-image` reference. Repository image files become selectable Media after they are shipped under `public/assets/`, while scalable vector images can be created inside Author mode and stored through the D1 generated-Media path. Inventory only asks the Author resource system for an image reference; it does not own Media storage or creation rules.
 
 ### Commands
 
@@ -98,25 +98,28 @@ Project command grammar can map reusable wording to feature-owned targets and op
 
 ### Player progress
 
-Player progress is stored locally in the browser. Saved state uses project identities rather than storage-provider URLs so project assets and authored references can move between providers without rewriting player data.
+Player progress is stored locally in the browser. Saved state uses project identities rather than storage locations so project assets and authored references can move without rewriting player data.
 
 ## Media
 
-Game systems reference **stable Media asset IDs**. They do not store repository paths, D1 URLs, R2 URLs, data URLs, or browser object URLs as project identity.
+Game systems reference **stable Media IDs**. They do not store repository paths, API URLs, data URLs, or browser object URLs as project identity.
 
-A Media asset stores identity and presentation metadata. Content resolution is handled by platform adapters.
+The bundled engine intentionally has two Media content origins:
 
-The default engine can resolve content from:
+- **D1-authored Media**: synth definitions and textual/vector content created inside Author mode, including scalable vector-grid SVG;
+- **repository Media**: audio, conventional images, and other ordinary files shipped under `public/assets/`.
 
-- **D1 text content** for textual/vector Media such as Author-created SVG;
-- **repository Media** under `public/assets/`;
-- **optional blob storage** for hosted binary uploads.
+The rest of the engine consumes the same stable Media reference regardless of origin. A `play sound` effect, for example, can resolve either a D1 synth or a repository audio file without inventory, narrative, or another feature knowing how the sound is stored.
 
-The included Cloudflare adapter can use R2 for optional binary storage, but R2 is not part of the Media domain contract and is not required for text authoring, SVG authoring, repository Media, or the core engine.
+Binary file uploading is deliberately not an Author-mode storage feature. Larger or conventional files belong in the repository so they are version-controlled, portable with the game, and require no separate blob-storage service.
 
 ### Vector asset authoring
 
-The Media tool includes a logical-grid vector drawing surface with reusable canvas presets and custom rectangular dimensions. The default presets are 32×32 Square / Sprite and 48×64 Portrait. These numbers are authoring units, not rendered pixel requirements. Generated SVG uses the chosen logical dimensions as its viewBox and scales cleanly in the player.
+The Media tool includes a logical-grid vector drawing surface with reusable canvas presets and custom rectangular dimensions. The default presets are 32×32 Square / Sprite and 48×64 Portrait. These numbers are authoring units, not rendered pixel requirements. Generated SVG uses the chosen logical dimensions as its viewBox and scales cleanly in the player. The SVG source is stored through the D1-backed generated-Media content path.
+
+### Synth authoring
+
+Synth sounds are stored as reusable synth definitions in project data. They are reconstructed by the browser's synth player; they are not rendered into uploaded audio blobs.
 
 ### Repository Media
 
@@ -126,16 +129,32 @@ Repository-managed files live under:
 public/assets/
 ```
 
-A repository asset may have a neighboring `.asset.json` identity sidecar. Stable identity lets an asset move between hosted content and repository content without rewriting every game reference.
+A repository file is identified by a neighboring `.asset.json` sidecar containing its stable Media ID. Authored rules reference that ID rather than the path, so files can be reorganized without rewriting gameplay data.
+
+Example:
+
+```text
+public/assets/audio/door-creak.ogg
+public/assets/audio/door-creak.ogg.asset.json
+```
+
+```json
+{
+  "id": "your-stable-media-id",
+  "name": "Door creak"
+}
+```
+
+The build generates the repository Media manifest. Broken project metadata remains visible in Author mode as missing content so an author can restore a repository file using the same stable ID instead of being shown a false playable asset.
 
 ## Storage model
 
 | Data | Default responsibility |
 | --- | --- |
-| Engine source and repository Media | Git repository |
+| Engine source and repository Media files | Git repository |
 | Mutable project structure and Media metadata | Project persistence adapter; Cloudflare D1 in the bundled hosted adapter |
-| Author-created textual/vector Media | Media content adapter; D1 text storage in the bundled hosted adapter |
-| Optional hosted binary Media | Optional blob provider such as R2 |
+| Synth definitions | Project D1 data |
+| Author-created textual/vector Media | D1 generated-Media content |
 | Player-local progress, cache, queued edits | Browser storage |
 
 Cloudflare is a bundled platform implementation, not the definition of the engine. Feature code should depend on engine/platform contracts rather than Cloudflare APIs.
@@ -143,7 +162,7 @@ Cloudflare is a bundled platform implementation, not the definition of the engin
 ## Repository layout
 
 ```text
-public/assets/             repository-managed Media
+public/assets/             version-controlled file Media
 src/App.tsx                application/session composition shell
 src/engine/                shared contracts and composition roots
 src/features/              feature-owned vertical slices
@@ -151,7 +170,7 @@ src/author/                shared Author task/UI system
 src/platform/              client/platform adapters
 worker/features/           feature-owned Worker persistence/validation contributions
 worker/db/                 schema composition and migrations
-worker/mediaContent.ts     hosted Media content boundary
+worker/mediaContent.ts     D1 generated-Media content boundary
 scripts/                   setup, local-runtime, build, and deployment helpers
 tests/                     small cross-cutting safety/contract suite
 .github/workflows/         production deployment only
@@ -161,7 +180,7 @@ tests/                     small cross-cutting safety/contract suite
 
 Rapid prototyping should not require a growing compatibility test suite.
 
-The retained centralized tests focus on cross-cutting contracts that can strand or corrupt authored work, such as authentication, persistence, backup, migrations, player-save compatibility, API synchronization, and hosted Media content safety. Feature-specific tests may be deleted, rewritten, or moved with the feature they protect.
+The retained centralized tests focus on cross-cutting contracts that can strand or corrupt authored work, such as authentication, persistence, backup, migrations, player-save compatibility, API synchronization, and generated Media content safety. Feature-specific tests may be deleted, rewritten, or moved with the feature they protect.
 
 Useful checks:
 
@@ -183,11 +202,11 @@ The supported goal is:
 
 > clone or fork → connect the installation's own persistence/runtime → enter Author mode → build a complete game without ordinary source-code edits
 
-Local-only use does not require a Cloudflare account. Hosted deployment currently ships with Cloudflare Worker/D1 adapters and optional R2 support, but those services remain behind replaceable platform boundaries.
+Local-only use does not require a Cloudflare account. Hosted deployment currently ships with Cloudflare Worker/D1 adapters. File Media remains ordinary repository content rather than requiring a separate object-storage service.
 
 ## Production workflow
 
-`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow prepares installation-specific Worker configuration, deploys that installation's Worker, captures the deployment URL reported by Wrangler, builds the client against that URL, verifies the API, and publishes GitHub Pages.
+`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow prepares installation-specific Worker configuration, deploys that installation's Worker, captures the deployment URL reported by Wrangler, builds the client against that URL, verifies the API and Media persistence contract, and publishes GitHub Pages.
 
 A cloned installation must provide its own credentials and persistence configuration. It does **not** need to copy this repository owner's Worker URL: the default workflow discovers its own deployment target, while `PRE_PROGRAMMED_API_ORIGIN` remains an optional override for custom API domains. The reusable client contains no upstream production fallback.
 

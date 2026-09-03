@@ -11,24 +11,14 @@ export const mediaImageCreateWorkspace = defineAuthorWorkspace({
     return {
       id: "media-image-create",
       title: "New image",
-      context: "Choose an image source",
+      context: "Create D1-generated image Media",
       blocks: [{
         type: "status",
         id: "media-image-create-help",
         tone: "info",
-        text: "Upload any image file, or create a scalable vector on a logical grid. Both become the same media-image resource after saving.",
+        text: "Create a scalable vector on a logical grid. Conventional image files belong under public/assets/ with a stable .asset.json sidecar and become selectable Media after the next build.",
       }],
       actions: [
-        {
-          id: "media-image-create-file",
-          label: "UPLOAD FILE",
-          onAction: () => context.pushTask({
-            type: "feature",
-            feature: "media",
-            workspace: "asset",
-            data: { kind: "image", resourceTask: "media-image" },
-          }, relayCreatedImage),
-        },
         {
           id: "media-image-create-vector",
           label: "CREATE VECTOR",

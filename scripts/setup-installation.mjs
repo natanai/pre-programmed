@@ -96,18 +96,12 @@ async function answer(envName, prompt, fallback = "") {
 try {
   const workerName = await answer("PRE_PROGRAMMED_WORKER_NAME", "Worker name", defaultWorkerName);
   const databaseName = await answer("PRE_PROGRAMMED_D1_DATABASE_NAME", "D1 database name", `${workerName}-db`);
-  const assetBucketName = await answer(
-    "PRE_PROGRAMMED_ASSET_BUCKET_NAME",
-    "Optional R2 blob bucket name (leave blank for D1 SVG + repository Media only)",
-    "",
-  );
   const apiOrigin = await answer("PRE_PROGRAMMED_API_ORIGIN", "Hosted Worker origin (optional until first deploy)", "");
   const repositoryName = await answer("PRE_PROGRAMMED_REPOSITORY_NAME", "GitHub repository name", inferredRepositoryName);
   const basePath = await answer("PRE_PROGRAMMED_BASE_PATH", "Pages base path", `/${repositoryName}/`);
 
   template.name = workerName;
-  if (assetBucketName) template.r2_buckets = [{ binding: "ASSET_CONTENT", bucket_name: assetBucketName }];
-  else delete template.r2_buckets;
+  delete template.r2_buckets;
   await writeFile(wranglerPath, `${JSON.stringify(template, null, 2)}\n`, "utf8");
 
   const normalizedBasePath = `${basePath.startsWith("/") ? basePath : `/${basePath}`}${basePath.endsWith("/") ? "" : "/"}`;
@@ -119,25 +113,21 @@ try {
   ];
   await writeFile(envPath, envLines.join("\n"), "utf8");
 
-  const next = [
+  console.log([
     "Installation files prepared.",
     `Worker: ${workerName}`,
     `D1 to create: ${databaseName}`,
-    assetBucketName ? `Optional R2 blob bucket to create: ${assetBucketName}` : "Optional blob storage: not configured",
     `Pages base: ${normalizedBasePath}`,
+    "Media: synth definitions and Author-made SVG live in D1; file Media lives in public/assets.",
     "",
     "Next:",
     "1. Authenticate Wrangler with the Cloudflare account that should own this game.",
     `2. Create and persist this installation's D1 binding: npx wrangler d1 create ${JSON.stringify(databaseName)} --binding DB --update-config`,
-  ];
-  if (assetBucketName) next.push(`3. Create the optional binary-media bucket: npx wrangler r2 bucket create ${JSON.stringify(assetBucketName)}`);
-  next.push(
-    `${assetBucketName ? "4" : "3"}. Configure ADMIN_KEY for the Worker/deployment.`,
-    `${assetBucketName ? "5" : "4"}. Run \`npx wrangler deploy\` once locally so this Worker owns its configured bindings.`,
-    `${assetBucketName ? "6" : "5"}. Set PRE_PROGRAMMED_API_ORIGIN / VITE_API_ORIGIN once the Worker URL is known.`,
-    `${assetBucketName ? "7" : "6"}. For GitHub Actions, set PRE_PROGRAMMED_WORKER_NAME and PRE_PROGRAMMED_D1_DATABASE_NAME if they differ from defaults.${assetBucketName ? " Set PRE_PROGRAMMED_ASSET_BUCKET_NAME only because this installation opted into R2." : " Leave PRE_PROGRAMMED_ASSET_BUCKET_NAME unset to keep blob storage optional."}`,
-  );
-  console.log(next.join("\n"));
+    "3. Configure ADMIN_KEY for the Worker/deployment.",
+    "4. Run `npx wrangler deploy` once locally so this Worker owns its configured binding.",
+    "5. Set PRE_PROGRAMMED_API_ORIGIN / VITE_API_ORIGIN once the Worker URL is known.",
+    "6. For GitHub Actions, set PRE_PROGRAMMED_WORKER_NAME and PRE_PROGRAMMED_D1_DATABASE_NAME if they differ from defaults.",
+  ].join("\n"));
 } finally {
   rl?.close();
 }
