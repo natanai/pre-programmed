@@ -31,9 +31,16 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
   };
 }
 
-type SnapshotLike = Omit<ProjectSnapshot, "settings"> & { settings?: unknown };
+type SnapshotLike = Omit<ProjectSnapshot, "settings" | "stateGroups"> & {
+  settings?: unknown;
+  stateGroups?: ProjectSnapshot["stateGroups"];
+};
 
-/** Accept cached snapshots written before project settings existed. */
+/** Accept cached snapshots written before project settings or State groups existed. */
 export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
-  return { ...snapshot, settings: normalizeProjectSettings(snapshot.settings) };
+  return {
+    ...snapshot,
+    settings: normalizeProjectSettings(snapshot.settings),
+    stateGroups: Array.isArray(snapshot.stateGroups) ? snapshot.stateGroups : [],
+  };
 }
