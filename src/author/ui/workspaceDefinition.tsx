@@ -4,19 +4,25 @@ import type { AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import { AuthorWorkspaceRenderer } from "./AuthorWorkspaceRenderer";
 import type { AuthorWorkspaceSpec } from "./types";
 
+export type AuthorFeatureTaskRoute = Extract<AuthorTaskRoute, { type: "feature" }>;
+
 export type AuthorWorkspaceSaveResult<TDraft> =
   | { accepted: true; draft?: TDraft; completion?: AuthorTaskResult }
   | { accepted: false };
 
 export type AuthorWorkspaceBuildContext<TDraft> = {
-  route: AuthorTaskRoute;
+  route: AuthorFeatureTaskRoute;
   context: AuthorWorkspaceContext;
   draft: TDraft;
   setDraft: Dispatch<SetStateAction<TDraft>>;
 };
 
 /**
- * Data-first Author workspace definition.
+ * Data-first Author feature workspace definition.
+ *
+ * Feature-contributed workspaces only receive feature routes. Core narrows that
+ * boundary once in the registry so feature editors can use their generic route
+ * data without repeating shell-route guards throughout domain code.
  *
  * The feature owns domain draft shape and persistence semantics. Core owns the
  * task lifecycle and visual grammar. A feature cannot add extra task headers or
@@ -26,7 +32,7 @@ export type AuthorWorkspaceBuildContext<TDraft> = {
 export type AuthorWorkspaceDefinition<TDraft> = {
   id: string;
   matches: (route: AuthorTaskRoute) => boolean;
-  createDraft: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => TDraft;
+  createDraft: (route: AuthorFeatureTaskRoute, context: AuthorWorkspaceContext) => TDraft;
   buildSpec: (build: AuthorWorkspaceBuildContext<TDraft>) => AuthorWorkspaceSpec;
   signature?: (draft: TDraft) => string;
   saveLabel?: string;
@@ -59,7 +65,7 @@ export function StructuredAuthorWorkspace<TDraft>({
   context,
 }: {
   definition: AuthorWorkspaceDefinition<TDraft>;
-  route: AuthorTaskRoute;
+  route: AuthorFeatureTaskRoute;
   context: AuthorWorkspaceContext;
 }) {
   const [draft, setDraft] = useState<TDraft>(() => definition.createDraft(route, context));
