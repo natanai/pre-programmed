@@ -56,6 +56,7 @@ export const configuredAssetContentStore = {
       byteLength: entry.byteLength,
       intrinsicWidth: entry.dimensions?.width ?? null,
       intrinsicHeight: entry.dimensions?.height ?? null,
+      authoringMode: entry.authoringMode,
     };
   },
 
