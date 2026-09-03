@@ -1,63 +1,129 @@
-export const VECTOR_GRID_SIZE = 32;
 export type VectorCell = string | null;
+
+export type VectorGridDocument = {
+  width: number;
+  height: number;
+  cells: VectorCell[];
+};
+
+export type VectorGridPreset = {
+  id: "sprite" | "portrait";
+  label: string;
+  width: number;
+  height: number;
+};
+
+export const VECTOR_GRID_PRESETS: readonly VectorGridPreset[] = [
+  { id: "sprite", label: "Square / Sprite", width: 32, height: 32 },
+  { id: "portrait", label: "Portrait", width: 48, height: 64 },
+];
+
+export const DEFAULT_VECTOR_GRID_SIZE = { width: 32, height: 32 } as const;
+export const VECTOR_GRID_MAX_CELLS = 16_384;
 
 const COLOR = /^#[0-9a-f]{6}$/i;
 const ATTRIBUTE = /\s+([A-Za-z_:][A-Za-z0-9_:.-]*)\s*=\s*(?:"([^"]*)"|'([^']*)')/gy;
 
-export function emptyVectorGrid(): VectorCell[] {
-  return Array.from({ length: VECTOR_GRID_SIZE * VECTOR_GRID_SIZE }, () => null);
+function validDimension(value: number) {
+  return Number.isInteger(value) && value > 0;
 }
 
-export function vectorCellIndex(x: number, y: number) {
-  return y * VECTOR_GRID_SIZE + x;
+export function validateVectorGridSize(width: number, height: number) {
+  if (!validDimension(width) || !validDimension(height)) return "Vector canvas dimensions must be positive whole numbers.";
+  if (width * height > VECTOR_GRID_MAX_CELLS) return `Vector canvases may contain at most ${VECTOR_GRID_MAX_CELLS} cells.`;
+  return null;
 }
 
-export function paintVectorCell(cells: readonly VectorCell[], x: number, y: number, color: string | null) {
-  if (x < 0 || y < 0 || x >= VECTOR_GRID_SIZE || y >= VECTOR_GRID_SIZE) return [...cells];
+export function emptyVectorDocument(width = DEFAULT_VECTOR_GRID_SIZE.width, height = DEFAULT_VECTOR_GRID_SIZE.height): VectorGridDocument {
+  const error = validateVectorGridSize(width, height);
+  if (error) throw new Error(error);
+  return { width, height, cells: Array.from({ length: width * height }, () => null) };
+}
+
+export function vectorCellIndex(document: Pick<VectorGridDocument, "width">, x: number, y: number) {
+  return y * document.width + x;
+}
+
+function inside(document: Pick<VectorGridDocument, "width" | "height">, x: number, y: number) {
+  return x >= 0 && y >= 0 && x < document.width && y < document.height;
+}
+
+function withCells(document: VectorGridDocument, cells: VectorCell[]): VectorGridDocument {
+  return { ...document, cells };
+}
+
+export function paintVectorCell(document: VectorGridDocument, x: number, y: number, color: string | null) {
+  if (!inside(document, x, y)) return { ...document, cells: [...document.cells] };
   if (color !== null && !COLOR.test(color)) throw new Error("Vector cell color must be a six-digit hex color.");
-  const next = [...cells];
-  next[vectorCellIndex(x, y)] = color?.toLowerCase() ?? null;
-  return next;
+  const cells = [...document.cells];
+  cells[vectorCellIndex(document, x, y)] = color?.toLowerCase() ?? null;
+  return withCells(document, cells);
 }
 
-export function floodFillVectorGrid(cells: readonly VectorCell[], x: number, y: number, color: string | null) {
-  if (x < 0 || y < 0 || x >= VECTOR_GRID_SIZE || y >= VECTOR_GRID_SIZE) return [...cells];
+export function floodFillVectorGrid(document: VectorGridDocument, x: number, y: number, color: string | null) {
+  if (!inside(document, x, y)) return { ...document, cells: [...document.cells] };
   if (color !== null && !COLOR.test(color)) throw new Error("Vector fill color must be a six-digit hex color.");
   const replacement = color?.toLowerCase() ?? null;
-  const target = cells[vectorCellIndex(x, y)] ?? null;
-  if (target === replacement) return [...cells];
-  const next = [...cells];
+  const target = document.cells[vectorCellIndex(document, x, y)] ?? null;
+  if (target === replacement) return { ...document, cells: [...document.cells] };
+  const cells = [...document.cells];
   const queue: Array<[number, number]> = [[x, y]];
   while (queue.length) {
     const [cx, cy] = queue.pop()!;
-    const index = vectorCellIndex(cx, cy);
-    if ((next[index] ?? null) !== target) continue;
-    next[index] = replacement;
+    const index = vectorCellIndex(document, cx, cy);
+    if ((cells[index] ?? null) !== target) continue;
+    cells[index] = replacement;
     if (cx > 0) queue.push([cx - 1, cy]);
-    if (cx + 1 < VECTOR_GRID_SIZE) queue.push([cx + 1, cy]);
+    if (cx + 1 < document.width) queue.push([cx + 1, cy]);
     if (cy > 0) queue.push([cx, cy - 1]);
-    if (cy + 1 < VECTOR_GRID_SIZE) queue.push([cx, cy + 1]);
+    if (cy + 1 < document.height) queue.push([cx, cy + 1]);
+  }
+  return withCells(document, cells);
+}
+
+export function resizeVectorGrid(document: VectorGridDocument, width: number, height: number) {
+  const error = validateVectorGridSize(width, height);
+  if (error) throw new Error(error);
+  const next = emptyVectorDocument(width, height);
+  const copyWidth = Math.min(document.width, width);
+  const copyHeight = Math.min(document.height, height);
+  for (let y = 0; y < copyHeight; y += 1) {
+    for (let x = 0; x < copyWidth; x += 1) {
+      next.cells[vectorCellIndex(next, x, y)] = document.cells[vectorCellIndex(document, x, y)] ?? null;
+    }
   }
   return next;
 }
 
-export function serializeVectorGrid(cells: readonly VectorCell[]) {
-  if (cells.length !== VECTOR_GRID_SIZE * VECTOR_GRID_SIZE) throw new Error("Vector grid must contain exactly 1024 cells.");
+export function resizeWouldCrop(document: VectorGridDocument, width: number, height: number) {
+  if (width >= document.width && height >= document.height) return false;
+  return document.cells.some((cell, index) => {
+    if (!cell) return false;
+    const x = index % document.width;
+    const y = Math.floor(index / document.width);
+    return x >= width || y >= height;
+  });
+}
+
+export function serializeVectorGrid(document: VectorGridDocument) {
+  const error = validateVectorGridSize(document.width, document.height);
+  if (error) throw new Error(error);
+  if (document.cells.length !== document.width * document.height) throw new Error("Vector grid cell count does not match its canvas dimensions.");
   const rectangles: string[] = [];
-  for (let y = 0; y < VECTOR_GRID_SIZE; y += 1) {
+  for (let y = 0; y < document.height; y += 1) {
     let x = 0;
-    while (x < VECTOR_GRID_SIZE) {
-      const color = cells[vectorCellIndex(x, y)];
+    while (x < document.width) {
+      const color = document.cells[vectorCellIndex(document, x, y)];
       if (!color) { x += 1; continue; }
       if (!COLOR.test(color)) throw new Error("Vector grid contains an invalid color.");
       let width = 1;
-      while (x + width < VECTOR_GRID_SIZE && cells[vectorCellIndex(x + width, y)] === color) width += 1;
+      while (x + width < document.width && document.cells[vectorCellIndex(document, x + width, y)] === color) width += 1;
       rectangles.push(`<rect x="${x}" y="${y}" width="${width}" height="1" fill="${color.toLowerCase()}"/>`);
       x += width;
     }
   }
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${VECTOR_GRID_SIZE} ${VECTOR_GRID_SIZE}" shape-rendering="crispEdges">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${document.width} ${document.height}" shape-rendering="crispEdges">`,
     ...rectangles,
     "</svg>",
   ].join("");
@@ -80,19 +146,22 @@ function parseAttributes(source: string) {
 }
 
 /**
- * Parse only the small deterministic SVG subset emitted by serializeVectorGrid.
- * This feature model is shared by browser and non-DOM verification runtimes, so
- * it deliberately does not depend on DOMParser or a browser repair parser.
+ * Parse only the deterministic SVG subset emitted by serializeVectorGrid.
+ * The model is shared by browser and non-DOM verification runtimes, so it
+ * deliberately does not depend on DOMParser or a browser repair parser.
  */
-export function parseVectorGrid(svgText: string): VectorCell[] | null {
+export function parseVectorGrid(svgText: string): VectorGridDocument | null {
   const root = svgText.match(/^\s*<svg\b([^>]*)>([\s\S]*)<\/svg>\s*$/i);
   if (!root) return null;
   const rootAttributes = parseAttributes(root[1]);
   if (!rootAttributes) return null;
   const viewBox = rootAttributes.get("viewBox")?.trim().split(/[\s,]+/).map(Number);
-  if (!viewBox || viewBox.length !== 4 || viewBox[0] !== 0 || viewBox[1] !== 0 || viewBox[2] !== VECTOR_GRID_SIZE || viewBox[3] !== VECTOR_GRID_SIZE) return null;
+  if (!viewBox || viewBox.length !== 4 || viewBox[0] !== 0 || viewBox[1] !== 0) return null;
+  const width = viewBox[2];
+  const height = viewBox[3];
+  if (validateVectorGridSize(width, height)) return null;
 
-  const cells = emptyVectorGrid();
+  const document = emptyVectorDocument(width, height);
   const body = root[2];
   const rectangle = /\s*<rect\b([^>]*)\/>\s*/gy;
   let position = 0;
@@ -108,15 +177,15 @@ export function parseVectorGrid(svgText: string): VectorCell[] | null {
     if (!["x", "y", "width", "height", "fill"].every((name) => attributes.has(name))) return null;
     const x = Number(attributes.get("x"));
     const y = Number(attributes.get("y"));
-    const width = Number(attributes.get("width"));
-    const height = Number(attributes.get("height"));
+    const rectWidth = Number(attributes.get("width"));
+    const rectHeight = Number(attributes.get("height"));
     const fill = attributes.get("fill") ?? "";
-    if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(width) || !Number.isInteger(height)
-      || x < 0 || y < 0 || width < 1 || height < 1 || x + width > VECTOR_GRID_SIZE || y + height > VECTOR_GRID_SIZE
+    if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isInteger(rectWidth) || !Number.isInteger(rectHeight)
+      || x < 0 || y < 0 || rectWidth < 1 || rectHeight < 1 || x + rectWidth > width || y + rectHeight > height
       || !COLOR.test(fill)) return null;
-    for (let cy = y; cy < y + height; cy += 1) {
-      for (let cx = x; cx < x + width; cx += 1) cells[vectorCellIndex(cx, cy)] = fill.toLowerCase();
+    for (let cy = y; cy < y + rectHeight; cy += 1) {
+      for (let cx = x; cx < x + rectWidth; cx += 1) document.cells[vectorCellIndex(document, cx, cy)] = fill.toLowerCase();
     }
   }
-  return cells;
+  return document;
 }

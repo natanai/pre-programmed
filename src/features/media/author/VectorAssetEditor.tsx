@@ -1,97 +1,135 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { createMediaAsset } from "../assets";
 import type { MediaAsset, MediaAssetPresentation } from "../model";
 import {
-  emptyVectorGrid,
+  DEFAULT_VECTOR_GRID_SIZE,
+  VECTOR_GRID_MAX_CELLS,
+  VECTOR_GRID_PRESETS,
+  emptyVectorDocument,
   floodFillVectorGrid,
   paintVectorCell,
   parseVectorGrid,
+  resizeVectorGrid,
+  resizeWouldCrop,
   serializeVectorGrid,
-  VECTOR_GRID_SIZE,
-  type VectorCell,
+  validateVectorGridSize,
+  type VectorGridDocument,
 } from "../vectorAsset";
 import { configuredAssetContentStore, configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import "./mediaAuthor.css";
 
 type Tool = "pencil" | "eraser" | "fill";
+type Zoom = 1 | 2 | 4;
 
-const VECTOR_CANVAS_PIXELS = 1024;
+const VECTOR_CANVAS_LONG_EDGE_PIXELS = 1024;
 
-function coordinates(canvas: HTMLCanvasElement, clientX: number, clientY: number) {
+function initialDocument(width?: number, height?: number) {
+  const nextWidth = Number.isInteger(width) && Number(width) > 0 ? Number(width) : DEFAULT_VECTOR_GRID_SIZE.width;
+  const nextHeight = Number.isInteger(height) && Number(height) > 0 ? Number(height) : DEFAULT_VECTOR_GRID_SIZE.height;
+  return validateVectorGridSize(nextWidth, nextHeight)
+    ? emptyVectorDocument()
+    : emptyVectorDocument(nextWidth, nextHeight);
+}
+
+function coordinates(canvas: HTMLCanvasElement, document: VectorGridDocument, clientX: number, clientY: number) {
   const bounds = canvas.getBoundingClientRect();
-  const x = Math.max(0, Math.min(VECTOR_GRID_SIZE - 1, Math.floor(((clientX - bounds.left) / bounds.width) * VECTOR_GRID_SIZE)));
-  const y = Math.max(0, Math.min(VECTOR_GRID_SIZE - 1, Math.floor(((clientY - bounds.top) / bounds.height) * VECTOR_GRID_SIZE)));
+  const x = Math.max(0, Math.min(document.width - 1, Math.floor(((clientX - bounds.left) / bounds.width) * document.width)));
+  const y = Math.max(0, Math.min(document.height - 1, Math.floor(((clientY - bounds.top) / bounds.height) * document.height)));
   return { x, y };
 }
 
-function renderVectorCanvas(canvas: HTMLCanvasElement, cells: readonly VectorCell[]) {
+function renderVectorCanvas(canvas: HTMLCanvasElement, document: VectorGridDocument) {
+  const longest = Math.max(document.width, document.height);
+  const pixelScale = VECTOR_CANVAS_LONG_EDGE_PIXELS / longest;
+  canvas.width = Math.max(1, Math.round(document.width * pixelScale));
+  canvas.height = Math.max(1, Math.round(document.height * pixelScale));
+
   const context = canvas.getContext("2d", { alpha: false });
   if (!context) return;
-
-  const cellPixels = canvas.width / VECTOR_GRID_SIZE;
+  const cellWidth = canvas.width / document.width;
+  const cellHeight = canvas.height / document.height;
   context.imageSmoothingEnabled = false;
   context.fillStyle = "#000000";
   context.fillRect(0, 0, canvas.width, canvas.height);
 
-  cells.forEach((cell, index) => {
+  document.cells.forEach((cell, index) => {
     if (!cell) return;
     context.fillStyle = cell;
     context.fillRect(
-      (index % VECTOR_GRID_SIZE) * cellPixels,
-      Math.floor(index / VECTOR_GRID_SIZE) * cellPixels,
-      cellPixels,
-      cellPixels,
+      (index % document.width) * cellWidth,
+      Math.floor(index / document.width) * cellHeight,
+      cellWidth,
+      cellHeight,
     );
   });
 
   context.beginPath();
   context.strokeStyle = "#333333";
-  context.lineWidth = 2;
-  for (let position = 1; position < VECTOR_GRID_SIZE; position += 1) {
-    const pixel = position * cellPixels;
+  context.lineWidth = 1;
+  for (let x = 1; x < document.width; x += 1) {
+    const pixel = x * cellWidth;
     context.moveTo(pixel, 0);
     context.lineTo(pixel, canvas.height);
+  }
+  for (let y = 1; y < document.height; y += 1) {
+    const pixel = y * cellHeight;
     context.moveTo(0, pixel);
     context.lineTo(canvas.width, pixel);
   }
   context.stroke();
 }
 
-export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCancel, setWorkspaceDirty }: {
+function documentEqual(left: VectorGridDocument, right: VectorGridDocument) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeight, authorToken, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: MediaAsset;
+  initialWidth?: number;
+  initialHeight?: number;
   authorToken: string;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
 }) {
+  const startingDocument = useMemo(() => initialDocument(initialWidth, initialHeight), [initialWidth, initialHeight]);
   const [assetId] = useState(() => initial?.id ?? crypto.randomUUID());
   const [name, setName] = useState(initial?.name ?? "vector.svg");
   const [presentation, setPresentation] = useState<MediaAssetPresentation>(initial?.defaultPresentation ?? "inline");
-  const [cells, setCells] = useState<VectorCell[]>(emptyVectorGrid);
-  const [baseline, setBaseline] = useState(() => JSON.stringify({ name: initial?.name ?? "vector.svg", presentation: initial?.defaultPresentation ?? "inline", cells: emptyVectorGrid() }));
-  const [undo, setUndo] = useState<VectorCell[][]>([]);
-  const [redo, setRedo] = useState<VectorCell[][]>([]);
+  const [document, setDocument] = useState<VectorGridDocument>(startingDocument);
+  const [baseline, setBaseline] = useState(() => JSON.stringify({ name: initial?.name ?? "vector.svg", presentation: initial?.defaultPresentation ?? "inline", document: startingDocument }));
+  const [undo, setUndo] = useState<VectorGridDocument[]>([]);
+  const [redo, setRedo] = useState<VectorGridDocument[]>([]);
   const [tool, setTool] = useState<Tool>("pencil");
   const [color, setColor] = useState("#ffffff");
+  const [zoom, setZoom] = useState<Zoom>(1);
+  const [resizeWidth, setResizeWidth] = useState(startingDocument.width);
+  const [resizeHeight, setResizeHeight] = useState(startingDocument.height);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(Boolean(initial));
   const [error, setError] = useState("");
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const strokeStart = useRef<VectorCell[] | null>(null);
+  const strokeStart = useRef<VectorGridDocument | null>(null);
   const activePointer = useRef<number | null>(null);
-  const dirty = JSON.stringify({ name, presentation, cells }) !== baseline;
+  const dirty = JSON.stringify({ name, presentation, document }) !== baseline;
   const usages = initial ? referencesTo(snapshot, "media-image", initial.id) : [];
   const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
   const repositoryAvailable = configuredAssetContentStore.hasRepository(assetId);
+  const sizeError = validateVectorGridSize(resizeWidth, resizeHeight);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) renderVectorCanvas(canvas, cells);
-  }, [cells]);
+    if (canvas) renderVectorCanvas(canvas, document);
+  }, [document]);
+
+  useEffect(() => {
+    setResizeWidth(document.width);
+    setResizeHeight(document.height);
+  }, [document.width, document.height]);
 
   useEffect(() => {
     setWorkspaceDirty(dirty);
@@ -106,36 +144,39 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
       const parsed = parseVectorGrid(await blob.text());
       if (cancelled) return;
       if (!parsed) {
-        setError("This SVG is not a 32×32 grid asset created by this editor.");
+        setError("This SVG is not a vector-grid asset created by this editor.");
         return;
       }
-      setCells(parsed);
-      setBaseline(JSON.stringify({ name: initial.name, presentation: initial.defaultPresentation, cells: parsed }));
+      setDocument(parsed);
+      setUndo([]);
+      setRedo([]);
+      setBaseline(JSON.stringify({ name: initial.name, presentation: initial.defaultPresentation, document: parsed }));
     }).catch((reason) => {
       if (!cancelled) setError(reason instanceof Error ? reason.message : "Could not load vector content.");
     }).finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [initial?.id, initial?.contentKey]);
 
-  const commit = (next: VectorCell[]) => {
-    setUndo((items) => [...items.slice(-49), cells]);
+  const commit = (next: VectorGridDocument) => {
+    if (documentEqual(document, next)) return;
+    setUndo((items) => [...items.slice(-49), document]);
     setRedo([]);
-    setCells(next);
+    setDocument(next);
   };
 
   const drawAt = (x: number, y: number) => {
-    setCells((current) => paintVectorCell(current, x, y, tool === "eraser" ? null : color));
+    setDocument((current) => paintVectorCell(current, x, y, tool === "eraser" ? null : color));
   };
 
   const beginStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     event.preventDefault();
-    const point = coordinates(event.currentTarget, event.clientX, event.clientY);
+    const point = coordinates(event.currentTarget, document, event.clientX, event.clientY);
     if (tool === "fill") {
-      commit(floodFillVectorGrid(cells, point.x, point.y, color));
+      commit(floodFillVectorGrid(document, point.x, point.y, color));
       return;
     }
     activePointer.current = event.pointerId;
-    strokeStart.current = cells;
+    strokeStart.current = document;
     event.currentTarget.setPointerCapture(event.pointerId);
     drawAt(point.x, point.y);
   };
@@ -143,7 +184,7 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
   const continueStroke = (event: PointerEvent<HTMLCanvasElement>) => {
     if (activePointer.current !== event.pointerId || tool === "fill") return;
     event.preventDefault();
-    const point = coordinates(event.currentTarget, event.clientX, event.clientY);
+    const point = coordinates(event.currentTarget, document, event.clientX, event.clientY);
     drawAt(point.x, point.y);
   };
 
@@ -152,8 +193,8 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     activePointer.current = null;
     const before = strokeStart.current;
     strokeStart.current = null;
-    setCells((current) => {
-      if (before && JSON.stringify(before) !== JSON.stringify(current)) {
+    setDocument((current) => {
+      if (before && !documentEqual(before, current)) {
         setUndo((items) => [...items.slice(-49), before]);
         setRedo([]);
       }
@@ -165,23 +206,35 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
     const previous = undo.at(-1);
     if (!previous) return;
     setUndo((items) => items.slice(0, -1));
-    setRedo((items) => [...items.slice(-49), cells]);
-    setCells(previous);
+    setRedo((items) => [...items.slice(-49), document]);
+    setDocument(previous);
   };
 
   const redoOnce = () => {
     const next = redo.at(-1);
     if (!next) return;
     setRedo((items) => items.slice(0, -1));
-    setUndo((items) => [...items.slice(-49), cells]);
-    setCells(next);
+    setUndo((items) => [...items.slice(-49), document]);
+    setDocument(next);
+  };
+
+  const choosePreset = (width: number, height: number) => {
+    setResizeWidth(width);
+    setResizeHeight(height);
+  };
+
+  const applyResize = () => {
+    if (sizeError || (resizeWidth === document.width && resizeHeight === document.height)) return;
+    if (resizeWouldCrop(document, resizeWidth, resizeHeight)
+      && !window.confirm(`Resize to ${resizeWidth}×${resizeHeight}? Painted cells outside the new canvas will be cropped.`)) return;
+    commit(resizeVectorGrid(document, resizeWidth, resizeHeight));
   };
 
   const save = async () => {
     setSaving(true);
     setError("");
     try {
-      const svg = serializeVectorGrid(cells);
+      const svg = serializeVectorGrid(document);
       const content = new Blob([svg], { type: "image/svg+xml" });
       const contentKey = crypto.randomUUID();
       const asset = createMediaAsset({
@@ -190,10 +243,10 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
         mimeType: "image/svg+xml",
         contentKey,
         byteLength: content.size,
-        intrinsicWidth: VECTOR_GRID_SIZE,
-        intrinsicHeight: VECTOR_GRID_SIZE,
+        intrinsicWidth: document.width,
+        intrinsicHeight: document.height,
         defaultPresentation: presentation,
-        authoringMode: "grid32",
+        authoringMode: "vector-grid",
       });
       await configuredAssetContentStore.upload(authorToken, contentKey, content);
       const result = await onSave(
@@ -202,7 +255,7 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
       );
       if (result.status === "saved" || result.status === "queued") {
         setName(asset.name);
-        setBaseline(JSON.stringify({ name: asset.name, presentation, cells }));
+        setBaseline(JSON.stringify({ name: asset.name, presentation, document }));
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Vector save failed.");
@@ -240,28 +293,52 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
 
   const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
   const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
+  const usedCells = document.cells.filter(Boolean).length;
+  const stageStyle = {
+    width: `${zoom * 100}%`,
+    maxWidth: `${34 * zoom}rem`,
+    aspectRatio: `${document.width} / ${document.height}`,
+  } as CSSProperties;
 
   return <section className="author-panel author-panel-frame vector-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>32×32 VECTOR · {name || "NEW"}</span></header>
+    <header><span>VECTOR ASSET · {name || "NEW"}</span></header>
     <div className="author-panel-body vector-editor-body">
-      <p className="field-help">The grid is the editor's 32×32 coordinate surface. Saving serializes the same cell model to scalable SVG; the browser canvas is only the authoring viewport.</p>
+      <p className="field-help">The canvas uses logical drawing cells, not output pixels. Saving serializes the same grid to scalable SVG, so 32×32, 48×64, and custom canvases remain sharp at player zoom.</p>
       <div className="vector-editor-layout">
-        <div className="vector-canvas-wrap">
-          <canvas
-            ref={canvasRef}
-            className="vector-canvas"
-            width={VECTOR_CANVAS_PIXELS}
-            height={VECTOR_CANVAS_PIXELS}
-            role="img"
-            aria-label="32 by 32 vector drawing grid"
-            onPointerDown={beginStroke}
-            onPointerMove={continueStroke}
-            onPointerUp={endStroke}
-            onPointerCancel={endStroke}
-          />
+        <div className="vector-drawing-column">
+          <div className="vector-zoom-row" aria-label="Vector canvas zoom">
+            <span>VIEW</span>
+            {([1, 2, 4] as const).map((candidate) => <button type="button" key={candidate} aria-pressed={zoom === candidate} onClick={() => setZoom(candidate)}>[{candidate === 1 ? "FIT" : `${candidate}×`}]</button>)}
+          </div>
+          <div className="vector-canvas-viewport">
+            <div className="vector-canvas-stage" style={stageStyle}>
+              <canvas
+                ref={canvasRef}
+                className="vector-canvas"
+                role="img"
+                aria-label={`${document.width} by ${document.height} vector drawing grid`}
+                onPointerDown={beginStroke}
+                onPointerMove={continueStroke}
+                onPointerUp={endStroke}
+                onPointerCancel={endStroke}
+              />
+            </div>
+          </div>
         </div>
         <div className="vector-controls">
           <label>NAME <input value={name} onChange={(event) => setName(event.target.value)} /></label>
+          <section className="vector-canvas-settings" aria-label="Vector canvas size">
+            <span>CANVAS · {document.width}×{document.height} UNITS</span>
+            <div className="vector-preset-row">
+              {VECTOR_GRID_PRESETS.map((preset) => <button type="button" key={preset.id} onClick={() => choosePreset(preset.width, preset.height)}>[{preset.label.toUpperCase()} · {preset.width}×{preset.height}]</button>)}
+            </div>
+            <div className="vector-size-row">
+              <label>WIDTH <input type="number" min={1} step={1} value={resizeWidth} onChange={(event) => setResizeWidth(Number(event.target.value))} /></label>
+              <label>HEIGHT <input type="number" min={1} step={1} value={resizeHeight} onChange={(event) => setResizeHeight(Number(event.target.value))} /></label>
+              <button type="button" disabled={Boolean(sizeError) || (resizeWidth === document.width && resizeHeight === document.height)} onClick={applyResize}>[RESIZE CANVAS]</button>
+            </div>
+            <small>{sizeError ?? `Custom canvases may contain up to ${VECTOR_GRID_MAX_CELLS.toLocaleString()} logical cells. Resizing preserves existing cells without resampling.`}</small>
+          </section>
           <label>COLOR <input type="color" value={color} onChange={(event) => setColor(event.target.value)} /></label>
           <div className="author-actions vector-tool-row" aria-label="Drawing tools">
             {(["pencil", "eraser", "fill"] as const).map((candidate) => <button type="button" key={candidate} aria-pressed={tool === candidate} onClick={() => setTool(candidate)}>[{candidate.toUpperCase()}]</button>)}
@@ -269,7 +346,7 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
           <div className="author-actions vector-tool-row">
             <button type="button" disabled={!undo.length} onClick={undoOnce}>[UNDO]</button>
             <button type="button" disabled={!redo.length} onClick={redoOnce}>[REDO]</button>
-            <button type="button" disabled={!cells.some(Boolean)} onClick={() => commit(emptyVectorGrid())}>[CLEAR]</button>
+            <button type="button" disabled={!usedCells} onClick={() => commit(emptyVectorDocument(document.width, document.height))}>[CLEAR]</button>
           </div>
           <label>DEFAULT PLAYER PRESENTATION
             <select value={presentation} onChange={(event) => setPresentation(event.target.value === "overlay" ? "overlay" : "inline")}>
@@ -277,7 +354,7 @@ export function VectorAssetEditor({ snapshot, initial, authorToken, onSave, onCa
               <option value="overlay">large art / overlay</option>
             </select>
           </label>
-          <small>{cells.filter(Boolean).length} / 1024 cells used · saved output remains SVG at every player zoom level.</small>
+          <small>{usedCells} / {document.width * document.height} cells used · SVG viewBox {document.width}×{document.height}.</small>
         </div>
       </div>
       {loading ? <div className="author-message">LOADING VECTOR CONTENT...</div> : null}

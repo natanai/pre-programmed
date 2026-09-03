@@ -1,8 +1,12 @@
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import type { AssetStore, MediaAssetDescriptor } from "../assets";
-import type { MediaAsset } from "../model";
+import { normalizeMediaAssetAuthoringMode, type MediaAsset } from "../model";
 import { configuredAssetContentStore } from "../../../platform/assets/contentStore";
+
+function normalizeAsset(asset: MediaAsset | (Omit<MediaAsset, "authoringMode"> & { authoringMode: unknown })): MediaAsset {
+  return { ...asset, authoringMode: normalizeMediaAssetAuthoringMode(asset.authoringMode) } as MediaAsset;
+}
 
 function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
   return {
@@ -15,7 +19,7 @@ function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
     intrinsicWidth: entry.dimensions?.width ?? null,
     intrinsicHeight: entry.dimensions?.height ?? null,
     defaultPresentation: entry.defaultPresentation,
-    authoringMode: entry.authoringMode,
+    authoringMode: normalizeMediaAssetAuthoringMode(entry.authoringMode),
   };
 }
 
@@ -30,7 +34,7 @@ function descriptor(asset: MediaAsset, editable: boolean): MediaAssetDescriptor 
 /** Browser composition of one stable asset catalog backed by project metadata and repository metadata. */
 export const configuredAssetStore: AssetStore = {
   list(snapshot, kind) {
-    const projectById = new Map((snapshot.mediaAssets ?? []).map((asset) => [asset.id, asset] as const));
+    const projectById = new Map((snapshot.mediaAssets ?? []).map((asset) => [asset.id, normalizeAsset(asset)] as const));
     const assets = new Map<string, MediaAssetDescriptor>();
 
     for (const entry of ASSET_MANIFEST) {
@@ -48,12 +52,14 @@ export const configuredAssetStore: AssetStore = {
               byteLength: repository.byteLength,
               intrinsicWidth: repository.intrinsicWidth,
               intrinsicHeight: repository.intrinsicHeight,
+              authoringMode: repository.authoringMode,
             }
         : repository;
       assets.set(entry.id, descriptor(merged, true));
     }
 
-    for (const project of snapshot.mediaAssets ?? []) {
+    for (const projectValue of snapshot.mediaAssets ?? []) {
+      const project = normalizeAsset(projectValue);
       if (!assets.has(project.id)) assets.set(project.id, descriptor(project, true));
     }
 
