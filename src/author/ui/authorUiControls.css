@@ -1,0 +1,20 @@
+.author-ui-select-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.author-ui-toggle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: .35em .55em;
+  min-width: 0;
+}
+
+.author-ui-toggle > input {
+  margin-top: .15em;
+}
+
+.author-ui-toggle > .author-ui-help {
+  grid-column: 2;
+}

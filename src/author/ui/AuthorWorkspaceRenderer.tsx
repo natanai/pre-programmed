@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
+import "./authorUiControls.css";
 
 function labelClass(mode: "auto" | "always" | "sr-only" = "auto") {
   return mode === "sr-only" ? "author-ui-sr-only" : `author-ui-label author-ui-label-${mode}`;
@@ -28,6 +29,24 @@ function AuthorUiNodeView({ node }: { node: AuthorUiNode }) {
       {node.control === "textarea"
         ? <textarea {...common} rows={node.rows ?? 4} />
         : <input {...common} type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"} />}
+      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
+    </label>;
+  }
+
+  if (node.type === "select") {
+    return <label className="author-ui-field author-ui-select-field" htmlFor={node.id}>
+      <span className={labelClass(node.labelMode)}>{node.label}</span>
+      <select id={node.id} value={node.value} disabled={node.disabled} onChange={(event) => node.onChange(event.target.value)}>
+        {node.options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
+      </select>
+      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
+    </label>;
+  }
+
+  if (node.type === "toggle") {
+    return <label className="author-ui-toggle" htmlFor={node.id}>
+      <input id={node.id} type="checkbox" checked={node.checked} disabled={node.disabled} onChange={(event) => node.onChange(event.target.checked)} />
+      <span>{node.label}</span>
       {node.help ? <small className="author-ui-help">{node.help}</small> : null}
     </label>;
   }

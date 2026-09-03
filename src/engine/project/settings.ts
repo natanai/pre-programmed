@@ -3,6 +3,7 @@ import {
   normalizeCommandsProjectSettings,
   type CommandsProjectSettingsSlice,
 } from "../../features/commands/projectSettings";
+import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
 import type { ProjectSnapshot } from "./model";
 
 export type ProjectSettings = {
@@ -31,9 +32,20 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
   };
 }
 
-type SnapshotLike = Omit<ProjectSnapshot, "settings"> & { settings?: unknown };
+type SnapshotLike = Omit<ProjectSnapshot, "settings" | "stateGroups"> & {
+  settings?: unknown;
+  stateGroups?: ProjectSnapshot["stateGroups"];
+};
 
-/** Accept cached snapshots written before project settings existed. */
+/**
+ * Accept cached snapshots written before newer optional project slices existed.
+ * Feature-owned normalizers carry their own one-way compatibility semantics;
+ * this composition root only assembles the normalized snapshot.
+ */
 export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
-  return { ...snapshot, settings: normalizeProjectSettings(snapshot.settings) };
+  return {
+    ...snapshot,
+    ...normalizeStateProjectSlice(snapshot),
+    settings: normalizeProjectSettings(snapshot.settings),
+  };
 }
