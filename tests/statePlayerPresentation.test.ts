@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import type { ProjectSnapshot } from "../src/engine/project/model";
 import { visibleStateGroups } from "../src/features/state/playerPresentation";
+import { normalizeStateProjectSlice } from "../src/features/state/projectNormalization";
+import type { VariableDefinition } from "../src/features/state/model";
 import { project } from "./fixtures";
 
 function stateProject(): ProjectSnapshot {
@@ -73,5 +75,29 @@ describe("State player presentation", () => {
     expect(visible.map(({ group }) => group.id)).toEqual(["relationships", "attributes"]);
     expect(visible.find(({ group }) => group.id === "attributes")?.entries.map(({ definition }) => definition.id))
       .toEqual(["name", "health"]);
+  });
+
+  it("converts a pre-group browser cache into the same ordinary Status group", () => {
+    const exposed = {
+      id: "health", key: "health", label: "Health", valueType: "number", initialValue: 100,
+      interactable: false, operations: [], hooks: [], showInStatus: true,
+    } as VariableDefinition & { showInStatus: boolean };
+    const internal = {
+      id: "secret", key: "secret", label: "Secret", valueType: "number", initialValue: 7,
+      interactable: false, operations: [], hooks: [], showInStatus: false,
+    } as VariableDefinition & { showInStatus: boolean };
+
+    const normalized = normalizeStateProjectSlice({
+      variables: [exposed, internal],
+      computedValues: [],
+      stateGroups: undefined,
+    });
+
+    expect(normalized.stateGroups).toEqual([
+      { id: "legacy-status", label: "Status", order: 0, visibleWhen: { type: "always" } },
+    ]);
+    expect(normalized.variables.find((definition) => definition.id === "health")?.playerPresentation)
+      .toEqual({ groupId: "legacy-status", order: 0, visibleWhen: { type: "always" } });
+    expect(normalized.variables.find((definition) => definition.id === "secret")?.playerPresentation).toBeNull();
   });
 });
