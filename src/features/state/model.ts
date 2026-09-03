@@ -1,5 +1,19 @@
 import type { Value } from "../../engine/rules/model";
+import type { Condition } from "../../engine/rules/model";
 import type { OperationHook, OperationId } from "../operations/model";
+
+export type StateGroupDefinition = {
+  id: string;
+  label: string;
+  order: number;
+  visibleWhen: Condition;
+};
+
+export type StatePlayerPresentation = {
+  groupId: string;
+  order: number;
+  visibleWhen: Condition;
+};
 
 export type VariableDefinition = {
   id: string;
@@ -7,7 +21,8 @@ export type VariableDefinition = {
   label: string;
   valueType: "number" | "boolean" | "string";
   initialValue: Value;
-  showInStatus: boolean;
+  /** Player presentation is optional; absence means this value is internal-only. */
+  playerPresentation?: StatePlayerPresentation | null;
   interactable: boolean;
   operations: OperationId[];
   hooks: OperationHook[];
@@ -27,7 +42,8 @@ export type ComputedDefinition = {
   label: string;
   source: ComputedSource;
   format: "raw" | "integer" | "seconds";
-  showInStatus: boolean;
+  /** Player presentation is optional; absence means this value is internal-only. */
+  playerPresentation?: StatePlayerPresentation | null;
   interactable: boolean;
   operations: OperationId[];
   hooks: OperationHook[];
