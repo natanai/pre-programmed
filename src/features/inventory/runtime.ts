@@ -66,7 +66,7 @@ export function equipmentAssignmentForSlot(
 
   const placement = placements.find((candidate) => candidate.anchorSlotKey === anchorSlotKey);
   if (!placement) return null;
-  const occupiedSlotKeys = uniqueSlotKeys([anchorSlotKey, ...(placement.occupiedSlotKeys ?? [])]);
+  const occupiedSlotKeys = uniqueSlotKeys([...(placement.occupiedSlotKeys ?? []), anchorSlotKey]);
   const activeKeys = new Set(bodySlots.map((slot) => slot.key));
   if (occupiedSlotKeys.some((slotKey) => !activeKeys.has(slotKey))) return null;
   return { anchorSlotKey, occupiedSlotKeys };
