@@ -1,4 +1,5 @@
 import { INVENTORY_STARTER_COMMANDS } from "../inventory/defaultCommands";
+import { STATE_STARTER_COMMANDS } from "../state/defaultCommands";
 import type { CommandProjectSettings } from "./model";
 
 /**
@@ -8,5 +9,8 @@ import type { CommandProjectSettings } from "./model";
  */
 export const DEFAULT_COMMAND_PROJECT_SETTINGS: CommandProjectSettings = {
   referenceSources: [],
-  commands: structuredClone([...INVENTORY_STARTER_COMMANDS]),
+  commands: structuredClone([
+    ...INVENTORY_STARTER_COMMANDS,
+    ...STATE_STARTER_COMMANDS,
+  ]),
 };
