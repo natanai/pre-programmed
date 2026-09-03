@@ -1,0 +1,73 @@
+.inventory-author-resource-list {
+  display: grid;
+  gap: .45em;
+}
+
+.inventory-author-resource-list > button,
+.inventory-author-resource-open {
+  min-height: 2.75em;
+}
+
+.inventory-author-resource-row {
+  display: grid;
+  gap: .4em;
+  padding: .45em;
+  border: 1px solid var(--dos-line);
+}
+
+.inventory-author-resource-open {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8em;
+  min-width: 0;
+  padding: .35em .45em;
+  text-align: left;
+}
+
+.inventory-author-resource-open > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-author-resource-open > small {
+  color: var(--dos-muted);
+}
+
+.inventory-author-resource-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em .55em;
+}
+
+.inventory-author-resource-actions > span {
+  color: var(--dos-muted);
+  font-size: .8em;
+}
+
+.inventory-slot-compatibility-control {
+  display: grid;
+  gap: .35em;
+}
+
+.inventory-slot-compatibility-control > label {
+  display: flex;
+  align-items: center;
+  gap: .45em;
+  min-height: 2.35em;
+}
+
+.inventory-slot-compatibility-control > label small {
+  margin-left: auto;
+  color: var(--dos-muted);
+}
+
+@container author-workspace (min-width: 44rem) {
+  .inventory-author-resource-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+  }
+}
