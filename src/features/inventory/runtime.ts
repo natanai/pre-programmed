@@ -132,7 +132,7 @@ export function equipInventoryEntry(
 
   // Assign first so slot-only target equipment releases its grid cells before
   // displaced items search for a safe return position.
-  let inventory = state.inventory.map((candidate) => candidate.instanceId === instanceId
+  let inventory: InventoryEntry[] = state.inventory.map((candidate) => candidate.instanceId === instanceId
     ? { ...candidate, equipment: assignment }
     : candidate);
 
@@ -176,7 +176,7 @@ function equipmentAssignmentsValid(snapshot: ProjectSnapshot, state: PlayState) 
  * overlapping assignments are unequipped when grid capacity permits.
  */
 export function reconcileEquippedItems(snapshot: ProjectSnapshot, state: PlayState): PlayState {
-  let inventory = state.inventory.map((entry) => ({
+  let inventory: InventoryEntry[] = state.inventory.map((entry) => ({
     ...entry,
     equipment: entry.equipment
       ? { ...entry.equipment, occupiedSlotKeys: [...entry.equipment.occupiedSlotKeys] }
