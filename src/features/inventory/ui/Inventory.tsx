@@ -18,9 +18,10 @@ import "../author/inventoryAuthor.css";
 const DEFAULT_ITEM_OPERATIONS: OperationId[] = ["inspect", "use", "move", "remove", "equip", "unequip"];
 
 /**
- * Inventory's player surface owns carried items, the grid, body slots, and
- * equipment interaction only. Author management lives in structured Inventory
- * workspaces; generic State/status presentation is a separate State surface.
+ * Inventory's live player surface owns carried items, the grid, body slots, and
+ * equipment interaction. Optional edit callbacks are supplied only by the
+ * Author experience so the same live surface can become directly editable
+ * without turning player navigation into an Author task.
  */
 export function Inventory({
   snapshot,
@@ -28,12 +29,16 @@ export function Inventory({
   onState,
   onOutput,
   onEvents,
+  onEditItem,
+  onEditBodyType,
 }: {
   snapshot: ProjectSnapshot;
   state: PlayState;
   onState: (state: PlayState) => void;
   onOutput: (text: string) => void;
   onEvents: (events: EffectEvent[]) => void;
+  onEditItem?: (itemId: string) => void;
+  onEditBodyType?: (bodyTypeId: string) => void;
 }) {
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const assetUrlFor = (assetId: string | undefined | null) => assetId
@@ -104,7 +109,13 @@ export function Inventory({
       <div className="inventory-primary-area">
         <aside className={`inventory-inspector${selected ? " has-selection" : ""}`} aria-label="Selected inventory details">
           {selectedEntry && selectedItem ? <>
-            <div className="inventory-inspector-heading"><strong>{selectedItem.name}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
+            <div className="inventory-inspector-heading">
+              <strong>{selectedItem.name}</strong>
+              <div className="inventory-inspector-heading-actions">
+                {onEditItem ? <button type="button" onClick={() => onEditItem(selectedItem.id)}>[EDIT]</button> : null}
+                <button type="button" onClick={() => setSelected(null)}>[DONE]</button>
+              </div>
+            </div>
             <p>{selectedItem.description}</p>
             {equippedSlot ? <p className="inventory-equipped-status">EQUIPPED · {equippedSlot.name}</p> : null}
             {operationButtons(
@@ -157,7 +168,13 @@ export function Inventory({
       </div>
 
       <section className="inventory-body-area" aria-label="Body equipment area">
-        <div className="inventory-body-heading"><span>BODY</span><small>{activeBodyType?.name ?? "NO BODY TYPE"}</small></div>
+        <div className="inventory-body-heading">
+          <span>BODY</span>
+          <div className="inventory-body-heading-actions">
+            <small>{activeBodyType?.name ?? "NO BODY TYPE"}</small>
+            {activeBodyType && onEditBodyType ? <button type="button" onClick={() => onEditBodyType(activeBodyType.id)}>[EDIT]</button> : null}
+          </div>
+        </div>
         <BodyDiagram
           canvas={bodyCanvas}
           backgroundUrl={assetUrlFor(activeBodyType?.assetId)}

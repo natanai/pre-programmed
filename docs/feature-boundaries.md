@@ -82,7 +82,24 @@ Allowed responsive differences include:
 
 Do not create separate desktop/mobile editors, mutation paths, save logic, or navigation stacks.
 
-## 7. Installation configuration is not engine behavior
+## 7. Author augments the live game; it does not replace it
+
+Author mode is a layer over the running game, not a separate copy of player-facing systems.
+
+A player command must keep the same runtime meaning in and out of Author mode. If `inventory` opens the live Inventory for a player, it opens that same live Inventory for an author. While the Author experience is active, a player workspace may receive the generic optional Author bridge and contribute contextual edit/create actions that open real Author tasks over the live surface.
+
+Therefore:
+
+- do not route a player command into the Author task broker merely because Author mode is active;
+- do not build a second Author-only copy of a player workspace;
+- ordinary players must never receive Author persistence/task APIs;
+- features own their contextual editing affordances; the shared Player workspace shell owns their common presentation;
+- closing an Author task should reveal the live player workspace/run state that was underneath it;
+- mobile and desktop use the same player surface and the same Author bridge.
+
+This is the core play-and-build contract: the game remains playable while Author mode makes the thing being viewed directly editable.
+
+## 8. Installation configuration is not engine behavior
 
 Worker names, database identities, repository paths, API origins, Author credentials, and optional provider configuration belong to installation/platform adapters.
 
@@ -90,7 +107,7 @@ Feature/project data should store stable project identities and content keys, no
 
 An optional provider may enable one capability; its absence must not disable unrelated engine features.
 
-## 8. Replace unsuitable prototypes
+## 9. Replace unsuitable prototypes
 
 When a prototype foundation is conceptually wrong:
 
@@ -104,7 +121,7 @@ Avoid two sources of truth, repair layers around an obsolete subsystem, and perm
 
 Compatibility code is acceptable only as a deliberate one-way migration mechanism toward deletion.
 
-## 9. Delete by feature boundary
+## 10. Delete by feature boundary
 
 A useful modularity check for a substantial feature replacement is:
 
@@ -116,7 +133,7 @@ A useful modularity check for a substantial feature replacement is:
 
 Do this when replacing a feature, not as permanent CI theater.
 
-## 10. Verification must remain replaceable too
+## 11. Verification must remain replaceable too
 
 Tests and CI are architecture. They must not make an experimental feature harder to replace than the runtime does.
 
@@ -132,7 +149,7 @@ During rapid prototyping:
 
 A failed test during an intentional replacement is evidence to inspect, not proof that the old behavior must be preserved.
 
-## 11. Documentation describes the current engine
+## 12. Documentation describes the current engine
 
 Tracked documentation is part of the developer interface.
 

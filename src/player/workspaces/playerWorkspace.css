@@ -21,6 +21,10 @@
   cursor: default;
 }
 
+.player-workspace-layer.is-authoring {
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+}
+
 .player-workspace-header {
   display: flex;
   align-items: center;
@@ -37,7 +41,8 @@
 }
 
 .player-workspace-header button,
-.player-workspace-navigation button {
+.player-workspace-navigation button,
+.player-workspace-author-actions button {
   flex: none;
   min-width: 2.75em;
   min-height: 2.75em;
@@ -49,7 +54,8 @@
   cursor: pointer;
 }
 
-.player-workspace-navigation {
+.player-workspace-navigation,
+.player-workspace-author-actions {
   display: flex;
   min-width: 0;
   gap: .35em .75em;
@@ -62,7 +68,8 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.player-workspace-navigation::-webkit-scrollbar {
+.player-workspace-navigation::-webkit-scrollbar,
+.player-workspace-author-actions::-webkit-scrollbar {
   display: none;
 }
 
@@ -75,6 +82,21 @@
   color: var(--dos-bright);
   text-decoration: underline;
   text-underline-offset: .2em;
+}
+
+.player-workspace-author-actions {
+  align-items: center;
+  color: var(--dos-warn);
+}
+
+.player-workspace-author-actions > span {
+  flex: none;
+  font-size: .8em;
+}
+
+.player-workspace-author-actions button {
+  color: var(--dos-bright);
+  white-space: nowrap;
 }
 
 .player-workspace-content {
@@ -103,7 +125,8 @@
   }
 
   .player-workspace-content,
-  .player-workspace-navigation {
+  .player-workspace-navigation,
+  .player-workspace-author-actions {
     width: min(100%, 76rem);
     margin: 0 auto;
   }

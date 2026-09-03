@@ -30,16 +30,59 @@ button.state-status-entry-row {
 }
 
 .state-status-group-row small,
-.state-status-entry-row strong {
+.state-status-entry-row > strong,
+.state-status-entry-main > strong {
   justify-self: end;
 }
 
+.state-status-entry-row.is-authoring {
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0;
+  gap: 0;
+}
+
+.state-status-entry-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1em;
+  min-width: 0;
+  min-height: 2.75em;
+  padding: .5em .65em;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+button.state-status-entry-main {
+  cursor: pointer;
+}
+
+.state-status-entry-edit {
+  align-self: stretch;
+  min-width: 4.5em;
+  padding: .35em .55em;
+  border: 0;
+  border-left: 1px dotted var(--dos-line);
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
 .state-status-toolbar,
-.state-status-inspector-heading {
+.state-status-inspector-heading,
+.state-status-inspector-actions {
   display: flex;
   align-items: center;
   gap: .7em;
   justify-content: space-between;
+}
+
+.state-status-toolbar {
+  flex-wrap: wrap;
 }
 
 .state-status-toolbar strong {
@@ -47,6 +90,17 @@ button.state-status-entry-row {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.state-status-toolbar button,
+.state-status-inspector-actions button {
+  min-height: 2.75em;
+  padding: .25em .4em;
+  border: 0;
+  background: transparent;
+  color: var(--dos-text);
+  font: inherit;
+  cursor: pointer;
 }
 
 .state-status-inspector {
