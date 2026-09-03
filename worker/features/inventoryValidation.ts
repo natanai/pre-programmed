@@ -1,3 +1,5 @@
+import { slotFitsBodyCanvas, validBodyCanvas } from "../../src/features/inventory/bodyCanvas";
+import type { BodyCanvasDefinition, BodySlotDefinition } from "../../src/features/inventory/model";
 import { object, validateHooks, validateOperationCapabilities } from "./validationHelpers";
 import type { WorkerMutationValidator } from "./validationTypes";
 
@@ -5,7 +7,7 @@ function validStringArray(value: unknown) {
   return Array.isArray(value) && value.every((entry) => typeof entry === "string" && entry.length > 0);
 }
 
-function validBodySlots(value: unknown) {
+function validBodySlots(value: unknown, canvas: BodyCanvasDefinition) {
   if (!Array.isArray(value)) return false;
   const ids = new Set<string>();
   const keys = new Set<string>();
@@ -24,8 +26,7 @@ function validBodySlots(value: unknown) {
       || typeof width !== "number" || !Number.isFinite(width)
       || typeof height !== "number" || !Number.isFinite(height)
     ) return false;
-    if (x < 0 || y < 0 || width < 4 || height < 4) return false;
-    if (x + width > 100 || y + height > 100) return false;
+    if (!slotFitsBodyCanvas(slot as BodySlotDefinition, canvas)) return false;
   }
   return true;
 }
@@ -81,7 +82,8 @@ export const inventoryMutationValidator: WorkerMutationValidator = {
       if (typeof operation.background.id !== "string" || !operation.background.id) return "Body type id is required.";
       if (typeof operation.background.name !== "string" || !operation.background.name.trim()) return "Body type name is required.";
       if (typeof operation.background.assetId !== "string" && typeof operation.background.assetPath !== "string") return "Body type asset reference is invalid.";
-      if (operation.background.slots !== undefined && !validBodySlots(operation.background.slots)) return "Body type slots are invalid.";
+      if (!validBodyCanvas(operation.background.canvas)) return "Body type canvas is invalid.";
+      if (operation.background.slots !== undefined && !validBodySlots(operation.background.slots, operation.background.canvas)) return "Body type slots are invalid.";
       if (operation.background.startingEquipment !== undefined && !validStartingEquipment(operation.background.startingEquipment)) {
         return "Body type starting equipment is invalid.";
       }

@@ -1,4 +1,5 @@
-import type { BodyBackgroundDefinition, BodySlotDefinition, ItemDefinition, StartingEquipmentDefinition } from "../../src/features/inventory/model";
+import type { BodyBackgroundDefinition, BodyCanvasDefinition, BodySlotDefinition, ItemDefinition, StartingEquipmentDefinition } from "../../src/features/inventory/model";
+import { DEFAULT_BODY_CANVAS, normalizeBodyTypeDefinition } from "../../src/features/inventory/bodyCanvas";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import { hookStatements, loadHooksForKind, resetHooksForKind } from "./operationHooks";
@@ -29,6 +30,7 @@ type BodyBackgroundRow = {
   id: string;
   name: string;
   asset_id: string;
+  canvas_json: string;
   slots_json: string;
   starting_equipment_json: string;
 };
@@ -115,6 +117,30 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 19 WHERE id = 1;
       `,
     },
+    {
+      id: 31,
+      name: "inventory-body-logical-canvas",
+      sql: `
+        ALTER TABLE inventory_body_backgrounds
+        ADD COLUMN canvas_json TEXT NOT NULL DEFAULT '{"width":48,"height":64,"fit":"contain"}';
+
+        UPDATE inventory_body_backgrounds
+        SET slots_json = COALESCE((
+          SELECT json_group_array(json_object(
+            'id', json_extract(value, '$.id'),
+            'key', json_extract(value, '$.key'),
+            'name', json_extract(value, '$.name'),
+            'x', json_extract(value, '$.x') * 0.48,
+            'y', json_extract(value, '$.y') * 0.64,
+            'width', json_extract(value, '$.width') * 0.48,
+            'height', json_extract(value, '$.height') * 0.64
+          ))
+          FROM json_each(inventory_body_backgrounds.slots_json)
+        ), '[]');
+
+        UPDATE project_meta SET schema_version = 31 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -127,17 +153,18 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
       ).all<ItemRow>(),
       loadHooksForKind(db, "item"),
       db.prepare(
-        "SELECT id, name, asset_id, slots_json, starting_equipment_json FROM inventory_body_backgrounds ORDER BY name, id",
+        "SELECT id, name, asset_id, canvas_json, slots_json, starting_equipment_json FROM inventory_body_backgrounds ORDER BY name, id",
       ).all<BodyBackgroundRow>(),
       db.prepare(
         "SELECT starting_body_background_id FROM inventory_settings WHERE id = 1",
       ).first<{ starting_body_background_id: string | null }>(),
     ]);
 
-    const bodyBackgrounds = backgrounds.results.map((row): BodyBackgroundDefinition => ({
+    const bodyBackgrounds = backgrounds.results.map((row): BodyBackgroundDefinition => normalizeBodyTypeDefinition({
       id: row.id,
       name: row.name,
       assetId: row.asset_id,
+      canvas: parseJson<BodyCanvasDefinition>(row.canvas_json, { ...DEFAULT_BODY_CANVAS }),
       slots: parseJson<BodySlotDefinition[]>(row.slots_json, []),
       startingEquipment: parseJson<StartingEquipmentDefinition[]>(row.starting_equipment_json, []),
     }));
@@ -222,19 +249,20 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
     }
 
     if (operation.type === "bodyBackground.upsert") {
-      const bodyType = operation.background;
+      const bodyType = normalizeBodyTypeDefinition(operation.background);
       const legacyBodyType = bodyType as typeof bodyType & { assetPath?: string };
       const assetId = bodyType.assetId ?? legacyAssetId(legacyBodyType.assetPath ?? "");
       return [db.prepare(
-        `INSERT INTO inventory_body_backgrounds (id, name, asset_path, asset_id, slots_json, starting_equipment_json, updated_at)
-         VALUES (?, ?, '', ?, ?, ?, CURRENT_TIMESTAMP)
+        `INSERT INTO inventory_body_backgrounds (id, name, asset_path, asset_id, canvas_json, slots_json, starting_equipment_json, updated_at)
+         VALUES (?, ?, '', ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET name=excluded.name, asset_id=excluded.asset_id,
-           slots_json=excluded.slots_json, starting_equipment_json=excluded.starting_equipment_json,
+           canvas_json=excluded.canvas_json, slots_json=excluded.slots_json, starting_equipment_json=excluded.starting_equipment_json,
            updated_at=CURRENT_TIMESTAMP`,
       ).bind(
         bodyType.id,
         bodyType.name,
         assetId,
+        JSON.stringify(bodyType.canvas),
         JSON.stringify(bodyType.slots ?? []),
         JSON.stringify(bodyType.startingEquipment ?? []),
       )];
@@ -273,11 +301,7 @@ export const inventoryFeaturePersistence: WorkerFeaturePersistence = {
     return [
       ...(snapshot.bodyBackgrounds ?? []).map((background) => ({
         type: "bodyBackground.upsert" as const,
-        background: {
-          ...background,
-          slots: background.slots ?? [],
-          startingEquipment: background.startingEquipment ?? [],
-        },
+        background: normalizeBodyTypeDefinition(background as Parameters<typeof normalizeBodyTypeDefinition>[0]),
       })),
       { type: "bodyBackground.starting" as const, id: snapshot.startingBodyBackgroundId ?? null },
       ...snapshot.items.map((item) => ({
