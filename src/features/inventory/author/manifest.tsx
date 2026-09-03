@@ -11,6 +11,7 @@ import {
   setItemStateEffectAdapter,
 } from "./ruleAdapters";
 import { inventoryProjectReferences } from "./references";
+import { BODY_WORKSPACES } from "./bodyWorkspaces";
 import { INVENTORY_WORKSPACES, inventoryRoute } from "./workspaces";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
@@ -30,6 +31,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       const bodyType = (snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId);
       return bodyType?.name || "New body type";
     }
+    if (route.workspace === "body-slot") return route.data?.slotName || "Body slot";
     return null;
   },
   commandReferences: INVENTORY_COMMAND_REFERENCE_SOURCES,
@@ -52,7 +54,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
   references: [inventoryProjectReferences],
   tools: inventoryAuthorTools,
   search: inventoryAuthorSearch,
-  workspaces: [...INVENTORY_WORKSPACES],
+  workspaces: [...INVENTORY_WORKSPACES, ...BODY_WORKSPACES],
   resources: [
     {
       kind: "item",

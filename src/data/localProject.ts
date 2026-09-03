@@ -1,5 +1,8 @@
 import type { ProjectMutation, ProjectSnapshot } from "../engine/project/model";
-import { normalizeProjectSnapshot } from "../engine/project/settings";
+import {
+  normalizeProjectMutationForReplay,
+  normalizeProjectSnapshot,
+} from "../engine/project/settings";
 
 const DB_NAME = "pre-programmed-author";
 const DB_VERSION = 1;
@@ -58,7 +61,8 @@ export async function loadCachedSnapshot() {
     // The short-lived replacement stored a different snapshot shape in the same
     // browser cache. Ignore that cache once after rollback and let the canonical
     // server snapshot repopulate it instead of booting the restored runtime with
-    // fields it does not own.
+    // fields it does not own. Canonical older snapshots are normalized one-way
+    // into current feature contracts before they re-enter the runtime.
     return isPreReplacementSnapshot(snapshot) ? normalizeProjectSnapshot(snapshot) : undefined;
   } catch {
     return undefined;
@@ -97,7 +101,11 @@ export async function removeQueuedMutation(id: string) {
 
 export async function listQueuedMutations() {
   try {
-    return (await withStore("mutations", "readonly", (store) => store.getAll())) as QueuedMutation[];
+    const queued = (await withStore("mutations", "readonly", (store) => store.getAll())) as QueuedMutation[];
+    return queued.map((entry) => ({
+      ...entry,
+      mutation: normalizeProjectMutationForReplay(entry.mutation),
+    }));
   } catch {
     return [];
   }

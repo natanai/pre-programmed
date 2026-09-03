@@ -8,9 +8,11 @@ import {
   INVENTORY_ROWS,
   itemCanEquipToSlot,
 } from "../runtime";
+import { bodySlotPercentRect, DEFAULT_BODY_CANVAS, normalizeBodyTypeDefinition } from "../bodyCanvas";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { OperationId, OperationTarget } from "../../operations/model";
 import { executeOperation, formatOperationOutput, type OperationRequest } from "../../operations/runtime";
+import { BodyDiagram } from "./BodyDiagram";
 import "../author/inventoryAuthor.css";
 
 const DEFAULT_ITEM_OPERATIONS: OperationId[] = ["inspect", "use", "move", "remove", "equip", "unequip"];
@@ -46,7 +48,8 @@ export function Inventory({
   const bodyTypes = snapshot.bodyBackgrounds ?? [];
   const selectedEntry = selected?.kind === "item" ? state.inventory.find((entry) => entry.instanceId === selected.id) : undefined;
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
-  const activeBodyType = bodyTypes.find((bodyType) => bodyType.id === state.bodyBackgroundId);
+  const activeBodySource = bodyTypes.find((bodyType) => bodyType.id === state.bodyBackgroundId);
+  const activeBodyType = activeBodySource ? normalizeBodyTypeDefinition(activeBodySource) : undefined;
 
   const operate = (request: OperationRequest) => {
     const execution = executeOperation(snapshot, state, request);
@@ -78,6 +81,28 @@ export function Inventory({
   const equippedSlot = selectedEntry?.equippedSlotKey
     ? (activeBodyType?.slots ?? []).find((slot) => slot.key === selectedEntry.equippedSlotKey)
     : undefined;
+  const bodyCanvas = activeBodyType?.canvas ?? { ...DEFAULT_BODY_CANVAS };
+  const activeSlots = activeBodyType?.slots ?? [];
+  const diagramSlots = activeSlots.map((slot) => {
+    const equippedEntry = state.inventory.find((entry) => entry.equippedSlotKey === slot.key);
+    const equippedItem = snapshot.items.find((item) => item.id === equippedEntry?.itemId);
+    const selectedCanEquip = Boolean(
+      selectedEntry
+      && selectedItem
+      && selectedItemOperations.includes("equip")
+      && itemCanEquipToSlot(selectedItem, slot),
+    );
+    return {
+      slot,
+      occupied: Boolean(equippedEntry),
+      canEquip: selectedCanEquip,
+      imageUrl: assetUrlFor(equippedItem?.assetId),
+      abbreviation: equippedItem?.name.slice(0, 3).toUpperCase(),
+      equippedEntry,
+      equippedItem,
+      selectedCanEquip,
+    };
+  });
 
   return <div className="inventory-play-workspace" aria-label="Inventory">
     <div className="inventory-layout">
@@ -150,45 +175,37 @@ export function Inventory({
             {activeBodyType && onEditBodyType ? <button type="button" onClick={() => onEditBodyType(activeBodyType.id)}>[EDIT]</button> : null}
           </div>
         </div>
-        <div
-          className={`inventory-body-canvas${assetUrlFor(activeBodyType?.assetId) ? " has-background" : ""}`}
-          style={assetUrlFor(activeBodyType?.assetId) ? { backgroundImage: `url("${assetUrlFor(activeBodyType?.assetId)}")` } : undefined}
+        <BodyDiagram
+          canvas={bodyCanvas}
+          backgroundUrl={assetUrlFor(activeBodyType?.assetId)}
+          emptyText={bodyTypes.length ? "NO ACTIVE BODY IMAGE" : "BODY TYPE NOT CONFIGURED"}
+          slots={diagramSlots}
         >
-          {!assetUrlFor(activeBodyType?.assetId) ? <span>{bodyTypes.length ? "NO ACTIVE BODY IMAGE" : "BODY TYPE NOT CONFIGURED"}</span> : null}
-          {(activeBodyType?.slots ?? []).map((slot) => {
-            const equippedEntry = state.inventory.find((entry) => entry.equippedSlotKey === slot.key);
-            const equippedItem = snapshot.items.find((item) => item.id === equippedEntry?.itemId);
-            const selectedCanEquip = Boolean(
-              selectedEntry
-              && selectedItem
-              && selectedItemOperations.includes("equip")
-              && itemCanEquipToSlot(selectedItem, slot),
-            );
-            return <button
-              type="button"
-              className={`inventory-body-slot${equippedEntry ? " occupied" : ""}${selectedCanEquip ? " can-equip" : ""}`}
-              key={slot.id}
-              style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%` }}
-              aria-label={equippedItem ? `${slot.name}: ${equippedItem.name}` : `${slot.name}: empty`}
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={(event) => {
-                event.preventDefault();
-                const instanceId = event.dataTransfer.getData("text/pre-programmed-instance");
-                if (instanceId) equipToSlot(instanceId, slot.key);
-              }}
-              onClick={() => {
-                if (equippedEntry) {
-                  setSelected({ kind: "item", id: equippedEntry.instanceId });
-                  return;
-                }
-                if (selectedEntry && selectedCanEquip) equipToSlot(selectedEntry.instanceId, slot.key);
-              }}
-            >
-              {assetUrlFor(equippedItem?.assetId) ? <img src={assetUrlFor(equippedItem?.assetId)} alt="" draggable={false} /> : equippedItem ? <strong>{equippedItem.name.slice(0, 3).toUpperCase()}</strong> : null}
-              <small>{slot.name}</small>
-            </button>;
-          })}
-        </div>
+          <div className="body-diagram-hit-layer">
+            {diagramSlots.map(({ slot, equippedEntry, equippedItem, selectedCanEquip }) => {
+              const rect = bodySlotPercentRect(slot, bodyCanvas);
+              return <button
+                type="button"
+                key={slot.id}
+                style={{ left: `${rect.left}%`, top: `${rect.top}%`, width: `${rect.width}%`, height: `${rect.height}%` }}
+                aria-label={equippedItem ? `${slot.name}: ${equippedItem.name}` : `${slot.name}: empty`}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  const instanceId = event.dataTransfer.getData("text/pre-programmed-instance");
+                  if (instanceId) equipToSlot(instanceId, slot.key);
+                }}
+                onClick={() => {
+                  if (equippedEntry) {
+                    setSelected({ kind: "item", id: equippedEntry.instanceId });
+                    return;
+                  }
+                  if (selectedEntry && selectedCanEquip) equipToSlot(selectedEntry.instanceId, slot.key);
+                }}
+              />;
+            })}
+          </div>
+        </BodyDiagram>
       </section>
     </div>
   </div>;

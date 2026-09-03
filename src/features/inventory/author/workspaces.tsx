@@ -3,11 +3,9 @@ import { OperationHooksEditor } from "../../../author/operations/OperationHooksE
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
-import { giveInventoryItem, setActiveBodyType } from "../runtime";
-import type { BodyBackgroundDefinition, ItemDefinition } from "../model";
+import { giveInventoryItem } from "../runtime";
+import type { ItemDefinition } from "../model";
 import { Inventory } from "../ui/Inventory";
-import { BodyTypeLayoutControl } from "./BodyTypeLayoutControl";
 import "./inventoryWorkspaces.css";
 
 const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
@@ -90,33 +88,6 @@ export const inventoryItemsWorkspace = defineAuthorWorkspace({
             </div>
           </div>;
         })}
-      </div>,
-    }],
-  }),
-});
-
-export const inventoryBodyTypesWorkspace = defineAuthorWorkspace({
-  id: "inventory-body-types",
-  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "body-types",
-  createDraft: () => ({}),
-  buildSpec: ({ context }) => ({
-    id: "inventory-body-types",
-    title: "Body types",
-    context: `${(context.snapshot.bodyBackgrounds ?? []).length} body type${(context.snapshot.bodyBackgrounds ?? []).length === 1 ? "" : "s"}`,
-    blocks: [{
-      type: "custom",
-      id: "inventory-body-types-list",
-      role: "results",
-      content: <div className="inventory-author-resource-list">
-        <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type"))}>[+ BODY TYPE]</button>
-        {(context.snapshot.bodyBackgrounds ?? []).map((bodyType) => <div className="inventory-author-resource-row" key={bodyType.id}>
-          <button type="button" className="inventory-author-resource-open" onClick={() => context.pushTask(inventoryRoute("body-type", bodyType.id))}>
-            <span>{bodyType.name || "Untitled body type"}</span><small>{bodyType.id === context.snapshot.startingBodyBackgroundId ? `starting · ${(bodyType.slots ?? []).length} slots` : `${(bodyType.slots ?? []).length} slots`}</small>
-          </button>
-          <div className="inventory-author-resource-actions">
-            <button type="button" onClick={() => context.runtime.updateState(setActiveBodyType(context.snapshot, context.playState, bodyType.id))}>[USE THIS RUN]</button>
-          </div>
-        </div>)}
       </div>,
     }],
   }),
@@ -281,118 +252,8 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
   },
 });
 
-type BodyTypeDraft = {
-  bodyType: BodyBackgroundDefinition;
-  starting: boolean;
-};
-
-function emptyBodyType(): BodyBackgroundDefinition {
-  return { id: crypto.randomUUID(), name: "", assetId: "", slots: [], startingEquipment: [] };
-}
-
-function bodyTypeValid(snapshot: ProjectSnapshot, bodyType: BodyBackgroundDefinition) {
-  const keys = (bodyType.slots ?? []).map((slot) => slot.key.trim());
-  const slotKeysValid = keys.every(Boolean) && new Set(keys).size === keys.length;
-  const counts = new Map<string, number>();
-  for (const assignment of bodyType.startingEquipment ?? []) counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
-  const startingEquipmentValid = [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
-  return { slotKeysValid, startingEquipmentValid };
-}
-
-export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
-  id: "inventory-body-type",
-  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "body-type",
-  createDraft: (route, context) => {
-    const initial = route.data?.bodyTypeId ? (context.snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId) : undefined;
-    const bodyType = {
-      ...structuredClone(initial ?? emptyBodyType()),
-      slots: [...(initial?.slots ?? [])],
-      startingEquipment: [...(initial?.startingEquipment ?? [])],
-    };
-    return {
-      bodyType,
-      starting: initial
-        ? context.snapshot.startingBodyBackgroundId === initial.id
-        : !context.snapshot.startingBodyBackgroundId && (context.snapshot.bodyBackgrounds ?? []).length === 0,
-    };
-  },
-  buildSpec: ({ context, draft, setDraft }) => {
-    const existing = (context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === draft.bodyType.id);
-    const usages = existing ? referencesTo(context.snapshot, "body-type", draft.bodyType.id) : [];
-    const validity = bodyTypeValid(context.snapshot, draft.bodyType);
-    return {
-      id: "inventory-body-type",
-      title: draft.bodyType.name || "New body type",
-      context: `${(draft.bodyType.slots ?? []).length} slot${(draft.bodyType.slots ?? []).length === 1 ? "" : "s"}`,
-      blocks: [
-        {
-          type: "section",
-          id: "inventory-body-type-identity",
-          label: "Body type",
-          importance: "primary",
-          children: [
-            { type: "field", id: "inventory-body-type-name", label: "Name", value: draft.bodyType.name, autoFocus: !existing, help: "Age, form, species, armor layout, transformation, or any other body configuration.", onChange: (name) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, name } })) },
-            { type: "toggle", id: "inventory-body-type-starting", label: "Start new playthroughs with this body type", checked: draft.starting, onChange: (starting) => setDraft((current) => ({ ...current, starting })) },
-            { type: "custom", id: "inventory-body-type-image", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.bodyType.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, assetId } }))} placeholder="none" /> },
-          ],
-        },
-        {
-          type: "custom",
-          id: "inventory-body-type-layout",
-          role: "specialized-control",
-          content: <BodyTypeLayoutControl
-            snapshot={context.snapshot}
-            draft={draft.bodyType}
-            onChange={(bodyType) => setDraft((current) => ({ ...current, bodyType }))}
-          />,
-        },
-        ...(!validity.slotKeysValid ? [{ type: "status" as const, id: "inventory-body-type-slot-error", tone: "error" as const, text: "Each body slot needs a unique, non-empty slot key." }] : []),
-        ...(!validity.startingEquipmentValid ? [{ type: "status" as const, id: "inventory-body-type-equipment-error", tone: "error" as const, text: "Starting equipment exceeds an item’s starting quantity. Increase the item quantity or clear a slot." }] : []),
-      ],
-      actions: existing ? [{
-        id: "inventory-body-type-delete",
-        label: `DELETE${usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}`,
-        tone: "danger",
-        disabled: usages.length > 0,
-        onAction: () => {
-          if (usages.length || !window.confirm(`Delete body type “${draft.bodyType.name}”?`)) return;
-          void context.persist([{ type: "bodyBackground.delete", id: draft.bodyType.id }], `Delete body type ${draft.bodyType.name}`).then((result) => {
-            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
-          });
-        },
-      }] : [],
-    };
-  },
-  async save({ route, context, draft }) {
-    const name = draft.bodyType.name.trim();
-    const validity = bodyTypeValid(context.snapshot, draft.bodyType);
-    if (!name || !validity.slotKeysValid || !validity.startingEquipmentValid) return { accepted: false };
-    const bodyType = {
-      ...draft.bodyType,
-      name,
-      slots: (draft.bodyType.slots ?? []).map((slot) => ({ ...slot, key: slot.key.trim(), name: slot.name.trim() || slot.key.trim() })),
-      startingEquipment: (draft.bodyType.startingEquipment ?? [])
-        .filter((assignment) => (draft.bodyType.slots ?? []).some((slot) => slot.key.trim() === assignment.slotKey.trim()))
-        .map((assignment) => ({ ...assignment, slotKey: assignment.slotKey.trim() })),
-    };
-    const operations: MutationOperation[] = [{ type: "bodyBackground.upsert", background: bodyType }];
-    if (draft.starting && context.snapshot.startingBodyBackgroundId !== bodyType.id) operations.push({ type: "bodyBackground.starting", id: bodyType.id });
-    else if (!draft.starting && context.snapshot.startingBodyBackgroundId === bodyType.id) operations.push({ type: "bodyBackground.starting", id: null });
-    const result = await context.persist(operations, `${(context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === bodyType.id) ? "Change" : "Create"} body type ${bodyType.name}`);
-    if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
-    const savedDraft = { ...draft, bodyType };
-    return {
-      accepted: true,
-      draft: savedDraft,
-      ...(route.data?.resourceTask ? { completion: { type: "resource" as const, kind: "body-type", id: bodyType.id, value: bodyType.id, label: bodyType.name } } : {}),
-    };
-  },
-});
-
 export const INVENTORY_WORKSPACES = [
   inventoryPlayerWorkspace,
   inventoryItemsWorkspace,
-  inventoryBodyTypesWorkspace,
   inventoryItemWorkspace,
-  inventoryBodyTypeWorkspace,
 ] as const;

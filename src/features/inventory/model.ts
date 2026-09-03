@@ -42,12 +42,21 @@ export type InventoryEntry = {
   state: Record<string, Value>;
 };
 
+export type BodyCanvasFit = "contain" | "cover";
+
+/** Logical coordinate space owned by one Body Type. Units are not image pixels. */
+export type BodyCanvasDefinition = {
+  width: number;
+  height: number;
+  fit: BodyCanvasFit;
+};
+
 export type BodySlotDefinition = {
   id: string;
   /** Stable across body types when equipment should carry between forms. */
   key: string;
   name: string;
-  /** Percentage coordinates within the body canvas. */
+  /** Logical coordinates within the owning Body Type's canvas. */
   x: number;
   y: number;
   width: number;
@@ -62,6 +71,8 @@ export type BodyTypeDefinition = {
   id: string;
   name: string;
   assetId: string;
+  /** Explicit logical canvas; 48×64 is a default preset, not a universal body shape. */
+  canvas: BodyCanvasDefinition;
   /** Missing only on legacy snapshots created before body slots existed. */
   slots?: BodySlotDefinition[];
   /** Equipment drawn from authored starting quantities for a new playthrough. */
