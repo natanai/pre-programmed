@@ -34,6 +34,8 @@ A section should not manufacture another section hierarchy beneath itself. Deepe
 - a semantic choice/disclosure inside the current task; or
 - a real recursive Author subtask when it represents separately suspendable work.
 
+A route whose only meaningful action is forwarding to one child route is not an Author task. Route directly to the child instead. Likewise, a disclosure should not contain a specialized control whose only outer UI is another disclosure for the same concept. The parent owns that visual boundary; the child renders its working body.
+
 For example, a destination decision should read as one decision such as:
 
 ```text
