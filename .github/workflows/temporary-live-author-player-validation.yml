@@ -23,25 +23,30 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           path = Path('src/App.tsx')
           text = path.read_text()
-          old = '''            events: handleEffectEvents,
-          }}
-          onNavigate={setPlayerWorkspace}'''
-          new = '''            events: handleEffectEvents,
-            author: authorExperience ? {
-              openWorkspace: (feature, workspace, data) => authorTasks.openTask({
-                type: "feature",
-                feature,
-                workspace,
-                data,
-              }),
-            } : undefined,
-          }}
-          onNavigate={setPlayerWorkspace}'''
-          if text.count(old) != 1:
-              raise SystemExit(f'Expected exactly one PlayerWorkspaceHost context seam; found {text.count(old)}.')
-          path.write_text(text.replace(old, new, 1))
+          pattern = re.compile(
+              r'(<PlayerWorkspaceHost[\s\S]*?context=\{\{[\s\S]*?events: handleEffectEvents,\n)'
+              r'(\s*)(\}\}\n\s*onNavigate=\{setPlayerWorkspace\})'
+          )
+          replacement = (
+              r'\1'
+              '            author: authorExperience ? {\n'
+              '              openWorkspace: (feature, workspace, data) => authorTasks.openTask({\n'
+              '                type: "feature",\n'
+              '                feature,\n'
+              '                workspace,\n'
+              '                data,\n'
+              '              }),\n'
+              '            } : undefined,\n'
+              r'\2\3'
+          )
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one PlayerWorkspaceHost context seam; found {count}.')
+          path.write_text(text)
           PY
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
