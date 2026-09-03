@@ -17,16 +17,24 @@ export type PlayerWorkspaceContext = {
   events: (events: EffectEvent[]) => void;
 };
 
+export type PlayerWorkspaceNavigationEntry = {
+  id: string;
+  label: string;
+  request: PlayerWorkspaceRequest;
+};
+
 /**
  * Feature-owned player workspace contribution.
  *
  * The shared player host owns modal navigation/close presentation. Features own
- * the actual player interaction surface. No Author task/persistence API is
- * available here by design.
+ * the actual player interaction surface and may contribute current-state-aware
+ * destinations to the shared player navigation bar. No Author task/persistence
+ * API is available here by design.
  */
 export type PlayerWorkspaceContribution = {
   feature: string;
   workspace: string;
   label: string;
+  navigation?: (context: PlayerWorkspaceContext) => readonly PlayerWorkspaceNavigationEntry[];
   render: (request: PlayerWorkspaceRequest, context: PlayerWorkspaceContext) => ReactNode;
 };
