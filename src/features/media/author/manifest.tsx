@@ -1,4 +1,5 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
@@ -14,6 +15,21 @@ function routeDimension(value: string | undefined) {
   if (!value) return undefined;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function mediaCreateRoute(kind: "audio" | "image"): AuthorTaskRoute {
+  if (kind === "image") return {
+    type: "feature",
+    feature: "media",
+    workspace: "image-create",
+    data: { resourceTask: "media-image" },
+  };
+  return {
+    type: "feature",
+    feature: "media",
+    workspace: "asset",
+    data: { kind, resourceTask: `media-${kind}` },
+  };
 }
 
 export const mediaAuthorFeature: AuthorFeatureManifest = {
@@ -73,17 +89,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         label: asset.name,
         detail: `${asset.mimeType} · ${asset.defaultPresentation}`,
       })),
-      createRoute: () => kind === "image" ? ({
-        type: "feature" as const,
-        feature: "media",
-        workspace: "image-create",
-        data: { resourceTask: "media-image" },
-      }) : ({
-        type: "feature" as const,
-        feature: "media",
-        workspace: "asset",
-        data: { kind, resourceTask: `media-${kind}` },
-      }),
+      createRoute: () => mediaCreateRoute(kind),
       editRoute: (resource: { id: string }) => ({
         type: "feature" as const,
         feature: "media",
