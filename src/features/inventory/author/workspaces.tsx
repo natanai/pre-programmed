@@ -42,16 +42,9 @@ export const inventoryPlayerWorkspace = defineAuthorWorkspace({
       content: <Inventory
         snapshot={context.snapshot}
         state={context.playState}
-        authorMode={false}
         onState={context.runtime.updateState}
         onOutput={context.runtime.output}
         onEvents={context.runtime.events}
-        onEditItem={(item) => context.pushTask(inventoryRoute("item", item.id))}
-        onCreateItem={() => context.pushTask(inventoryRoute("item"))}
-        onEditBodyBackground={(bodyType) => context.pushTask(inventoryRoute("body-type", bodyType.id))}
-        onCreateBodyBackground={() => context.pushTask(inventoryRoute("body-type"))}
-        onSave={async (operations, description) => { await context.persist(operations, description); }}
-        onClose={context.leaveCurrentTask}
       />,
     }],
     actions: context.authorMode ? [
@@ -76,12 +69,27 @@ export const inventoryItemsWorkspace = defineAuthorWorkspace({
       role: "results",
       content: <div className="inventory-author-resource-list">
         <button type="button" onClick={() => context.pushTask(inventoryRoute("item"))}>[+ ITEM]</button>
-        {context.snapshot.items.map((item) => <div className="inventory-author-resource-row" key={item.id}>
-          <button type="button" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>
-            <span>{item.name || item.key || "Untitled item"}</span><small>{item.key || "no key"}</small>
-          </button>
-          <button type="button" onClick={() => context.runtime.updateState(giveInventoryItem(context.snapshot, context.playState, item.id, 1))}>[ADD TO RUN]</button>
-        </div>)}
+        {context.snapshot.items.map((item) => {
+          const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
+            (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === item.id).length,
+          ));
+          return <div className="inventory-author-resource-row" key={item.id}>
+            <button type="button" className="inventory-author-resource-open" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>
+              <span>{item.name || item.key || "Untitled item"}</span><small>{item.key || "no key"}</small>
+            </button>
+            <div className="inventory-author-resource-actions">
+              <span>DEFAULT</span>
+              <button type="button" aria-label={`Decrease starting ${item.name}`} onClick={() => void context.persist([
+                { type: "item.upsert", item: { ...item, startingQuantity: Math.max(minimumStartingQuantity, (item.startingQuantity ?? 0) - 1) } },
+              ], `Changed starting ${item.name}`)}>[-]</button>
+              <strong>{item.startingQuantity ?? 0}</strong>
+              <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void context.persist([
+                { type: "item.upsert", item: { ...item, startingQuantity: (item.startingQuantity ?? 0) + 1 } },
+              ], `Changed starting ${item.name}`)}>[+]</button>
+              <button type="button" onClick={() => context.runtime.updateState(giveInventoryItem(context.snapshot, context.playState, item.id, 1))}>[ADD TO RUN]</button>
+            </div>
+          </div>;
+        })}
       </div>,
     }],
   }),
@@ -102,10 +110,12 @@ export const inventoryBodyTypesWorkspace = defineAuthorWorkspace({
       content: <div className="inventory-author-resource-list">
         <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type"))}>[+ BODY TYPE]</button>
         {(context.snapshot.bodyBackgrounds ?? []).map((bodyType) => <div className="inventory-author-resource-row" key={bodyType.id}>
-          <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type", bodyType.id))}>
+          <button type="button" className="inventory-author-resource-open" onClick={() => context.pushTask(inventoryRoute("body-type", bodyType.id))}>
             <span>{bodyType.name || "Untitled body type"}</span><small>{bodyType.id === context.snapshot.startingBodyBackgroundId ? `starting · ${(bodyType.slots ?? []).length} slots` : `${(bodyType.slots ?? []).length} slots`}</small>
           </button>
-          <button type="button" onClick={() => context.runtime.updateState(setActiveBodyType(context.snapshot, context.playState, bodyType.id))}>[USE THIS RUN]</button>
+          <div className="inventory-author-resource-actions">
+            <button type="button" onClick={() => context.runtime.updateState(setActiveBodyType(context.snapshot, context.playState, bodyType.id))}>[USE THIS RUN]</button>
+          </div>
         </div>)}
       </div>,
     }],
