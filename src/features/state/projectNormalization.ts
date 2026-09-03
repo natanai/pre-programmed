@@ -11,11 +11,16 @@ function legacyPresentation(order: number): StatePlayerPresentation {
   return { groupId: LEGACY_STATUS_GROUP_ID, order, visibleWhen: ALWAYS };
 }
 
+function stripLegacyFlag<T extends object>(definition: T & LegacyPresentationFlag): T {
+  const { showInStatus: _legacyShowInStatus, ...current } = definition;
+  return current as T;
+}
+
 /**
  * One-way client-cache normalization for snapshots written before State owned
  * player presentation groups. Durable D1 data is migrated by State migration 29;
  * this keeps an older browser cache semantically aligned until the server
- * snapshot refresh arrives.
+ * snapshot refresh arrives and removes the obsolete cache-only flag as it goes.
  */
 export function normalizeStateProjectSlice(snapshot: {
   variables: VariableDefinition[];
@@ -25,14 +30,14 @@ export function normalizeStateProjectSlice(snapshot: {
   if (Array.isArray(snapshot.stateGroups)) {
     return {
       stateGroups: snapshot.stateGroups,
-      variables: snapshot.variables.map((definition) => ({
-        ...definition,
-        playerPresentation: definition.playerPresentation ?? null,
-      })),
-      computedValues: snapshot.computedValues.map((definition) => ({
-        ...definition,
-        playerPresentation: definition.playerPresentation ?? null,
-      })),
+      variables: snapshot.variables.map((definition) => {
+        const current = stripLegacyFlag(definition as VariableDefinition & LegacyPresentationFlag);
+        return { ...current, playerPresentation: current.playerPresentation ?? null };
+      }),
+      computedValues: snapshot.computedValues.map((definition) => {
+        const current = stripLegacyFlag(definition as ComputedDefinition & LegacyPresentationFlag);
+        return { ...current, playerPresentation: current.playerPresentation ?? null };
+      }),
     };
   }
 
@@ -40,15 +45,17 @@ export function normalizeStateProjectSlice(snapshot: {
   let hasLegacyPlayerPresentation = false;
   const variables = snapshot.variables.map((definition) => {
     const legacy = definition as VariableDefinition & LegacyPresentationFlag;
-    if (!legacy.showInStatus) return { ...definition, playerPresentation: definition.playerPresentation ?? null };
+    const current = stripLegacyFlag(legacy);
+    if (!legacy.showInStatus) return { ...current, playerPresentation: current.playerPresentation ?? null };
     hasLegacyPlayerPresentation = true;
-    return { ...definition, playerPresentation: definition.playerPresentation ?? legacyPresentation(order++) };
+    return { ...current, playerPresentation: current.playerPresentation ?? legacyPresentation(order++) };
   });
   const computedValues = snapshot.computedValues.map((definition) => {
     const legacy = definition as ComputedDefinition & LegacyPresentationFlag;
-    if (!legacy.showInStatus) return { ...definition, playerPresentation: definition.playerPresentation ?? null };
+    const current = stripLegacyFlag(legacy);
+    if (!legacy.showInStatus) return { ...current, playerPresentation: current.playerPresentation ?? null };
     hasLegacyPlayerPresentation = true;
-    return { ...definition, playerPresentation: definition.playerPresentation ?? legacyPresentation(order++) };
+    return { ...current, playerPresentation: current.playerPresentation ?? legacyPresentation(order++) };
   });
 
   return {
