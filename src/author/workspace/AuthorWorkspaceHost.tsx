@@ -148,6 +148,7 @@ export function AuthorWorkspaceHost({
   leaveConfirmation,
   onConfirmLeave,
   onCancelLeave,
+  requestClose,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
@@ -155,6 +156,7 @@ export function AuthorWorkspaceHost({
   leaveConfirmation: AuthorLeaveConfirmation | null;
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
+  requestClose: () => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -243,6 +245,12 @@ export function AuthorWorkspaceHost({
 
   return createPortal(
     <>
+      <button
+        className="work-surface-close"
+        type="button"
+        aria-label="Close Author tasks and return to play"
+        onClick={requestClose}
+      >[X]</button>
       <div
         ref={workspaceLayerRef}
         className={`author-workspace-layer${previewing ? " is-previewing" : ""}`}

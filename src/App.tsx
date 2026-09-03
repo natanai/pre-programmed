@@ -15,6 +15,8 @@ import type { AuthorTaskRoute } from "./author/tasks/types";
 import { buildAuthorToolGroups } from "./author/tools/registry";
 import { buildAuthorSearchEntries } from "./author/search/authorSearch";
 import { AuthorWorkspaceHost } from "./author/workspace/AuthorWorkspaceHost";
+import { PlayerWorkspaceHost } from "./player/workspaces/PlayerWorkspaceHost";
+import type { PlayerWorkspaceRequest } from "./player/workspaces/types";
 import { AuthorSettings, readDisplaySettings } from "./components/AuthorSettings";
 import {
   authorLoginErrorMessage,
@@ -132,6 +134,7 @@ export default function App() {
   const [authorView, setAuthorView] = useState(true);
   const [authorMessage, setAuthorMessage] = useState("");
   const [pendingAuthorTryInput, setPendingAuthorTryInput] = useState("");
+  const [playerWorkspace, setPlayerWorkspace] = useState<PlayerWorkspaceRequest | null>(null);
   const authorTasks = useAuthorTaskRuntime();
   const panel = authorTasks.activeTask?.route ?? null;
   const setPanel = (next: AuthorTaskRoute | null) => next ? authorTasks.openTask(next) : authorTasks.closeAll();
@@ -191,11 +194,11 @@ export default function App() {
   }, [projectClockSchedule]);
 
   useEffect(() => {
-    if (!typewriter.complete || pendingDestinationNodeId || panel || pendingPlaySession) return;
+    if (!typewriter.complete || pendingDestinationNodeId || panel || playerWorkspace || pendingPlaySession) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [typewriter.complete, pendingDestinationNodeId, panel, pendingPlaySession, requestingKey]);
+  }, [typewriter.complete, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -664,9 +667,8 @@ export default function App() {
         setActiveText("");
         setActiveNodeId(undefined);
         setActiveSpeakerId(null);
-        if (capability?.action.type === "open-workspace") {
-          setPanel({
-            type: "feature",
+        if (capability?.action.type === "open-player-workspace") {
+          setPlayerWorkspace({
             feature: capability.action.feature,
             workspace: capability.action.workspace,
             data: capability.action.data,
@@ -742,6 +744,25 @@ export default function App() {
     authorTasks.closeAll();
     window.requestAnimationFrame(scrollHistoryToPresent);
   };
+  const applyPlayerWorkspaceState = (state: PlayState) => {
+    if (!snapshot || !playState) return;
+    const transitioned = state.traversal.length > playState.traversal.length;
+    setPlayState(state);
+    if (!transitioned) return;
+    const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
+    if (node) showNode(snapshot, node, state);
+    setPlayerWorkspace(null);
+  };
+  const showPlayerWorkspaceOutput = (text: string) => {
+    historyPinnedToPresentRef.current = true;
+    appendActive();
+    setActiveText("");
+    setActiveNodeId(undefined);
+    setActiveSpeakerId(null);
+    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text }]);
+    setPlayerWorkspace(null);
+    window.requestAnimationFrame(scrollHistoryToPresent);
+  };
   const applyCanonicalSnapshot = (project: ProjectSnapshot) => {
     if (!playState) return;
     const state = project.nodes.some((node) => node.id === playState.currentNodeId)
@@ -757,6 +778,7 @@ export default function App() {
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
   const promptLabel = requestingKey ? "ADMIN KEY>" : snapshot.settings.terminalPrompt;
   const editorOpen = authorTasks.hasTasks;
+  const playerWorkspaceOpen = playerWorkspace !== null;
   const authorExperience = authorMode && authorView;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
@@ -801,7 +823,7 @@ export default function App() {
         </div>
       </div>
 
-      {typewriter.complete && !pendingDestinationNodeId && !panel && !pendingPlaySession ? <TerminalCommandComposer
+      {typewriter.complete && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
         value={command}
@@ -814,7 +836,7 @@ export default function App() {
       /> : null}
 
       <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel && !pendingPlaySession
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel && !playerWorkspace && !pendingPlaySession
           ? renderAuthorFeaturePlaySurfaces({
             snapshot,
             playState,
@@ -823,7 +845,7 @@ export default function App() {
           })
           : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel && !pendingPlaySession ? <AuthorHome
+        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
@@ -879,11 +901,22 @@ export default function App() {
           leaveConfirmation={authorTasks.leaveConfirmation}
           onConfirmLeave={authorTasks.confirmLeave}
           onCancelLeave={authorTasks.cancelLeave}
+          requestClose={authorTasks.requestClose}
+        />
+        <PlayerWorkspaceHost
+          request={playerWorkspace}
+          context={{
+            snapshot,
+            playState,
+            updateState: applyPlayerWorkspaceState,
+            output: showPlayerWorkspaceOutput,
+            events: handleEffectEvents,
+          }}
+          onClose={() => setPlayerWorkspace(null)}
         />
       </div>
     </div>
-    {editorOpen ? <button className="work-surface-close" type="button" aria-label="Close Author tasks and return to play" onPointerDown={(event) => event.stopPropagation()} onClick={authorTasks.requestClose}>[X]</button> : null}
-    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !pendingPlaySession} onToggleAuthorView={() => {
+    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       authorTasks.closeAll();
       setAuthorMessage("");
