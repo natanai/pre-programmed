@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import type { EffectEvent } from "../../../engine/rules/effectRuntime";
 import {
@@ -17,7 +17,6 @@ import type {
 import type { MutationOperation, PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { OperationId, OperationTarget } from "../../operations/model";
 import { executeOperation, formatOperationOutput, type OperationRequest } from "../../operations/runtime";
-import { readComputedValue } from "../../state/runtimeValues";
 import "../author/inventoryAuthor.css";
 
 type InventoryScreen = "play" | "definitions" | "body-types";
@@ -53,21 +52,13 @@ export function Inventory({
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const [screen, setScreen] = useState<InventoryScreen>("play");
   const [definitionQuery, setDefinitionQuery] = useState("");
-  const [now, setNow] = useState(() => Date.now());
   const assetUrlFor = (assetId: string | undefined | null) => assetId
     ? configuredAssetStore.resolve(snapshot, assetId)?.url ?? ""
     : "";
 
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
-
   const bodyTypes = snapshot.bodyBackgrounds ?? [];
   const selectedEntry = selected?.kind === "item" ? state.inventory.find((entry) => entry.instanceId === selected.id) : undefined;
   const selectedItem = snapshot.items.find((item) => item.id === selectedEntry?.itemId);
-  const selectedVariable = selected?.kind === "variable" ? snapshot.variables.find((item) => item.id === selected.id) : undefined;
-  const selectedComputed = selected?.kind === "computed" ? snapshot.computedValues.find((item) => item.id === selected.id) : undefined;
   const activeBodyType = bodyTypes.find((bodyType) => bodyType.id === state.bodyBackgroundId);
   const normalizedDefinitionQuery = definitionQuery.trim().toLowerCase();
   const visibleDefinitions = snapshot.items.filter((item) => !normalizedDefinitionQuery || [
@@ -100,7 +91,7 @@ export function Inventory({
     operate({ operation: "move", target: selected, placement: { x, y } });
   };
 
-  const statusOperationButtons = (target: OperationTarget, operations: OperationId[]) => <div className="operation-buttons">
+  const operationButtons = (target: OperationTarget, operations: OperationId[]) => <div className="operation-buttons">
     {operations.map((operation) => <button type="button" key={operation}
       onClick={() => operate({ operation, target })}>[{operation.toUpperCase()}]</button>)}
   </div>;
@@ -195,26 +186,7 @@ export function Inventory({
     : undefined;
 
   return <section className="inventory-surface inventory-play-workspace" aria-label="Inventory" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>INVENTORY / STATUS</span></header>
-    <div className="status-readout">
-      {snapshot.variables.filter((item) => item.showInStatus).map((definition) => {
-        const content = <><span>{definition.label}</span><strong>{String(state.values[definition.key] ?? "")}</strong></>;
-        return definition.interactable ? <button type="button" key={definition.id} aria-pressed={selected?.kind === "variable" && selected.id === definition.id}
-          onClick={() => setSelected({ kind: "variable", id: definition.id })}>{content}</button> : <div key={definition.id}>{content}</div>;
-      })}
-      {snapshot.computedValues.filter((item) => item.showInStatus).map((definition) => {
-        const value = readComputedValue(definition, snapshot, state, now);
-        const formatted = typeof value === "number" && definition.format === "integer"
-          ? String(Math.round(value))
-          : typeof value === "number" && definition.format === "seconds"
-            ? `${Math.round(value)}s`
-            : String(value);
-        const content = <><span>{definition.label}</span><strong>{formatted}</strong></>;
-        return definition.interactable ? <button type="button" key={definition.id} aria-pressed={selected?.kind === "computed" && selected.id === definition.id}
-          onClick={() => setSelected({ kind: "computed", id: definition.id })}>{content}</button> : <div key={definition.id}>{content}</div>;
-      })}
-      {!snapshot.variables.some((item) => item.showInStatus) && !snapshot.computedValues.some((item) => item.showInStatus) ? <span className="muted">No status values are exposed.</span> : null}
-    </div>
+    <header><span>INVENTORY</span></header>
 
     <div className="inventory-layout">
       <div className="inventory-primary-area">
@@ -223,7 +195,7 @@ export function Inventory({
             <div className="inventory-inspector-heading"><strong>{selectedItem.name}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
             <p>{selectedItem.description}</p>
             {equippedSlot ? <p className="inventory-equipped-status">EQUIPPED · {equippedSlot.name}</p> : null}
-            {statusOperationButtons(
+            {operationButtons(
               { kind: "item", id: selectedEntry.instanceId },
               selectedItemOperations.filter((operation) => operation !== "equip" && operation !== "unequip"),
             )}
@@ -239,15 +211,7 @@ export function Inventory({
             </div> : null}
             {selectedItemOperations.includes("unequip") && selectedEntry.equippedSlotKey ? <button type="button" onClick={() => operate({ operation: "unequip", target: { kind: "item", id: selectedEntry.instanceId } })}>[UNEQUIP]</button> : null}
             {authorMode ? <button type="button" onClick={() => onEditItem(selectedItem)}>[EDIT DEFINITION]</button> : null}
-          </> : selectedVariable ? <>
-            <div className="inventory-inspector-heading"><strong>{selectedVariable.label}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
-            <p>{String(state.values[selectedVariable.key] ?? "")}</p>
-            {statusOperationButtons({ kind: "variable", id: selectedVariable.id }, selectedVariable.operations ?? [])}
-          </> : selectedComputed ? <>
-            <div className="inventory-inspector-heading"><strong>{selectedComputed.label}</strong><button type="button" onClick={() => setSelected(null)}>[DONE]</button></div>
-            <p>{String(readComputedValue(selectedComputed, snapshot, state, now))}</p>
-            {statusOperationButtons({ kind: "computed", id: selectedComputed.id }, selectedComputed.operations ?? [])}
-          </> : <p className="inventory-inspector-help">Tap an item or interactive status line. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
+          </> : <p className="inventory-inspector-help">Tap an item for details. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
         </aside>
 
         <div className="inventory-grid" style={{ "--columns": INVENTORY_COLUMNS, "--rows": INVENTORY_ROWS } as CSSProperties}
