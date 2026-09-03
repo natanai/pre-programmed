@@ -1,0 +1,388 @@
+import { resolveAuthorKey } from "../../../author/generatedKey";
+import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { referencesTo } from "../../../author/references/projectReferences";
+import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
+import { giveInventoryItem, setActiveBodyType } from "../runtime";
+import type { BodyBackgroundDefinition, ItemDefinition } from "../model";
+import { Inventory } from "../ui/Inventory";
+import { BodyTypeLayoutControl } from "./BodyTypeLayoutControl";
+import "./inventoryWorkspaces.css";
+
+const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
+
+export function inventoryRoute(workspace: "inventory" | "items" | "body-types" | "item" | "body-type", id?: string, resourceTask = false, preferredOperation?: string) {
+  return {
+    type: "feature" as const,
+    feature: "inventory",
+    workspace,
+    data: {
+      ...(workspace === "item" && id ? { itemId: id } : {}),
+      ...(workspace === "body-type" && id ? { bodyTypeId: id } : {}),
+      ...(resourceTask && workspace === "item" ? { resourceTask: "item" } : {}),
+      ...(resourceTask && workspace === "body-type" ? { resourceTask: "body-type" } : {}),
+      ...(preferredOperation ? { operation: preferredOperation, section: "operations" } : {}),
+    },
+  };
+}
+
+export const inventoryPlayerWorkspace = defineAuthorWorkspace({
+  id: "inventory-player",
+  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "inventory",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => ({
+    id: "inventory-player",
+    title: "Inventory",
+    context: "Items + body equipment",
+    blocks: [{
+      type: "custom",
+      id: "inventory-player-surface",
+      role: "specialized-control",
+      content: <Inventory
+        snapshot={context.snapshot}
+        state={context.playState}
+        authorMode={false}
+        onState={context.runtime.updateState}
+        onOutput={context.runtime.output}
+        onEvents={context.runtime.events}
+        onEditItem={(item) => context.pushTask(inventoryRoute("item", item.id))}
+        onCreateItem={() => context.pushTask(inventoryRoute("item"))}
+        onEditBodyBackground={(bodyType) => context.pushTask(inventoryRoute("body-type", bodyType.id))}
+        onCreateBodyBackground={() => context.pushTask(inventoryRoute("body-type"))}
+        onSave={async (operations, description) => { await context.persist(operations, description); }}
+        onClose={context.leaveCurrentTask}
+      />,
+    }],
+    actions: context.authorMode ? [
+      { id: "inventory-open-items", label: "ITEM DEFINITIONS", onAction: () => context.pushTask(inventoryRoute("items")) },
+      { id: "inventory-open-body-types", label: "BODY TYPES", onAction: () => context.pushTask(inventoryRoute("body-types")) },
+      { id: "inventory-create-item", label: "+ ITEM", onAction: () => context.pushTask(inventoryRoute("item")) },
+    ] : [],
+  }),
+});
+
+export const inventoryItemsWorkspace = defineAuthorWorkspace({
+  id: "inventory-items",
+  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "items",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => ({
+    id: "inventory-items",
+    title: "Item definitions",
+    context: `${context.snapshot.items.length} item${context.snapshot.items.length === 1 ? "" : "s"}`,
+    blocks: [{
+      type: "custom",
+      id: "inventory-items-list",
+      role: "results",
+      content: <div className="inventory-author-resource-list">
+        <button type="button" onClick={() => context.pushTask(inventoryRoute("item"))}>[+ ITEM]</button>
+        {context.snapshot.items.map((item) => <div className="inventory-author-resource-row" key={item.id}>
+          <button type="button" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>
+            <span>{item.name || item.key || "Untitled item"}</span><small>{item.key || "no key"}</small>
+          </button>
+          <button type="button" onClick={() => context.runtime.updateState(giveInventoryItem(context.snapshot, context.playState, item.id, 1))}>[ADD TO RUN]</button>
+        </div>)}
+      </div>,
+    }],
+  }),
+});
+
+export const inventoryBodyTypesWorkspace = defineAuthorWorkspace({
+  id: "inventory-body-types",
+  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "body-types",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => ({
+    id: "inventory-body-types",
+    title: "Body types",
+    context: `${(context.snapshot.bodyBackgrounds ?? []).length} body type${(context.snapshot.bodyBackgrounds ?? []).length === 1 ? "" : "s"}`,
+    blocks: [{
+      type: "custom",
+      id: "inventory-body-types-list",
+      role: "results",
+      content: <div className="inventory-author-resource-list">
+        <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type"))}>[+ BODY TYPE]</button>
+        {(context.snapshot.bodyBackgrounds ?? []).map((bodyType) => <div className="inventory-author-resource-row" key={bodyType.id}>
+          <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type", bodyType.id))}>
+            <span>{bodyType.name || "Untitled body type"}</span><small>{bodyType.id === context.snapshot.startingBodyBackgroundId ? `starting · ${(bodyType.slots ?? []).length} slots` : `${(bodyType.slots ?? []).length} slots`}</small>
+          </button>
+          <button type="button" onClick={() => context.runtime.updateState(setActiveBodyType(context.snapshot, context.playState, bodyType.id))}>[USE THIS RUN]</button>
+        </div>)}
+      </div>,
+    }],
+  }),
+});
+
+function emptyItem(): ItemDefinition {
+  return {
+    id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
+    stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
+    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], equippedStorage: "inventory",
+    equipOnGiveSlotKey: null, tags: [], initialState: {}, hooks: [],
+  };
+}
+
+export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
+  id: "inventory-item",
+  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "item",
+  createDraft: (route, context) => {
+    const initial = route.data?.itemId ? context.snapshot.items.find((candidate) => candidate.id === route.data?.itemId) : undefined;
+    return {
+      ...structuredClone(initial ?? emptyItem()),
+      equipmentSlotKeys: [...(initial?.equipmentSlotKeys ?? [])],
+      equippedStorage: initial?.equippedStorage ?? "inventory",
+      equipOnGiveSlotKey: initial?.equipOnGiveSlotKey ?? null,
+    };
+  },
+  buildSpec: ({ route, context, draft, setDraft }) => {
+    const existing = context.snapshot.items.some((candidate) => candidate.id === draft.id);
+    const slotOptions = (() => {
+      const slots = new Map<string, Set<string>>();
+      for (const bodyType of context.snapshot.bodyBackgrounds ?? []) {
+        for (const slot of bodyType.slots ?? []) {
+          const labels = slots.get(slot.key) ?? new Set<string>();
+          labels.add(slot.name || slot.key);
+          slots.set(slot.key, labels);
+        }
+      }
+      return [...slots.entries()].map(([key, labels]) => ({ key, label: [...labels].join(" / ") }))
+        .sort((left, right) => left.label.localeCompare(right.label) || left.key.localeCompare(right.key));
+    })();
+    const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
+      (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
+    ));
+    const usages = existing ? referencesTo(context.snapshot, "item", draft.id).filter((reference) => reference.ownerId !== draft.id) : [];
+    const allowedGiveSlots = slotOptions.filter((slot) => !(draft.equipmentSlotKeys ?? []).length || (draft.equipmentSlotKeys ?? []).includes(slot.key));
+
+    return {
+      id: "inventory-item",
+      title: draft.name || "New item",
+      context: draft.key || "Inventory item",
+      blocks: [
+        {
+          type: "section",
+          id: "inventory-item-identity",
+          label: "Item",
+          importance: "primary",
+          children: [
+            { type: "field", id: "inventory-item-name", label: "Name", value: draft.name, autoFocus: !existing, onChange: (name) => setDraft((current) => ({ ...current, name })) },
+            { type: "field", id: "inventory-item-description", label: "Description", control: "textarea", rows: 3, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
+            { type: "field", id: "inventory-item-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
+            { type: "field", id: "inventory-item-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
+          ],
+        },
+        {
+          type: "disclosure",
+          id: "inventory-item-tile",
+          label: "Inventory tile",
+          summary: `${draft.width}×${draft.height} · start ${draft.startingQuantity ?? 0}${draft.stackable ? " · stackable" : ""}`,
+          children: [
+            { type: "custom", id: "inventory-item-asset", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, assetId }))} placeholder="none / text tile" /> },
+            { type: "field", id: "inventory-item-width", label: "Width", control: "number", value: draft.width, onChange: (width) => setDraft((current) => ({ ...current, width: Math.max(1, Math.min(10, Number(width))) })) },
+            { type: "field", id: "inventory-item-height", label: "Height", control: "number", value: draft.height, onChange: (height) => setDraft((current) => ({ ...current, height: Math.max(1, Math.min(6, Number(height))) })) },
+            { type: "toggle", id: "inventory-item-stackable", label: "Stackable", checked: draft.stackable, onChange: (stackable) => setDraft((current) => ({ ...current, stackable, maxStack: stackable ? Math.max(1, current.maxStack) : 1 })) },
+            { type: "field", id: "inventory-item-max-stack", label: "Maximum stack", control: "number", value: draft.maxStack, disabled: !draft.stackable, onChange: (maxStack) => setDraft((current) => ({ ...current, maxStack: Math.max(1, Math.floor(Number(maxStack))) })) },
+            { type: "toggle", id: "inventory-item-removable", label: "Removal succeeds without an authored hook", checked: draft.removable, onChange: (removable) => setDraft((current) => ({ ...current, removable })) },
+            { type: "field", id: "inventory-item-starting", label: "Starting quantity", control: "number", value: draft.startingQuantity ?? 0, help: minimumStartingQuantity ? `At least ${minimumStartingQuantity} required by body-type loadouts.` : "Total added to each new playthrough.", onChange: (value) => setDraft((current) => ({ ...current, startingQuantity: Math.max(minimumStartingQuantity, Math.floor(Number(value))) })) },
+          ],
+        },
+        {
+          type: "disclosure",
+          id: "inventory-item-equipment",
+          label: "Equipment",
+          summary: (draft.equipmentSlotKeys ?? []).length ? `${draft.equipmentSlotKeys?.length} restricted slot${draft.equipmentSlotKeys?.length === 1 ? "" : "s"}` : "Any compatible body slot",
+          children: [
+            { type: "choice", id: "inventory-item-equipped-storage", label: "While equipped", value: draft.equippedStorage ?? "inventory", presentation: "segmented", onChange: (equippedStorage) => setDraft((current) => ({ ...current, equippedStorage: equippedStorage as "inventory" | "slot" })), options: [
+              { value: "inventory", label: "STAYS IN INVENTORY" },
+              { value: "slot", label: "BODY SLOT ONLY", help: "Frees its inventory-grid cells while equipped." },
+            ] },
+            { type: "select", id: "inventory-item-equip-on-give", label: "When given to player", value: draft.equipOnGiveSlotKey ?? "", onChange: (equipOnGiveSlotKey) => setDraft((current) => ({ ...current, equipOnGiveSlotKey: equipOnGiveSlotKey || null })), options: [
+              { value: "", label: "keep in general inventory" },
+              ...allowedGiveSlots.map((slot) => ({ value: slot.key, label: `equip to ${slot.label}` })),
+            ] },
+            { type: "custom", id: "inventory-item-compatible-slots", role: "specialized-control", content: <div className="inventory-slot-compatibility-control">
+              <button type="button" aria-pressed={(draft.equipmentSlotKeys ?? []).length === 0} onClick={() => setDraft((current) => ({ ...current, equipmentSlotKeys: [] }))}>[ANY SLOT]</button>
+              {slotOptions.map((slot) => <label key={slot.key}>
+                <input type="checkbox" checked={(draft.equipmentSlotKeys ?? []).includes(slot.key)} onChange={(event) => setDraft((current) => ({
+                  ...current,
+                  equipmentSlotKeys: event.target.checked
+                    ? [...(current.equipmentSlotKeys ?? []), slot.key]
+                    : (current.equipmentSlotKeys ?? []).filter((key) => key !== slot.key),
+                  equipOnGiveSlotKey: !event.target.checked && current.equipOnGiveSlotKey === slot.key ? null : current.equipOnGiveSlotKey,
+                }))} /> {slot.label} <small>{slot.key}</small>
+              </label>)}
+              {!slotOptions.length ? <small>No body slots are authored yet. This item will remain compatible with future slots.</small> : null}
+            </div> },
+          ],
+        },
+        {
+          type: "disclosure",
+          id: "inventory-item-behavior",
+          label: "Player behavior",
+          summary: `${(draft.operations ?? []).length} operations · ${(draft.hooks ?? []).length} responses`,
+          defaultOpen: route.data?.section === "operations" || Boolean(route.data?.operation),
+          children: [{
+            type: "custom",
+            id: "inventory-item-operations",
+            role: "specialized-control",
+            content: <OperationHooksEditor
+              snapshot={context.snapshot}
+              targetKind="inventory.item"
+              defaultOpen={route.data?.section === "operations" || Boolean(route.data?.operation)}
+              preferredOperation={route.data?.operation}
+              capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+              onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
+            />,
+          }],
+        },
+      ],
+      actions: existing ? [{
+        id: "inventory-item-delete",
+        label: `DELETE${usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}`,
+        tone: "danger",
+        disabled: usages.length > 0,
+        onAction: () => {
+          if (usages.length || !window.confirm(`Delete item “${draft.name}”?`)) return;
+          void context.persist([{ type: "item.delete", id: draft.id }], `Delete item ${draft.name}`).then((result) => {
+            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+          });
+        },
+      }] : [],
+    };
+  },
+  async save({ route, context, draft }) {
+    if (!draft.name.trim()) return { accepted: false };
+    const item = {
+      ...draft,
+      equipmentSlotKeys: [...(draft.equipmentSlotKeys ?? [])],
+      key: resolveAuthorKey({
+        override: draft.key,
+        source: draft.name,
+        existingKeys: context.snapshot.items.filter((candidate) => candidate.id !== draft.id).map((candidate) => candidate.key),
+        fallback: "item",
+      }),
+    };
+    const result = await context.persist([{ type: "item.upsert", item }], `${context.snapshot.items.some((candidate) => candidate.id === item.id) ? "Change" : "Create"} item ${item.name}`);
+    if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
+    return {
+      accepted: true,
+      draft: item,
+      ...(route.data?.resourceTask ? { completion: { type: "resource" as const, kind: "item", id: item.id, value: item.id, label: item.name || item.key || "Untitled item" } } : {}),
+    };
+  },
+});
+
+type BodyTypeDraft = {
+  bodyType: BodyBackgroundDefinition;
+  starting: boolean;
+};
+
+function emptyBodyType(): BodyBackgroundDefinition {
+  return { id: crypto.randomUUID(), name: "", assetId: "", slots: [], startingEquipment: [] };
+}
+
+function bodyTypeValid(snapshot: ProjectSnapshot, bodyType: BodyBackgroundDefinition) {
+  const keys = (bodyType.slots ?? []).map((slot) => slot.key.trim());
+  const slotKeysValid = keys.every(Boolean) && new Set(keys).size === keys.length;
+  const counts = new Map<string, number>();
+  for (const assignment of bodyType.startingEquipment ?? []) counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
+  const startingEquipmentValid = [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
+  return { slotKeysValid, startingEquipmentValid };
+}
+
+export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
+  id: "inventory-body-type",
+  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "body-type",
+  createDraft: (route, context) => {
+    const initial = route.data?.bodyTypeId ? (context.snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId) : undefined;
+    const bodyType = {
+      ...structuredClone(initial ?? emptyBodyType()),
+      slots: [...(initial?.slots ?? [])],
+      startingEquipment: [...(initial?.startingEquipment ?? [])],
+    };
+    return {
+      bodyType,
+      starting: initial
+        ? context.snapshot.startingBodyBackgroundId === initial.id
+        : !context.snapshot.startingBodyBackgroundId && (context.snapshot.bodyBackgrounds ?? []).length === 0,
+    };
+  },
+  buildSpec: ({ context, draft, setDraft }) => {
+    const existing = (context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === draft.bodyType.id);
+    const usages = existing ? referencesTo(context.snapshot, "body-type", draft.bodyType.id) : [];
+    const validity = bodyTypeValid(context.snapshot, draft.bodyType);
+    return {
+      id: "inventory-body-type",
+      title: draft.bodyType.name || "New body type",
+      context: `${(draft.bodyType.slots ?? []).length} slot${(draft.bodyType.slots ?? []).length === 1 ? "" : "s"}`,
+      blocks: [
+        {
+          type: "section",
+          id: "inventory-body-type-identity",
+          label: "Body type",
+          importance: "primary",
+          children: [
+            { type: "field", id: "inventory-body-type-name", label: "Name", value: draft.bodyType.name, autoFocus: !existing, help: "Age, form, species, armor layout, transformation, or any other body configuration.", onChange: (name) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, name } })) },
+            { type: "toggle", id: "inventory-body-type-starting", label: "Start new playthroughs with this body type", checked: draft.starting, onChange: (starting) => setDraft((current) => ({ ...current, starting })) },
+            { type: "custom", id: "inventory-body-type-image", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.bodyType.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, assetId } }))} placeholder="none" /> },
+          ],
+        },
+        {
+          type: "custom",
+          id: "inventory-body-type-layout",
+          role: "specialized-control",
+          content: <BodyTypeLayoutControl
+            snapshot={context.snapshot}
+            draft={draft.bodyType}
+            onChange={(bodyType) => setDraft((current) => ({ ...current, bodyType }))}
+          />,
+        },
+        ...(!validity.slotKeysValid ? [{ type: "status" as const, id: "inventory-body-type-slot-error", tone: "error" as const, text: "Each body slot needs a unique, non-empty slot key." }] : []),
+        ...(!validity.startingEquipmentValid ? [{ type: "status" as const, id: "inventory-body-type-equipment-error", tone: "error" as const, text: "Starting equipment exceeds an item’s starting quantity. Increase the item quantity or clear a slot." }] : []),
+      ],
+      actions: existing ? [{
+        id: "inventory-body-type-delete",
+        label: `DELETE${usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}`,
+        tone: "danger",
+        disabled: usages.length > 0,
+        onAction: () => {
+          if (usages.length || !window.confirm(`Delete body type “${draft.bodyType.name}”?`)) return;
+          void context.persist([{ type: "bodyBackground.delete", id: draft.bodyType.id }], `Delete body type ${draft.bodyType.name}`).then((result) => {
+            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+          });
+        },
+      }] : [],
+    };
+  },
+  async save({ route, context, draft }) {
+    const name = draft.bodyType.name.trim();
+    const validity = bodyTypeValid(context.snapshot, draft.bodyType);
+    if (!name || !validity.slotKeysValid || !validity.startingEquipmentValid) return { accepted: false };
+    const bodyType = {
+      ...draft.bodyType,
+      name,
+      slots: (draft.bodyType.slots ?? []).map((slot) => ({ ...slot, key: slot.key.trim(), name: slot.name.trim() || slot.key.trim() })),
+      startingEquipment: (draft.bodyType.startingEquipment ?? [])
+        .filter((assignment) => (draft.bodyType.slots ?? []).some((slot) => slot.key.trim() === assignment.slotKey.trim()))
+        .map((assignment) => ({ ...assignment, slotKey: assignment.slotKey.trim() })),
+    };
+    const operations: MutationOperation[] = [{ type: "bodyBackground.upsert", background: bodyType }];
+    if (draft.starting && context.snapshot.startingBodyBackgroundId !== bodyType.id) operations.push({ type: "bodyBackground.starting", id: bodyType.id });
+    else if (!draft.starting && context.snapshot.startingBodyBackgroundId === bodyType.id) operations.push({ type: "bodyBackground.starting", id: null });
+    const result = await context.persist(operations, `${(context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === bodyType.id) ? "Change" : "Create"} body type ${bodyType.name}`);
+    if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
+    const savedDraft = { ...draft, bodyType };
+    return {
+      accepted: true,
+      draft: savedDraft,
+      ...(route.data?.resourceTask ? { completion: { type: "resource" as const, kind: "body-type", id: bodyType.id, value: bodyType.id, label: bodyType.name } } : {}),
+    };
+  },
+});
+
+export const INVENTORY_WORKSPACES = [
+  inventoryPlayerWorkspace,
+  inventoryItemsWorkspace,
+  inventoryBodyTypesWorkspace,
+  inventoryItemWorkspace,
+  inventoryBodyTypeWorkspace,
+] as const;
