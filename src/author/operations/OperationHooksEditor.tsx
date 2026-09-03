@@ -75,18 +75,22 @@ function operationDefinitionsFor(snapshot: ProjectSnapshot, targetKind: string, 
   return [...definitions, { value: current, label: current, targetKinds: [targetKind] }];
 }
 
+/**
+ * Operation behavior body. The parent Author workspace owns disclosure/navigation
+ * so implementation composition never adds a second visual layer.
+ */
 export function OperationHooksEditor({ capability, snapshot, targetKind, defaultOpen = false, preferredOperation, onChange }: {
   capability: OperationCapabilityDraft;
   snapshot: ProjectSnapshot;
   /** Semantic author target kind, e.g. inventory.item or world.character. */
   targetKind: string;
+  /** Retained for route compatibility; when paired with a preferred operation it enables focus landing. */
   defaultOpen?: boolean;
   preferredOperation?: string;
   onChange: (capability: OperationCapabilityDraft) => void;
 }) {
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
-  const [expanded, setExpanded] = useState(defaultOpen);
   const preferredControlRef = useRef<HTMLButtonElement>(null);
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
   const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
@@ -100,7 +104,6 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
 
   useEffect(() => {
     if (!defaultOpen || !preferredOperation) return;
-    setExpanded(true);
     const frame = window.requestAnimationFrame(() => {
       const control = preferredControlRef.current;
       if (!control) return;
@@ -170,8 +173,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
     setScreen("list");
   };
 
-  return <details className="operation-capability-editor focused-operation-capability" open={expanded} onToggle={(event) => setExpanded(event.currentTarget.open)}>
-    <summary>[PLAYER OPERATIONS]</summary>
+  return <div className="operation-capability-editor focused-operation-capability">
     <div className="operation-capability-body">
       {screen === "list" ? <>
         <label className="check-label"><input type="checkbox" checked={capability.interactable}
@@ -230,7 +232,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
           onRemove={removeSelected} /> : null}
       </> : null}
     </div>
-  </details>;
+  </div>;
 }
 
 function HookWorkspace({ hook, snapshot, targetKind, shadowed, onChange, onOperationChange, onRemove }: {
