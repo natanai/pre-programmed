@@ -192,4 +192,34 @@ describe("D1 migration safety", () => {
       database.close();
     }
   });
+
+  it("migrates legacy compatible slots into equivalent one-slot equipment placements", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const equipmentMigration = migrations.find((migration) => migration.id === 32);
+    expect(equipmentMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 32)) {
+        applyMigration(database, migration.sql);
+      }
+
+      database.exec(`
+        INSERT INTO item_definitions (id, key, name, equipment_slot_keys_json)
+        VALUES ('legacy-item', 'legacy-item', 'Legacy item', '["left","right"]');
+      `);
+
+      applyMigration(database, equipmentMigration!.sql);
+
+      const row = database.prepare("SELECT equipment_placements_json FROM item_definitions WHERE id = 'legacy-item'").get() as {
+        equipment_placements_json: string;
+      } | undefined;
+      expect(JSON.parse(row?.equipment_placements_json ?? "[]")).toEqual([
+        { anchorSlotKey: "left", occupiedSlotKeys: ["left"] },
+        { anchorSlotKey: "right", occupiedSlotKeys: ["right"] },
+      ]);
+    } finally {
+      database.close();
+    }
+  });
 });
