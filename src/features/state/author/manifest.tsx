@@ -1,6 +1,4 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
-import { DefinitionsPanel, type StateAuthorResourceKind } from "./DefinitionsPanel";
-import { stateAuthorSearch, stateAuthorTools } from "./tools";
 import { STATE_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
 import {
   clearFlagEffectAdapter,
@@ -12,10 +10,12 @@ import {
   variableConditionAdapter,
 } from "./ruleAdapters";
 import { stateProjectReferences } from "./references";
+import { stateAuthorSearch, stateAuthorTools } from "./tools";
+import { STATE_WORKSPACES, type StateAuthorResourceKind } from "./workspaces";
 
 const DEFINITIONS_ROUTE = { type: "feature", feature: "state", workspace: "definitions" } as const;
 
-function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
+function stateResourceRoute(kind: StateAuthorResourceKind, id?: string, preferredOperation?: string) {
   return {
     type: "feature" as const,
     feature: "state",
@@ -24,6 +24,7 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
       resourceKind: kind,
       resourceTask: kind,
       ...(id ? { resourceId: id } : {}),
+      ...(preferredOperation ? { preferredOperation } : {}),
     },
   };
 }
@@ -31,43 +32,21 @@ function stateResourceRoute(kind: StateAuthorResourceKind, id?: string) {
 export const stateAuthorFeature: AuthorFeatureManifest = {
   id: "state",
   describeTask(route, snapshot) {
-    if (route.type !== "feature" || route.feature !== "state" || route.workspace !== "definitions") return null;
+    if (route.type !== "feature" || route.feature !== "state") return null;
+    if (route.workspace === "status") return "Status";
+    if (route.workspace !== "definitions") return null;
     const id = route.data?.resourceId;
     const variable = snapshot.variables.find((candidate) => candidate.id === id);
     const computed = snapshot.computedValues.find((candidate) => candidate.id === id);
-    const entity = snapshot.entities.find((candidate) => candidate.id === id);
+    const group = snapshot.stateGroups.find((candidate) => candidate.id === id);
     if (variable) return variable.label || variable.key;
     if (computed) return computed.label || computed.key;
-    if (entity) return entity.name || entity.key;
+    if (group) return group.label;
     const kind = route.data?.resourceKind;
-    return kind ? `New ${kind.replaceAll("-", " ")}` : "State + people";
+    return kind ? `New ${kind.replaceAll("-", " ")}` : "State";
   },
   commandReferences: STATE_COMMAND_REFERENCE_SOURCES,
   commandTargets: [
-    {
-      sourceKind: "world.character",
-      label: "character",
-      list: (snapshot, operation) => snapshot.entities.filter((entity) => entity.type === "character").map((entity) => ({
-        id: entity.id,
-        label: entity.name || entity.key || "Untitled character",
-        available: (entity.operations ?? []).includes(operation),
-        responseCount: (entity.hooks ?? []).filter((hook) => hook.operation === operation).length,
-      })),
-      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "character", resourceTask: "character", resourceId: id, preferredOperation: operation } }),
-      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "character", resourceTask: "character", preferredOperation: operation } }),
-    },
-    {
-      sourceKind: "world.location",
-      label: "location",
-      list: (snapshot, operation) => snapshot.entities.filter((entity) => entity.type === "location").map((entity) => ({
-        id: entity.id,
-        label: entity.name || entity.key || "Untitled location",
-        available: (entity.operations ?? []).includes(operation),
-        responseCount: (entity.hooks ?? []).filter((hook) => hook.operation === operation).length,
-      })),
-      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "location", resourceTask: "location", resourceId: id, preferredOperation: operation } }),
-      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "location", resourceTask: "location", preferredOperation: operation } }),
-    },
     {
       sourceKind: "state.variable",
       label: "variable",
@@ -77,8 +56,8 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
         available: definition.operations.includes(operation),
         responseCount: definition.hooks.filter((hook) => hook.operation === operation).length,
       })),
-      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "variable", resourceTask: "variable", resourceId: id, preferredOperation: operation } }),
-      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "variable", resourceTask: "variable", preferredOperation: operation } }),
+      editRoute: (id, operation) => stateResourceRoute("variable", id, operation),
+      createRoute: (operation) => stateResourceRoute("variable", undefined, operation),
     },
     {
       sourceKind: "state.computed",
@@ -89,8 +68,8 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
         available: definition.operations.includes(operation),
         responseCount: definition.hooks.filter((hook) => hook.operation === operation).length,
       })),
-      editRoute: (id, operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "computed", resourceTask: "computed", resourceId: id, preferredOperation: operation } }),
-      createRoute: (operation) => ({ type: "feature", feature: "state", workspace: "definitions", data: { resourceKind: "computed", resourceTask: "computed", preferredOperation: operation } }),
+      editRoute: (id, operation) => stateResourceRoute("computed", id, operation),
+      createRoute: (operation) => stateResourceRoute("computed", undefined, operation),
     },
   ],
   conditions: [flagConditionAdapter, variableConditionAdapter],
@@ -98,6 +77,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
   references: [stateProjectReferences],
   tools: stateAuthorTools,
   search: stateAuthorSearch,
+  workspaces: [...STATE_WORKSPACES],
   resources: [
     {
       kind: "variable",
@@ -134,73 +114,15 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       editRoute: (resource) => stateResourceRoute("computed", resource.id),
     },
     {
-      kind: "character",
-      label: "Character",
-      pluralLabel: "Characters",
-      list: (snapshot) => snapshot.entities.filter((item) => item.type === "character").map((item) => ({ id: item.id, value: item.id, label: item.name || item.key, detail: item.key })),
-      createRoute: () => stateResourceRoute("character"),
-      editRoute: (resource) => stateResourceRoute("character", resource.id),
-    },
-    {
-      kind: "location",
-      label: "Location",
-      pluralLabel: "Locations",
-      list: (snapshot) => snapshot.entities.filter((item) => item.type === "location").map((item) => ({ id: item.id, value: item.id, label: item.name || item.key, detail: item.key })),
-      createRoute: () => stateResourceRoute("location"),
-      editRoute: (resource) => stateResourceRoute("location", resource.id),
+      kind: "state-group",
+      label: "Player Group",
+      pluralLabel: "Player Groups",
+      list: (snapshot) => snapshot.stateGroups.map((group) => ({ id: group.id, value: group.id, label: group.label, detail: "State presentation" })),
+      createRoute: () => stateResourceRoute("state-group"),
+      editRoute: (resource) => stateResourceRoute("state-group", resource.id),
     },
   ],
   terminalShortcuts: [
-    { commands: ["/definitions", "definitions"], route: DEFINITIONS_ROUTE },
+    { commands: ["/definitions", "definitions", "/state"], route: DEFINITIONS_ROUTE },
   ],
-  renderWorkspace(route, context) {
-    if (route.type !== "feature" || route.feature !== "state" || route.workspace !== "definitions") return null;
-    const resourceKind = route.data?.resourceKind as StateAuthorResourceKind | undefined;
-    return <DefinitionsPanel
-      snapshot={context.snapshot}
-      resourceKind={resourceKind}
-      resourceId={route.data?.resourceId}
-      preferredOperation={route.data?.preferredOperation}
-      onRegisterSave={context.registerWorkspaceSave}
-      onSave={async (operations, description) => {
-        const result = await context.persist(operations, description);
-        if (!resourceKind || (result.status !== "saved" && result.status !== "queued")) return result;
-        const variableOperation = operations.find((operation) => operation.type === "variable.upsert");
-        if (variableOperation?.type === "variable.upsert") {
-          context.completeTask({
-            type: "resource",
-            kind: resourceKind,
-            id: variableOperation.definition.id,
-            value: variableOperation.definition.key,
-            label: variableOperation.definition.label || variableOperation.definition.key,
-          });
-          return result;
-        }
-        const computedOperation = operations.find((operation) => operation.type === "computed.upsert");
-        if (computedOperation?.type === "computed.upsert") {
-          context.completeTask({
-            type: "resource",
-            kind: "computed",
-            id: computedOperation.definition.id,
-            value: computedOperation.definition.key,
-            label: computedOperation.definition.label || computedOperation.definition.key,
-          });
-          return result;
-        }
-        const entityOperation = operations.find((operation) => operation.type === "entity.upsert");
-        if (entityOperation?.type === "entity.upsert") {
-          context.completeTask({
-            type: "resource",
-            kind: entityOperation.entity.type,
-            id: entityOperation.entity.id,
-            value: entityOperation.entity.id,
-            label: entityOperation.entity.name || entityOperation.entity.key,
-          });
-        }
-        return result;
-      }}
-      onClose={context.hasParentTask ? context.leaveCurrentTask : undefined}
-      setWorkspaceDirty={context.setWorkspaceDirty}
-    />;
-  },
 };
