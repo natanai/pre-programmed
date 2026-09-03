@@ -8,7 +8,7 @@ import {
   resizeBodyCanvas,
   slotFitsBodyCanvas,
 } from "../bodyCanvas";
-import type { BodyBackgroundDefinition, BodyCanvasDefinition, BodySlotDefinition } from "../model";
+import type { BodyBackgroundDefinition, BodyCanvasDefinition, BodySlotDefinition, ItemDefinition } from "../model";
 import { setActiveBodyType } from "../runtime";
 import { BodyTypeLayoutControl } from "./BodyTypeLayoutControl";
 import { inventoryRoute } from "./workspaces";
@@ -43,13 +43,50 @@ function emptyBodyType(): BodyBackgroundDefinition {
   };
 }
 
+function placementKeys(item: ItemDefinition, anchorSlotKey: string) {
+  const placements = item.equipmentPlacements ?? [];
+  if (!placements.length) return [anchorSlotKey];
+  const placement = placements.find((candidate) => candidate.anchorSlotKey === anchorSlotKey);
+  if (!placement) return null;
+  return [...new Set([anchorSlotKey, ...(placement.occupiedSlotKeys ?? [])])];
+}
+
+function itemFitsBodyAt(item: ItemDefinition, anchorSlotKey: string, slots: readonly Pick<BodySlotDefinition, "key">[]) {
+  const keys = placementKeys(item, anchorSlotKey);
+  if (!keys) return false;
+  const bodyKeys = new Set(slots.map((slot) => slot.key));
+  return keys.every((key) => bodyKeys.has(key));
+}
+
+function itemFitsDraftSlot(item: ItemDefinition, anchorSlotKey: string, reservedKeys: readonly string[]) {
+  const keys = placementKeys(item, anchorSlotKey);
+  if (!keys) return false;
+  const bodyKeys = new Set([...reservedKeys, anchorSlotKey]);
+  return keys.every((key) => bodyKeys.has(key));
+}
+
 function bodyTypeValid(snapshot: ProjectSnapshot, bodyType: BodyBackgroundDefinition) {
-  const keys = (bodyType.slots ?? []).map((slot) => slot.key.trim());
+  const slots = bodyType.slots ?? [];
+  const keys = slots.map((slot) => slot.key.trim());
   const slotKeysValid = keys.every(Boolean) && new Set(keys).size === keys.length;
-  const slotsFitCanvas = (bodyType.slots ?? []).every((slot) => slotFitsBodyCanvas(slot, bodyType.canvas));
+  const slotsFitCanvas = slots.every((slot) => slotFitsBodyCanvas(slot, bodyType.canvas));
   const counts = new Map<string, number>();
-  for (const assignment of bodyType.startingEquipment ?? []) counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
-  const startingEquipmentValid = [...counts].every(([itemId, count]) => count <= (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0));
+  const occupied = new Set<string>();
+  let startingEquipmentValid = true;
+
+  for (const assignment of bodyType.startingEquipment ?? []) {
+    const item = snapshot.items.find((candidate) => candidate.id === assignment.itemId);
+    const placement = item ? placementKeys(item, assignment.slotKey) : null;
+    if (!item || !placement || !itemFitsBodyAt(item, assignment.slotKey, slots) || placement.some((key) => occupied.has(key))) {
+      startingEquipmentValid = false;
+      continue;
+    }
+    placement.forEach((key) => occupied.add(key));
+    counts.set(assignment.itemId, (counts.get(assignment.itemId) ?? 0) + 1);
+  }
+  if ([...counts].some(([itemId, count]) => count > (snapshot.items.find((item) => item.id === itemId)?.startingQuantity ?? 0))) {
+    startingEquipmentValid = false;
+  }
   return { slotKeysValid, slotsFitCanvas, startingEquipmentValid };
 }
 
@@ -162,6 +199,10 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
         ? context.snapshot.startingBodyBackgroundId === initial.id
         : !context.snapshot.startingBodyBackgroundId && (context.snapshot.bodyBackgrounds ?? []).length === 0,
     };
+  },
+  canSave: ({ context, draft }) => {
+    const validity = bodyTypeValid(context.snapshot, draft.bodyType);
+    return Boolean(draft.bodyType.name.trim() && validity.slotKeysValid && validity.slotsFitCanvas && validity.startingEquipmentValid);
   },
   buildSpec: ({ context, draft, setDraft }) => {
     const existing = (context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === draft.bodyType.id);
@@ -280,7 +321,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
         },
         ...(!validity.slotKeysValid ? [{ type: "status" as const, id: "inventory-body-type-slot-error", tone: "error" as const, text: "Each body slot needs a unique, non-empty slot key." }] : []),
         ...(!validity.slotsFitCanvas ? [{ type: "status" as const, id: "inventory-body-type-bounds-error", tone: "error" as const, text: "Every slot must remain within this Body Type's logical canvas." }] : []),
-        ...(!validity.startingEquipmentValid ? [{ type: "status" as const, id: "inventory-body-type-equipment-error", tone: "error" as const, text: "Starting equipment exceeds an item’s starting quantity. Increase the item quantity or clear a slot." }] : []),
+        ...(!validity.startingEquipmentValid ? [{ type: "status" as const, id: "inventory-body-type-equipment-error", tone: "error" as const, text: "Starting equipment is invalid: check item quantities, placement anchors, required body slots, and overlapping occupied slots." }] : []),
       ],
       actions: existing ? [{
         id: "inventory-body-type-delete",
@@ -326,13 +367,19 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
   id: "inventory-body-slot",
   matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "body-slot",
   createDraft: (route) => readSlotTask(route.data),
+  canSave: ({ draft }) => Boolean(
+    draft.ownerId
+    && draft.slot.key.trim()
+    && !draft.reservedKeys.includes(draft.slot.key.trim())
+    && draft.slot.name.trim()
+    && slotFitsBodyCanvas(draft.slot, draft.canvas)
+  ),
   buildSpec: ({ context, draft, setDraft }) => {
     const slot = draft.slot;
     const maxX = Math.max(0, draft.canvas.width - slot.width);
     const maxY = Math.max(0, draft.canvas.height - slot.height);
     const compatibleItems = context.snapshot.items.filter((item) =>
-      (item.startingQuantity ?? 0) > 0
-      && (!(item.equipmentSlotKeys ?? []).length || (item.equipmentSlotKeys ?? []).includes(slot.key)),
+      (item.startingQuantity ?? 0) > 0 && itemFitsDraftSlot(item, slot.key, draft.reservedKeys),
     );
     const uniqueKey = Boolean(slot.key.trim() && !draft.reservedKeys.includes(slot.key.trim()));
     const slotValid = Boolean(uniqueKey && slot.name.trim() && slotFitsBodyCanvas(slot, draft.canvas));
@@ -351,9 +398,7 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
             { type: "field", id: "inventory-body-slot-key", label: "Slot key", value: slot.key, help: "Reuse the same key on another Body Type when equipment should stay equipped across that change.", onChange: (key) => setDraft((current) => {
               const nextKey = key.toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
               const startingItem = context.snapshot.items.find((item) => item.id === current.startingItemId);
-              const staysCompatible = !startingItem
-                || !(startingItem.equipmentSlotKeys ?? []).length
-                || (startingItem.equipmentSlotKeys ?? []).includes(nextKey);
+              const staysCompatible = !startingItem || itemFitsDraftSlot(startingItem, nextKey, current.reservedKeys);
               return {
                 ...current,
                 slot: { ...current.slot, key: nextKey },
@@ -378,7 +423,7 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
           id: "inventory-body-slot-starting-item",
           label: "Starting equipment",
           value: draft.startingItemId,
-          help: "Uses one instance from the item's starting quantity in each new playthrough.",
+          help: "Uses one instance from the item's starting quantity. Multi-slot placements reserve every occupied slot in this loadout.",
           onChange: (startingItemId) => setDraft((current) => ({ ...current, startingItemId })),
           options: [
             { value: "", label: "empty" },
