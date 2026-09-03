@@ -25,40 +25,22 @@ jobs:
           from pathlib import Path
           path = Path('src/App.tsx')
           text = path.read_text()
-          old = '''        <PlayerWorkspaceHost
-            request={playerWorkspace}
-            context={{
-              snapshot,
-              playState,
-              updateState: applyPlayerWorkspaceState,
-              output: showPlayerWorkspaceOutput,
-              events: handleEffectEvents,
-            }}
-            onNavigate={setPlayerWorkspace}
-            onClose={() => setPlayerWorkspace(null)}
-          />'''
-          new = '''        <PlayerWorkspaceHost
-            request={playerWorkspace}
-            context={{
-              snapshot,
-              playState,
-              updateState: applyPlayerWorkspaceState,
-              output: showPlayerWorkspaceOutput,
-              events: handleEffectEvents,
-              author: authorExperience ? {
-                openWorkspace: (feature, workspace, data) => authorTasks.openTask({
-                  type: "feature",
-                  feature,
-                  workspace,
-                  data,
-                }),
-              } : undefined,
-            }}
-            onNavigate={setPlayerWorkspace}
-            onClose={() => setPlayerWorkspace(null)}
-          />'''
-          if old not in text:
-              raise SystemExit('Expected PlayerWorkspaceHost block not found; refusing broad App rewrite.')
+          old = '''            events: handleEffectEvents,
+          }}
+          onNavigate={setPlayerWorkspace}'''
+          new = '''            events: handleEffectEvents,
+            author: authorExperience ? {
+              openWorkspace: (feature, workspace, data) => authorTasks.openTask({
+                type: "feature",
+                feature,
+                workspace,
+                data,
+              }),
+            } : undefined,
+          }}
+          onNavigate={setPlayerWorkspace}'''
+          if text.count(old) != 1:
+              raise SystemExit(f'Expected exactly one PlayerWorkspaceHost context seam; found {text.count(old)}.')
           path.write_text(text.replace(old, new, 1))
           PY
       - run: npm ci --no-audit --no-fund
