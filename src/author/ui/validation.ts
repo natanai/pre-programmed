@@ -29,6 +29,14 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
     ids.add(id);
   };
 
+  const repeatedParentLabel = (node: { label: string; labelMode?: string }, path: string, parentLabel?: string) => {
+    if (
+      node.labelMode !== "sr-only"
+      && parentLabel
+      && normalizedLabel(node.label) === normalizedLabel(parentLabel)
+    ) errors.push(`${path} repeats its parent label; use a distinct control label or sr-only label.`);
+  };
+
   const visit = (
     node: AuthorUiNode,
     path: string,
@@ -41,13 +49,25 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
     if ("label" in node && !node.label.trim()) errors.push(`${path} requires a label.`);
 
     if (node.type === "field") {
-      if (
-        node.labelMode !== "sr-only"
-        && parentLabel
-        && normalizedLabel(node.label) === normalizedLabel(parentLabel)
-      ) {
-        errors.push(`${path} repeats its parent label; use a distinct field label or sr-only label.`);
-      }
+      repeatedParentLabel(node, path, parentLabel);
+      return;
+    }
+
+    if (node.type === "select") {
+      repeatedParentLabel(node, path, parentLabel);
+      if (!node.options.length) errors.push(`${path} requires at least one option.`);
+      const optionValues = new Set<string>();
+      node.options.forEach((option, optionIndex) => {
+        if (!option.label.trim()) errors.push(`${path}.options[${optionIndex}] requires a label.`);
+        if (optionValues.has(option.value)) errors.push(`${path} repeats option value “${option.value}”.`);
+        optionValues.add(option.value);
+      });
+      if (!optionValues.has(node.value)) errors.push(`${path} selects unknown option “${node.value}”.`);
+      return;
+    }
+
+    if (node.type === "toggle") {
+      repeatedParentLabel(node, path, parentLabel);
       return;
     }
 
