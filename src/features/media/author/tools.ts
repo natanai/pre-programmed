@@ -10,8 +10,8 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "assets",
       label: "ASSETS",
-      description: "Import, draw, browse, and export stable media assets.",
-      searchText: "image images sound sounds file files upload media sprite art audio svg vector draw asset",
+      description: "Browse repository Media, draw vectors, and audit stable asset references.",
+      searchText: "image images sound sounds file files media sprite art audio svg vector draw asset repository",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
     },
   },
@@ -23,7 +23,7 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "sound",
       label: "SOUND",
-      description: "Create and edit synthesized sounds.",
+      description: "Create and edit synthesized sounds stored with project data.",
       searchText: "synth music audio voice waveform note sequence step tempo attack release volume advanced",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "synth" }),
     },
@@ -43,8 +43,8 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
     id: "media:asset-library",
     groupLabel: "WORLD + MEDIA",
     label: "MEDIA ASSETS",
-    description: "Import files or draw scalable 32×32 vector assets behind stable project IDs.",
-    searchText: "asset assets audio sound image art sprite upload repository file svg vector draw grid export",
+    description: "Browse repository files or draw scalable 32×32 vector assets behind stable project IDs.",
+    searchText: "asset assets audio sound image art sprite repository file svg vector draw grid export",
     onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
   },
 ];

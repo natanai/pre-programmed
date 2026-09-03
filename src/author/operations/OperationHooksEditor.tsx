@@ -61,6 +61,14 @@ function hookSnippet(hook: OperationHook) {
   return "No response yet";
 }
 
+/** Mirrors the runtime's order + id tie-break. An earlier Always response is terminal for this operation. */
+function hookIsShadowed(hook: OperationHook, hooks: readonly OperationHook[]) {
+  return hooks.some((candidate) => candidate.id !== hook.id
+    && candidate.operation === hook.operation
+    && candidate.condition.type === "always"
+    && (candidate.order < hook.order || (candidate.order === hook.order && candidate.id.localeCompare(hook.id) < 0)));
+}
+
 function operationDefinitionsFor(snapshot: ProjectSnapshot, targetKind: string, current?: OperationId) {
   const definitions = authorOperationDefinitions(snapshot, targetKind);
   if (!current || definitions.some((definition) => definition.value === current)) return definitions;
@@ -126,7 +134,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
     const target = capability.hooks.findIndex((candidate) => candidate.id === siblingTarget.id);
     const hooks = [...capability.hooks];
     [hooks[index], hooks[target]] = [hooks[target], hooks[index]];
-    onChange({ ...capability, hooks: hooks.map((hook, order) => ({ ...hook, order })) });
+    onChange({ ...capability, hooks: hooks.map((candidate, order) => ({ ...candidate, order })) });
   };
 
   const addHook = (operation: OperationId) => {
@@ -186,17 +194,21 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                   })} /> available</label>
                 </div>
                 {hooks.length ? <div className="operation-hook-list">
-                  {hooks.map((hook, index) => <div className="operation-hook-summary" key={hook.id}>
-                    <button type="button" className="operation-hook-open" onClick={() => openHook(hook)}>
-                      <span className="operation-hook-title">{index + 1}. {hook.success ? "SUCCEEDS" : "DOES NOT SUCCEED"}</span>
-                      <span>{hookSnippet(hook)}</span>
-                      <small>{conditionSummary(hook.condition)} · {hook.effects.length} effect{hook.effects.length === 1 ? "" : "s"}</small>
-                    </button>
-                    <div className="operation-hook-order">
-                      <button type="button" aria-label={`Move ${operation.label} response ${index + 1} up`} disabled={index === 0} onClick={() => moveHook(hook.id, -1)}>[↑]</button>
-                      <button type="button" aria-label={`Move ${operation.label} response ${index + 1} down`} disabled={index === hooks.length - 1} onClick={() => moveHook(hook.id, 1)}>[↓]</button>
-                    </div>
-                  </div>)}
+                  {hooks.map((hook, index) => {
+                    const shadowed = hookIsShadowed(hook, hooks);
+                    return <div className={`operation-hook-summary${shadowed ? " is-shadowed" : ""}`} key={hook.id}>
+                      <button type="button" className="operation-hook-open" onClick={() => openHook(hook)}>
+                        <span className="operation-hook-title">{index + 1}. {hook.success ? "SUCCEEDS" : "DOES NOT SUCCEED"}</span>
+                        <span>{hookSnippet(hook)}</span>
+                        <small>{conditionSummary(hook.condition)} · {hook.effects.length} effect{hook.effects.length === 1 ? "" : "s"}</small>
+                        {shadowed ? <small className="operation-hook-shadow-warning">UNREACHABLE · an earlier ALWAYS response handles this operation first</small> : null}
+                      </button>
+                      <div className="operation-hook-order">
+                        <button type="button" aria-label={`Move ${operation.label} response ${index + 1} up`} disabled={index === 0} onClick={() => moveHook(hook.id, -1)}>[↑]</button>
+                        <button type="button" aria-label={`Move ${operation.label} response ${index + 1} down`} disabled={index === hooks.length - 1} onClick={() => moveHook(hook.id, 1)}>[↓]</button>
+                      </div>
+                    </div>;
+                  })}
                 </div> : <span className="operation-card-empty">No authored response. {available ? "Feature defaults may still handle this operation." : "Enable it or add a response when needed."}</span>}
                 <button
                   ref={preferred ? preferredControlRef : undefined}
@@ -212,6 +224,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
       </> : selectedHook ? <>
         <button type="button" className="operation-hook-back" onClick={back}>[← BACK TO RESPONSES]</button>
         {screen === "hook" ? <HookWorkspace hook={selectedHook} snapshot={snapshot} targetKind={targetKind}
+          shadowed={hookIsShadowed(selectedHook, capability.hooks)}
           onChange={(hook) => replaceHook(selectedHook.id, hook)}
           onOperationChange={(operation) => setHookOperation(selectedHook.id, operation)}
           onRemove={removeSelected} /> : null}
@@ -220,16 +233,18 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
   </details>;
 }
 
-function HookWorkspace({ hook, snapshot, targetKind, onChange, onOperationChange, onRemove }: {
+function HookWorkspace({ hook, snapshot, targetKind, shadowed, onChange, onOperationChange, onRemove }: {
   hook: OperationHook;
   snapshot: ProjectSnapshot;
   targetKind: string;
+  shadowed: boolean;
   onChange: (hook: OperationHook) => void;
   onOperationChange: (operation: OperationId) => void;
   onRemove: () => void;
 }) {
   const operationDefinitions = operationDefinitionsFor(snapshot, targetKind, hook.operation);
   return <div className="operation-hook-workspace">
+    {shadowed ? <div className="operation-hook-shadow-warning" role="alert">UNREACHABLE: an earlier ALWAYS response for this operation runs first. Move this response above it or give the earlier response a condition.</div> : null}
     <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value)}>
       {operationDefinitions.map((operation) => <option value={operation.value} key={operation.value}>{operation.label}</option>)}
     </select></label>

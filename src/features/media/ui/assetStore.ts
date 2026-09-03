@@ -1,8 +1,10 @@
 import { ASSET_MANIFEST } from "../../../generated/assetManifest";
 import type { ProjectSnapshot } from "../../../engine/project/model";
-import type { AssetStore, MediaAssetDescriptor } from "../assets";
+import type { AssetStore, MediaAssetContentSource, MediaAssetDescriptor } from "../assets";
 import { normalizeMediaAssetAuthoringMode, type MediaAsset } from "../model";
 import { configuredAssetContentStore } from "../../../platform/assets/contentStore";
+
+const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((entry) => [entry.id, entry] as const));
 
 function normalizeAsset(asset: MediaAsset | (Omit<MediaAsset, "authoringMode"> & { authoringMode: unknown })): MediaAsset {
   return { ...asset, authoringMode: normalizeMediaAssetAuthoringMode(asset.authoringMode) } as MediaAsset;
@@ -23,15 +25,32 @@ function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
   };
 }
 
+function contentSource(asset: MediaAsset): MediaAssetContentSource {
+  if (asset.contentKey && asset.mimeType.toLowerCase() === "image/svg+xml") return "database";
+  if (repositoryEntryByAssetId.has(asset.id)) return "repository";
+  return "missing";
+}
+
 function descriptor(asset: MediaAsset, editable: boolean): MediaAssetDescriptor {
+  const source = contentSource(asset);
+  const runtimeAsset = source === "repository" && asset.contentKey
+    ? { ...asset, contentKey: null }
+    : asset;
   return {
-    ...asset,
-    url: configuredAssetContentStore.urlFor(asset),
+    ...runtimeAsset,
+    url: source === "missing" ? "" : configuredAssetContentStore.urlFor(runtimeAsset),
+    contentSource: source,
+    available: source !== "missing",
     editable,
   };
 }
 
-/** Browser composition of one stable asset catalog backed by project metadata and repository metadata. */
+/**
+ * One stable Media catalog with exactly two built-in content origins:
+ * Author-generated vector SVG in D1 and version-controlled files in public/assets.
+ * A metadata row without either origin is deliberately exposed as missing rather
+ * than pretending that an unavailable blob provider will supply it.
+ */
 export const configuredAssetStore: AssetStore = {
   list(snapshot, kind) {
     const projectById = new Map((snapshot.mediaAssets ?? []).map((asset) => [asset.id, normalizeAsset(asset)] as const));
@@ -40,14 +59,13 @@ export const configuredAssetStore: AssetStore = {
     for (const entry of ASSET_MANIFEST) {
       const repository = repositoryAsset(entry);
       const project = projectById.get(entry.id);
+      const projectUsesD1Svg = Boolean(project?.contentKey && project.mimeType.toLowerCase() === "image/svg+xml");
       const merged = project
-        ? project.contentKey
-          // Hosted content is active, so its persisted content metadata remains authoritative.
+        ? projectUsesD1Svg
           ? project
-          // A null content key explicitly selects the repository copy; repository-derived
-          // MIME/dimension/size metadata must then follow the shipped file.
           : {
               ...project,
+              contentKey: null,
               mimeType: repository.mimeType,
               byteLength: repository.byteLength,
               intrinsicWidth: repository.intrinsicWidth,
@@ -58,6 +76,8 @@ export const configuredAssetStore: AssetStore = {
       assets.set(entry.id, descriptor(merged, true));
     }
 
+    // Keep orphaned metadata visible so Author mode can tell the author exactly
+    // which stable ID needs a repository file instead of silently hiding the bug.
     for (const projectValue of snapshot.mediaAssets ?? []) {
       const project = normalizeAsset(projectValue);
       if (!assets.has(project.id)) assets.set(project.id, descriptor(project, true));

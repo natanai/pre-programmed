@@ -69,6 +69,10 @@
   border-bottom: 0;
 }
 
+.operation-hook-summary.is-shadowed {
+  border-inline-start: 2px solid var(--dos-text);
+}
+
 .operation-hook-open {
   display: grid;
   min-width: 0;
@@ -78,7 +82,7 @@
 }
 
 .operation-hook-open > span:not(.operation-hook-title),
-.operation-hook-open > small {
+.operation-hook-open > small:not(.operation-hook-shadow-warning) {
   overflow: hidden;
   color: var(--dos-muted);
   line-height: 1.1;
@@ -88,6 +92,15 @@
 
 .operation-hook-title {
   color: var(--dos-bright);
+}
+
+.operation-hook-shadow-warning {
+  display: block;
+  padding: .35em .45em;
+  border: 1px dotted currentColor;
+  color: var(--dos-bright);
+  line-height: 1.25;
+  white-space: normal;
 }
 
 .operation-hook-order {

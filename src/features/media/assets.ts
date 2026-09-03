@@ -6,9 +6,15 @@ import type {
   MediaAssetPresentation,
 } from "./model";
 
+export type MediaAssetContentSource = "database" | "repository" | "missing";
+
 export type MediaAssetDescriptor = MediaAsset & {
   /** Runtime-only browser handle. Never persisted into project data. */
   url: string;
+  /** Where the playable/renderable content actually comes from. */
+  contentSource: MediaAssetContentSource;
+  /** False means metadata exists but there is no content that the player can use. */
+  available: boolean;
   editable: boolean;
 };
 

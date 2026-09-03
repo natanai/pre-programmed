@@ -1,5 +1,4 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
-import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
@@ -17,21 +16,6 @@ function routeDimension(value: string | undefined) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
 }
 
-function mediaCreateRoute(kind: "audio" | "image"): AuthorTaskRoute {
-  if (kind === "image") return {
-    type: "feature",
-    feature: "media",
-    workspace: "image-create",
-    data: { resourceTask: "media-image" },
-  };
-  return {
-    type: "feature",
-    feature: "media",
-    workspace: "asset",
-    data: { kind, resourceTask: `media-${kind}` },
-  };
-}
-
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
   describeTask(route, snapshot) {
@@ -41,7 +25,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "image-create") return "New image";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
       const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
-      return asset?.name || (route.workspace === "vector-asset" ? "New vector" : `New ${route.data?.kind === "image" ? "image" : "sound"}`);
+      return asset?.name || (route.workspace === "vector-asset" ? "New vector" : "Repository Media");
     }
     if (route.workspace === "synth-sound") {
       const sound = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
@@ -64,7 +48,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         id: sound.id,
         value: sound.id,
         label: sound.label || sound.key || "Untitled sound",
-        detail: sound.key,
+        detail: `${sound.key} · D1 synth`,
       })),
       createRoute: () => ({
         type: "feature",
@@ -79,24 +63,80 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         data: { soundId: resource.id, resourceTask: "synth-sound" },
       }),
     },
-    ...(["audio", "image"] as const).map((kind) => ({
-      kind: `media-${kind}`,
-      label: kind === "audio" ? "Sound" : "Image",
-      pluralLabel: kind === "audio" ? "Sounds" : "Images",
-      list: (snapshot: Parameters<typeof configuredAssetStore.list>[0]) => configuredAssetStore.list(snapshot, kind).map((asset) => ({
-        id: asset.id,
-        value: asset.id,
-        label: asset.name,
-        detail: `${asset.mimeType} · ${asset.defaultPresentation}`,
-      })),
-      createRoute: () => mediaCreateRoute(kind),
-      editRoute: (resource: { id: string }) => ({
-        type: "feature" as const,
+    {
+      // Reference-only union used by the generic Play sound effect. The effect
+      // does not need to know which storage/rendering implementation owns it.
+      kind: "media-sound",
+      label: "Sound",
+      pluralLabel: "Sounds",
+      searchable: false,
+      list: (snapshot) => [
+        ...snapshot.synthSounds.map((sound) => ({
+          id: sound.id,
+          value: sound.id,
+          label: sound.label || sound.key || "Untitled sound",
+          detail: "synth · D1",
+        })),
+        ...configuredAssetStore.list(snapshot, "audio")
+          .filter((asset) => asset.available && asset.contentSource === "repository")
+          .map((asset) => ({
+            id: asset.id,
+            value: asset.id,
+            label: asset.name,
+            detail: `${asset.mimeType} · repository file`,
+          })),
+      ],
+      createRoute: () => ({
+        type: "feature",
+        feature: "media",
+        workspace: "synth-sound",
+        data: { soundId: "new", resourceTask: "media-sound" },
+      }),
+    },
+    {
+      kind: "media-audio",
+      label: "Audio File",
+      pluralLabel: "Audio Files",
+      list: (snapshot) => configuredAssetStore.list(snapshot, "audio")
+        .filter((asset) => asset.available && asset.contentSource === "repository")
+        .map((asset) => ({
+          id: asset.id,
+          value: asset.id,
+          label: asset.name,
+          detail: `${asset.mimeType} · repository file`,
+        })),
+      editRoute: (resource) => ({
+        type: "feature",
         feature: "media",
         workspace: "asset",
-        data: { kind, assetId: resource.id, resourceTask: `media-${kind}` },
+        data: { kind: "audio", assetId: resource.id, resourceTask: "media-audio" },
       }),
-    })),
+    },
+    {
+      kind: "media-image",
+      label: "Image",
+      pluralLabel: "Images",
+      list: (snapshot) => configuredAssetStore.list(snapshot, "image")
+        .filter((asset) => asset.available)
+        .map((asset) => ({
+          id: asset.id,
+          value: asset.id,
+          label: asset.name,
+          detail: `${asset.mimeType} · ${asset.contentSource === "database" ? "D1 generated" : "repository file"}`,
+        })),
+      createRoute: () => ({
+        type: "feature",
+        feature: "media",
+        workspace: "image-create",
+        data: { resourceTask: "media-image" },
+      }),
+      editRoute: (resource) => ({
+        type: "feature",
+        feature: "media",
+        workspace: "asset",
+        data: { kind: "image", assetId: resource.id, resourceTask: "media-image" },
+      }),
+    },
   ],
   terminalShortcuts: [
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
@@ -112,8 +152,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
         data: { assetId, kind },
       })}
-      onNewAsset={(kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { kind } })}
-      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "vector-asset", data: { kind: "image" } })}
+      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "image-create" })}
       onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
     />;
 
@@ -151,7 +190,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         snapshot={context.snapshot}
         kind={kind}
         initial={initial}
-        authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}
         onSave={saveResource}
@@ -209,7 +247,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       const sound = soundId === "new"
         ? undefined
         : context.snapshot.synthSounds.find((candidate) => candidate.id === soundId);
-      const resourceTask = route.data?.resourceTask === "synth-sound";
+      const resourceTask = route.data?.resourceTask;
       return <SynthEditor
         snapshot={context.snapshot}
         initial={sound}
@@ -219,7 +257,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
             const operation = operations.find((candidate) => candidate.type === "synth.upsert");
             if (operation?.type === "synth.upsert") context.completeTask({
               type: "resource",
-              kind: "synth-sound",
+              kind: resourceTask,
               id: operation.sound.id,
               value: operation.sound.id,
               label: operation.sound.label || operation.sound.key || "Untitled sound",

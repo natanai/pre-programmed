@@ -53,7 +53,10 @@ export function SynthEditor({ snapshot, initial, onSave, onCancel, setWorkspaceD
   const [saving, setSaving] = useState(false);
   const dirty = useMemo(() => JSON.stringify(draft) !== baseline, [baseline, draft]);
   const validationErrors = useMemo(() => validateSynth(draft), [draft]);
-  const usages = initial ? referencesTo(snapshot, "synth-sound", initial.id) : [];
+  const usages = initial ? [
+    ...referencesTo(snapshot, "synth-sound", initial.id),
+    ...referencesTo(snapshot, "media-sound", initial.id),
+  ] : [];
   const sequenceLength = synthSequenceLength(draft);
 
   useEffect(() => {

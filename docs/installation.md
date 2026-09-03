@@ -4,7 +4,7 @@ The supported goal is:
 
 > fork or clone → connect the installation's own persistence/runtime → enter Author mode → build the game without ordinary engine-source edits
 
-Cloudflare Worker/D1 support is bundled for hosted installations. Local-only use does not require a Cloudflare account. Optional binary object storage is not a prerequisite for the engine.
+Cloudflare Worker/D1 support is bundled for hosted installations. Local-only use does not require a Cloudflare account. Ordinary file Media is version-controlled with the game rather than requiring a separate blob-storage service.
 
 ## 1. Fork or clone
 
@@ -32,7 +32,6 @@ The setup helper prepares installation-local configuration such as:
 
 - Worker name;
 - D1 database name;
-- optional blob bucket name;
 - ignored `wrangler.jsonc`;
 - `.env.local` API/base-path values.
 
@@ -46,27 +45,35 @@ For a Cloudflare-hosted installation, authenticate Wrangler and create the D1 da
 npx wrangler d1 create YOUR_DATABASE_NAME --binding DB --update-config
 ```
 
-D1 stores mutable project data and supported textual Media content such as Author-created SVG.
+D1 stores mutable project data, synth definitions, and generated textual Media content such as Author-created SVG.
 
-## 3. Optional binary blob storage
+## 3. Add file Media through the repository
 
-Binary upload storage is optional.
+Audio, conventional images, and other file Media belong under:
 
-The bundled Cloudflare adapter can use R2. To enable it, create a bucket and configure the `ASSET_CONTENT` binding through setup or the installation's ignored `wrangler.jsonc`.
-
-```sh
-npx wrangler r2 bucket create YOUR_BUCKET_NAME
+```text
+public/assets/
 ```
 
-Without a blob provider:
+Each file should have a neighboring `.asset.json` identity sidecar. For example:
 
-- the engine still deploys and plays;
-- text/game authoring works;
-- SVG/vector authoring works through D1 text storage;
-- repository Media works;
-- binary hosted uploads report that blob storage is not configured.
+```text
+public/assets/audio/door-creak.ogg
+public/assets/audio/door-creak.ogg.asset.json
+```
 
-Feature/project data must continue to reference stable Media IDs/content keys rather than provider URLs.
+```json
+{
+  "id": "your-stable-media-id",
+  "name": "Door creak"
+}
+```
+
+`npm run generate:assets` indexes these files into the generated Media manifest. The production build runs that step automatically.
+
+Authored rules reference the stable Media ID, never the repository path. This keeps gameplay data portable even when a file is renamed or reorganized.
+
+Synths and the small SVG/vector tools created inside Author mode do **not** need repository files: their authored definitions/content remain D1-backed.
 
 ## 4. Configure Author access
 
@@ -125,20 +132,19 @@ Optional installation overrides:
 PRE_PROGRAMMED_WORKER_NAME
 PRE_PROGRAMMED_D1_DATABASE_NAME
 PRE_PROGRAMMED_D1_DATABASE_ID
-PRE_PROGRAMMED_ASSET_BUCKET_NAME
 PRE_PROGRAMMED_API_ORIGIN
 ```
 
 The workflow:
 
 1. installs dependencies and generates repository Media metadata;
-2. prepares temporary Worker configuration;
+2. prepares temporary Worker/D1 configuration;
 3. deploys the Worker and captures its reported deployment URL;
 4. builds the client against that installation-specific API URL, unless a custom API override is configured;
-5. verifies the selected API and initialized project;
+5. verifies the selected API, initialized project, and Media persistence contract;
 6. publishes GitHub Pages.
 
-When `PRE_PROGRAMMED_ASSET_BUCKET_NAME` is unset, R2 is not required or bound.
+There is no binary object-store setup step. File Media ships with the repository and generated Media stays in D1.
 
 ## 7. Run locally with no Cloudflare account
 
@@ -146,7 +152,7 @@ When `PRE_PROGRAMMED_ASSET_BUCKET_NAME` is unset, R2 is not required or bound.
 npm run local
 ```
 
-Local mode uses the same Worker/schema/runtime with local D1 state and no R2 binding.
+Local mode uses the same Worker/schema/runtime with local D1 state. Repository Media is served by the local client build.
 
 See [`local-runtime.md`](local-runtime.md) for details.
 
@@ -169,12 +175,12 @@ npm run verify
 
 A hosted installation should also satisfy:
 
-1. `/api/health` reports healthy project persistence and configured Author readiness as expected;
+1. `/api/health` reports `mediaGeneratedPersistence: "d1"` and `mediaFilePersistence: "repository"`;
 2. `/api/project/snapshot` returns an initialized project;
 3. Author login succeeds with the installation's key;
 4. an Author edit survives reload;
-5. Author-created SVG content can be saved/fetched without blob storage;
-6. if a blob provider is configured, binary hosted content survives redeploy.
+5. Author-created SVG content can be saved/fetched through D1;
+6. a repository audio file with a stable sidecar ID can be selected by `play sound` and survives redeploy without any database binary upload.
 
 ## What belongs to an installation
 
@@ -185,6 +191,6 @@ Installation-specific state includes:
 - Author key;
 - hosted API origin;
 - hosting/base-path configuration;
-- optional blob-provider configuration.
+- repository Media files and their stable identity sidecars.
 
-These details are platform configuration, not feature behavior. A developer should be able to replace platform adapters without rewriting authored game references or feature logic.
+These details are platform configuration or game content, not feature behavior. A developer should be able to replace platform adapters without rewriting authored game references or feature logic.

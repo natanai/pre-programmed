@@ -5,8 +5,9 @@ import { assetUrl } from "../../data/assets";
 import { ApiError, apiUrl } from "../cloudflare/http";
 
 const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((asset) => [asset.id, asset] as const));
+const DATABASE_MEDIA_TYPES = new Set(["image/svg+xml"]);
 
-function hostedContentUrl(contentKey: string) {
+function databaseContentUrl(contentKey: string) {
   return apiUrl(`/api/media/content/${encodeURIComponent(contentKey)}`);
 }
 
@@ -32,14 +33,17 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 /**
- * Browser content port. Repository files and API-hosted content intentionally
- * collapse to the same URL-producing boundary. The API may resolve a contentKey
- * from D1 text storage, an optional blob adapter, or another future provider;
- * callers never persist those locations into project data.
+ * Browser Media content boundary.
+ *
+ * - contentKey means Author-generated textual Media stored in D1.
+ * - no contentKey means a version-controlled file discovered from public/assets.
+ *
+ * Binary files are deliberately not uploaded through this port. Authors add
+ * those to the repository, while synth definitions live directly in project D1.
  */
 export const configuredAssetContentStore = {
   urlFor(asset: Pick<MediaAsset, "id" | "contentKey">) {
-    if (asset.contentKey) return hostedContentUrl(asset.contentKey);
+    if (asset.contentKey) return databaseContentUrl(asset.contentKey);
     const repositoryPath = repositoryEntryByAssetId.get(asset.id)?.runtimePath;
     return repositoryPath ? assetUrl(repositoryPath) : "";
   },
@@ -61,26 +65,31 @@ export const configuredAssetContentStore = {
   },
 
   async upload(authorization: string, contentKey: string, content: Blob) {
+    const contentType = (content.type || "application/octet-stream").split(";", 1)[0].toLowerCase();
+    if (!DATABASE_MEDIA_TYPES.has(contentType)) {
+      throw new Error("Only Author-generated SVG content is stored in D1. Add audio and other file media under public/assets with an .asset.json sidecar.");
+    }
     const response = await fetch(apiUrl(`/api/author/media/content/${encodeURIComponent(contentKey)}`), {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${authorization}`,
-        "Content-Type": content.type || "application/octet-stream",
+        "Content-Type": contentType,
       },
       body: content,
     });
-    if (!response.ok) await responseError(response, `Asset upload failed (${response.status}).`);
+    if (!response.ok) await responseError(response, `Generated asset save failed (${response.status}).`);
   },
 
   async fetch(asset: Pick<MediaAsset, "id" | "contentKey">) {
     const url = this.urlFor(asset);
-    if (!url) throw new Error("This asset has no available content yet.");
+    if (!url) throw new Error("This asset has no available content. Add its repository file or repair the Media reference.");
     const response = await fetch(url, { cache: "no-store" });
     if (!response.ok) await responseError(response, `Asset content unavailable (${response.status}).`);
     return response.blob();
   },
 
   async exportAsset(asset: MediaAssetDescriptor) {
+    if (!asset.available) throw new Error("Missing Media content cannot be exported.");
     const content = await this.fetch(asset);
     downloadBlob(content, asset.name);
     const sidecarName = `${asset.name}.asset.json`;
