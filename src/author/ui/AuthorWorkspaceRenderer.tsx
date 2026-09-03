@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
+import "./authorUiControls.css";
 
 function labelClass(mode: "auto" | "always" | "sr-only" = "auto") {
   return mode === "sr-only" ? "author-ui-sr-only" : `author-ui-label author-ui-label-${mode}`;
