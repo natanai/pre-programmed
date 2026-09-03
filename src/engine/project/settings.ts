@@ -38,10 +38,11 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
 
 type SnapshotLike = Omit<
   ProjectSnapshot,
-  "settings" | "stateGroups" | "bodyBackgrounds" | "startingBodyBackgroundId"
+  "settings" | "stateGroups" | "items" | "bodyBackgrounds" | "startingBodyBackgroundId"
 > & {
   settings?: unknown;
   stateGroups?: ProjectSnapshot["stateGroups"];
+  items?: unknown;
   bodyBackgrounds?: unknown;
   startingBodyBackgroundId?: unknown;
 };
