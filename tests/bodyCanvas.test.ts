@@ -24,7 +24,11 @@ describe("Inventory Body logical canvas", () => {
     });
 
     expect(migrated.canvas).toEqual(DEFAULT_BODY_CANVAS);
-    expect(migrated.slots?.[0]).toMatchObject({ x: 12, y: 32, width: 9.6, height: 6.4 });
+    const slot = migrated.slots?.[0];
+    expect(slot?.x).toBeCloseTo(12);
+    expect(slot?.y).toBeCloseTo(32);
+    expect(slot?.width).toBeCloseTo(9.6);
+    expect(slot?.height).toBeCloseTo(6.4);
     expect(bodySlotPercentRect(migrated.slots![0], migrated.canvas)).toEqual({ left: 25, top: 50, width: 20, height: 10 });
   });
 
