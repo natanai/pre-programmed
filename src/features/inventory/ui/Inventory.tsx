@@ -7,12 +7,14 @@ import { executeOperation, formatOperationOutput, type OperationRequest } from "
 import { itemLayout } from "../runtime";
 import "./inventory.css";
 
-export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
+export function Inventory({ snapshot, state, onState, onOutput, onEvents, onEditItem }: {
   snapshot: ProjectSnapshot;
   state: PlayState;
   onState: (state: PlayState) => void;
   onOutput: (text: string) => void;
   onEvents: (events: EffectEvent[]) => void;
+  /** Author-only route into the same structured Item editor used everywhere else. */
+  onEditItem?: (itemId: string) => void;
 }) {
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const selectedEntry = selected?.kind === "item" ? state.inventory.find((entry) => entry.instanceId === selected.id) : undefined;
@@ -34,7 +36,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
     const asset = item.assetId ? configuredAssetStore.resolve(snapshot, item.assetId) : null;
     return <button
       type="button"
-      className={`inventory-item${selected?.id === entry.instanceId ? " is-selected" : ""}`}
+      className={`inventory-v2-item${selected?.id === entry.instanceId ? " is-selected" : ""}`}
       style={style}
       key={entry.instanceId}
       onClick={() => setSelected({ kind: "item", id: entry.instanceId })}
@@ -52,24 +54,27 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
   return <div className="inventory-player-surface">
     <div className="inventory-primary-container">
       {gridPresentation ? <>
-        <div
-          className="inventory-grid-v2"
-          style={{ "--inventory-columns": gridPresentation.columns, "--inventory-rows": gridPresentation.rows } as CSSProperties}
-        >
-          {Array.from({ length: gridPresentation.columns * gridPresentation.rows }, (_, index) => {
-            const x = index % gridPresentation.columns;
-            const y = Math.floor(index / gridPresentation.columns);
-            return <button type="button" className="inventory-cell" key={`${x}:${y}`} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => {
-              if (selected?.kind === "item") operate({ operation: "move", target: selected, placement: { x, y } });
-            }} />;
-          })}
-          {state.inventory.map((entry) => {
-            const position = state.inventoryPositions[entry.instanceId];
-            if (!position) return null;
-            const layout = itemLayout(snapshot, entry.itemId);
-            return itemButton(entry, { gridColumn: `${position.x + 1} / span ${layout.width}`, gridRow: `${position.y + 1} / span ${layout.height}` });
-          })}
+        <div className="inventory-grid-viewport" role="region" aria-label={`${gridPresentation.columns} by ${gridPresentation.rows} inventory grid`} tabIndex={0}>
+          <div
+            className="inventory-grid-v2"
+            style={{ "--inventory-columns": gridPresentation.columns, "--inventory-rows": gridPresentation.rows } as CSSProperties}
+          >
+            {Array.from({ length: gridPresentation.columns * gridPresentation.rows }, (_, index) => {
+              const x = index % gridPresentation.columns;
+              const y = Math.floor(index / gridPresentation.columns);
+              return <button type="button" className="inventory-v2-cell" key={`${x}:${y}`} aria-label={`Inventory cell ${x + 1}, ${y + 1}`} onClick={() => {
+                if (selected?.kind === "item") operate({ operation: "move", target: selected, placement: { x, y } });
+              }} />;
+            })}
+            {state.inventory.map((entry) => {
+              const position = state.inventoryPositions[entry.instanceId];
+              if (!position) return null;
+              const layout = itemLayout(snapshot, entry.itemId);
+              return itemButton(entry, { gridColumn: `${position.x + 1} / span ${layout.width}`, gridRow: `${position.y + 1} / span ${layout.height}` });
+            })}
+          </div>
         </div>
+        <small className="inventory-grid-note">GRID {gridPresentation.columns} × {gridPresentation.rows} · CELL SIZE IS FIXED · SCROLL TO VIEW</small>
         {outsideGrid.length ? <div className="inventory-outside-grid">
           <small>CARRIED OUTSIDE THE GRID</small>
           {outsideGrid.map((entry) => itemButton(entry))}
@@ -81,6 +86,7 @@ export function Inventory({ snapshot, state, onState, onOutput, onEvents }: {
       <strong>{selectedItem.name || selectedItem.key}</strong>
       {selectedItem.description ? <p>{selectedItem.description}</p> : null}
       <div className="operation-buttons">
+        {onEditItem ? <button type="button" onClick={() => onEditItem(selectedItem.id)}>[EDIT]</button> : null}
         {(selectedItem.operations ?? []).filter((operation) => operation !== "move").map((operation) => <button type="button" key={operation} onClick={() => operate({ operation, target: { kind: "item", id: selectedEntry.instanceId } })}>[{operation.toUpperCase()}]</button>)}
       </div>
       {gridPresentation ? <small>To move this item, tap its destination cell.</small> : null}

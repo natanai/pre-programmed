@@ -15,7 +15,14 @@ export const inventoryPlayerWorkspace = defineAuthorWorkspace({
   createDraft: () => ({}),
   buildSpec: ({ context }) => ({
     id: "inventory-player", title: "Inventory", context: `${context.playState.inventory.reduce((total, entry) => total + entry.quantity, 0)} held`,
-    blocks: [{ type: "custom", id: "inventory-player-control", role: "specialized-control", content: <Inventory snapshot={context.snapshot} state={context.playState} onState={context.runtime.updateState} onOutput={context.runtime.output} onEvents={context.runtime.events} /> }],
+    blocks: [{ type: "custom", id: "inventory-player-control", role: "specialized-control", content: <Inventory
+      snapshot={context.snapshot}
+      state={context.playState}
+      onState={context.runtime.updateState}
+      onOutput={context.runtime.output}
+      onEvents={context.runtime.events}
+      onEditItem={context.authorMode ? (itemId) => context.pushTask(itemRoute(itemId)) : undefined}
+    /> }],
   }),
 });
 
