@@ -14,14 +14,16 @@ Mobile and desktop use the same task model, draft state, controls, save semantic
 
 Data-first Author workspaces should express ordinary tasks through a small semantic vocabulary:
 
-- `field` — edit one value;
-- `choice` — choose one mutually exclusive path;
+- `field` — edit text or a numeric value;
+- `select` — choose one value from a conventional compact list;
+- `toggle` — turn one boolean option on or off;
+- `choice` — choose one mutually exclusive path, especially when the alternatives carry meaning or conditional content;
 - `section` — one root-level conceptual group;
 - `disclosure` — optional/advanced material without adding navigation depth;
 - `status` — validation or feedback;
 - `custom` — a specialized control that cannot reasonably be represented by ordinary primitives.
 
-A custom control may own specialized interaction such as a rule tree, inventory grid, sequencer, drawing surface, or resource results. It should not duplicate global task navigation, task headers, Author exit behavior, or persistence semantics.
+A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/selects/toggles, global task navigation, task headers, Author exit behavior, or persistence semantics.
 
 ## Finite visual hierarchy
 
