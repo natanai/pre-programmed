@@ -1,0 +1,73 @@
+name: Temporary live Author player validation
+
+on:
+  push:
+    branches: [restore-live-authoring-on-player-workspaces]
+
+permissions:
+  contents: write
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: restore-live-authoring-on-player-workspaces
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Wire Author bridge into live player workspaces
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/App.tsx')
+          text = path.read_text()
+          old = '''        <PlayerWorkspaceHost
+            request={playerWorkspace}
+            context={{
+              snapshot,
+              playState,
+              updateState: applyPlayerWorkspaceState,
+              output: showPlayerWorkspaceOutput,
+              events: handleEffectEvents,
+            }}
+            onNavigate={setPlayerWorkspace}
+            onClose={() => setPlayerWorkspace(null)}
+          />'''
+          new = '''        <PlayerWorkspaceHost
+            request={playerWorkspace}
+            context={{
+              snapshot,
+              playState,
+              updateState: applyPlayerWorkspaceState,
+              output: showPlayerWorkspaceOutput,
+              events: handleEffectEvents,
+              author: authorExperience ? {
+                openWorkspace: (feature, workspace, data) => authorTasks.openTask({
+                  type: "feature",
+                  feature,
+                  workspace,
+                  data,
+                }),
+              } : undefined,
+            }}
+            onNavigate={setPlayerWorkspace}
+            onClose={() => setPlayerWorkspace(null)}
+          />'''
+          if old not in text:
+              raise SystemExit('Expected PlayerWorkspaceHost block not found; refusing broad App rewrite.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
+      - name: Commit verified shell wiring and remove temporary workflow
+        run: |
+          rm .github/workflows/temporary-live-author-player-validation.yml
+          git config user.name "natanai"
+          git config user.email "109430106+natanai@users.noreply.github.com"
+          git add src/App.tsx .github/workflows/temporary-live-author-player-validation.yml
+          git commit -m "Keep player workspaces live and editable in Author mode"
+          git push origin HEAD:restore-live-authoring-on-player-workspaces
