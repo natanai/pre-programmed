@@ -114,8 +114,10 @@ export function renderAuthorFeatureWorkspace(
   }
 
   for (const feature of AUTHOR_FEATURES) {
-    const definition = feature.workspaces?.find((candidate) => candidate.matches(route));
-    if (definition) return <StructuredAuthorWorkspace definition={definition} route={route} context={context} />;
+    if (route.type === "feature") {
+      const definition = feature.workspaces?.find((candidate) => candidate.matches(route));
+      if (definition) return <StructuredAuthorWorkspace definition={definition} route={route} context={context} />;
+    }
 
     if (feature.renderWorkspace) {
       if (!LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS.has(feature.id)) {
