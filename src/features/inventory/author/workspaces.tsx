@@ -130,7 +130,12 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
     const usages = existing ? referencesTo(context.snapshot, "item", draft.id).filter((reference) => reference.ownerId !== draft.id) : [];
     const openEquipment = () => context.pushTask(equipmentPolicyRoute(draft), (result) => {
       const policy = equipmentPolicyFromResult(result);
-      if (policy) setDraft((current) => ({ ...current, ...policy }));
+      if (policy) setDraft((current) => ({
+        ...current,
+        equipmentPlacements: policy.equipmentPlacements,
+        equippedStorage: policy.equippedStorage === "slot" ? "slot" : "inventory",
+        equipOnGiveSlotKey: policy.equipOnGiveSlotKey,
+      }));
     });
 
     return {
