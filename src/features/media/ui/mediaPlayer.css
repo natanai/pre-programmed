@@ -103,7 +103,7 @@
   -webkit-user-drag: none;
 }
 
-.media-asset-viewer-scale img.is-grid32 {
+.media-asset-viewer-scale img.is-vector-grid {
   width: min(70vmin, 32rem);
   max-width: none;
   max-height: none;
