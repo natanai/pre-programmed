@@ -4,7 +4,6 @@ import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { VectorAssetEditor } from "./VectorAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
-import { mediaImageCreateWorkspace } from "./imageCreateWorkspace";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
@@ -22,7 +21,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "feature" || route.feature !== "media") return null;
     if (route.workspace === "assets") return "Media assets";
     if (route.workspace === "synth") return "Synth sounds";
-    if (route.workspace === "image-create") return "New image";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
       const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
       return asset?.name || (route.workspace === "vector-asset" ? "New vector" : "Repository Media");
@@ -38,7 +36,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   searchDocuments: [mediaSearchDocuments],
   tools: mediaAuthorTools,
   search: mediaAuthorSearch,
-  workspaces: [mediaImageCreateWorkspace],
   resources: [
     {
       kind: "synth-sound",
@@ -127,8 +124,8 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       createRoute: () => ({
         type: "feature",
         feature: "media",
-        workspace: "image-create",
-        data: { resourceTask: "media-image" },
+        workspace: "vector-asset",
+        data: { kind: "image", resourceTask: "media-image" },
       }),
       editRoute: (resource) => ({
         type: "feature",
@@ -152,7 +149,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
         data: { assetId, kind },
       })}
-      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "image-create" })}
+      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "vector-asset", data: { kind: "image" } })}
       onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
     />;
 
