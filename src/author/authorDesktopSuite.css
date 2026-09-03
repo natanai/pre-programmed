@@ -46,8 +46,8 @@
     margin-top: 0;
   }
 
-  /* AuthorWorkspaceHost is also used by player-facing workspaces such as
-   * Inventory, so dock geometry must remain explicitly scoped to Author mode. */
+  /* AuthorWorkspaceHost is Author-only; desktop geometry remains scoped
+   * to Author experience so player workspaces always use the player shell. */
   html[data-author-experience="true"] .author-workspace-layer {
     right: auto;
     width: var(--author-desktop-suite-width);

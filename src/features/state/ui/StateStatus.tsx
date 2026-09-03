@@ -19,12 +19,14 @@ function targetForEntry(entry: VisibleStateEntry): OperationTarget {
 export function StateStatus({
   snapshot,
   state,
+  initialGroupId,
   onState,
   onOutput,
   onEvents,
 }: {
   snapshot: ProjectSnapshot;
   state: PlayState;
+  initialGroupId?: string;
   onState: (state: PlayState) => void;
   onOutput: (text: string) => void;
   onEvents: (events: EffectEvent[]) => void;
@@ -33,7 +35,7 @@ export function StateStatus({
   const groups = useMemo(() => visibleStateGroups(snapshot, state, now), [snapshot, state, now]);
   const hasElapsedTime = groups.some(({ entries }) => entries.some((entry) =>
     entry.kind === "computed" && entry.definition.source === "elapsed_seconds"));
-  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(initialGroupId ?? null);
   const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
   const selectedGroup = groups.find(({ group }) => group.id === selectedGroupId) ?? null;
   const selectedEntry = selectedGroup?.entries.find(({ definition }) => definition.id === selectedEntryId) ?? null;

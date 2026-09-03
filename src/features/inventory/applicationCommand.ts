@@ -5,6 +5,6 @@ export const INVENTORY_APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCom
     operation: "inventory.open",
     label: "Open Inventory",
     description: "Open the player's inventory workspace.",
-    action: { type: "open-workspace", feature: "inventory", workspace: "inventory" },
+    action: { type: "open-player-workspace", feature: "inventory", workspace: "inventory" },
   },
 ];
