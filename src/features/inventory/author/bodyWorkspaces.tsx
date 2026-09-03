@@ -179,9 +179,12 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
       if (result?.type !== "capability" || result.capability !== "inventory.body-slot" || result.owner !== draft.bodyType.id) return;
       const value = resultObject(result.value);
       if (!value || typeof value.action !== "string" || typeof value.slotId !== "string") return;
-      setDraft((current) => {
-        const previous = (current.bodyType.slots ?? []).find((candidate) => candidate.id === value.slotId);
-        if (value.action === "remove") {
+
+      const action = value.action;
+      const slotId = value.slotId;
+      if (action === "remove") {
+        setDraft((current) => {
+          const previous = (current.bodyType.slots ?? []).find((candidate) => candidate.id === slotId);
           if (!previous) return current;
           return {
             ...current,
@@ -191,24 +194,31 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
               startingEquipment: (current.bodyType.startingEquipment ?? []).filter((assignment) => assignment.slotKey !== previous.key),
             },
           };
-        }
-        if (value.action !== "save"
-          || typeof value.key !== "string"
-          || typeof value.name !== "string"
-          || typeof value.x !== "number"
-          || typeof value.y !== "number"
-          || typeof value.width !== "number"
-          || typeof value.height !== "number"
-          || typeof value.startingItemId !== "string") return current;
-        const nextSlot: BodySlotDefinition = {
-          id: value.slotId,
-          key: value.key,
-          name: value.name,
-          x: value.x,
-          y: value.y,
-          width: value.width,
-          height: value.height,
-        };
+        });
+        return;
+      }
+
+      if (action !== "save"
+        || typeof value.key !== "string"
+        || typeof value.name !== "string"
+        || typeof value.x !== "number"
+        || typeof value.y !== "number"
+        || typeof value.width !== "number"
+        || typeof value.height !== "number"
+        || typeof value.startingItemId !== "string") return;
+
+      const nextSlot: BodySlotDefinition = {
+        id: slotId,
+        key: value.key,
+        name: value.name,
+        x: value.x,
+        y: value.y,
+        width: value.width,
+        height: value.height,
+      };
+      const startingItemId = value.startingItemId;
+      setDraft((current) => {
+        const previous = (current.bodyType.slots ?? []).find((candidate) => candidate.id === nextSlot.id);
         const oldKey = previous?.key ?? nextSlot.key;
         return {
           ...current,
@@ -219,7 +229,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
               : [...(current.bodyType.slots ?? []), nextSlot],
             startingEquipment: [
               ...(current.bodyType.startingEquipment ?? []).filter((assignment) => assignment.slotKey !== oldKey && assignment.slotKey !== nextSlot.key),
-              ...(value.startingItemId ? [{ slotKey: nextSlot.key, itemId: value.startingItemId }] : []),
+              ...(startingItemId ? [{ slotKey: nextSlot.key, itemId: startingItemId }] : []),
             ],
           },
         };
@@ -253,7 +263,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
               { value: "cover", label: "COVER", help: "Fill the canvas; image edges may be cropped." },
             ] },
             { type: "custom", id: "inventory-body-type-image", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.bodyType.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, assetId } }))} placeholder="none" /> },
-            { type: "status", id: "inventory-body-type-image-help", tone: "info", text: `Any Media image can be used. Creating an image here offers file upload or the scalable Vector maker. The ${DEFAULT_BODY_CANVAS.width}×${DEFAULT_BODY_CANVAS.height} Portrait vector preset matches the default Body canvas, but neither asset resolution nor Body shape is restricted to that size.` },
+            { type: "status", id: "inventory-body-type-image-help", tone: "info", text: `Any Media image can be used. Repository image files are selectable here; creating a new image opens the scalable Vector maker. The ${DEFAULT_BODY_CANVAS.width}×${DEFAULT_BODY_CANVAS.height} Portrait vector preset matches the default Body canvas, but neither asset resolution nor Body shape is restricted to that size.` },
           ],
         },
         {
