@@ -54,12 +54,14 @@ function bodyTypeValid(snapshot: ProjectSnapshot, bodyType: BodyBackgroundDefini
 }
 
 function newSlot(bodyType: BodyBackgroundDefinition) {
-  const count = (bodyType.slots ?? []).length + 1;
+  const usedKeys = new Set((bodyType.slots ?? []).map((slot) => slot.key));
+  let number = (bodyType.slots ?? []).length + 1;
+  while (usedKeys.has(`slot_${number}`)) number += 1;
   const width = Math.max(1, bodyType.canvas.width * .2);
   const height = Math.max(1, bodyType.canvas.height * .12);
   return {
     id: crypto.randomUUID(),
-    key: `slot_${count}`,
+    key: `slot_${number}`,
     name: "",
     x: (bodyType.canvas.width - width) / 2,
     y: (bodyType.canvas.height - height) / 2,
