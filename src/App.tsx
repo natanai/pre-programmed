@@ -911,6 +911,14 @@ export default function App() {
             updateState: applyPlayerWorkspaceState,
             output: showPlayerWorkspaceOutput,
             events: handleEffectEvents,
+            author: authorExperience ? {
+              openWorkspace: (feature, workspace, data) => authorTasks.openTask({
+                type: "feature",
+                feature,
+                workspace,
+                data,
+              }),
+            } : undefined,
           }}
           onNavigate={setPlayerWorkspace}
           onClose={() => setPlayerWorkspace(null)}
