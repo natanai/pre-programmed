@@ -151,4 +151,45 @@ describe("D1 migration safety", () => {
       database.close();
     }
   });
+
+  it("preserves Body slot placement while migrating percentages into logical coordinates", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const bodyCanvasMigration = migrations.find((migration) => migration.id === 31);
+    expect(bodyCanvasMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 31)) {
+        applyMigration(database, migration.sql);
+      }
+
+      database.exec(`
+        INSERT INTO inventory_body_backgrounds (id, name, slots_json)
+        VALUES (
+          'legacy-body',
+          'Legacy body',
+          '[{"id":"head","key":"head","name":"Head","x":25,"y":50,"width":20,"height":10}]'
+        );
+      `);
+
+      applyMigration(database, bodyCanvasMigration!.sql);
+
+      const row = database.prepare("SELECT canvas_json, slots_json FROM inventory_body_backgrounds WHERE id = 'legacy-body'").get() as {
+        canvas_json: string;
+        slots_json: string;
+      } | undefined;
+      expect(JSON.parse(row?.canvas_json ?? "null")).toEqual({ width: 48, height: 64, fit: "contain" });
+      expect(JSON.parse(row?.slots_json ?? "[]")[0]).toMatchObject({
+        id: "head",
+        key: "head",
+        name: "Head",
+        x: 12,
+        y: 32,
+        width: 9.6,
+        height: 6.4,
+      });
+    } finally {
+      database.close();
+    }
+  });
 });
