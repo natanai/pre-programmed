@@ -37,9 +37,12 @@ export function StateStatus({
   const selectedEntry = selectedGroup?.entries.find(({ definition }) => definition.id === selectedEntryId) ?? null;
 
   useEffect(() => {
+    const hasElapsedTime = groups.some(({ entries }) => entries.some((entry) =>
+      entry.kind === "computed" && entry.definition.source === "elapsed_seconds"));
+    if (!hasElapsedTime) return;
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [groups]);
 
   const operate = (entry: VisibleStateEntry, operation: OperationId) => {
     const execution = executeOperation(snapshot, state, { operation, target: targetForEntry(entry) });
