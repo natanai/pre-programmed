@@ -20,6 +20,33 @@ export type AuthorUiField = {
   inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
 };
 
+export type AuthorUiSelectOption = {
+  value: string;
+  label: string;
+};
+
+export type AuthorUiSelect = {
+  type: "select";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  value: string;
+  onChange: (value: string) => void;
+  options: AuthorUiSelectOption[];
+  help?: string;
+  disabled?: boolean;
+};
+
+export type AuthorUiToggle = {
+  type: "toggle";
+  id: string;
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  help?: string;
+  disabled?: boolean;
+};
+
 export type AuthorUiChoiceOption = {
   value: string;
   label: string;
@@ -77,6 +104,8 @@ export type AuthorUiStatus = {
 
 export type AuthorUiNode =
   | AuthorUiField
+  | AuthorUiSelect
+  | AuthorUiToggle
   | AuthorUiChoice
   | AuthorUiSection
   | AuthorUiDisclosure
