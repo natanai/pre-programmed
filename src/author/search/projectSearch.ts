@@ -92,7 +92,7 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         ...item.tags,
         ...(item.operations ?? []),
         JSON.stringify(item.hooks ?? []),
-        ...(item.equipmentSlotKeys ?? []),
+        ...(item.equipmentPlacements ?? []).flatMap((placement) => [placement.anchorSlotKey, ...placement.occupiedSlotKeys]),
         item.equippedStorage ?? "inventory",
         item.equipOnGiveSlotKey ?? "",
       ].join(" "),

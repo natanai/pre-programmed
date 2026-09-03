@@ -36,6 +36,8 @@ export type AuthorWorkspaceDefinition<TDraft> = {
   buildSpec: (build: AuthorWorkspaceBuildContext<TDraft>) => AuthorWorkspaceSpec;
   signature?: (draft: TDraft) => string;
   saveLabel?: string;
+  /** Feature-domain validity only; dirty/task state remains core-owned. */
+  canSave?: (build: AuthorWorkspaceBuildContext<TDraft>) => boolean;
   save?: (build: AuthorWorkspaceBuildContext<TDraft>) => Promise<AuthorWorkspaceSaveResult<TDraft>>;
 };
 
@@ -83,9 +85,10 @@ export function StructuredAuthorWorkspace<TDraft>({
     () => ({ route, context, draft, setDraft }),
     [context, draft, route],
   );
+  const validForSave = definition.canSave?.(build) ?? true;
 
   const save = useCallback(async () => {
-    if (!definition.save) return true;
+    if (!definition.save || !validForSave) return false;
     const result = await definition.save(build);
     if (!result.accepted) return false;
     const savedDraft = result.draft ?? build.draft;
@@ -94,7 +97,7 @@ export function StructuredAuthorWorkspace<TDraft>({
     context.setWorkspaceDirty(false);
     if (result.completion && context.hasParentTask) context.completeTask(result.completion);
     return true;
-  }, [build, context, definition, signature]);
+  }, [build, context, definition, signature, validForSave]);
 
   useEffect(() => {
     if (!definition.save) {
@@ -112,7 +115,7 @@ export function StructuredAuthorWorkspace<TDraft>({
       ...(definition.save ? [{
         id: "author-core-save",
         label: definition.saveLabel ?? "SAVE",
-        disabled: !dirty,
+        disabled: !dirty || !validForSave,
         onAction: () => { void save(); },
       }] : []),
       ...(context.hasParentTask ? [{

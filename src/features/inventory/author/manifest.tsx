@@ -12,6 +12,7 @@ import {
 } from "./ruleAdapters";
 import { inventoryProjectReferences } from "./references";
 import { BODY_WORKSPACES } from "./bodyWorkspaces";
+import { INVENTORY_EQUIPMENT_WORKSPACES } from "./equipmentWorkspaces";
 import { INVENTORY_WORKSPACES, inventoryRoute } from "./workspaces";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
@@ -27,6 +28,8 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
       const label = item?.name || item?.key || "New item";
       return operation ? `${label} · ${operation}` : label;
     }
+    if (route.workspace === "item-equipment") return `${route.data?.itemName || "Item"} · equipment`;
+    if (route.workspace === "item-equipment-placement") return `${route.data?.itemName || "Item"} · placement`;
     if (route.workspace === "body-type") {
       const bodyType = (snapshot.bodyBackgrounds ?? []).find((candidate) => candidate.id === route.data?.bodyTypeId);
       return bodyType?.name || "New body type";
@@ -54,7 +57,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
   references: [inventoryProjectReferences],
   tools: inventoryAuthorTools,
   search: inventoryAuthorSearch,
-  workspaces: [...INVENTORY_WORKSPACES, ...BODY_WORKSPACES],
+  workspaces: [...INVENTORY_WORKSPACES, ...INVENTORY_EQUIPMENT_WORKSPACES, ...BODY_WORKSPACES],
   resources: [
     {
       kind: "item",

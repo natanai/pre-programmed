@@ -6,6 +6,12 @@ import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
 import type { ItemDefinition } from "../model";
 import { Inventory } from "../ui/Inventory";
+import {
+  equipmentPolicyFromResult,
+  equipmentPolicyRoute,
+  equipmentSummary,
+  normalizeEquipmentPlacements,
+} from "./equipmentWorkspaces";
 import "./inventoryWorkspaces.css";
 
 const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
@@ -97,7 +103,7 @@ function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentSlotKeys: [], equippedStorage: "inventory",
+    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
     equipOnGiveSlotKey: null, tags: [], initialState: {}, hooks: [],
   };
 }
@@ -107,32 +113,30 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
   matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "item",
   createDraft: (route, context) => {
     const initial = route.data?.itemId ? context.snapshot.items.find((candidate) => candidate.id === route.data?.itemId) : undefined;
+    const item = structuredClone(initial ?? emptyItem());
     return {
-      ...structuredClone(initial ?? emptyItem()),
-      equipmentSlotKeys: [...(initial?.equipmentSlotKeys ?? [])],
-      equippedStorage: initial?.equippedStorage ?? "inventory",
-      equipOnGiveSlotKey: initial?.equipOnGiveSlotKey ?? null,
+      ...item,
+      equipmentPlacements: normalizeEquipmentPlacements(item.equipmentPlacements ?? []),
+      equippedStorage: item.equippedStorage ?? "inventory",
+      equipOnGiveSlotKey: item.equipOnGiveSlotKey ?? null,
     };
   },
+  canSave: ({ draft }) => Boolean(draft.name.trim()),
   buildSpec: ({ route, context, draft, setDraft }) => {
     const existing = context.snapshot.items.some((candidate) => candidate.id === draft.id);
-    const slotOptions = (() => {
-      const slots = new Map<string, Set<string>>();
-      for (const bodyType of context.snapshot.bodyBackgrounds ?? []) {
-        for (const slot of bodyType.slots ?? []) {
-          const labels = slots.get(slot.key) ?? new Set<string>();
-          labels.add(slot.name || slot.key);
-          slots.set(slot.key, labels);
-        }
-      }
-      return [...slots.entries()].map(([key, labels]) => ({ key, label: [...labels].join(" / ") }))
-        .sort((left, right) => left.label.localeCompare(right.label) || left.key.localeCompare(right.key));
-    })();
     const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
       (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
     ));
     const usages = existing ? referencesTo(context.snapshot, "item", draft.id).filter((reference) => reference.ownerId !== draft.id) : [];
-    const allowedGiveSlots = slotOptions.filter((slot) => !(draft.equipmentSlotKeys ?? []).length || (draft.equipmentSlotKeys ?? []).includes(slot.key));
+    const openEquipment = () => context.pushTask(equipmentPolicyRoute(draft), (result) => {
+      const policy = equipmentPolicyFromResult(result);
+      if (policy) setDraft((current) => ({
+        ...current,
+        equipmentPlacements: policy.equipmentPlacements,
+        equippedStorage: policy.equippedStorage === "slot" ? "slot" : "inventory",
+        equipOnGiveSlotKey: policy.equipOnGiveSlotKey,
+      }));
+    });
 
     return {
       id: "inventory-item",
@@ -167,32 +171,13 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
           ],
         },
         {
-          type: "disclosure",
+          type: "section",
           id: "inventory-item-equipment",
           label: "Equipment",
-          summary: (draft.equipmentSlotKeys ?? []).length ? `${draft.equipmentSlotKeys?.length} restricted slot${draft.equipmentSlotKeys?.length === 1 ? "" : "s"}` : "Any compatible body slot",
+          summary: equipmentSummary(draft, context.snapshot),
           children: [
-            { type: "choice", id: "inventory-item-equipped-storage", label: "While equipped", value: draft.equippedStorage ?? "inventory", presentation: "segmented", onChange: (equippedStorage) => setDraft((current) => ({ ...current, equippedStorage: equippedStorage as "inventory" | "slot" })), options: [
-              { value: "inventory", label: "STAYS IN INVENTORY" },
-              { value: "slot", label: "BODY SLOT ONLY", help: "Frees its inventory-grid cells while equipped." },
-            ] },
-            { type: "select", id: "inventory-item-equip-on-give", label: "When given to player", value: draft.equipOnGiveSlotKey ?? "", onChange: (equipOnGiveSlotKey) => setDraft((current) => ({ ...current, equipOnGiveSlotKey: equipOnGiveSlotKey || null })), options: [
-              { value: "", label: "keep in general inventory" },
-              ...allowedGiveSlots.map((slot) => ({ value: slot.key, label: `equip to ${slot.label}` })),
-            ] },
-            { type: "custom", id: "inventory-item-compatible-slots", role: "specialized-control", content: <div className="inventory-slot-compatibility-control">
-              <button type="button" aria-pressed={(draft.equipmentSlotKeys ?? []).length === 0} onClick={() => setDraft((current) => ({ ...current, equipmentSlotKeys: [] }))}>[ANY SLOT]</button>
-              {slotOptions.map((slot) => <label key={slot.key}>
-                <input type="checkbox" checked={(draft.equipmentSlotKeys ?? []).includes(slot.key)} onChange={(event) => setDraft((current) => ({
-                  ...current,
-                  equipmentSlotKeys: event.target.checked
-                    ? [...(current.equipmentSlotKeys ?? []), slot.key]
-                    : (current.equipmentSlotKeys ?? []).filter((key) => key !== slot.key),
-                  equipOnGiveSlotKey: !event.target.checked && current.equipOnGiveSlotKey === slot.key ? null : current.equipOnGiveSlotKey,
-                }))} /> {slot.label} <small>{slot.key}</small>
-              </label>)}
-              {!slotOptions.length ? <small>No body slots are authored yet. This item will remain compatible with future slots.</small> : null}
-            </div> },
+            { type: "status", id: "inventory-item-equipment-help", tone: "info", text: "Equipment is authored as placements: choose an anchor, then reserve every body slot the item occupies there." },
+            { type: "custom", id: "inventory-item-equipment-open", role: "specialized-control", content: <div className="author-actions"><button type="button" onClick={openEquipment}>[CONFIGURE EQUIPMENT]</button></div> },
           ],
         },
         {
@@ -215,6 +200,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
             />,
           }],
         },
+        ...(!draft.name.trim() ? [{ type: "status" as const, id: "inventory-item-name-required", tone: "warning" as const, text: "Give the item a name before saving." }] : []),
       ],
       actions: existing ? [{
         id: "inventory-item-delete",
@@ -231,13 +217,21 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
     };
   },
   async save({ route, context, draft }) {
-    if (!draft.name.trim()) return { accepted: false };
-    const item = {
+    const name = draft.name.trim();
+    if (!name) return { accepted: false };
+    const equipmentPlacements = normalizeEquipmentPlacements(draft.equipmentPlacements ?? []);
+    const equipOnGiveSlotKey = equipmentPlacements.length && draft.equipOnGiveSlotKey
+      && !equipmentPlacements.some((placement) => placement.anchorSlotKey === draft.equipOnGiveSlotKey)
+      ? null
+      : draft.equipOnGiveSlotKey ?? null;
+    const item: ItemDefinition = {
       ...draft,
-      equipmentSlotKeys: [...(draft.equipmentSlotKeys ?? [])],
+      name,
+      equipmentPlacements,
+      equipOnGiveSlotKey,
       key: resolveAuthorKey({
         override: draft.key,
-        source: draft.name,
+        source: name,
         existingKeys: context.snapshot.items.filter((candidate) => candidate.id !== draft.id).map((candidate) => candidate.key),
         fallback: "item",
       }),
