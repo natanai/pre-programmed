@@ -5,6 +5,7 @@ import {
   compatibleBodySlots,
   entryOccupiesInventoryGrid,
   equipInventoryEntry,
+  occupiedEquipmentSlotKeys,
   unequipInventoryEntry,
 } from "./runtime";
 
@@ -37,11 +38,18 @@ function equipResult(
   const slot = slotKey ? slots.find((candidate) => candidate.key === slotKey) : slots.length === 1 ? slots[0] : undefined;
   if (!slot) return { accepted: false, state };
   const nextState = equipInventoryEntry(snapshot, state, instanceId, slot.key);
-  if (nextState === state) return { accepted: false, state, responseText: "No inventory space for the displaced item." };
+  if (nextState === state) return { accepted: false, state, responseText: "No inventory space for displaced equipment." };
+  const nextEntry = nextState.inventory.find((candidate) => candidate.instanceId === instanceId);
+  const occupiedNames = occupiedEquipmentSlotKeys(nextEntry ?? entry)
+    .filter((key) => key !== slot.key)
+    .map((key) => (snapshot.bodyBackgrounds ?? [])
+      .find((bodyType) => bodyType.id === nextState.bodyBackgroundId)?.slots?.find((candidate) => candidate.key === key)?.name ?? key);
   return {
     accepted: true,
     state: nextState,
-    responseText: `Equipped to ${slot.name}.`,
+    responseText: occupiedNames.length
+      ? `Equipped to ${slot.name}; also occupies ${occupiedNames.join(", ")}.`
+      : `Equipped to ${slot.name}.`,
   };
 }
 
@@ -125,7 +133,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
     }
 
     if (operation === "unequip") {
-      if (!entry.equippedSlotKey) return { accepted: false, state };
+      if (!entry.equipment) return { accepted: false, state };
       const nextState = unequipInventoryEntry(snapshot, state, entry.instanceId);
       return nextState === state
         ? { accepted: false, responseText: "No inventory space to unequip.", state }
