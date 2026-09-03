@@ -5,6 +5,11 @@ export const inventoryPlayerWorkspaceContribution: PlayerWorkspaceContribution =
   feature: "inventory",
   workspace: "inventory",
   label: "Inventory",
+  navigation: () => [{
+    id: "inventory",
+    label: "Inventory",
+    request: { feature: "inventory", workspace: "inventory" },
+  }],
   render: (_request, context) => <Inventory
     snapshot={context.snapshot}
     state={context.playState}
