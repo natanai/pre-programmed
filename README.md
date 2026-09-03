@@ -66,7 +66,7 @@ The normal authoring loop is:
 4. Preview or return to play.
 5. Exercise the authored behavior through the real runtime.
 
-Author mode can work with narrative nodes and responses, characters and locations, variables, inventory, operations, commands, Media, project settings, and other feature-owned resources installed in the build.
+Author mode can work with narrative nodes and responses, characters and locations, State variables and player groups, inventory and body equipment, operations, commands, Media, project settings, and other feature-owned resources installed in the build.
 
 The shared Author UI rules are documented in [`docs/author-ui-grammar.md`](docs/author-ui-grammar.md).
 
@@ -78,7 +78,11 @@ A node is a playable narrative state. Authored user input can select ordered out
 
 ### State and operations
 
-Variables and computed values provide reusable project state. Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
+State owns variables, computed values, and their optional player presentation. A State value may remain completely internal or appear in an author-named player group such as Attributes, Relationships, Reputation, or any game-specific category. Both groups and individual entries can use the ordinary condition system, so player-visible information can appear or disappear as the game changes.
+
+Inventory does not own or render generic State/status data; it owns carried items, the inventory grid, body types, slots, and equipment behavior.
+
+Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
 
 ### Commands
 
