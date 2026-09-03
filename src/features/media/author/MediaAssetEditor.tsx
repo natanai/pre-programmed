@@ -3,13 +3,27 @@ import type { AuthorPersistResult } from "../../../author/persistence/authorProj
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { createMediaAsset } from "../assets";
-import type { MediaAsset, MediaAssetKind } from "../model";
+import { mediaAssetDimensions, type MediaAsset, type MediaAssetKind } from "../model";
 import { configuredAssetContentStore, configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import "./mediaAuthor.css";
 
 const MAX_ASSET_BYTES = 20_000_000;
 
-function imageDimensions(file: Blob) {
+function svgDimensions(text: string) {
+  const viewBox = text.match(/\bviewBox=["']([^"']+)["']/i)?.[1]?.trim().split(/[\s,]+/).map(Number);
+  if (viewBox?.length === 4 && viewBox.every(Number.isFinite) && viewBox[2] > 0 && viewBox[3] > 0) {
+    return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
+  }
+  const width = Number.parseFloat(text.match(/\bwidth=["']([^"']+)["']/i)?.[1] ?? "");
+  const height = Number.parseFloat(text.match(/\bheight=["']([^"']+)["']/i)?.[1] ?? "");
+  return Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0 ? { width, height } : null;
+}
+
+async function imageDimensions(file: File) {
+  if (file.type.toLowerCase() === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
+    const dimensions = svgDimensions(await file.text());
+    if (dimensions) return dimensions;
+  }
   return new Promise<{ width: number; height: number } | null>((resolve) => {
     const url = URL.createObjectURL(file);
     const image = new Image();
@@ -45,6 +59,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
   const hasProjectMetadata = Boolean(initial && snapshot.mediaAssets.some((asset) => asset.id === initial.id));
   const repositoryMetadata = draft ? configuredAssetContentStore.repositoryMetadata(draft.id) : null;
   const repositoryAvailable = Boolean(repositoryMetadata);
+  const dimensions = draft ? mediaAssetDimensions(draft) : null;
 
   const previewUrl = useMemo(() => {
     if (pendingContent) return URL.createObjectURL(pendingContent);
@@ -158,13 +173,18 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
 
   const lifecycleLabel = repositoryAvailable ? "RESET TO REPOSITORY" : "DELETE";
   const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
+  const dimensionText = dimensions
+    ? dimensions.unit === "px"
+      ? `${dimensions.width}×${dimensions.height} px`
+      : `${dimensions.width}×${dimensions.height} viewBox units`
+    : "";
 
   return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} ASSET · {draft?.name ?? "NEW"}</span></header>
     <div className="author-panel-body">
       <p className="field-help">Assets keep a stable project ID. File bytes live behind the Media content store, so authored references never contain repository paths or data URLs.</p>
       <label>FILE <input type="file" accept={kind === "audio" ? "audio/*" : "image/*"} onChange={(event) => void chooseFile(event.target.files?.[0])} /></label>
-      <small>Files are currently limited to 20 MB.</small>
+      <small>Files are currently limited to 20 MB. Image dimensions are descriptive metadata, not a required authoring size.</small>
       {draft ? <>
         <label>NAME <input value={draft.name} onChange={(event) => setDraft({ ...draft, name: event.target.value })} /></label>
         {kind === "image" ? <label>DEFAULT PLAYER PRESENTATION
@@ -177,7 +197,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, authorToken, onSave,
         <div className="media-asset-preview">
           {previewUrl ? kind === "audio" ? <audio controls src={previewUrl} /> : <img src={previewUrl} alt="Asset preview" /> : <span>CONTENT NEEDS TO BE RE-UPLOADED.</span>}
         </div>
-        <small>{draft.mimeType} · {draft.byteLength} bytes{draft.intrinsicWidth && draft.intrinsicHeight ? ` · intrinsic ${draft.intrinsicWidth}×${draft.intrinsicHeight}` : ""}</small>
+        <small>{draft.mimeType} · {draft.byteLength} bytes{dimensionText ? ` · ${dimensionText}` : ""}</small>
       </> : null}
       {error ? <div className="author-message" role="alert">{error}</div> : null}
     </div>

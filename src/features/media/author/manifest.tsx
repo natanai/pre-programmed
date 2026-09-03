@@ -9,6 +9,12 @@ import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
 import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 
+function routeDimension(value: string | undefined) {
+  if (!value) return undefined;
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export const mediaAuthorFeature: AuthorFeatureManifest = {
   id: "media",
   describeTask(route, snapshot) {
@@ -17,7 +23,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "synth") return "Synth sounds";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
       const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
-      return asset?.name || (route.workspace === "vector-asset" ? "New 32×32 vector" : `New ${route.data?.kind === "image" ? "image" : "sound"}`);
+      return asset?.name || (route.workspace === "vector-asset" ? "New vector" : `New ${route.data?.kind === "image" ? "image" : "sound"}`);
     }
     if (route.workspace === "synth-sound") {
       const sound = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
@@ -89,7 +95,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
         type: "feature",
         feature: "media",
-        workspace: authoringMode === "grid32" ? "vector-asset" : "asset",
+        workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
         data: { assetId, kind },
       })}
       onNewAsset={(kind) => context.pushTask({ type: "feature", feature: "media", workspace: "asset", data: { kind } })}
@@ -118,7 +124,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         return result;
       };
 
-      if (kind === "image" && initial?.authoringMode === "grid32") return <VectorAssetEditor
+      if (kind === "image" && initial?.authoringMode === "vector-grid") return <VectorAssetEditor
         snapshot={context.snapshot}
         initial={initial}
         authorToken={context.authorToken}
@@ -146,6 +152,8 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       return <VectorAssetEditor
         snapshot={context.snapshot}
         initial={initial}
+        initialWidth={routeDimension(route.data?.vectorWidth)}
+        initialHeight={routeDimension(route.data?.vectorHeight)}
         authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}

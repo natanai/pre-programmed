@@ -106,9 +106,9 @@ The default engine can resolve content from:
 
 The included Cloudflare adapter can use R2 for optional binary storage, but R2 is not part of the Media domain contract and is not required for text authoring, SVG authoring, repository Media, or the core engine.
 
-### 32×32 vector authoring
+### Vector asset authoring
 
-The Media tool includes a 32×32 vector drawing surface. The grid is an authoring coordinate system, not a fixed display size. Generated SVG uses a `0 0 32 32` viewBox and can scale cleanly in the player.
+The Media tool includes a logical-grid vector drawing surface with reusable canvas presets and custom rectangular dimensions. The default presets are 32×32 Square / Sprite and 48×64 Portrait. These numbers are authoring units, not rendered pixel requirements. Generated SVG uses the chosen logical dimensions as its viewBox and scales cleanly in the player.
 
 ### Repository Media
 
