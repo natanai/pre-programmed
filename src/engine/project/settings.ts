@@ -3,8 +3,12 @@ import {
   normalizeCommandsProjectSettings,
   type CommandsProjectSettingsSlice,
 } from "../../features/commands/projectSettings";
+import {
+  normalizeInventoryMutationOperation,
+  normalizeInventoryProjectSlice,
+} from "../../features/inventory/projectNormalization";
 import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
-import type { ProjectSnapshot } from "./model";
+import type { ProjectMutation, ProjectSnapshot } from "./model";
 
 export type ProjectSettings = {
   /** Player-facing terminal prompt for this game/project. */
@@ -32,9 +36,14 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
   };
 }
 
-type SnapshotLike = Omit<ProjectSnapshot, "settings" | "stateGroups"> & {
+type SnapshotLike = Omit<
+  ProjectSnapshot,
+  "settings" | "stateGroups" | "bodyBackgrounds" | "startingBodyBackgroundId"
+> & {
   settings?: unknown;
   stateGroups?: ProjectSnapshot["stateGroups"];
+  bodyBackgrounds?: unknown;
+  startingBodyBackgroundId?: unknown;
 };
 
 /**
@@ -46,6 +55,18 @@ export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapsho
   return {
     ...snapshot,
     ...normalizeStateProjectSlice(snapshot),
+    ...normalizeInventoryProjectSlice(snapshot),
     settings: normalizeProjectSettings(snapshot.settings),
+  };
+}
+
+/**
+ * Normalize only historical payloads recovered from the browser mutation queue.
+ * Newly authored operations already use current feature contracts.
+ */
+export function normalizeProjectMutationForReplay(mutation: ProjectMutation): ProjectMutation {
+  return {
+    ...mutation,
+    operations: mutation.operations.map(normalizeInventoryMutationOperation),
   };
 }
