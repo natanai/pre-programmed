@@ -126,7 +126,7 @@ function scrollableWorkspaceElements(layer: HTMLElement) {
   const candidates = [
     activeSurface,
     ...activeSurface.querySelectorAll<HTMLElement>(
-      ".author-panel-body, .definition-detail-scroll, .definition-index-scroll, .author-quick-find-panel, .inventory-grid-viewport",
+      ".author-panel-body, .definition-detail-scroll, .definition-index-scroll, .author-quick-find-panel",
     ),
   ];
   return candidates.filter((element, index, all) =>
@@ -148,7 +148,6 @@ export function AuthorWorkspaceHost({
   leaveConfirmation,
   onConfirmLeave,
   onCancelLeave,
-  requestClose,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
@@ -156,8 +155,6 @@ export function AuthorWorkspaceHost({
   leaveConfirmation: AuthorLeaveConfirmation | null;
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
-  /** Master Author/application workspace exit, rendered in this portal's stacking context. */
-  requestClose: () => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -264,10 +261,10 @@ export function AuthorWorkspaceHost({
               <span className="author-workspace-back-wide">[← BACK]</span>
               <span className="author-workspace-back-compact">[BACK]</span>
             </button> : null}
-            {shared.authorMode && activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
-            {shared.authorMode ? <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
+            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+            <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
-            </div> : null}
+            </div>
             <button className="author-workspace-stack-toggle" type="button" aria-expanded={stackOpen} onClick={() => setStackOpen((open) => !open)}>[STACK]</button>
           </div>
 
@@ -324,7 +321,6 @@ export function AuthorWorkspaceHost({
           </section>
         </div> : null}
       </div>
-      {!previewing ? <button className="work-surface-close" type="button" aria-label="Close workspace and return to play" onClick={requestClose}>[X]</button> : null}
       {previewing ? <button type="button" className="author-preview-resume" onClick={resumeEditing}>[RESUME EDITING]</button> : null}
     </>,
     document.body,

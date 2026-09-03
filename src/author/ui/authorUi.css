@@ -219,42 +219,6 @@
   min-width: 0;
 }
 
-.author-ui-resource-list {
-  display: grid;
-  min-width: 0;
-  border: 1px solid var(--dos-line);
-}
-
-.author-ui-resource-list > button {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: .7em;
-  min-width: 0;
-  min-height: 2.9em;
-  padding: .45em .6em !important;
-  border: 0 !important;
-  border-bottom: 1px dotted var(--dos-line) !important;
-  background: #000 !important;
-  color: var(--dos-text) !important;
-  font: inherit;
-  text-align: left;
-}
-
-.author-ui-resource-list > button:last-of-type {
-  border-bottom: 0 !important;
-}
-
-.author-ui-resource-list > button small,
-.author-ui-resource-empty {
-  color: var(--dos-muted);
-}
-
-.author-ui-resource-empty {
-  padding: .65em;
-  line-height: 1.3;
-}
-
 .author-ui-workspace-actions {
   min-height: 3em;
   align-items: center;
@@ -293,8 +257,7 @@ html[data-keyboard-open="true"] .author-ui-choice {
   gap: .3em;
 }
 
-html[data-keyboard-open="true"] .author-ui-choice-options > button,
-html[data-keyboard-open="true"] .author-ui-resource-list > button {
+html[data-keyboard-open="true"] .author-ui-choice-options > button {
   min-height: 2.55em;
   padding-block: .3em !important;
 }
@@ -312,8 +275,7 @@ html[data-keyboard-open="true"] .author-ui-section-heading small {
 }
 
 @media (max-width: 640px), (pointer: coarse) {
-  .author-ui-choice-options > button,
-  .author-ui-resource-list > button {
+  .author-ui-choice-options > button {
     min-height: 3.1em;
   }
 

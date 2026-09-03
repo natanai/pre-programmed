@@ -1,0 +1,321 @@
+.definitions-panel {
+  container-type: inline-size;
+}
+
+.definitions-panel > header {
+  min-width: 0;
+}
+
+.definition-header-context {
+  color: var(--dos-muted);
+  font-size: .9em;
+  white-space: nowrap;
+}
+
+.definitions-panel-body {
+  display: grid;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.definitions-master-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.definitions-panel-body.is-editing .definitions-master-pane {
+  display: none;
+}
+
+.definition-master-controls {
+  position: relative;
+  z-index: 2;
+  padding-bottom: .65em;
+  border-bottom: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.definition-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 0 0 .65em;
+  border: 1px solid var(--dos-line);
+}
+
+.definition-tabs > button {
+  min-width: 0;
+  min-height: 2.75em;
+  padding: .45em .35em !important;
+  border-right: 1px dotted var(--dos-line) !important;
+  color: var(--dos-muted) !important;
+  text-align: center;
+}
+
+.definition-tabs > button:last-child {
+  border-right: 0 !important;
+}
+
+.definition-tabs > button[aria-pressed="true"] {
+  background: #111 !important;
+  color: var(--dos-bright) !important;
+}
+
+.definition-search-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .55em;
+}
+
+.definition-search-row > label {
+  margin: 0;
+  color: var(--dos-muted);
+}
+
+.definition-search-control {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: stretch;
+  min-width: 0;
+  border: 1px solid #555;
+}
+
+.definition-search-control > input {
+  min-width: 0;
+  min-height: 2.75em;
+  margin: 0;
+  padding: .45em .55em;
+  border: 0;
+  appearance: none;
+}
+
+.definition-result-count {
+  display: flex;
+  align-items: center;
+  padding: 0 .55em;
+  border-left: 1px dotted var(--dos-line);
+  color: var(--dos-muted);
+  white-space: nowrap;
+}
+
+.definition-search-clear {
+  min-width: 2.75em;
+  min-height: 2.75em;
+  padding: 0 !important;
+  border-left: 1px dotted var(--dos-line) !important;
+  color: var(--dos-text) !important;
+}
+
+.definition-index-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: .65em 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.definition-index-section {
+  display: grid;
+  gap: .65em;
+}
+
+.definition-list {
+  display: grid;
+  border: 1px solid var(--dos-line);
+}
+
+.definition-list > .definition-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .75em;
+  width: 100%;
+  min-height: 3.25em;
+  padding: .5em .6em !important;
+  border-bottom: 1px dotted var(--dos-line) !important;
+  color: var(--dos-text);
+  text-align: left;
+}
+
+.definition-list > .definition-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.definition-row[aria-current="true"] {
+  background: #111 !important;
+  color: var(--dos-bright) !important;
+}
+
+.definition-row-copy {
+  display: grid;
+  min-width: 0;
+  gap: .15em;
+}
+
+.definition-row-copy strong {
+  overflow: hidden;
+  color: var(--dos-bright);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.definition-row-copy small {
+  overflow: hidden;
+  color: var(--dos-muted);
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.definition-row-arrow {
+  color: var(--dos-muted);
+  font-size: 1.35em;
+}
+
+.definition-index-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .45em .9em;
+  padding-top: .6em;
+  border-top: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.definition-index-actions > button {
+  min-height: 2.75em;
+  padding: .35em .45em !important;
+}
+
+.entity-index {
+  gap: 1em;
+}
+
+.definition-kind-group {
+  display: grid;
+  gap: .35em;
+}
+
+.definition-kind-group h3 {
+  margin: 0;
+  color: var(--dos-muted);
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.definition-empty {
+  padding: .8em .25em;
+  color: var(--dos-muted);
+}
+
+.definitions-detail-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.definition-back {
+  width: fit-content;
+  min-height: 2.75em;
+  margin: 0 0 .45em;
+  padding: .35em .45em !important;
+  color: var(--dos-muted) !important;
+}
+
+.definition-detail-scroll {
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  padding: .2em 0 .6em;
+  scroll-padding-block: .5em 4em;
+  -webkit-overflow-scrolling: touch;
+}
+
+.focused-definition-form {
+  display: grid;
+  gap: .1em;
+  margin-top: 0;
+}
+
+.definition-detail-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65em 1em;
+  padding-top: .6em;
+}
+
+.definition-detail-footer > button {
+  min-height: 2.75em;
+  padding: .35em .45em !important;
+}
+
+@container (min-width: 680px) {
+  .definitions-panel-body.is-editing {
+    grid-template-columns: minmax(15em, .85fr) minmax(0, 1.35fr);
+  }
+
+  .definitions-panel-body.is-editing .definitions-master-pane {
+    display: grid;
+    padding-right: .75em;
+    border-right: 1px solid var(--dos-line);
+  }
+
+  .definitions-detail-pane {
+    padding-left: .75em;
+  }
+
+  .definition-back {
+    display: none;
+  }
+}
+
+@media (max-width: 700px), (pointer: coarse) {
+  .definition-header-context {
+    display: none;
+  }
+
+  .definition-tabs > button,
+  .definition-search-control > input,
+  .definition-search-clear,
+  .definition-list > .definition-row,
+  .definition-index-actions > button,
+  .definition-back,
+  .definition-detail-footer > button {
+    font-size: max(16px, 1em);
+  }
+
+  .definition-tabs > button,
+  .definition-search-control > input,
+  .definition-search-clear,
+  .definition-index-actions > button,
+  .definition-back,
+  .definition-detail-footer > button {
+    min-height: 2.75em;
+  }
+
+  .definition-list > .definition-row {
+    min-height: 3.5em;
+  }
+
+  .definition-search-row {
+    grid-template-columns: 1fr;
+    gap: .25em;
+  }
+
+  .definition-search-row > label {
+    display: none;
+  }
+
+  .focused-definition-form input,
+  .focused-definition-form textarea,
+  .focused-definition-form select {
+    font-size: max(16px, 1em);
+  }
+}

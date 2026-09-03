@@ -1,29 +1,40 @@
 import { upsertById } from "../../engine/project/mutationHelpers";
 import type { MutationHandler } from "../../engine/project/mutationRuntime";
 
-const itemUpsert: MutationHandler = (snapshot, operation) => {
+const upsertItem: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "item.upsert") return;
   snapshot.items = upsertById(snapshot.items, operation.item);
 };
-const itemDelete: MutationHandler = (snapshot, operation) => {
+
+const deleteItem: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "item.delete") return;
   snapshot.items = snapshot.items.filter((item) => item.id !== operation.id);
-  snapshot.itemInventoryLayouts = snapshot.itemInventoryLayouts.filter((layout) => layout.itemId !== operation.id);
+  snapshot.bodyBackgrounds = (snapshot.bodyBackgrounds ?? []).map((bodyType) => ({
+    ...bodyType,
+    startingEquipment: (bodyType.startingEquipment ?? []).filter((entry) => entry.itemId !== operation.id),
+  }));
 };
-const layoutUpsert: MutationHandler = (snapshot, operation) => {
-  if (operation.type !== "itemInventoryLayout.upsert") return;
-  snapshot.itemInventoryLayouts = snapshot.itemInventoryLayouts.some((layout) => layout.itemId === operation.layout.itemId)
-    ? snapshot.itemInventoryLayouts.map((layout) => layout.itemId === operation.layout.itemId ? operation.layout : layout)
-    : [...snapshot.itemInventoryLayouts, operation.layout];
+
+const upsertBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.upsert") return;
+  snapshot.bodyBackgrounds = upsertById(snapshot.bodyBackgrounds ?? [], operation.background);
 };
-const presentationUpsert: MutationHandler = (snapshot, operation) => {
-  if (operation.type !== "inventoryPresentation.upsert") return;
-  snapshot.inventoryPresentation = structuredClone(operation.presentation);
+
+const deleteBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.delete") return;
+  snapshot.bodyBackgrounds = (snapshot.bodyBackgrounds ?? []).filter((background) => background.id !== operation.id);
+  if (snapshot.startingBodyBackgroundId === operation.id) snapshot.startingBodyBackgroundId = null;
+};
+
+const setStartingBodyBackground: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "bodyBackground.starting") return;
+  snapshot.startingBodyBackgroundId = operation.id;
 };
 
 export const INVENTORY_MUTATION_HANDLERS: Readonly<Record<string, MutationHandler>> = {
-  "item.upsert": itemUpsert,
-  "item.delete": itemDelete,
-  "itemInventoryLayout.upsert": layoutUpsert,
-  "inventoryPresentation.upsert": presentationUpsert,
+  "item.upsert": upsertItem,
+  "item.delete": deleteItem,
+  "bodyBackground.upsert": upsertBodyBackground,
+  "bodyBackground.delete": deleteBodyBackground,
+  "bodyBackground.starting": setStartingBodyBackground,
 };

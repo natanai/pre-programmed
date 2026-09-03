@@ -7,4 +7,5 @@ export type InventoryCondition =
 export type InventoryEffect =
   | { id: string; type: "give_item"; itemId: string; quantity: number }
   | { id: string; type: "remove_item"; itemId: string; quantity: number }
-  | { id: string; type: "set_item_state"; itemId: string; key: string; value: Value };
+  | { id: string; type: "set_item_state"; itemId: string; key: string; value: Value }
+  | { id: string; type: "set_body_background"; backgroundId: string };

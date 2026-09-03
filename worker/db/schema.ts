@@ -1,6 +1,11 @@
 import { WORKER_FEATURE_PERSISTENCE } from "../features/catalog";
 import type { WorkerMigration } from "./migrationContract";
 import { executeSqlScript, MIGRATION_SCRIPTS as HISTORICAL_MIGRATIONS } from "./migrations";
+import {
+  restorePreReplacementStateInventorySchema,
+  STATE_INVENTORY_ROLLBACK_ID,
+  STATE_INVENTORY_ROLLBACK_NAME,
+} from "./rollbackStateInventory";
 
 /**
  * Canonical runtime migration owner.
@@ -33,6 +38,18 @@ async function migrate(db: D1Database) {
 
   const applied = await db.prepare("SELECT id FROM schema_migrations ORDER BY id").all<{ id: number }>();
   const appliedIds = new Set(applied.results.map((row) => row.id));
+
+  // Production briefly ran the replacement State/Inventory migrations through
+  // schema 27. A raw source rollback would leave the restored runtime pointing at
+  // tables those migrations removed. Recover that known upgraded shape once,
+  // before the old feature persistence loads. Fresh installs never enter here.
+  if (appliedIds.has(27) && !appliedIds.has(STATE_INVENTORY_ROLLBACK_ID)) {
+    await restorePreReplacementStateInventorySchema(db);
+    await db.prepare("INSERT INTO schema_migrations (id, name) VALUES (?, ?)")
+      .bind(STATE_INVENTORY_ROLLBACK_ID, STATE_INVENTORY_ROLLBACK_NAME)
+      .run();
+    appliedIds.add(STATE_INVENTORY_ROLLBACK_ID);
+  }
 
   for (const migration of migrationPlan()) {
     if (appliedIds.has(migration.id)) continue;
