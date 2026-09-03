@@ -140,7 +140,7 @@ try {
       intrinsicWidth: 32,
       intrinsicHeight: 32,
       defaultPresentation: "inline",
-      authoringMode: "grid32",
+      authoringMode: "vector-grid",
     },
   }], "Local D1 SVG media persistence acceptance");
   const saved = await mutate(withMedia, token, [
