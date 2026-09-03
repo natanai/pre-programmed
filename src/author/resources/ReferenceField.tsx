@@ -47,6 +47,17 @@ export function ReferenceField({
       if (result?.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
     });
   };
+  const openOrCreate = () => {
+    if (open) {
+      closeChooser();
+      return;
+    }
+    if (!value && !options.length && resources.canCreate(kind)) {
+      createResource();
+      return;
+    }
+    setOpen(true);
+  };
 
   return <div className={`author-reference-field${open ? " is-open" : ""}`} data-resource-kind={kind}>
     <button
@@ -54,7 +65,7 @@ export function ReferenceField({
       className="author-reference-trigger"
       aria-expanded={open}
       aria-controls={chooserId}
-      onClick={() => open ? closeChooser() : setOpen(true)}
+      onClick={openOrCreate}
     >
       <span className="author-reference-kind">{label.toUpperCase()}</span>
       <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
