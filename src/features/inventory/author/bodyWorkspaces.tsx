@@ -1,7 +1,7 @@
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import type { ProjectSnapshot } from "../../../engine/project/model";
+import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import {
   DEFAULT_BODY_CANVAS,
   normalizeBodyTypeDefinition,
@@ -23,6 +23,7 @@ type BodySlotTaskDraft = {
   ownerId: string;
   canvas: BodyCanvasDefinition;
   slot: BodySlotDefinition;
+  reservedKeys: string[];
   startingItemId: string;
   isNew: boolean;
 };
@@ -74,6 +75,7 @@ function bodySlotRoute(bodyType: BodyBackgroundDefinition, slot?: BodySlotDefini
     ownerId: bodyType.id,
     canvas: bodyType.canvas,
     slot: nextSlot,
+    reservedKeys: (bodyType.slots ?? []).filter((candidate) => candidate.id !== nextSlot.id).map((candidate) => candidate.key),
     startingItemId,
     isNew: !slot,
   };
@@ -93,6 +95,7 @@ function readSlotTask(routeData: Record<string, string> | undefined): BodySlotTa
         ownerId: value.ownerId,
         canvas: value.canvas,
         slot: value.slot,
+        reservedKeys: Array.isArray(value.reservedKeys) ? value.reservedKeys.filter((key): key is string => typeof key === "string") : [],
         startingItemId: value.startingItemId ?? "",
         isNew: Boolean(value.isNew),
       };
@@ -104,6 +107,7 @@ function readSlotTask(routeData: Record<string, string> | undefined): BodySlotTa
     ownerId: "",
     canvas: { ...DEFAULT_BODY_CANVAS },
     slot: { id: crypto.randomUUID(), key: "", name: "", x: 0, y: 0, width: 1, height: 1 },
+    reservedKeys: [],
     startingItemId: "",
     isNew: true,
   };
@@ -292,9 +296,9 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
         .filter((assignment) => (draft.bodyType.slots ?? []).some((slot) => slot.key.trim() === assignment.slotKey.trim()))
         .map((assignment) => ({ ...assignment, slotKey: assignment.slotKey.trim() })),
     });
-    const operations = [{ type: "bodyBackground.upsert" as const, background: bodyType }];
-    if (draft.starting && context.snapshot.startingBodyBackgroundId !== bodyType.id) operations.push({ type: "bodyBackground.starting" as const, id: bodyType.id });
-    else if (!draft.starting && context.snapshot.startingBodyBackgroundId === bodyType.id) operations.push({ type: "bodyBackground.starting" as const, id: null });
+    const operations: MutationOperation[] = [{ type: "bodyBackground.upsert", background: bodyType }];
+    if (draft.starting && context.snapshot.startingBodyBackgroundId !== bodyType.id) operations.push({ type: "bodyBackground.starting", id: bodyType.id });
+    else if (!draft.starting && context.snapshot.startingBodyBackgroundId === bodyType.id) operations.push({ type: "bodyBackground.starting", id: null });
     const result = await context.persist(operations, `${(context.snapshot.bodyBackgrounds ?? []).some((candidate) => candidate.id === bodyType.id) ? "Change" : "Create"} body type ${bodyType.name}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     const savedDraft = { ...draft, bodyType };
@@ -318,7 +322,8 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
       (item.startingQuantity ?? 0) > 0
       && (!(item.equipmentSlotKeys ?? []).length || (item.equipmentSlotKeys ?? []).includes(slot.key)),
     );
-    const slotValid = Boolean(slot.key.trim() && slot.name.trim() && slotFitsBodyCanvas(slot, draft.canvas));
+    const uniqueKey = Boolean(slot.key.trim() && !draft.reservedKeys.includes(slot.key.trim()));
+    const slotValid = Boolean(uniqueKey && slot.name.trim() && slotFitsBodyCanvas(slot, draft.canvas));
     return {
       id: "inventory-body-slot",
       title: slot.name || (draft.isNew ? "New body slot" : slot.key || "Body slot"),
@@ -331,7 +336,18 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
           importance: "primary",
           children: [
             { type: "field", id: "inventory-body-slot-name", label: "Name", value: slot.name, autoFocus: draft.isNew, onChange: (name) => setDraft((current) => ({ ...current, slot: { ...current.slot, name } })) },
-            { type: "field", id: "inventory-body-slot-key", label: "Slot key", value: slot.key, help: "Reuse the same key on another Body Type when equipment should stay equipped across that change.", onChange: (key) => setDraft((current) => ({ ...current, slot: { ...current.slot, key: key.toLowerCase().replace(/[^a-z0-9_-]+/g, "_") } })) },
+            { type: "field", id: "inventory-body-slot-key", label: "Slot key", value: slot.key, help: "Reuse the same key on another Body Type when equipment should stay equipped across that change.", onChange: (key) => setDraft((current) => {
+              const nextKey = key.toLowerCase().replace(/[^a-z0-9_-]+/g, "_");
+              const startingItem = context.snapshot.items.find((item) => item.id === current.startingItemId);
+              const staysCompatible = !startingItem
+                || !(startingItem.equipmentSlotKeys ?? []).length
+                || (startingItem.equipmentSlotKeys ?? []).includes(nextKey);
+              return {
+                ...current,
+                slot: { ...current.slot, key: nextKey },
+                startingItemId: staysCompatible ? current.startingItemId : "",
+              };
+            }) },
           ],
         },
         {
@@ -357,7 +373,8 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
             ...compatibleItems.map((item) => ({ value: item.id, label: `${item.name} · ${item.startingQuantity} starting` })),
           ],
         },
-        ...(!slotValid ? [{ type: "status" as const, id: "inventory-body-slot-error", tone: "error" as const, text: "Give the slot a name and key, and keep its geometry inside the Body canvas." }] : []),
+        ...(!uniqueKey ? [{ type: "status" as const, id: "inventory-body-slot-key-error", tone: "error" as const, text: "Use a unique, non-empty slot key within this Body Type." }] : []),
+        ...(!slotValid && uniqueKey ? [{ type: "status" as const, id: "inventory-body-slot-error", tone: "error" as const, text: "Give the slot a name and keep its geometry inside the Body canvas." }] : []),
       ],
       actions: !draft.isNew ? [{
         id: "inventory-body-slot-remove",
@@ -378,7 +395,7 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
       key: draft.slot.key.trim(),
       name: draft.slot.name.trim(),
     };
-    if (!draft.ownerId || !slot.key || !slot.name || !slotFitsBodyCanvas(slot, draft.canvas)) return { accepted: false };
+    if (!draft.ownerId || !slot.key || draft.reservedKeys.includes(slot.key) || !slot.name || !slotFitsBodyCanvas(slot, draft.canvas)) return { accepted: false };
     return {
       accepted: true,
       draft: { ...draft, slot },
