@@ -19,3 +19,15 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
+      - name: Audit superseded prototype residue
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -d src/features/status
+          test ! -d src/features/values
+          test ! -d src/features/equipment
+          ! grep -R -n -E 'DefinitionsPanel|BodyBackgroundEditor|ItemEditor|itemEditorDisclosure|INVENTORY / STATUS|inventory-definition-workspace|inventory-author-actions' src docs README.md
+          if grep -R -n 'showInStatus' src --exclude='projectNormalization.ts'; then
+            echo 'Unexpected legacy showInStatus reference outside the one-way cache normalizer.' >&2
+            exit 1
+          fi
