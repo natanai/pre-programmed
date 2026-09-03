@@ -9,20 +9,15 @@ import "./mediaAuthor.css";
 
 const MAX_ASSET_BYTES = 20_000_000;
 
-function svgDimensions(text: string) {
+function svgViewBoxDimensions(text: string) {
   const viewBox = text.match(/\bviewBox=["']([^"']+)["']/i)?.[1]?.trim().split(/[\s,]+/).map(Number);
-  if (viewBox?.length === 4 && viewBox.every(Number.isFinite) && viewBox[2] > 0 && viewBox[3] > 0) {
-    return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
-  }
-  const width = Number.parseFloat(text.match(/\bwidth=["']([^"']+)["']/i)?.[1] ?? "");
-  const height = Number.parseFloat(text.match(/\bheight=["']([^"']+)["']/i)?.[1] ?? "");
-  return Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0 ? { width, height } : null;
+  if (viewBox?.length !== 4 || !viewBox.every(Number.isFinite) || viewBox[2] <= 0 || viewBox[3] <= 0) return null;
+  return { width: Math.abs(viewBox[2]), height: Math.abs(viewBox[3]) };
 }
 
 async function imageDimensions(file: File) {
   if (file.type.toLowerCase() === "image/svg+xml" || file.name.toLowerCase().endsWith(".svg")) {
-    const dimensions = svgDimensions(await file.text());
-    if (dimensions) return dimensions;
+    return svgViewBoxDimensions(await file.text());
   }
   return new Promise<{ width: number; height: number } | null>((resolve) => {
     const url = URL.createObjectURL(file);
