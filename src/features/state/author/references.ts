@@ -8,18 +8,33 @@ function hookTargets(
 }
 
 export const stateProjectReferences: ProjectReferenceContribution = (snapshot, context) => [
-  ...snapshot.entities.flatMap((entity) => hookTargets(context, entity.hooks ?? []).map((target) => ({
+  ...snapshot.variables.flatMap((definition) => {
+    const route = { type: "feature" as const, feature: "state", workspace: "definitions", data: { resourceKind: "variable", resourceId: definition.id } };
+    const owner = { ownerKind: "variable", ownerId: definition.id, ownerLabel: definition.label || definition.key, route };
+    return [
+      ...hookTargets(context, definition.hooks).map((target) => ({ ...target, ...owner })),
+      ...(definition.playerPresentation ? [
+        { resourceKind: "state-group", resourceId: definition.playerPresentation.groupId, detail: "player presentation group", ...owner },
+        ...context.condition(definition.playerPresentation.visibleWhen).map((target) => ({ ...target, ...owner })),
+      ] : []),
+    ];
+  }),
+  ...snapshot.computedValues.flatMap((definition) => {
+    const route = { type: "feature" as const, feature: "state", workspace: "definitions", data: { resourceKind: "computed", resourceId: definition.id } };
+    const owner = { ownerKind: "computed", ownerId: definition.id, ownerLabel: definition.label || definition.key, route };
+    return [
+      ...hookTargets(context, definition.hooks).map((target) => ({ ...target, ...owner })),
+      ...(definition.playerPresentation ? [
+        { resourceKind: "state-group", resourceId: definition.playerPresentation.groupId, detail: "player presentation group", ...owner },
+        ...context.condition(definition.playerPresentation.visibleWhen).map((target) => ({ ...target, ...owner })),
+      ] : []),
+    ];
+  }),
+  ...snapshot.stateGroups.flatMap((group) => context.condition(group.visibleWhen).map((target) => ({
     ...target,
-    ownerKind: entity.type,
-    ownerId: entity.id,
-    ownerLabel: entity.name || entity.key,
-    route: { type: "feature" as const, feature: "state", workspace: "definitions", data: { resourceKind: entity.type, resourceId: entity.id } },
-  }))),
-  ...[...snapshot.variables, ...snapshot.computedValues].flatMap((definition) => hookTargets(context, definition.hooks).map((target) => ({
-    ...target,
-    ownerKind: "state",
-    ownerId: definition.id,
-    ownerLabel: definition.label || definition.key,
-    route: { type: "feature" as const, feature: "state", workspace: "definitions", data: { resourceId: definition.id } },
+    ownerKind: "state-group",
+    ownerId: group.id,
+    ownerLabel: group.label,
+    route: { type: "feature" as const, feature: "state", workspace: "definitions", data: { resourceKind: "state-group", resourceId: group.id } },
   }))),
 ];
