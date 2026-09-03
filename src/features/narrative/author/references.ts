@@ -18,7 +18,7 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
     return [
       ...(node.characterId ? [{ ...owner, resourceKind: "character", resourceId: node.characterId, detail: "node speaker" }] : []),
       ...(node.locationId ? [{ ...owner, resourceKind: "location", resourceId: node.locationId, detail: "node location" }] : []),
-      ...fromTargets(context.performance(node.performance), owner),
+      ...fromTargets(context.text(node.text), owner),
     ];
   }),
   ...snapshot.interactions.flatMap((interaction) => {
@@ -36,7 +36,7 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
         ...(outcome.destinationNodeId ? [{ ...owner, resourceKind: "node", resourceId: outcome.destinationNodeId, detail: `destination for ${outcome.label || "outcome"}` }] : []),
         ...fromTargets(context.condition(outcome.condition), owner),
         ...fromTargets(context.effects(outcome.effects), owner),
-        ...fromTargets(context.performance(outcome.responsePerformance), owner),
+        ...fromTargets(context.text(outcome.responseText), owner),
       ]),
     ];
   }),
