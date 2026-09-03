@@ -912,6 +912,7 @@ export default function App() {
             output: showPlayerWorkspaceOutput,
             events: handleEffectEvents,
           }}
+          onNavigate={setPlayerWorkspace}
           onClose={() => setPlayerWorkspace(null)}
         />
       </div>
