@@ -25,7 +25,7 @@ export function MediaAssetThumbnail({
 
   return <button
     type="button"
-    className={`media-inline-asset${asset.authoringMode === "grid32" ? " is-grid32" : ""}`}
+    className={`media-inline-asset${asset.authoringMode === "vector-grid" ? " is-vector-grid" : ""}`}
     aria-label={`Open ${asset.name}`}
     onPointerDown={(event) => event.stopPropagation()}
     onClick={onOpen}
@@ -114,7 +114,7 @@ export function MediaAssetViewer({
     <div className="media-asset-viewer-stage">
       <div className="media-asset-viewer-scale" style={{ transform: `scale(${zoom})` }}>
         <img
-          className={asset.authoringMode === "grid32" ? "is-grid32" : undefined}
+          className={asset.authoringMode === "vector-grid" ? "is-vector-grid" : undefined}
           src={asset.url}
           alt={asset.name}
         />
