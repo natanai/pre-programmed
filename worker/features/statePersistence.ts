@@ -42,6 +42,18 @@ const STATE_PRESENTATION_MIGRATION = {
     UPDATE computed_definitions
       SET player_group_id = 'legacy-status'
       WHERE show_in_status = 1 AND player_group_id IS NULL;
+
+    DROP TABLE IF EXISTS status_entries;
+    DROP TABLE IF EXISTS status_groups;
+    DROP TABLE IF EXISTS value_definitions;
+    DROP TABLE IF EXISTS derived_value_definitions;
+    DROP TABLE IF EXISTS inventory_item_layouts;
+    DROP TABLE IF EXISTS inventory_presentation;
+    DROP TABLE IF EXISTS equipment_item_rules;
+    DROP TABLE IF EXISTS equipment_settings;
+    DROP TABLE IF EXISTS equipment_body_types;
+
+    UPDATE project_meta SET schema_version = 29 WHERE id = 1;
   `,
 } as const;
 
