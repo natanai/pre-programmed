@@ -84,6 +84,14 @@ Inventory does not own or render generic State/status data; it owns carried item
 
 Feature-owned operations apply behavior to targets without moving target behavior into a central command system.
 
+### Inventory and Body Types
+
+A Body Type owns an explicit logical canvas plus semantic equipment slots. The default canvas is 48×64 with `contain` background fitting, but authors may use any positive canvas width and height and may choose `contain` or `cover`. Canvas numbers are layout units, not image-pixel requirements.
+
+Body slots are stored in that Body Type's logical coordinates. Stable slot keys—not screen positions—carry equipment meaning between Body Types, so a `head` or `left_hand` slot may move visually or use a different canvas while preserving authored equipment behavior. Player Inventory and Body authoring render the same slot geometry through the shared Inventory Body renderer.
+
+Body background art is an ordinary `media-image` reference. Inventory asks the Author resource system for an image rather than knowing how Media stores or creates it, so repository images, uploaded images, and Author-created vectors all use the same Body asset reference.
+
 ### Commands
 
 Project command grammar can map reusable wording to feature-owned targets and operations. Local scene aliases remain available for specific narrative interactions.
