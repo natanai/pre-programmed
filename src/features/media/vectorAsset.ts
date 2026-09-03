@@ -34,7 +34,10 @@ export function validateVectorGridSize(width: number, height: number) {
   return null;
 }
 
-export function emptyVectorDocument(width = DEFAULT_VECTOR_GRID_SIZE.width, height = DEFAULT_VECTOR_GRID_SIZE.height): VectorGridDocument {
+export function emptyVectorDocument(
+  width: number = DEFAULT_VECTOR_GRID_SIZE.width,
+  height: number = DEFAULT_VECTOR_GRID_SIZE.height,
+): VectorGridDocument {
   const error = validateVectorGridSize(width, height);
   if (error) throw new Error(error);
   return { width, height, cells: Array.from({ length: width * height }, () => null) };
