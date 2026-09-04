@@ -100,12 +100,15 @@ async function startLocalHost() {
   miniflare = new Miniflare({
     host: "127.0.0.1",
     port: 0,
-    modules: true,
-    scriptPath: resourcePath("worker.mjs"),
-    compatibilityDate: "2026-08-30",
-    bindings: { ADMIN_KEY: "local" },
-    d1Databases: { DB: "11111111-1111-4111-8111-111111111111" },
     resourcePersistencePath: dataRoot,
+    workers: [{
+      name: "pre-programmed-local",
+      modules: true,
+      scriptPath: resourcePath("worker.mjs"),
+      compatibilityDate: "2026-08-30",
+      bindings: { ADMIN_KEY: "local" },
+      d1Databases: { DB: "11111111-1111-4111-8111-111111111111" },
+    }],
   });
   await miniflare.ready;
 
