@@ -10,6 +10,12 @@
   min-height: 0;
 }
 
+.terminal-command-stack {
+  position: relative;
+  grid-row: 2;
+  min-width: 0;
+}
+
 .prompt-line {
   position: relative;
   top: auto;
@@ -17,6 +23,10 @@
   left: auto;
   grid-row: 2;
   transform: none;
+}
+
+.terminal-command-stack > .prompt-line {
+  grid-row: auto;
 }
 
 .terminal-lower {
@@ -61,6 +71,7 @@
 }
 
 .terminal-command-shell {
+  position: relative;
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -233,6 +244,14 @@
   -webkit-overflow-scrolling: touch;
 }
 
+.terminal-command-shell.menu-open .terminal-command-choices {
+  position: absolute;
+  z-index: 7;
+  top: 100%;
+  right: 0;
+  left: 0;
+}
+
 .terminal-command-choices button {
   min-height: 2em;
   margin: 0;
@@ -261,6 +280,37 @@
   background: #000;
   color: #fff !important;
   outline: 0;
+}
+
+.terminal-node-anchor {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  margin: .35em 0 0;
+  padding: .28em .45em;
+  border: 1px dashed var(--dos-text);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright);
+  font: inherit;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+button.terminal-node-anchor {
+  cursor: pointer;
+}
+
+button.terminal-node-anchor:hover,
+button.terminal-node-anchor:focus-visible,
+button.terminal-node-anchor:active {
+  background: #000;
+  color: var(--dos-bright) !important;
+  outline: 1px dotted var(--dos-bright);
+  outline-offset: -4px;
 }
 
 @media (max-width: 700px), (pointer: coarse) {
