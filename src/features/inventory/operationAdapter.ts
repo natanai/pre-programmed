@@ -1,3 +1,4 @@
+import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { OperationArguments, OperationId } from "../operations/model";
 import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
 import {
@@ -66,6 +67,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       interactable: definition.interactable ?? true,
       operations: definition.operations ?? DEFAULT_ITEM_OPERATIONS,
       hooks: definition.hooks ?? [],
+      authorSource: authoredSource("item", definition.id),
     };
   },
   applySuccessfulHook({ snapshot, state, target, operation, arguments: argumentsValue, placement }) {
