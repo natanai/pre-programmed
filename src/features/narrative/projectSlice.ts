@@ -11,5 +11,6 @@ export type NarrativePlayStateSlice = {
   traversal: string[];
   attempts: Record<string, number>;
   visitedNodeIds: string[];
+  /** Per-run show/hide overrides for suggested player choices; never controls typed recognition. */
   interactionVisibility: Record<string, boolean>;
 };

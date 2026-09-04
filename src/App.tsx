@@ -51,6 +51,7 @@ import { effectEventsForTextCue } from "./engine/presentation/textCueEventCatalo
 import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
 import { buildGraphIndex, notationForNode } from "./features/narrative/graph";
+import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
 import { interpolateText } from "./features/narrative/interpolation";
 import { applyOperations } from "./engine/project/mutations";
 import {
@@ -184,8 +185,8 @@ export default function App() {
   const fallbackInput = snapshot && playState
     ? snapshot.interactions.find((interaction) => interaction.sourceNodeId === playState.currentNodeId && interaction.matchMode === "fallback")
     : undefined;
-  const playerChoiceInputs = playState
-    ? currentInputs.filter((interaction) => playState.interactionVisibility[interaction.id] !== false)
+  const playerChoiceInputs = snapshot && playState
+    ? currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, playState, interaction))
     : [];
   const immediateChoices = playerChoiceInputs.filter((interaction) => interaction.choiceVisibility === "immediate");
   const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
@@ -900,7 +901,7 @@ export default function App() {
             <SpeakerPrefix
               snapshot={snapshot}
               speakerId={activeSpeakerId}
-              onEdit={authorExperience && activeSpeakerId ? () => openAuthorResource("character", activeSpeakerId) : undefined}
+              onEdit={authorExperience && activeSpeakerId ? () => openAuthorResource("character", activeSpeakerId!) : undefined}
             />
             {activePresentationEditable
               ? <button type="button" className="story-inline-edit-target" onClick={() => openAuthorSource(activePresentationSource)}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button>

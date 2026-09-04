@@ -19,20 +19,20 @@ export const visitedConditionAdapter: ConditionAuthorAdapter = {
 
 export const interactionVisibilityEffectAdapter: EffectAuthorAdapter = {
   type: "set_interaction_visibility",
-  label: "show/hide interaction",
+  label: "show/hide player choice",
   category: "narrative",
-  description: "Change whether another authored input is available to the player.",
+  description: "Change whether another authored input is suggested as a player choice. Typing that input still works.",
   create: () => ({ id: crypto.randomUUID(), type: "set_interaction_visibility", interactionId: "", visible: true }),
   references: (effect) => effect.type === "set_interaction_visibility" && effect.interactionId ? [{ resourceKind: "interaction", resourceId: effect.interactionId, detail: "interaction visibility target" }] : [],
   summarize: (effect, snapshot) => {
-    if (effect.type !== "set_interaction_visibility") return "Show/hide interaction";
+    if (effect.type !== "set_interaction_visibility") return "Show/hide player choice";
     const interaction = snapshot.interactions.find((item) => item.id === effect.interactionId);
     const label = interaction?.wording || interaction?.aliases[0] || "choose interaction";
-    return `${effect.visible ? "Show" : "Hide"} “${label}”`;
+    return `${effect.visible ? "Show" : "Hide"} choice “${label}”`;
   },
   render: ({ effect, onChange }) => effect.type === "set_interaction_visibility" ? <>
     <ReferenceField kind="interaction" value={effect.interactionId} onChange={(interactionId) => onChange({ ...effect, interactionId })} />
-    <select value={String(effect.visible)} onChange={(event) => onChange({ ...effect, visible: event.target.value === "true" })}><option value="true">show</option><option value="false">hide</option></select>
+    <select value={String(effect.visible)} onChange={(event) => onChange({ ...effect, visible: event.target.value === "true" })}><option value="true">show choice</option><option value="false">hide choice</option></select>
   </> : null,
 };
 

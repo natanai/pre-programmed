@@ -36,13 +36,20 @@ export const variableConditionAdapter: ConditionAuthorAdapter = {
   references: (condition) => condition.type === "variable" && condition.key ? [{ resourceKind: "variable", resourceId: condition.key, detail: "variable condition" }] : [],
   render: ({ condition, onChange, snapshot }) => {
     if (condition.type !== "variable") return null;
+    const definition = snapshot.variables.find((item) => item.key === condition.key);
+    const sample = definition?.initialValue ?? condition.value;
     return <>
       <ReferenceField kind="variable" value={condition.key} onChange={(key) => {
-        const definition = snapshot.variables.find((item) => item.key === key);
-        onChange({ ...condition, key, value: definition?.initialValue ?? 0 });
+        const next = snapshot.variables.find((item) => item.key === key);
+        onChange({ ...condition, key, value: next?.initialValue ?? 0 });
       }} />
       <ComparisonSelect value={condition.operator} onChange={(operator) => onChange({ ...condition, operator })} />
-      <input aria-label="Comparison value" value={String(condition.value ?? "")} onChange={(event) => onChange({ ...condition, value: parseValue(event.target.value, condition.value) })} />
+      <input
+        aria-label="Comparison value"
+        type={definition?.valueType === "number" || typeof sample === "number" ? "number" : "text"}
+        value={String(condition.value ?? "")}
+        onChange={(event) => onChange({ ...condition, value: parseValue(event.target.value, sample) })}
+      />
     </>;
   },
 };

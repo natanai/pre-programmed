@@ -34,12 +34,9 @@ export function normalizeCommand(value: string) {
   return normalizePlayerInput(value);
 }
 
-function candidatesAtCurrentNode(snapshot: ProjectSnapshot, state: PlayState) {
-  return snapshot.interactions.filter(
-    (interaction) =>
-      interaction.sourceNodeId === state.currentNodeId &&
-      state.interactionVisibility[interaction.id] !== false,
-  );
+/** Choice visibility is presentation-only. Every authored interaction at the current node remains typeable. */
+function interactionsAtCurrentNode(snapshot: ProjectSnapshot, state: PlayState) {
+  return snapshot.interactions.filter((interaction) => interaction.sourceNodeId === state.currentNodeId);
 }
 
 function stableInteractionMatches(matches: Array<{ interaction: Interaction; alias: string; score: number }>) {
@@ -197,6 +194,9 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
  * 1. current-scene authored aliases,
  * 2. project-wide authored Player Commands,
  * 3. current-scene authored fallback.
+ *
+ * Player-choice visibility never changes recognition. This also guarantees that
+ * Author mode only captures genuinely unrecognized text as a new draft input.
  */
 export function parseCommand(
   input: string,
@@ -204,9 +204,9 @@ export function parseCommand(
   state: PlayState,
 ): ParserResult {
   const normalizedInput = normalizeCommand(input);
-  const available = candidatesAtCurrentNode(snapshot, state);
-  const commandInteractions = available.filter((interaction) => (interaction.matchMode ?? "command") === "command");
-  const fallbackInteraction = available
+  const sceneInteractions = interactionsAtCurrentNode(snapshot, state);
+  const commandInteractions = sceneInteractions.filter((interaction) => (interaction.matchMode ?? "command") === "command");
+  const fallbackInteraction = sceneInteractions
     .filter((interaction) => interaction.matchMode === "fallback")
     .sort((left, right) => left.id.localeCompare(right.id))[0];
   const allAliases = commandInteractions.flatMap((interaction) =>
