@@ -28,7 +28,7 @@ export function MediaAssetThumbnail({
   return <span className={`media-inline-asset-shell${onEdit ? " is-authoring" : ""}`}>
     <button
       type="button"
-      className={`media-inline-asset${asset.authoringMode === "vector-grid" ? " is-vector-grid" : ""}`
+      className={`media-inline-asset${asset.authoringMode === "vector-grid" ? " is-vector-grid" : ""}`}
       aria-label={`Open ${asset.name}`}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={onOpen}
