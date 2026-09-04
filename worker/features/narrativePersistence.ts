@@ -99,7 +99,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 31,
+      id: 33,
       name: "narrative-interaction-choice-visibility-conditions",
       sql: `
         CREATE TABLE IF NOT EXISTS interaction_choice_visibility_conditions (
@@ -108,7 +108,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           FOREIGN KEY (interaction_id) REFERENCES interactions(id) ON DELETE CASCADE
         );
 
-        UPDATE project_meta SET schema_version = 31 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 33 WHERE id = 1;
       `,
     },
   ],
