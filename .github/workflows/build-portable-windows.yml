@@ -97,7 +97,7 @@ jobs:
             throw "Portable runtime contains installation-specific references."
           }
 
-      - name: Build unpacked desktop app for runtime validation
+      - name: Build pre-extracted Windows runtime
         working-directory: desktop
         shell: pwsh
         env:
@@ -105,119 +105,137 @@ jobs:
         run: |
           npx electron-builder --config electron-builder.yml --win --x64 --dir "--config.extraMetadata.version=$env:VERSION"
 
-      - name: Smoke-test unpacked local runtime
+      - name: Stage extracted portable folder
+        id: stage
         shell: pwsh
         run: |
-          $unpackedExe = Join-Path "desktop/release/win-unpacked" "Pre-Programmed.exe"
-          if (-not (Test-Path $unpackedExe)) { throw "Unpacked executable was not produced at $unpackedExe" }
-          $testRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-self-test-unpacked"
-          New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
-          $stdout = Join-Path $testRoot "stdout.txt"
-          $stderr = Join-Path $testRoot "stderr.txt"
-          $priorPortableDir = $env:PORTABLE_EXECUTABLE_DIR
-          $env:PORTABLE_EXECUTABLE_DIR = $testRoot
-          try {
-            $process = Start-Process -FilePath $unpackedExe -ArgumentList "--self-test" -WorkingDirectory $testRoot -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-          } finally {
-            $env:PORTABLE_EXECUTABLE_DIR = $priorPortableDir
+          $stageRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-portable-folder"
+          $appRoot = Join-Path $stageRoot "Pre-Programmed"
+          if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $appRoot -Force | Out-Null
+
+          Copy-Item "desktop/release/win-unpacked/*" $appRoot -Recurse -Force
+          Copy-Item "desktop/portable-readme.txt" (Join-Path $appRoot "README.txt")
+          Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
+          foreach ($folder in @("assets", "data", "exports")) {
+            New-Item -ItemType Directory -Path (Join-Path $appRoot $folder) -Force | Out-Null
           }
+
+          if (-not (Test-Path (Join-Path $appRoot "Pre-Programmed.exe"))) {
+            throw "Pre-extracted runtime did not contain Pre-Programmed.exe."
+          }
+          "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
+          "app_root=$appRoot" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke-test extracted folder in place
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          $exe = Join-Path $env:APP_ROOT "Pre-Programmed.exe"
+          $installation = Join-Path $env:APP_ROOT "installation.txt"
+          $config = Get-Content $installation -Raw
+          $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=folder-self-test-key'
+          Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
+
+          $stdout = Join-Path $env:APP_ROOT "self-test-stdout.txt"
+          $stderr = Join-Path $env:APP_ROOT "self-test-stderr.txt"
+          $process = Start-Process -FilePath $exe -ArgumentList "--self-test" -WorkingDirectory $env:APP_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           if (Test-Path $stdout) { Get-Content $stdout }
           if (Test-Path $stderr) { Get-Content $stderr }
           if ($process.ExitCode -ne 0) {
-            Get-ChildItem $testRoot -Recurse -Force | ForEach-Object { Write-Host $_.FullName }
-            throw "Unpacked runtime self-test failed with exit code $($process.ExitCode)."
+            Get-ChildItem $env:APP_ROOT -Recurse -Force | ForEach-Object { Write-Host $_.FullName }
+            throw "Extracted-folder runtime self-test failed with exit code $($process.ExitCode)."
           }
 
-      - name: Build portable executable
-        working-directory: desktop
+          Copy-Item "desktop/installation-template.txt" $installation -Force
+          Remove-Item $stdout, $stderr -Force -ErrorAction SilentlyContinue
+          foreach ($folder in @("data", "exports")) {
+            $target = Join-Path $env:APP_ROOT $folder
+            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
+            New-Item -ItemType Directory -Path $target -Force | Out-Null
+          }
+          $wranglerState = Join-Path $env:APP_ROOT ".wrangler"
+          if (Test-Path $wranglerState) { Remove-Item $wranglerState -Recurse -Force }
+
+      - name: Verify friend-facing extracted folder
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          foreach ($required in @("Pre-Programmed.exe", "README.txt", "installation.txt", "assets", "data", "exports", "resources")) {
+            if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) {
+              throw "Portable folder is missing required entry: $required"
+            }
+          }
+
+          foreach ($forbidden in @("docs", "src", "tests", "worker", "scripts", ".github", "AGENTS.md", "FOUNDATION.md", "DOS-VISUAL-TARGET.md", "CODEX-HANDOFF.md")) {
+            if (Test-Path (Join-Path $env:APP_ROOT $forbidden)) {
+              throw "Developer/agent material leaked into portable folder: $forbidden"
+            }
+          }
+
+          $installationText = Get-Content (Join-Path $env:APP_ROOT "installation.txt") -Raw
+          if ($installationText -notmatch '(?m)^AUTHOR_KEY=local\s*$') {
+            throw "Portable installation.txt did not reset to its friend-facing default."
+          }
+
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "data") -Force).Count -ne 0) {
+            throw "Portable data folder must be empty before distribution."
+          }
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "exports") -Force).Count -ne 0) {
+            throw "Portable exports folder must be empty before distribution."
+          }
+
+      - name: Assemble extracted-folder ZIP
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
+          STAGE_ROOT: ${{ steps.stage.outputs.stage_root }}
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
         run: |
-          npx electron-builder --config electron-builder.yml --win portable --x64 "--config.extraMetadata.version=$env:VERSION"
-
-      - name: Smoke-test portable executable
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          $portableExe = Join-Path "desktop/release" "Pre-Programmed-$env:VERSION-windows-x64.exe"
-          if (-not (Test-Path $portableExe)) { throw "Portable executable was not produced at $portableExe" }
-          $testRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-self-test-portable"
-          New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
-          $stdout = Join-Path $testRoot "stdout.txt"
-          $stderr = Join-Path $testRoot "stderr.txt"
-          $priorPortableDir = $env:PORTABLE_EXECUTABLE_DIR
-          $env:PORTABLE_EXECUTABLE_DIR = $testRoot
-          try {
-            $process = Start-Process -FilePath $portableExe -ArgumentList "--self-test" -WorkingDirectory $testRoot -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-          } finally {
-            $env:PORTABLE_EXECUTABLE_DIR = $priorPortableDir
-          }
-          if (Test-Path $stdout) { Get-Content $stdout }
-          if (Test-Path $stderr) { Get-Content $stderr }
-          if ($process.ExitCode -ne 0) {
-            Get-ChildItem $testRoot -Recurse -Force | ForEach-Object { Write-Host $_.FullName }
-            throw "Portable executable self-test failed with exit code $($process.ExitCode)."
-          }
-
-      - name: Assemble friend-facing ZIP from allowlist
-        shell: pwsh
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          $stage = Join-Path $env:RUNNER_TEMP "pre-programmed-portable"
-          New-Item -ItemType Directory -Path $stage -Force | Out-Null
-          New-Item -ItemType Directory -Path (Join-Path $stage "assets") -Force | Out-Null
-
-          $builtExe = Join-Path "desktop/release" "Pre-Programmed-$env:VERSION-windows-x64.exe"
-          if (-not (Test-Path $builtExe)) { throw "Portable executable was not produced at $builtExe" }
-          Copy-Item $builtExe (Join-Path $stage "Pre-Programmed.exe")
-          Copy-Item "desktop/portable-readme.txt" (Join-Path $stage "README.txt")
-
-          $expectedTopLevel = @("assets", "Pre-Programmed.exe", "README.txt") | Sort-Object
-          $actualTopLevel = @(Get-ChildItem $stage | ForEach-Object Name) | Sort-Object
-          if (Compare-Object $expectedTopLevel $actualTopLevel) {
-            throw "Portable staging directory contains files outside the explicit friend-facing allowlist."
-          }
-
-          $forbidden = @(Get-ChildItem $stage -Recurse -Force | Where-Object {
-            $_.Name -match '^(docs|src|tests|worker|scripts|\.github|AGENTS\.md)$' -or
-            $_.Extension -in @('.yml', '.yaml')
-          })
-          if ($forbidden.Count -gt 0) {
-            $forbidden | ForEach-Object { Write-Error $_.FullName }
-            throw "Developer/source material leaked into portable staging."
-          }
-
           $zip = Join-Path $PWD "Pre-Programmed-v$env:VERSION-windows-x64.zip"
           if (Test-Path $zip) { Remove-Item $zip -Force }
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
           try {
-            [void]$archive.CreateEntry("assets/")
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-              $archive,
-              (Join-Path $stage "Pre-Programmed.exe"),
-              "Pre-Programmed.exe",
-              [System.IO.Compression.CompressionLevel]::Optimal
-            ) | Out-Null
-            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
-              $archive,
-              (Join-Path $stage "README.txt"),
-              "README.txt",
-              [System.IO.Compression.CompressionLevel]::Optimal
-            ) | Out-Null
+            foreach ($emptyFolder in @("assets", "data", "exports")) {
+              [void]$archive.CreateEntry("Pre-Programmed/$emptyFolder/")
+            }
+            Get-ChildItem $env:APP_ROOT -Recurse -File | ForEach-Object {
+              $relative = [System.IO.Path]::GetRelativePath($env:STAGE_ROOT, $_.FullName).Replace('\', '/')
+              [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+                $archive,
+                $_.FullName,
+                $relative,
+                [System.IO.Compression.CompressionLevel]::Optimal
+              ) | Out-Null
+            }
           } finally {
             $archive.Dispose()
           }
+
           if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
-          $entries = @([System.IO.Compression.ZipFile]::OpenRead($zip).Entries | ForEach-Object FullName)
-          $expectedEntries = @("assets/", "Pre-Programmed.exe", "README.txt") | Sort-Object
-          $actualEntries = @($entries) | Sort-Object
-          if (Compare-Object $expectedEntries $actualEntries) {
-            throw "Portable ZIP contents do not match the friend-facing allowlist."
+          $reader = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try {
+            $entries = @($reader.Entries | ForEach-Object FullName)
+          } finally {
+            $reader.Dispose()
           }
+          foreach ($required in @(
+            "Pre-Programmed/Pre-Programmed.exe",
+            "Pre-Programmed/README.txt",
+            "Pre-Programmed/installation.txt",
+            "Pre-Programmed/assets/",
+            "Pre-Programmed/data/",
+            "Pre-Programmed/exports/"
+          )) {
+            if ($entries -notcontains $required) { throw "Portable ZIP is missing required entry: $required" }
+          }
+          if ($entries | Where-Object { $_ -match '(^|/)(AGENTS\.md|FOUNDATION\.md|DOS-VISUAL-TARGET\.md|CODEX-HANDOFF\.md)$' }) {
+            throw "Agent-facing documentation leaked into portable ZIP."
+          }
+
           "ZIP_PATH=$zip" >> $env:GITHUB_ENV
           "ZIP_NAME=Pre-Programmed-v$env:VERSION-windows-x64" >> $env:GITHUB_ENV
 
