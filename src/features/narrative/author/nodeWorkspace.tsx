@@ -227,12 +227,13 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       ],
     };
   },
+  canSave({ draft }) {
+    const anchor = nodeAnchor(draft.node);
+    return anchor.mode !== "set" || Boolean(anchor.text.trim());
+  },
   async save({ draft, context, route }) {
     const data = routeData(route);
     const anchor = nodeAnchor(draft.node);
-    if (anchor.mode === "set" && !anchor.text.trim()) {
-      return { accepted: false, message: "SET anchors need text." };
-    }
     const result = await context.persist(
       [{ type: "node.upsert", node: { ...draft.node, anchor } }],
       `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
