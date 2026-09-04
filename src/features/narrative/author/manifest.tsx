@@ -1,206 +1,147 @@
-import type { AuthorFeatureManifest } from "../../../author/features/types";
-import { previewEventsForEffects } from "../../../author/rules/catalog";
-import { normalizePlayerInput } from "../../../engine/input/normalize";
-import { buildGraphIndex } from "../graph";
-import { createDraftInteraction } from "../drafts";
-import { AuthorInputSurface } from "./AuthorInputSurface";
-import { InteractionEditor } from "./InteractionEditor";
-import { nodeWorkspace } from "./nodeWorkspace";
-import { notationForNarrativeInteraction } from "./notation";
-import { StructureNavigator } from "./StructureNavigator";
-import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
-import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "./ruleAdapters";
-import { narrativeProjectReferences } from "./references";
+import { Fragment } from "react";
+import { commandsAuthorFeature } from "../../features/commands/author/manifest";
+import { inventoryAuthorFeature } from "../../features/inventory/author/manifest";
+import { mediaAuthorFeature } from "../../features/media/author/manifest";
+import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
+import { stateAuthorFeature } from "../../features/state/author/manifest";
+import { worldAuthorFeature } from "../../features/world/author/manifest";
+import type { AuthorResourceProvider } from "../resources/types";
+import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
+import type { AuthorTaskRoute } from "../tasks/types";
+import { StructuredAuthorWorkspace } from "../ui/workspaceDefinition";
+import { projectAuthorFeature } from "./projectManifest";
+import type {
+  AuthorFeatureManifest,
+  AuthorPlaySurfaceContext,
+  AuthorWorkspaceContext,
+} from "./types";
 
-const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
+/**
+ * Existing prototype features that still contain unrestricted workspace markup.
+ * New feature ids do not belong here: add data-first `workspaces` contributions
+ * instead. Keeping the exception list centralized makes migration one-way and
+ * makes any attempt to expand the legacy foundation obvious in review/tests.
+ */
+export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
+  "narrative",
+  "media",
+  "commands",
+  "project",
+]);
 
-export const narrativeAuthorFeature: AuthorFeatureManifest = {
-  id: "narrative",
-  describeTask(route, snapshot) {
-    if (route.type !== "feature" || route.feature !== "narrative") return null;
-    if (route.workspace === "structure") return "Story structure";
-    if (route.workspace === "node") {
-      const node = snapshot.nodes.find((candidate) => candidate.id === route.data?.nodeId);
-      return node ? `Node #${node.nodeNumber}` : "New node";
-    }
-    if (route.workspace === "interaction") {
-      const interaction = snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId);
-      if (route.data?.fallback === "true" || interaction?.matchMode === "fallback") return "Invalid input response";
-      return interaction?.wording || interaction?.aliases[0] || route.data?.command || "New scene input";
-    }
-    return null;
-  },
-  conditions: [visitedConditionAdapter],
-  effects: [interactionVisibilityEffectAdapter, transitionEffectAdapter],
-  references: [narrativeProjectReferences],
-  tools: narrativeAuthorTools,
-  search: narrativeAuthorSearch,
-  workspaces: [nodeWorkspace],
-  resources: [
-    {
-      kind: "node",
-      label: "Node",
-      pluralLabel: "Nodes",
-      list: (snapshot) => snapshot.nodes.map((node) => ({
-        id: node.id,
-        value: node.id,
-        label: `Node #${node.nodeNumber}`,
-        detail: node.text.trim().slice(0, 80),
-      })),
-      createRoute: () => ({
-        type: "feature",
-        feature: "narrative",
-        workspace: "node",
-        data: { resourceTask: "node" },
-      }),
-      editRoute: (resource) => ({
-        type: "feature",
-        feature: "narrative",
-        workspace: "node",
-        data: { nodeId: resource.id, resourceTask: "node" },
-      }),
-    },
-    {
-      kind: "interaction",
-      label: "Interaction",
-      pluralLabel: "Interactions",
-      list: (snapshot) => snapshot.interactions.map((interaction) => {
-        const source = snapshot.nodes.find((node) => node.id === interaction.sourceNodeId);
-        return {
-          id: interaction.id,
-          value: interaction.id,
-          label: interaction.wording || interaction.aliases[0] || "Invalid input response",
-          detail: source ? `Node #${source.nodeNumber}` : "Unknown source node",
-        };
-      }),
-      createRoute: () => ({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { resourceTask: "interaction" },
-      }),
-      editRoute: (resource) => ({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { interactionId: resource.id, resourceTask: "interaction" },
-      }),
-    },
-  ],
-  terminalShortcuts: [
-    { commands: ["/structure", "structure"], route: STRUCTURE_ROUTE },
-  ],
-  capabilities: [{
-    id: "input.capture-unmatched",
-    resolve(request, { snapshot }) {
-      const sourceNodeId = typeof request.data?.sourceNodeId === "string" ? request.data.sourceNodeId : "";
-      const input = typeof request.data?.input === "string" ? request.data.input.trim() : "";
-      if (!sourceNodeId || !input) return null;
-      const normalized = normalizePlayerInput(input);
-      const existing = snapshot.interactions.find((interaction) =>
-        interaction.sourceNodeId === sourceNodeId
-        && (interaction.matchMode ?? "command") === "command"
-        && interaction.aliases.some((alias) => normalizePlayerInput(alias) === normalized));
-      if (existing) return {
-        type: "handled",
-        message: `DRAFT ALREADY EXISTS: ${existing.wording || existing.aliases[0]}`,
-        value: existing.id,
-      };
-      const interaction = createDraftInteraction(sourceNodeId, input);
-      return {
-        type: "mutation",
-        operations: [{ type: "interaction.upsert", interaction }],
-        description: `Created draft user input ${interaction.wording}`,
-        message: `DRAFT INPUT CREATED: ${interaction.wording}`,
-      };
-    },
-  }],
-  renderPlaySurface(context) {
-    const currentInputs = context.snapshot.interactions.filter((interaction) =>
-      interaction.sourceNodeId === context.playState.currentNodeId
-      && (interaction.matchMode ?? "command") === "command");
-    if (!currentInputs.length) return null;
-    const graph = buildGraphIndex(context.snapshot);
-    return <AuthorInputSurface
-      choices={currentInputs}
-      onChoose={(interaction) => {
-        const input = interaction.aliases[0] || interaction.wording;
-        if (input) context.submitInput(input);
-      }}
-      notationForChoice={(interaction) => notationForNarrativeInteraction(
-        context.snapshot,
-        context.playState,
-        interaction,
-        graph,
-      )}
-      onEdit={(interaction) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { interactionId: interaction.id },
-      })}
-    />;
-  },
-  renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "interaction") {
-      const initial = route.data?.interactionId
-        ? context.snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId)
-        : undefined;
-      const fallback = route.data?.fallback === "true";
-      const resourceTask = route.data?.resourceTask === "interaction";
-      return <div className="dialogue-authoring-popover">
-        <InteractionEditor
-          snapshot={context.snapshot}
-          playState={context.playState}
-          initial={initial}
-          initialCommand={route.data?.command ?? ""}
-          fallback={fallback}
-          onRegisterSave={context.registerWorkspaceSave}
-          onPreview={(outcome) => context.runtime.preview({
-            text: outcome.responseText,
-            performance: outcome.responsePerformance,
-            speakerId: outcome.speakerId,
-            events: previewEventsForEffects(outcome.effects, context.snapshot),
-          })}
-          onSave={async (operations, description) => {
-            const result = await context.persist(operations, description);
-            if (result.status !== "saved" && result.status !== "queued") return result;
-            if (resourceTask) {
-              const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
-              if (operation?.type === "interaction.upsert") context.completeTask({
-                type: "resource",
-                kind: "interaction",
-                id: operation.interaction.id,
-                value: operation.interaction.id,
-                label: operation.interaction.wording || operation.interaction.aliases[0] || "Invalid input response",
-              });
-            }
-            return result;
-          }}
-          onCancel={context.hasParentTask ? context.leaveCurrentTask : undefined}
-          onDirtyChange={context.setWorkspaceDirty}
-        />
-      </div>;
+/**
+ * Single composition registry for Author-capable feature modules.
+ *
+ * New workspaces should contribute semantic workspace definitions. Legacy
+ * renderers remain temporarily available only to the explicit migration set.
+ */
+export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
+  narrativeAuthorFeature,
+  worldAuthorFeature,
+  stateAuthorFeature,
+  inventoryAuthorFeature,
+  mediaAuthorFeature,
+  commandsAuthorFeature,
+  projectAuthorFeature,
+];
+
+export function getAuthorResourceProvider(kind: string): AuthorResourceProvider | undefined {
+  for (const feature of AUTHOR_FEATURES) {
+    const provider = feature.resources?.find((candidate) => candidate.kind === kind);
+    if (provider) return provider;
+  }
+  return undefined;
+}
+
+export function getAuthorCommandReferenceSources() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.commandReferences ?? []);
+}
+
+export function getAuthorCommandTargetAdapter(sourceKind: string) {
+  return AUTHOR_FEATURES
+    .flatMap((feature) => feature.commandTargets ?? [])
+    .find((adapter) => adapter.sourceKind === sourceKind);
+}
+
+export function getAuthorOperationDefinitions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.operations ?? []);
+}
+
+export function getAuthorConditionAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.conditions ?? []);
+}
+
+export function getAuthorEffectAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.effects ?? []);
+}
+
+export function getAuthorTextCueAdapters() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.textCues ?? []);
+}
+
+export function getAuthorSearchDocumentContributions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.searchDocuments ?? []);
+}
+
+export function getAuthorReferenceContributions() {
+  return AUTHOR_FEATURES.flatMap((feature) => feature.references ?? []);
+}
+
+export function resolveAuthorFeatureTerminalShortcut(command: string): AuthorTaskRoute | null {
+  for (const feature of AUTHOR_FEATURES) {
+    const shortcut = feature.terminalShortcuts?.find((candidate) => candidate.commands.includes(command));
+    if (shortcut) return shortcut.route;
+  }
+  return null;
+}
+
+export function renderAuthorFeaturePlaySurfaces(context: AuthorPlaySurfaceContext) {
+  return <>{AUTHOR_FEATURES.map((feature) => {
+    const surface = feature.renderPlaySurface?.(context);
+    return surface === null || surface === undefined
+      ? null
+      : <Fragment key={feature.id}>{surface}</Fragment>;
+  })}</>;
+}
+
+export function renderAuthorFeatureWorkspace(
+  route: AuthorTaskRoute,
+  context: AuthorWorkspaceContext,
+) {
+  if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") {
+    const sections = AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []);
+    return <ProjectSettingsWorkspace route={route} sections={sections} context={context} />;
+  }
+
+  for (const feature of AUTHOR_FEATURES) {
+    if (route.type === "feature") {
+      const definition = feature.workspaces?.find((candidate) => candidate.matches(route));
+      if (definition) return <StructuredAuthorWorkspace definition={definition} route={route} context={context} />;
     }
 
-    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "structure") return <StructureNavigator
-      snapshot={context.snapshot}
-      playState={context.playState}
-      onOpenNode={(nodeId) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "node",
-        data: { nodeId },
-      })}
-      onEditInteraction={(interaction) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { interactionId: interaction.id },
-      })}
-      onClose={context.leaveCurrentTask}
-    />;
+    if (feature.renderWorkspace) {
+      if (!LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS.has(feature.id)) {
+        throw new Error(`Feature ${feature.id} attempted to use legacy Author workspace rendering.`);
+      }
+      const workspace = feature.renderWorkspace(route, context);
+      if (workspace !== null && workspace !== undefined) return workspace;
+    }
+  }
+  return null;
+}
 
-    return null;
-  },
-};
+/**
+ * Describe a task without teaching the shell any feature-specific routes.
+ * Feature manifests own their vocabulary; the shell only composes the trail.
+ */
+export function describeAuthorTask(route: AuthorTaskRoute, snapshot: AuthorWorkspaceContext["snapshot"]): string {
+  if (route.type === "tools") return "Author tools";
+  if (route.type === "workspace") return route.view === "history" ? "History" : "Locations";
+  for (const feature of AUTHOR_FEATURES) {
+    const label = feature.describeTask?.(route, snapshot);
+    if (label) return label;
+  }
+  return route.type === "feature"
+    ? `${route.feature} · ${route.workspace}`.replaceAll("-", " ")
+    : "Author task";
+}
