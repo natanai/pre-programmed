@@ -27,9 +27,13 @@ type InteractionRow = {
   wording: string;
   match_mode: Interaction["matchMode"];
   choice_visibility: Interaction["choiceVisibility"];
-  choice_visible_when_json: string;
   tags_json: string;
   notes: string;
+};
+
+type InteractionChoiceVisibilityRow = {
+  interaction_id: string;
+  condition_json: string;
 };
 
 type AliasRow = { interaction_id: string; alias: string; order_index: number };
@@ -95,19 +99,22 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 30,
-      name: "narrative-interaction-choice-visibility-condition",
+      id: 31,
+      name: "narrative-interaction-choice-visibility-conditions",
       sql: `
-        ALTER TABLE interactions
-        ADD COLUMN choice_visible_when_json TEXT NOT NULL DEFAULT '{"type":"always"}';
+        CREATE TABLE IF NOT EXISTS interaction_choice_visibility_conditions (
+          interaction_id TEXT PRIMARY KEY,
+          condition_json TEXT NOT NULL DEFAULT '{"type":"always"}',
+          FOREIGN KEY (interaction_id) REFERENCES interactions(id) ON DELETE CASCADE
+        );
 
-        UPDATE project_meta SET schema_version = 30 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 31 WHERE id = 1;
       `,
     },
   ],
 
   async load(db) {
-    const [meta, nodes, interactions, aliases, outcomes] = await Promise.all([
+    const [meta, nodes, interactions, choiceVisibilityConditions, aliases, outcomes] = await Promise.all([
       db.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").first<{ start_node_id: string }>(),
       db.prepare(
         `SELECT n.id, n.node_number, n.text, n.characters_per_second,
@@ -117,8 +124,10 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, choice_visible_when_json, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
         .all<InteractionRow>(),
+      db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
+        .all<InteractionChoiceVisibilityRow>(),
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
       db.prepare(
@@ -129,6 +138,9 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
     ]);
 
     if (!meta) throw new Error("Project has not been initialized.");
+    const choiceVisibilityByInteraction = new Map(
+      choiceVisibilityConditions.results.map((row) => [row.interaction_id, row.condition_json]),
+    );
     const aliasGroups = groupRows(aliases.results, (row) => row.interaction_id);
     const outcomeGroups = groupRows(outcomes.results, (row) => row.interaction_id);
 
@@ -159,7 +171,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         wording: row.wording,
         matchMode: row.match_mode ?? "command",
         choiceVisibility: row.choice_visibility,
-        choiceVisibleWhen: parseJson(row.choice_visible_when_json, { type: "always" }),
+        choiceVisibleWhen: parseJson(choiceVisibilityByInteraction.get(row.id), { type: "always" }),
         tags: parseJson(row.tags_json, []),
         notes: row.notes,
         aliases: (aliasGroups.get(row.id) ?? []).map((alias) => alias.alias),
@@ -212,11 +224,10 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       const value = operation.interaction;
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, choice_visible_when_json, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility,
-             choice_visible_when_json=excluded.choice_visible_when_json, tags_json=excluded.tags_json,
+             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
              notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
@@ -224,10 +235,14 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           value.wording,
           value.matchMode ?? "command",
           value.choiceVisibility ?? "prompt",
-          JSON.stringify(value.choiceVisibleWhen ?? { type: "always" }),
           JSON.stringify(value.tags),
           value.notes,
         ),
+        db.prepare(
+          `INSERT INTO interaction_choice_visibility_conditions (interaction_id, condition_json)
+           VALUES (?, ?)
+           ON CONFLICT(interaction_id) DO UPDATE SET condition_json=excluded.condition_json`,
+        ).bind(value.id, JSON.stringify(value.choiceVisibleWhen ?? { type: "always" })),
         db.prepare("DELETE FROM interaction_aliases WHERE interaction_id = ?").bind(value.id),
         db.prepare("DELETE FROM interaction_outcomes WHERE interaction_id = ?").bind(value.id),
         ...value.aliases.map((alias, index) => db.prepare("INSERT INTO interaction_aliases (interaction_id, alias, order_index) VALUES (?, ?, ?)").bind(value.id, alias, index)),
@@ -272,6 +287,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
     return [
       db.prepare("DELETE FROM interaction_aliases"),
       db.prepare("DELETE FROM interaction_outcomes"),
+      db.prepare("DELETE FROM interaction_choice_visibility_conditions"),
       db.prepare("DELETE FROM interactions"),
       db.prepare("DELETE FROM node_context"),
       db.prepare("DELETE FROM node_details"),
