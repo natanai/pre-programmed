@@ -40,7 +40,7 @@ export function Inventory({
   onOutput: (text: string, source?: AuthoredSourceIdentity) => void;
   onEvents: (events: EffectEvent[]) => void;
   onEditItem?: (itemId: string) => void;
-  onEditBodyType?: (bodyTypeId: string, slotId?: string) => void;
+  onEditBodyType?: (bodyTypeId: string) => void;
 }) {
   const [selected, setSelected] = useState<OperationTarget | null>(null);
   const assetUrlFor = (assetId: string | undefined | null) => assetId
@@ -75,9 +75,10 @@ export function Inventory({
     operate({ operation: "move", target: selected, placement: { x, y } });
   };
 
-  const operationButtons = (target: OperationTarget, operations: OperationId[]) => <div className="operation-buttons">
+  const operationButtons = (target: OperationTarget, operations: OperationId[], onEdit?: () => void) => <div className="operation-buttons">
     {operations.map((operation) => <button type="button" key={operation}
       onClick={() => operate({ operation, target })}>[{operation.toUpperCase()}]</button>)}
+    {onEdit ? <button type="button" onClick={onEdit}>[EDIT]</button> : null}
   </div>;
 
   const selectedItemOperations = selectedItem?.operations ?? DEFAULT_ITEM_OPERATIONS;
@@ -120,7 +121,6 @@ export function Inventory({
             <div className="inventory-inspector-heading">
               <strong>{selectedItem.name}</strong>
               <div className="inventory-inspector-heading-actions">
-                {onEditItem ? <button type="button" onClick={() => onEditItem(selectedItem.id)}>[EDIT]</button> : null}
                 <button type="button" onClick={() => setSelected(null)}>[DONE]</button>
               </div>
             </div>
@@ -131,6 +131,7 @@ export function Inventory({
             {operationButtons(
               { kind: "item", id: selectedEntry.instanceId },
               selectedItemOperations.filter((operation) => operation !== "equip" && operation !== "unequip"),
+              onEditItem ? () => onEditItem(selectedItem.id) : undefined,
             )}
             {selectedItemOperations.includes("equip") ? <div className="inventory-equip-choices">
               <span>EQUIP PLACEMENT</span>
@@ -170,26 +171,14 @@ export function Inventory({
             if (!item) return null;
             const moveEnabled = (item.interactable ?? true) && (item.operations ?? DEFAULT_ITEM_OPERATIONS).includes("move");
             const position = { "--x": entry.x, "--y": entry.y, "--w": item.width, "--h": item.height } as CSSProperties;
-            return <Fragment key={entry.instanceId}>
-              <button type="button" draggable={moveEnabled} className={`inventory-item${selected?.kind === "item" && selected.id === entry.instanceId ? " selected" : ""}${entry.equipment ? " equipped" : ""}`}
-                style={position}
-                onDragStart={(event) => event.dataTransfer.setData("text/pre-programmed-instance", entry.instanceId)}
-                onClick={(event) => { event.stopPropagation(); if (item.interactable ?? true) setSelected({ kind: "item", id: entry.instanceId }); }}>
-                {assetUrlFor(item.assetId) ? <img src={assetUrlFor(item.assetId)} alt="" draggable={false} /> : <span>{item.name.slice(0, 3).toUpperCase()}</span>}
-                {entry.quantity > 1 ? <b>{entry.quantity}</b> : null}
-                {entry.equipment ? <i aria-label={`Equipped; occupies ${occupiedEquipmentSlotKeys(entry).map(bodySlotName).join(", ")}`}>E</i> : null}
-              </button>
-              {onEditItem ? <button
-                type="button"
-                className="inventory-item-author-edit"
-                style={position}
-                aria-label={`Edit ${item.name || item.key || "item"}`}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  onEditItem(item.id);
-                }}
-              >[E]</button> : null}
-            </Fragment>;
+            return <button type="button" key={entry.instanceId} draggable={moveEnabled} className={`inventory-item${selected?.kind === "item" && selected.id === entry.instanceId ? " selected" : ""}${entry.equipment ? " equipped" : ""}`}
+              style={position}
+              onDragStart={(event) => event.dataTransfer.setData("text/pre-programmed-instance", entry.instanceId)}
+              onClick={(event) => { event.stopPropagation(); if (item.interactable ?? true) setSelected({ kind: "item", id: entry.instanceId }); }}>
+              {assetUrlFor(item.assetId) ? <img src={assetUrlFor(item.assetId)} alt="" draggable={false} /> : <span>{item.name.slice(0, 3).toUpperCase()}</span>}
+              {entry.quantity > 1 ? <b>{entry.quantity}</b> : null}
+              {entry.equipment ? <i aria-label={`Equipped; occupies ${occupiedEquipmentSlotKeys(entry).map(bodySlotName).join(", ")}`}>E</i> : null}
+            </button>;
           })}
         </div>
       </div>
@@ -230,16 +219,6 @@ export function Inventory({
                     if (selectedEntry && selectedCanEquip) equipToSlot(selectedEntry.instanceId, slot.key);
                   }}
                 />
-                {activeBodyType && onEditBodyType ? <button
-                  type="button"
-                  className="inventory-body-slot-author-edit"
-                  style={{ left: `${rect.left}%`, top: `${rect.top}%` }}
-                  aria-label={`Edit body slot ${slot.name || slot.key}`}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onEditBodyType(activeBodyType.id, slot.id);
-                  }}
-                >[E]</button> : null}
               </Fragment>;
             })}
           </div>
