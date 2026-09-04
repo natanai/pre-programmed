@@ -19,6 +19,8 @@ type NodeRow = {
   performance_json: string | null;
   character_id: string | null;
   location_id: string | null;
+  anchor_mode: "set" | "continue" | "clear" | null;
+  anchor_text: string | null;
 };
 
 type InteractionRow = {
@@ -37,7 +39,6 @@ type InteractionChoiceVisibilityRow = {
 };
 
 type AliasRow = { interaction_id: string; alias: string; order_index: number };
-
 type OutcomeRow = {
   id: string;
   interaction_id: string;
@@ -111,6 +112,20 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 33 WHERE id = 1;
       `,
     },
+    {
+      id: 34,
+      name: "narrative-node-anchors",
+      sql: `
+        ALTER TABLE node_details
+        ADD COLUMN anchor_mode TEXT NOT NULL DEFAULT 'continue'
+        CHECK (anchor_mode IN ('set', 'continue', 'clear'));
+
+        ALTER TABLE node_details
+        ADD COLUMN anchor_text TEXT NOT NULL DEFAULT '';
+
+        UPDATE project_meta SET schema_version = 34 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -118,7 +133,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       db.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").first<{ start_node_id: string }>(),
       db.prepare(
         `SELECT n.id, n.node_number, n.text, n.characters_per_second,
-                d.ending, d.tags_json, d.performance_json, c.character_id, c.location_id
+                d.ending, d.tags_json, d.performance_json, d.anchor_mode, d.anchor_text,
+                c.character_id, c.location_id
            FROM nodes n
            LEFT JOIN node_details d ON d.node_id = n.id
            LEFT JOIN node_context c ON c.node_id = n.id
@@ -159,6 +175,10 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           tags: parseJson(row.tags_json, []),
           characterId: row.character_id,
           locationId: row.location_id,
+          anchor: {
+            mode: row.anchor_mode ?? "continue",
+            text: row.anchor_text ?? "",
+          },
           performance: {
             charactersPerSecond: performance.charactersPerSecond ?? row.characters_per_second,
             cues: performance.cues ?? [],
@@ -198,6 +218,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
   mutationStatements(db, operation) {
     if (operation.type === "node.upsert") {
       const node = operation.node;
+      const anchor = node.anchor ?? { mode: "continue" as const, text: "" };
       return [
         db.prepare(
           `INSERT INTO nodes (id, node_number, text, characters_per_second, updated_at)
@@ -206,11 +227,19 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
              characters_per_second=excluded.characters_per_second, updated_at=CURRENT_TIMESTAMP`,
         ).bind(node.id, node.nodeNumber, node.text, node.performance.charactersPerSecond),
         db.prepare(
-          `INSERT INTO node_details (node_id, ending, tags_json, performance_json)
-           VALUES (?, ?, ?, ?)
+          `INSERT INTO node_details (node_id, ending, tags_json, performance_json, anchor_mode, anchor_text)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(node_id) DO UPDATE SET ending=excluded.ending, tags_json=excluded.tags_json,
-             performance_json=excluded.performance_json`,
-        ).bind(node.id, Number(node.ending), JSON.stringify(node.tags), JSON.stringify(node.performance)),
+             performance_json=excluded.performance_json, anchor_mode=excluded.anchor_mode,
+             anchor_text=excluded.anchor_text`,
+        ).bind(
+          node.id,
+          Number(node.ending),
+          JSON.stringify(node.tags),
+          JSON.stringify(node.performance),
+          anchor.mode,
+          anchor.text,
+        ),
         db.prepare(
           `INSERT INTO node_context (node_id, character_id, location_id)
            VALUES (?, ?, ?)
