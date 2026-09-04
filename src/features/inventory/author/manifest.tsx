@@ -13,6 +13,7 @@ import {
 import { inventoryProjectReferences } from "./references";
 import { BODY_WORKSPACES } from "./bodyWorkspaces";
 import { INVENTORY_EQUIPMENT_WORKSPACES } from "./equipmentWorkspaces";
+import { inventoryAuthorHubWorkspace } from "./hubWorkspace";
 import { INVENTORY_WORKSPACES, inventoryRoute } from "./workspaces";
 
 export const inventoryAuthorFeature: AuthorFeatureManifest = {
@@ -57,7 +58,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
   references: [inventoryProjectReferences],
   tools: inventoryAuthorTools,
   search: inventoryAuthorSearch,
-  workspaces: [...INVENTORY_WORKSPACES, ...INVENTORY_EQUIPMENT_WORKSPACES, ...BODY_WORKSPACES],
+  workspaces: [inventoryAuthorHubWorkspace, ...INVENTORY_WORKSPACES, ...INVENTORY_EQUIPMENT_WORKSPACES, ...BODY_WORKSPACES],
   resources: [
     {
       kind: "item",

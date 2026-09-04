@@ -12,7 +12,6 @@ import type {
   StatePlayerPresentation,
   VariableDefinition,
 } from "../model";
-import { StateStatus } from "../ui/StateStatus";
 import "./stateWorkspaces.css";
 
 const ALWAYS: Condition = { type: "always" };
@@ -217,7 +216,7 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
           content: <div className="state-author-resource-list">
             <div className="state-author-create-row">
               <button type="button" onClick={() => context.pushTask(stateRoute("state-group"))}>[+ GROUP]</button>
-              <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "status" })}>[PREVIEW]</button>
+              <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "status" })}>[PLAYER STATUS]</button>
             </div>
             {[...context.snapshot.stateGroups].sort((a, b) => a.order - b.order).map((group) => {
               const count = [...context.snapshot.variables, ...context.snapshot.computedValues]
@@ -480,33 +479,9 @@ export const stateGroupWorkspace = defineAuthorWorkspace<StateGroupDefinition>({
   },
 });
 
-export const statePlayerWorkspace = defineAuthorWorkspace({
-  id: "state-player-status",
-  matches: (route) => route.type === "feature" && route.feature === "state" && route.workspace === "status",
-  createDraft: () => ({}),
-  buildSpec: ({ context }) => ({
-    id: "state-player-status",
-    title: "Status",
-    context: "Player-visible State",
-    blocks: [{
-      type: "custom",
-      id: "state-player-status-surface",
-      role: "specialized-control",
-      content: <StateStatus
-        snapshot={context.snapshot}
-        state={context.playState}
-        onState={context.runtime.updateState}
-        onOutput={context.runtime.output}
-        onEvents={context.runtime.events}
-      />,
-    }],
-  }),
-});
-
 export const STATE_WORKSPACES = [
   stateLibraryWorkspace,
   stateVariableWorkspace,
   stateComputedWorkspace,
   stateGroupWorkspace,
-  statePlayerWorkspace,
 ] as const;

@@ -25,7 +25,7 @@ Examples include:
 - a Media asset or synth definition → Media-owned editor;
 - a Player Command → Commands-owned editor.
 
-Another feature may display, select, preview, summarize, or reference that resource. It should **not** recreate a second editor for it.
+Another feature may display, select, summarize, or reference that resource. It should **not** recreate a second editor for it.
 
 If two surfaces can independently edit the same durable definition using different forms, validation, draft state, or save paths, the feature boundary is already drifting.
 
@@ -64,33 +64,43 @@ This includes:
 
 - Author tool lists and search results;
 - live player workspaces augmented by Author mode;
-- summary cards and resource lists;
+- author-facing summary cards and resource lists;
 - relationship/reference fields;
 - rule, condition, effect, and operation configuration;
-- previews of player-visible groups or values;
+- author-facing views of player-visible groups or values;
 - nested editors that mention another resource.
 
 The edit affordance does not have to be visually loud. A row may itself open the editor, or a compact `[EDIT]` action may appear in Author mode. The important requirement is that the author does not have to navigate away and rediscover the same resource through its owner's top-level tool.
 
 This rule applies to **authorable definitions**, not every transient runtime value. A live numeric value, resolved condition result, generated output string, or other runtime-only projection may not itself be durable author data. In that case the Author affordance should lead to the definition that controls it when one exists.
 
-## 5. Live player surfaces use the same rule
+## 5. Play surfaces and Author tools have different jobs
 
 Author mode augments the running game rather than replacing player-facing systems.
+
+The literal player experience belongs to the player layer. If an author wants to see exactly what a player sees, they should use the real player surface while Author mode is active or return fully to play. Author mode may add contextual edit affordances to that live surface, but it should not manufacture a second player preview inside Author Tools.
+
+Author Tools are author-facing destinations. A tool named `PLAYER STATUS` may be a valuable direct navigation target, but its job is to author Status groups and values. A tool named `INVENTORY` may be a valuable direct navigation target, but its job is to author item/body definitions and configuration. Neither should merely embed the player Status or Inventory UI as an Author task.
 
 If the player is looking at Inventory, Status, a character-facing surface, or another player workspace while Author mode is active, the feature may contribute contextual editing affordances. Those affordances should open the same owning Author tasks used everywhere else.
 
 Do not build an Author-only copy of a player workspace just to make its contents editable.
 
-Do not make a preview-only player surface a dead end when the definitions it shows are authorable.
+Do not build a preview-only Author tool when the real player workspace already exists.
 
-The desired flow is:
+The desired live-play flow is:
 
 ```text
-see the thing → edit the thing → save/back → continue where you were
+play / open player surface → see the thing → edit the thing → save/back → continue playing
 ```
 
-not:
+The desired Author-tool flow is:
+
+```text
+open Author tool → manage authorable definitions directly → nest into the owning editor as needed
+```
+
+Neither flow should become:
 
 ```text
 see the thing → remember its name → back out → find its owner tool → search again → edit
@@ -143,21 +153,26 @@ Before adding or changing an Author surface, identify each authorable thing it d
 3. **Reachability:** Can the author enter that editor directly from this surface?
 4. **Nesting:** Does doing so preserve the current parent task/workspace rather than abandoning it?
 5. **No duplication:** Did this surface avoid recreating the owner's fields, validation, or save behavior?
-6. **Creation:** If the resource can be created here, does creation use the same owner?
-7. **Responsive parity:** Do mobile and desktop invoke the same task and persistence path?
-8. **Replaceability:** Could the owning feature replace its editor without every referencing feature needing its own editor rewrite?
+6. **Mode boundary:** Is an Author tool author-facing rather than a duplicate player preview?
+7. **Creation:** If the resource can be created here, does creation use the same owner?
+8. **Responsive parity:** Do mobile and desktop invoke the same task and persistence path?
+9. **Replaceability:** Could the owning feature replace its editor without every referencing feature needing its own editor rewrite?
 
-If the answer to reachability is no, the Author experience is incomplete. If the answer to duplication or replaceability is no, the modular boundary is incomplete.
+If the answer to reachability is no, the Author experience is incomplete. If the answer to duplication, mode boundary, or replaceability is no, the modular boundary is incomplete.
 
 ## Examples
 
 ### Player Status
 
-A player-visible State group is a useful projection of State data. In Author mode, the group and each authorable entry should be able to open their State-owned editors directly. `PLAYER STATUS` may remain a useful live preview/tool, but it should not become a second State editor and should not require a detour through the top-level `STATE` tool to edit what is already on screen.
+`PLAYER STATUS` is a useful direct Author tool because authors often want to work specifically on what the game exposes as Status. The Author tool should therefore manage player groups and values directly and let every group/value enter its State-owned editor. It is **not** a literal player Status preview.
+
+The literal player Status remains the real player workspace. When Author mode is active over that workspace, the group and each authorable entry should be able to open those same State-owned editors directly.
 
 ### Inventory
 
-The live player Inventory remains the real player surface. In Author mode, item/body affordances open the same Inventory-owned Item or Body tasks used from Author Tools. The player workspace does not duplicate those editors.
+`INVENTORY` is likewise a useful direct Author tool, but it should manage item definitions, Body Types, slots, equipment rules, and related configuration rather than duplicate the player's inventory grid.
+
+The live player Inventory remains the real player surface. In Author mode, item/body affordances there open the same Inventory-owned Item or Body tasks used from Author Tools.
 
 ### References inside another editor
 
