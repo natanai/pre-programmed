@@ -1,11 +1,22 @@
+import { useEffect } from "react";
 import type { PersistedPlaySession } from "../data/localPlaySession";
 import "./playerSessionGate.css";
+
+const immediatelyResumedSessions = new WeakSet<PersistedPlaySession>();
 
 export function PlayerSessionGate({ session, onContinue, onNewGame }: {
   session: PersistedPlaySession;
   onContinue: () => void;
   onNewGame: () => void;
 }) {
+  useEffect(() => {
+    if (!session.resumeImmediately || immediatelyResumedSessions.has(session)) return;
+    immediatelyResumedSessions.add(session);
+    onContinue();
+  }, [onContinue, session]);
+
+  if (session.resumeImmediately) return null;
+
   const savedAt = new Date(session.savedAt);
   const savedLabel = Number.isNaN(savedAt.valueOf()) ? "a previous session" : savedAt.toLocaleString();
   return <div className="player-session-shade" role="presentation">
