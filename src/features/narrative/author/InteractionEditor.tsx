@@ -117,6 +117,7 @@ function secondaryAliases(wording: string, aliases: string[]) {
 export function InteractionEditor({
   snapshot,
   playState,
+  sourceNodeId,
   initial,
   initialCommand = "",
   initialOutcomeId,
@@ -131,6 +132,7 @@ export function InteractionEditor({
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
+  sourceNodeId?: string;
   initial?: Interaction;
   initialCommand?: string;
   initialOutcomeId?: string;
@@ -144,8 +146,9 @@ export function InteractionEditor({
   onEditDestination?: (nodeId: string) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
-  const sourceSpeakerId = snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.characterId ?? null;
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode, sourceSpeakerId));
+  const resolvedSourceNodeId = initial?.sourceNodeId ?? sourceNodeId ?? playState.currentNodeId;
+  const sourceSpeakerId = snapshot.nodes.find((node) => node.id === resolvedSourceNodeId)?.characterId ?? null;
+  const [draft, setDraft] = useState(() => normalizedInteraction(initial, resolvedSourceNodeId, initialCommand, fallbackMode, sourceSpeakerId));
   const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
   const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
@@ -156,6 +159,9 @@ export function InteractionEditor({
   const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const draftSignature = JSON.stringify(draft);
+  const sourcePlayState = draft.sourceNodeId === playState.currentNodeId
+    ? playState
+    : { ...playState, currentNodeId: draft.sourceNodeId };
 
   useEffect(() => {
     onDirtyChange(draftSignature !== savedSignature);
@@ -205,7 +211,7 @@ export function InteractionEditor({
   const notationForOutcome = (outcome: InteractionOutcome) => {
     if (outcome.authorStatus === "draft") return "[D]";
     if (outcome.disposition === "stay" || !outcome.destinationNodeId) return "[H]";
-    return notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destinationNodeId).join("") || "[A1]";
+    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destinationNodeId).join("") || "[A1]";
   };
 
   const save = async (): Promise<boolean> => {
@@ -313,7 +319,7 @@ export function InteractionEditor({
         onPerformance={(responsePerformance) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responsePerformance }))}
         onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
         onPreview={onPreview ? () => onPreview(selectedOutcome) : undefined}
-        playState={playState}
+        playState={sourcePlayState}
         onCreateDestination={onCreateDestination ? () => onCreateDestination((nodeId) => configureOutcome(selectedOutcome.id, (outcome) => ({
           ...outcome,
           disposition: "transition",

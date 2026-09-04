@@ -6,6 +6,7 @@ import { makeId } from "../../../engine/project/id";
 import type { GameNode } from "../model";
 import { nextNodeNumber } from "../nodeNumber";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
+import "./nodeWorkspace.css";
 
 type NodeWorkspaceDraft = {
   node: GameNode;
@@ -35,6 +36,19 @@ function routeData(route: AuthorTaskRoute) {
   return route.type === "feature" ? route.data : undefined;
 }
 
+function inputRoute(nodeId: string, interactionId?: string, fallback = false): AuthorTaskRoute {
+  return {
+    type: "feature",
+    feature: "narrative",
+    workspace: "interaction",
+    data: {
+      sourceNodeId: nodeId,
+      ...(interactionId ? { interactionId } : {}),
+      ...(fallback ? { fallback: "true" } : {}),
+    },
+  };
+}
+
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   id: "narrative.node",
   matches(route) {
@@ -52,6 +66,41 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const data = routeData(route);
     const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
     const location = context.snapshot.entities.find((entity) => entity.id === draft.node.locationId)?.name ?? "No location";
+    const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
+    const nodeInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === draft.node.id);
+    const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
+    const invalidInput = nodeInteractions.find((interaction) => interaction.matchMode === "fallback");
+    const inputSummary = `${validInputs.length} valid input${validInputs.length === 1 ? "" : "s"} · ${invalidInput ? "invalid response set" : "no invalid response"}`;
+    const inputRows = nodeExists ? <div className="node-input-list">
+      {validInputs.map((interaction) => <button
+        type="button"
+        className="node-input-link"
+        key={interaction.id}
+        onClick={() => context.pushTask(inputRoute(draft.node.id, interaction.id))}
+      >
+        <span>
+          <strong>{interaction.wording || interaction.aliases[0] || "UNTITLED INPUT"}</strong>
+          <small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"} · Node #{draft.node.nodeNumber}</small>
+        </span>
+        <span aria-hidden="true">›</span>
+      </button>)}
+      <button type="button" className="node-input-link" onClick={() => context.pushTask(inputRoute(draft.node.id))}>
+        <span><strong>+ VALID INPUT</strong><small>Add player wording that works only at Node #{draft.node.nodeNumber}.</small></span>
+        <span aria-hidden="true">›</span>
+      </button>
+      <button
+        type="button"
+        className="node-input-link"
+        onClick={() => context.pushTask(inputRoute(draft.node.id, invalidInput?.id, true))}
+      >
+        <span>
+          <strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong>
+          <small>Only for Node #{draft.node.nodeNumber}: what happens when player text matches nothing here.</small>
+        </span>
+        <span aria-hidden="true">›</span>
+      </button>
+    </div> : null;
+
     return {
       id: "narrative.node",
       title: `NODE #${draft.node.nodeNumber}`,
@@ -91,6 +140,23 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
               <label>LOCATION <ReferenceField kind="location" value={draft.node.locationId ?? ""} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationId: locationId || null } }))} placeholder="none" /></label>
               <label>TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
             </div>,
+          }],
+        },
+        {
+          type: "section",
+          id: "node-input-handling",
+          label: "INPUT HANDLING",
+          summary: inputSummary,
+          children: nodeExists ? [{
+            type: "custom",
+            id: "node-input-list",
+            role: "results",
+            content: inputRows,
+          }] : [{
+            type: "status",
+            id: "node-input-save-first",
+            tone: "info",
+            text: "Save this Node before configuring its node-specific inputs and invalid response.",
           }],
         },
         {
