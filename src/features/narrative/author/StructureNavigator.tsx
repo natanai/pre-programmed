@@ -99,10 +99,13 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         </div>
 
         {normalizedQuery ? <div className="structure-jump-results" aria-label="Matching nodes">
-          {jumpResults.length ? jumpResults.map((node) => <button type="button" key={node.id} onClick={() => jumpToNode(node.id)}>
-            <span className="structure-jump-copy"><strong>#{node.nodeNumber}</strong><small>{node.text.slice(0, 90) || "Empty node"}</small></span>
-            <span className="structure-jump-notation">{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</span>
-          </button>) : <span className="structure-jump-empty">NO MATCHING NODES.</span>}
+          {jumpResults.length ? jumpResults.map((node) => <div className="structure-jump-result-row" key={node.id}>
+            <button type="button" className="structure-jump-result-main" onClick={() => jumpToNode(node.id)}>
+              <span className="structure-jump-copy"><strong>#{node.nodeNumber}</strong><small>{node.text.slice(0, 90) || "Empty node"}</small></span>
+              <span className="structure-jump-notation">{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</span>
+            </button>
+            <button type="button" className="structure-reference-edit" aria-label={`Edit Node #${node.nodeNumber}`} onClick={() => onOpenNode(node.id)}>[EDIT]</button>
+          </div>) : <span className="structure-jump-empty">NO MATCHING NODES.</span>}
         </div> : null}
       </div>
 
@@ -137,10 +140,13 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
                   {interaction.outcomes.map((outcome, outcomeIndex) => {
                     const destination = outcome.destinationNodeId && snapshot.nodes.find((candidate) => candidate.id === outcome.destinationNodeId);
                     if (!destination) return <span className="stay-destination" key={outcome.id}>{outcomeIndex + 1}. ↺ stay</span>;
-                    return <button type="button" className="branch-destination" key={outcome.id} onClick={() => setPath([...path.slice(0, columnIndex + 1), destination.id])}>
-                      <span>{outcomeIndex + 1}. → #{destination.nodeNumber} {destination.text.slice(0, 46)}</span>
-                      <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, destination.id).join("")}</strong>
-                    </button>;
+                    return <div className="structure-destination-row" key={outcome.id}>
+                      <button type="button" className="branch-destination" onClick={() => setPath([...path.slice(0, columnIndex + 1), destination.id])}>
+                        <span>{outcomeIndex + 1}. → #{destination.nodeNumber} {destination.text.slice(0, 46)}</span>
+                        <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, destination.id).join("")}</strong>
+                      </button>
+                      <button type="button" className="structure-reference-edit" aria-label={`Edit destination Node #${destination.nodeNumber}`} onClick={() => onOpenNode(destination.id)}>[EDIT]</button>
+                    </div>;
                   })}
                 </div>
               </div>)}
