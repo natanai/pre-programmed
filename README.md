@@ -215,9 +215,25 @@ Local-only use does not require a Cloudflare account. Hosted deployment currentl
 
 Author mode can export/import a `.ppgame` project file, allowing authored project data to move between portable desktop, local repository, and hosted installations without moving another installation's database itself. Ordinary image/audio files remain separate repository/external Media with stable sidecars.
 
+## Windows portable build
+
+The **Build portable Windows engine** GitHub Actions workflow is manual-only. To create a versioned Windows package:
+
+1. Open the repository's **Actions** tab.
+2. Select **Build portable Windows engine**.
+3. Choose **Run workflow**.
+4. Enter a semver-like version such as `0.1.0` or `0.1.0-beta.1`.
+5. Download the resulting `Pre-Programmed-v<version>-windows-x64` artifact when the workflow finishes.
+
+The workflow verifies the engine, persistent no-cloud runtime, and hosted deployment shape before packaging. It removes `public/assets/` only inside the disposable Actions checkout so the distributed ZIP contains no installation's repository Media or authored game. It then builds and smoke-tests a self-contained, pre-extracted Windows folder and uploads that folder as a ZIP.
+
+Recipients extract the whole `Pre-Programmed` folder and run `Pre-Programmed.exe` in place. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine. Runtime state, D1 data, cache, exports, and local installation configuration stay beneath that extracted folder.
+
+`installation.txt` owns that local installation's Author key. `.ppgame` owns portable authored project data. The Author key is not part of `.ppgame`; a future hosted installation may reuse the same value for its `ADMIN_KEY` secret or choose a different one.
+
 ## Production workflow
 
-`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow prepares installation-specific Worker configuration, resolves the installation's D1 database (creating it if necessary), deploys that installation's Worker, captures the deployment URL reported by Wrangler, builds the client against that URL, verifies the API and Media persistence contract, and publishes GitHub Pages.
+`main` is the production deployment branch for this repository. The tracked GitHub Actions workflow prepares installation-specific Worker configuration, resolves the installation's D1 database (creating it only for a genuinely new installation and otherwise preserving the existing Worker's D1 binding), deploys that installation's Worker, captures the deployment URL reported by Wrangler, builds the client against that URL, verifies the API and Media persistence contract, and publishes GitHub Pages.
 
 A cloned installation does **not** need to copy this repository owner's Worker URL or D1 identifier. `PRE_PROGRAMMED_API_ORIGIN`, `PRE_PROGRAMMED_CLIENT_ORIGIN`, and the Worker/D1 naming variables remain optional overrides for custom hosting or unusual installations. The reusable client contains no upstream production fallback.
 
