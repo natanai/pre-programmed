@@ -41,9 +41,13 @@ async function recoverD1DatabaseId({ accountId, apiToken, workerName }) {
   return binding.database_id;
 }
 
-const repositoryName = process.env.GITHUB_REPOSITORY?.split("/").at(-1)?.trim() || "";
+const [repositoryOwner = "", repositoryName = ""] = (process.env.GITHUB_REPOSITORY ?? "").split("/");
 const workerName = required(process.env.PRE_PROGRAMMED_WORKER_NAME || repositoryName, "PRE_PROGRAMMED_WORKER_NAME");
 const databaseName = required(process.env.PRE_PROGRAMMED_D1_DATABASE_NAME || `${workerName}-db`, "PRE_PROGRAMMED_D1_DATABASE_NAME");
+const clientOrigin = required(
+  process.env.PRE_PROGRAMMED_CLIENT_ORIGIN || (repositoryOwner ? `https://${repositoryOwner}.github.io` : ""),
+  "PRE_PROGRAMMED_CLIENT_ORIGIN",
+).replace(/\/+$/, "");
 let databaseId = process.env.PRE_PROGRAMMED_D1_DATABASE_ID?.trim() || "";
 
 if (!databaseId) {
@@ -56,6 +60,10 @@ if (!databaseId) {
 
 const template = JSON.parse(await readFile(templatePath, "utf8"));
 template.name = workerName;
+template.vars = {
+  ...(template.vars ?? {}),
+  CLIENT_ORIGIN: clientOrigin,
+};
 template.d1_databases = [{
   binding: "DB",
   database_name: databaseName,
@@ -64,4 +72,4 @@ template.d1_databases = [{
 delete template.r2_buckets;
 
 await writeFile(outputPath, `${JSON.stringify(template, null, 2)}\n`, { mode: 0o600 });
-console.log(`Prepared deployment Wrangler config for ${workerName} with DB ${databaseName}. File Media is shipped from public/assets.`);
+console.log(`Prepared deployment Wrangler config for ${workerName} with DB ${databaseName} and client origin ${clientOrigin}. File Media is shipped from public/assets.`);
