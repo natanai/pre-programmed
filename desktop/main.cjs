@@ -229,6 +229,37 @@ async function runSelfTest() {
     throw new Error("Portable Author login failed.");
   }
 
+  const exportResponse = await fetch(new URL("api/author/project/export", url), {
+    headers: { authorization: `Bearer ${login.token}` },
+    cache: "no-store",
+  });
+  const exportedText = await exportResponse.text();
+  let exported;
+  try {
+    exported = JSON.parse(exportedText);
+  } catch {
+    throw new Error("Portable project export was not valid JSON.");
+  }
+  if (!exportResponse.ok || exported?.format !== "pre-programmed-project" || exported?.version !== 1
+    || typeof exported?.project !== "object" || "revision" in exported.project
+    || !Array.isArray(exported?.bookmarks) || typeof exported?.featureData !== "object") {
+    throw new Error("Portable project export contract failed.");
+  }
+
+  const importResponse = await fetch(new URL("api/author/project/import", url), {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${login.token}`,
+      "content-type": "application/json",
+    },
+    body: exportedText,
+  });
+  const imported = await importResponse.json();
+  if (!importResponse.ok || typeof imported?.snapshot?.revision !== "number"
+    || imported.snapshot.revision <= snapshot.revision || !Array.isArray(imported.snapshot.nodes)) {
+    throw new Error("Portable project import round-trip failed.");
+  }
+
   await shutdown();
 }
 
