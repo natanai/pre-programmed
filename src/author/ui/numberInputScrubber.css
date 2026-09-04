@@ -1,0 +1,11 @@
+.author-workspace-layer input[type="number"]:not(:disabled):not([readonly]) {
+  touch-action: pan-y pinch-zoom;
+}
+
+.author-workspace-layer input[type="number"].author-number-scrubbing {
+  cursor: ew-resize;
+  outline: 1px dashed currentColor;
+  outline-offset: 2px;
+  -webkit-user-select: none;
+  user-select: none;
+}
