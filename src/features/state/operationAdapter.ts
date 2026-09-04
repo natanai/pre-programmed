@@ -1,3 +1,4 @@
+import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { OperationTargetAdapter } from "../operations/targetAdapter";
 
 export const VARIABLE_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
@@ -12,6 +13,7 @@ export const VARIABLE_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       interactable: definition.interactable ?? false,
       operations: definition.operations ?? [],
       hooks: definition.hooks ?? [],
+      authorSource: authoredSource("variable", definition.id),
     };
   },
 };
@@ -28,6 +30,7 @@ export const COMPUTED_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       interactable: definition.interactable ?? false,
       operations: definition.operations ?? [],
       hooks: definition.hooks ?? [],
+      authorSource: authoredSource("computed", definition.id),
     };
   },
 };

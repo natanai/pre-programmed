@@ -5,6 +5,7 @@ export const INVENTORY_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSourc
     kind: "inventory.item",
     label: "INVENTORY ITEMS",
     description: "Let command patterns refer to items currently carried by the player.",
+    authorResourceKind: "item",
     candidates: (snapshot, state) => state.inventory.flatMap((entry) => {
       const definition = snapshot.items.find((item) => item.id === entry.itemId);
       if (!definition) return [];

@@ -14,5 +14,7 @@ export type CommandReferenceSource = {
   kind: string;
   label: string;
   description: string;
+  /** Canonical Author resource-provider kind for candidates shown in Commands UI. */
+  authorResourceKind: string;
   candidates: (snapshot: ProjectSnapshot, state: PlayState) => CommandReferenceCandidate[];
 };

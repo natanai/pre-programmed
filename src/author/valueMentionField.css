@@ -1,0 +1,75 @@
+.value-mention-field {
+  position: relative;
+  min-width: 0;
+}
+
+.value-mention-menu {
+  position: absolute;
+  z-index: 12;
+  left: 0;
+  right: 0;
+  display: grid;
+  max-height: 14em;
+  overflow-y: auto;
+  border: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.value-mention-option {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.value-mention-option:last-child {
+  border-bottom: 0;
+}
+
+.value-mention-insert,
+.value-mention-edit {
+  min-height: 2.5em;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.value-mention-insert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75em;
+  min-width: 0;
+  padding: .4em .55em;
+  text-align: left;
+}
+
+.value-mention-insert > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.value-mention-insert > span:last-child {
+  color: var(--dos-muted);
+}
+
+.value-mention-insert[aria-selected="true"] {
+  color: var(--dos-bright);
+}
+
+.value-mention-edit {
+  padding: .35em .5em;
+  border-left: 1px dotted var(--dos-line);
+  color: var(--dos-bright);
+}
+
+@media (pointer: coarse), (max-width: 700px) {
+  .value-mention-insert,
+  .value-mention-edit {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+}

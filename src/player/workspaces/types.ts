@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 
@@ -15,14 +16,17 @@ export type PlayerWorkspaceRequest = {
  * one of its real Author tasks from the live thing the author is looking at.
  */
 export type PlayerWorkspaceAuthorBridge = {
+  /** Open a feature-owned Author task when the player surface itself owns the contextual destination. */
   openWorkspace: (feature: string, workspace: string, data?: Record<string, string>) => void;
+  /** Edit a durable resource through its canonical provider rather than hard-coding another feature's route. */
+  editResource: (kind: string, id: string, focus?: Record<string, string>) => void;
 };
 
 export type PlayerWorkspaceContext = {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   updateState: (state: PlayState) => void;
-  output: (text: string) => void;
+  output: (text: string, source?: AuthoredSourceIdentity) => void;
   events: (events: EffectEvent[]) => void;
   author?: PlayerWorkspaceAuthorBridge;
 };

@@ -42,8 +42,8 @@ export const presentMediaEffectEvent: EffectEventPresenter = (event, context) =>
         console.warn(`[MEDIA] Image ${event.assetId} has no renderable content.`);
         return true;
       }
-      if (asset.defaultPresentation === "inline") context.surface.appendInlineAsset(event.assetId);
-      else context.surface.showOverlayAsset(event.assetId);
+      if (asset.defaultPresentation === "inline") context.surface.appendInlineAsset(event.assetId, event.source);
+      else context.surface.showOverlayAsset(event.assetId, event.source);
       return true;
     }
     default:

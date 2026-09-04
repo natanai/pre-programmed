@@ -4,7 +4,7 @@ import { presentMediaEffectEvent } from "../features/media/ui/effectPresentation
 
 const presentCoreEffectEvent: EffectEventPresenter = (event, context) => {
   if (event.type !== "notification") return false;
-  context.surface.notify(event.text, context.anchorLineId);
+  context.surface.notify(event.text, context.anchorLineId, event.source);
   return true;
 };
 

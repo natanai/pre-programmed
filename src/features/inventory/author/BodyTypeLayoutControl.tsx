@@ -24,17 +24,28 @@ export function BodyTypeLayoutControl({
   onChange,
   onAddSlot,
   onEditSlot,
+  initialEditSlotId,
 }: {
   snapshot: ProjectSnapshot;
   draft: BodyBackgroundDefinition;
   onChange: (draft: BodyBackgroundDefinition) => void;
   onAddSlot: () => void;
   onEditSlot: (slot: BodySlotDefinition) => void;
+  initialEditSlotId?: string;
 }) {
   const [gesture, setGesture] = useState<SlotGesture | null>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const openedInitialSlotRef = useRef("");
   const backgroundAsset = configuredAssetStore.resolve(snapshot, draft.assetId);
   const canvas = draft.canvas;
+
+  useEffect(() => {
+    if (!initialEditSlotId || openedInitialSlotRef.current === initialEditSlotId) return;
+    const slot = (draft.slots ?? []).find((candidate) => candidate.id === initialEditSlotId);
+    if (!slot) return;
+    openedInitialSlotRef.current = initialEditSlotId;
+    onEditSlot(slot);
+  }, [draft.slots, initialEditSlotId, onEditSlot]);
 
   useEffect(() => {
     if (!gesture) return;

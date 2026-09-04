@@ -1,4 +1,5 @@
 import "./authorNavigation.css";
+import "./liveAuthoring.css";
 
 export function AuthorHome({
   nodeNumber,
@@ -10,6 +11,8 @@ export function AuthorHome({
   message,
   onEditNode,
   onEditInvalid,
+  onEditMatch,
+  onEditPrompt,
   onOpenTools,
 }: {
   nodeNumber: number;
@@ -21,6 +24,8 @@ export function AuthorHome({
   message?: string;
   onEditNode: () => void;
   onEditInvalid: () => void;
+  onEditMatch?: () => void;
+  onEditPrompt?: () => void;
   onOpenTools: () => void;
 }) {
   return <section className="author-home" aria-label="Author controls for current node">
@@ -31,6 +36,8 @@ export function AuthorHome({
     <nav className="author-home-actions" aria-label="Current node author actions">
       <button type="button" onClick={onEditNode}>[EDIT NODE]</button>
       <button type="button" className={invalidDraft ? "draft-input" : ""} onClick={onEditInvalid}>{invalidLabel}</button>
+      {onEditMatch ? <button type="button" onClick={onEditMatch}>[EDIT MATCH]</button> : null}
+      {onEditPrompt ? <button type="button" onClick={onEditPrompt}>[EDIT PROMPT]</button> : null}
       <button type="button" onClick={onOpenTools}>[TOOLS]</button>
     </nav>
     {message ? <div className="author-home-message" role="status">{message}</div> : null}

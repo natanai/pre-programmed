@@ -6,6 +6,7 @@ export const WORLD_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSource[] 
     kind: "world.character",
     label: "CHARACTERS",
     description: "Let command patterns refer to authored characters by their names, keys, tags, and aliases.",
+    authorResourceKind: "character",
     candidates: (snapshot) => snapshot.entities
       .filter((entity) => entity.type === "character")
       .map((entity) => ({
@@ -19,6 +20,7 @@ export const WORLD_COMMAND_REFERENCE_SOURCES: readonly CommandReferenceSource[] 
     kind: "world.location",
     label: "LOCATIONS",
     description: "Let command patterns refer to authored locations by their names, keys, tags, and aliases.",
+    authorResourceKind: "location",
     candidates: (snapshot) => snapshot.entities
       .filter((entity) => entity.type === "location")
       .map((entity) => ({

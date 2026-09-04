@@ -11,7 +11,7 @@ import type {
 import "./workspacePanel.css";
 import "./workspacePanelLocations.css";
 
-export function WorkspacePanel({ token, snapshot, playState, initialView = "locations", onSave, onSnapshot, onRestore }: {
+export function WorkspacePanel({ token, snapshot, playState, initialView = "locations", onSave, onSnapshot, onRestore, onEditNode }: {
   token: string;
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -19,6 +19,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
   onSave: (operations: MutationOperation[], description: string) => Promise<void>;
   onSnapshot: (snapshot: ProjectSnapshot) => void;
   onRestore: (bookmark: AuthorBookmark) => void;
+  onEditNode: (nodeId: string) => void;
   onClose: () => void;
 }) {
   const [view, setView] = useState<"locations" | "history">(initialView);
@@ -159,11 +160,15 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
             <small>CURRENT LOCATION</small>
             <strong>#{currentNode?.nodeNumber ?? "?"}</strong>
             <span>{currentNode?.text.slice(0, 110) || "Current scene"}</span>
+            {currentNode ? <button type="button" onClick={() => onEditNode(currentNode.id)}>[EDIT NODE]</button> : null}
           </div>
           <div className="workspace-location-navigation">
-            <button type="button" disabled={!previousNode} onClick={navigateBack}>
-              [{previousNode ? `← BACK TO #${previousNode.nodeNumber}` : "← NO PREVIOUS NODE"}]
-            </button>
+            <div className="workspace-location-navigation-actions">
+              <button type="button" disabled={!previousNode} onClick={navigateBack}>
+                [{previousNode ? `← BACK TO #${previousNode.nodeNumber}` : "← NO PREVIOUS NODE"}]
+              </button>
+              {previousNode ? <button type="button" onClick={() => onEditNode(previousNode.id)}>[EDIT #{previousNode.nodeNumber}]</button> : null}
+            </div>
             {previousNode ? <small>{previousNode.text.slice(0, 100) || "Previous scene"}</small> : <small>This run is already at the beginning of its traversal.</small>}
           </div>
         </div>
@@ -190,6 +195,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
                 </span>
                 <span className="workspace-row-actions">
                   <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => onRestore(bookmark)}>[LOAD]</button>
+                  {node ? <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => onEditNode(node.id)}>[EDIT NODE]</button> : null}
                   <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => void deleteBookmark(bookmark)}>[{deleting ? "DELETING..." : "DELETE"}]</button>
                 </span>
               </article>;

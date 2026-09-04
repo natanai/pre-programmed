@@ -154,6 +154,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           playState={context.playState}
           initial={initial}
           initialCommand={route.data?.command ?? ""}
+          initialOutcomeId={route.data?.outcomeId}
           fallback={fallback}
           onRegisterSave={context.registerWorkspaceSave}
           onPreview={(outcome) => context.runtime.preview({
@@ -162,6 +163,8 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
             speakerId: outcome.speakerId,
             events: previewEventsForEffects(outcome.effects, context.snapshot),
           })}
+          onCreateDestination={(onCreated) => context.resources.create("node", (resource) => onCreated(resource.id))}
+          onEditDestination={(nodeId) => context.resources.edit("node", nodeId)}
           onSave={async (operations, description) => {
             const result = await context.persist(operations, description);
             if (result.status !== "saved" && result.status !== "queued") return result;

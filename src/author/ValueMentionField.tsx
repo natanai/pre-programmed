@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject, type SyntheticEvent } from "react";
 import { makeValueToken } from "../features/narrative/interpolation";
 import type { ProjectSnapshot } from "../engine/project/model";
+import { useAuthorResourceTools } from "./resources/context";
+import "./valueMentionField.css";
 
 type Mention = { start: number; end: number; query: string };
 type TextSelection = { start: number; end: number };
@@ -38,6 +40,7 @@ export function ValueMentionField({
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
   onSelectionChange?: (selection: TextSelection) => void;
 }) {
+  const resources = useAuthorResourceTools();
   const control = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [mention, setMention] = useState<Mention | null>(null);
   const [selection, setSelection] = useState(0);
@@ -85,6 +88,10 @@ export function ValueMentionField({
       control.current?.setSelectionRange(cursor, cursor);
       if (control.current) reportSelection(control.current);
     });
+  };
+  const editMatch = (match: (typeof matches)[number]) => {
+    setMention(null);
+    resources.edit(match.kind, match.id);
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (mention && matches.length) {
@@ -134,13 +141,21 @@ export function ValueMentionField({
       ? <textarea {...common} rows={rows} ref={(element) => { control.current = element; if (textareaRef) textareaRef.current = element; }} />
       : <input {...common} ref={(element) => { control.current = element; }} />}
     {mention ? <div className="value-mention-menu" role="listbox" aria-label="Matching values">
-      {matches.length ? matches.map((match, index) => <button
-        type="button"
-        role="option"
-        aria-selected={index === selection % matches.length}
-        key={`${match.kind}:${match.id}`}
-        onPointerDown={(event) => { event.preventDefault(); selectMatch(match); }}
-      ><span>{match.label}</span><span>@{match.key}</span></button>) : <span>NO MATCH</span>}
+      {matches.length ? matches.map((match, index) => <div className="value-mention-option" key={`${match.kind}:${match.id}`}>
+        <button
+          type="button"
+          className="value-mention-insert"
+          role="option"
+          aria-selected={index === selection % matches.length}
+          onPointerDown={(event) => { event.preventDefault(); selectMatch(match); }}
+        ><span>{match.label}</span><span>@{match.key}</span></button>
+        <button
+          type="button"
+          className="value-mention-edit"
+          aria-label={`Edit ${match.label}`}
+          onPointerDown={(event) => { event.preventDefault(); editMatch(match); }}
+        >[EDIT]</button>
+      </div>) : <span>NO MATCH</span>}
     </div> : null}
   </div>;
 }

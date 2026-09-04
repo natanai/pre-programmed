@@ -26,7 +26,7 @@ export const stateStatusPlayerWorkspaceContribution: PlayerWorkspaceContribution
       ...(groupId ? [{
         id: "state-edit-group",
         label: "EDIT GROUP",
-        onAction: () => context.author?.openWorkspace("state", "definitions", stateResourceData("state-group", groupId)),
+        onAction: () => context.author?.editResource("state-group", groupId),
       }] : [{
         id: "state-player-groups",
         label: "PLAYER GROUPS",
@@ -57,11 +57,10 @@ export const stateStatusPlayerWorkspaceContribution: PlayerWorkspaceContribution
     onState={context.updateState}
     onOutput={context.output}
     onEvents={context.events}
-    onEditGroup={context.author ? (groupId) => context.author?.openWorkspace("state", "definitions", stateResourceData("state-group", groupId)) : undefined}
-    onEditEntry={context.author ? (entry) => context.author?.openWorkspace(
-      "state",
-      "definitions",
-      stateResourceData(entry.kind === "computed" ? "computed" : "variable", entry.definition.id),
+    onEditGroup={context.author ? (groupId) => context.author?.editResource("state-group", groupId) : undefined}
+    onEditEntry={context.author ? (entry) => context.author?.editResource(
+      entry.kind === "computed" ? "computed" : "variable",
+      entry.definition.id,
     ) : undefined}
   />,
 };
