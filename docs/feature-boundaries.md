@@ -6,6 +6,10 @@ The architectural target is:
 
 > A feature owns its complete vertical slice. Core composes features; core does not implement feature internals.
 
+For Author mode, the same ownership rule has a second consequence:
+
+> An authorable resource has one owning editor. Every Author-enabled surface that shows or references it should be able to enter that same editor directly.
+
 ## 1. Put behavior with its owner
 
 Before adding behavior, identify the feature that conceptually owns it.
@@ -99,7 +103,21 @@ Therefore:
 
 This is the core play-and-build contract: the game remains playable while Author mode makes the thing being viewed directly editable.
 
-## 8. Installation configuration is not engine behavior
+## 8. One owner, many Author entry points
+
+Feature ownership must not force authors to navigate by implementation boundary.
+
+If an Author-enabled surface displays or references an authorable definition, it should provide a direct route into that definition's **single feature-owned editor**. The referencing feature may select, summarize, preview, or contextualize the resource, but it should not recreate the owner's editing fields, validation, draft state, or save path.
+
+Use the recursive Author task/resource contracts to nest the owning editor while preserving the suspended parent context. Creation should use the same owner and return the created resource to the parent when appropriate.
+
+A preview or reference is incomplete when an author must back out, open the owner's top-level tool, and rediscover the resource they were already looking at.
+
+This is deliberately a modularity invariant: ownership determines **where editing logic lives**; context determines **where that editor can be entered**.
+
+See [`author-resource-ownership.md`](author-resource-ownership.md) for the complete reachability, nesting, creation, and review rules.
+
+## 9. Installation configuration is not engine behavior
 
 Worker names, database identities, repository paths, API origins, Author credentials, and optional provider configuration belong to installation/platform adapters.
 
@@ -107,7 +125,7 @@ Feature/project data should store stable project identities and content keys, no
 
 An optional provider may enable one capability; its absence must not disable unrelated engine features.
 
-## 9. Replace unsuitable prototypes
+## 10. Replace unsuitable prototypes
 
 When a prototype foundation is conceptually wrong:
 
@@ -121,7 +139,7 @@ Avoid two sources of truth, repair layers around an obsolete subsystem, and perm
 
 Compatibility code is acceptable only as a deliberate one-way migration mechanism toward deletion.
 
-## 10. Delete by feature boundary
+## 11. Delete by feature boundary
 
 A useful modularity check for a substantial feature replacement is:
 
@@ -133,7 +151,7 @@ A useful modularity check for a substantial feature replacement is:
 
 Do this when replacing a feature, not as permanent CI theater.
 
-## 11. Verification must remain replaceable too
+## 12. Verification must remain replaceable too
 
 Tests and CI are architecture. They must not make an experimental feature harder to replace than the runtime does.
 
@@ -149,7 +167,7 @@ During rapid prototyping:
 
 A failed test during an intentional replacement is evidence to inspect, not proof that the old behavior must be preserved.
 
-## 12. Documentation describes the current engine
+## 13. Documentation describes the current engine
 
 Tracked documentation is part of the developer interface.
 
@@ -163,4 +181,8 @@ Before merging a substantial change, ask:
 
 > If this feature were replaced next week, did this change make replacement easier, neutral, or harder?
 
-If the answer is "harder," there should be an explicit architectural reason rather than convenience alone.
+For Author surfaces, also ask:
+
+> If this surface shows an authorable resource, can the author enter its owning editor here without creating a second editor?
+
+If the answer is "harder" or "no," there should be an explicit architectural reason rather than convenience alone.
