@@ -44,6 +44,12 @@ A feature should own its model, runtime behavior, Author contribution, validatio
 
 See [`docs/feature-boundaries.md`](docs/feature-boundaries.md) before substantial engine changes.
 
+### One owner, many Author entry points
+
+Every authorable resource should have one canonical feature-owned editor and save path. Whenever Author mode shows or references that resource, the author should be able to enter that same editor directly from the current context through the recursive task system. Referencing surfaces should nest the owner's editor rather than duplicate it or force the author to back out and rediscover the resource through another tool.
+
+See [`docs/author-resource-ownership.md`](docs/author-resource-ownership.md) for the full ownership and reachability rule.
+
 ### Replace prototypes instead of preserving them
 
 This repository is intentionally allowed to evolve quickly. When a prototype foundation is no longer suitable, replace it and delete the superseded implementation. Tests, documentation, adapters, and UI rules should evolve with the systems they protect rather than forcing removed behavior to survive.
