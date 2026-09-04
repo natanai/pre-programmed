@@ -1,0 +1,136 @@
+name: Build portable Windows engine
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Portable engine version (for example 0.1.0)
+        required: true
+        type: string
+  # Temporary branch trigger used only to validate this packaging lane before merge.
+  push:
+    branches:
+      - feature/portable-windows-project
+
+permissions:
+  contents: read
+
+jobs:
+  build-portable-windows:
+    runs-on: windows-latest
+    env:
+      CSC_IDENTITY_AUTO_DISCOVERY: "false"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Resolve portable version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $version = "${{ inputs.version }}".Trim()
+          } else {
+            $version = "0.0.0-dev.${{ github.run_number }}"
+          }
+          if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+            throw "Version must be semver-like, such as 0.1.0 or 0.1.0-beta.1"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install engine dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify engine before packaging
+        run: npm run verify
+
+      - name: Remove installation Media from portable build workspace
+        shell: pwsh
+        run: |
+          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
+          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+
+      - name: Build clean engine client
+        run: npm run build
+        env:
+          VITE_API_ORIGIN: ""
+
+      - name: Install isolated desktop host dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Bundle Worker for local workerd runtime
+        working-directory: desktop
+        run: node build-worker.mjs
+
+      - name: Reject installation-specific references
+        shell: pwsh
+        run: |
+          $patterns = @(
+            'workers\.dev',
+            'CLOUDFLARE_ACCOUNT_ID',
+            'CLOUDFLARE_API_TOKEN',
+            'PRE_PROGRAMMED_API_ORIGIN',
+            'natanai'
+          )
+          $matches = Get-ChildItem dist, desktop/build -Recurse -File |
+            Select-String -Pattern $patterns -ErrorAction SilentlyContinue
+          if ($matches) {
+            $matches | ForEach-Object { Write-Error "$($_.Path):$($_.LineNumber): $($_.Line)" }
+            throw "Portable runtime contains installation-specific references."
+          }
+
+      - name: Build portable executable
+        working-directory: desktop
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          npx electron-builder --config electron-builder.yml --win portable --x64 "--config.extraMetadata.version=$env:VERSION"
+
+      - name: Assemble friend-facing ZIP from allowlist
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $stage = Join-Path $env:RUNNER_TEMP "pre-programmed-portable"
+          New-Item -ItemType Directory -Path $stage -Force | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $stage "assets") -Force | Out-Null
+
+          $builtExe = Join-Path "desktop/release" "Pre-Programmed-$env:VERSION-windows-x64.exe"
+          if (-not (Test-Path $builtExe)) { throw "Portable executable was not produced at $builtExe" }
+          Copy-Item $builtExe (Join-Path $stage "Pre-Programmed.exe")
+          Copy-Item "desktop/portable-readme.txt" (Join-Path $stage "README.txt")
+
+          $expectedTopLevel = @("assets", "Pre-Programmed.exe", "README.txt") | Sort-Object
+          $actualTopLevel = @(Get-ChildItem $stage | ForEach-Object Name) | Sort-Object
+          if (Compare-Object $expectedTopLevel $actualTopLevel) {
+            throw "Portable staging directory contains files outside the explicit friend-facing allowlist."
+          }
+
+          $forbidden = @(Get-ChildItem $stage -Recurse -Force | Where-Object {
+            $_.Name -match '^(docs|src|tests|worker|scripts|\.github|AGENTS\.md)$' -or
+            $_.Extension -in @('.yml', '.yaml')
+          })
+          if ($forbidden.Count -gt 0) {
+            $forbidden | ForEach-Object { Write-Error $_.FullName }
+            throw "Developer/source material leaked into portable staging."
+          }
+
+          $zip = Join-Path $PWD "Pre-Programmed-v$env:VERSION-windows-x64.zip"
+          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal -Force
+          if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
+          "ZIP_PATH=$zip" >> $env:GITHUB_ENV
+          "ZIP_NAME=Pre-Programmed-v$env:VERSION-windows-x64" >> $env:GITHUB_ENV
+
+      - name: Upload portable ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_PATH }}
+          if-no-files-found: error
+          retention-days: 30
