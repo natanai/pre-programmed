@@ -6,6 +6,7 @@ import { makeId } from "../../../engine/project/id";
 import type { GameNode } from "../model";
 import { nextNodeNumber } from "../nodeNumber";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
+import "./nodeWorkspace.css";
 
 type NodeWorkspaceDraft = {
   node: GameNode;
@@ -35,6 +36,19 @@ function routeData(route: AuthorTaskRoute) {
   return route.type === "feature" ? route.data : undefined;
 }
 
+function invalidInputRoute(nodeId: string, interactionId?: string): AuthorTaskRoute {
+  return {
+    type: "feature",
+    feature: "narrative",
+    workspace: "interaction",
+    data: {
+      sourceNodeId: nodeId,
+      fallback: "true",
+      ...(interactionId ? { interactionId } : {}),
+    },
+  };
+}
+
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   id: "narrative.node",
   matches(route) {
@@ -52,6 +66,9 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const data = routeData(route);
     const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
     const location = context.snapshot.entities.find((entity) => entity.id === draft.node.locationId)?.name ?? "No location";
+    const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
+    const invalidInput = context.snapshot.interactions.find((interaction) =>
+      interaction.sourceNodeId === draft.node.id && interaction.matchMode === "fallback");
     return {
       id: "narrative.node",
       title: `NODE #${draft.node.nodeNumber}`,
@@ -91,6 +108,33 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
               <label>LOCATION <ReferenceField kind="location" value={draft.node.locationId ?? ""} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationId: locationId || null } }))} placeholder="none" /></label>
               <label>TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
             </div>,
+          }],
+        },
+        {
+          type: "section",
+          id: "node-input-handling",
+          label: "INPUT HANDLING",
+          summary: invalidInput ? "Invalid input response configured" : "No invalid input response",
+          children: nodeExists ? [{
+            type: "custom",
+            id: "node-invalid-input",
+            role: "results",
+            content: <button
+              type="button"
+              className="node-invalid-input-link"
+              onClick={() => context.pushTask(invalidInputRoute(draft.node.id, invalidInput?.id))}
+            >
+              <span>
+                <strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong>
+                <small>Only for Node #{draft.node.nodeNumber}: what happens when player text matches nothing here.</small>
+              </span>
+              <span aria-hidden="true">›</span>
+            </button>,
+          }] : [{
+            type: "status",
+            id: "node-invalid-input-save-first",
+            tone: "info",
+            text: "Save this Node before configuring its node-specific invalid input response.",
           }],
         },
         {
