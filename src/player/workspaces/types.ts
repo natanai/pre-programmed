@@ -15,7 +15,10 @@ export type PlayerWorkspaceRequest = {
  * one of its real Author tasks from the live thing the author is looking at.
  */
 export type PlayerWorkspaceAuthorBridge = {
+  /** Open a feature-owned Author task when the player surface itself owns the contextual destination. */
   openWorkspace: (feature: string, workspace: string, data?: Record<string, string>) => void;
+  /** Edit a durable resource through its canonical provider rather than hard-coding another feature's route. */
+  editResource: (kind: string, id: string, focus?: Record<string, string>) => void;
 };
 
 export type PlayerWorkspaceContext = {
