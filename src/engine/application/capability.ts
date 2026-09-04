@@ -6,17 +6,15 @@ export type ApplicationCommandAction = {
 };
 
 /**
- * A shell-level capability that player command grammar may invoke.
+ * A shell-level capability that authored player command grammar may invoke.
  *
- * Most player wording remains authored project grammar. `systemPatterns` is
- * reserved for installation-independent application commands such as portable
- * save/load that must exist even in projects created before the capability was
- * installed.
+ * Capabilities supply stable engine behavior only. Player-facing wording lives
+ * entirely in editable project command data so authors can rename, disable, or
+ * remove every terminal phrase without hidden parser exceptions.
  */
 export type ApplicationCommandCapability = {
   operation: string;
   label: string;
   description: string;
-  systemPatterns?: readonly string[];
   action: ApplicationCommandAction;
 };
