@@ -2,6 +2,21 @@ import type { AuthorPlatform, AuthorWorkspaceSnapshot } from "../author/authorPl
 import type { ProjectSnapshot } from "../../engine/project/model";
 import { ApiError, apiUrl, readJson } from "./http";
 
+function filenameFrom(response: Response, fallback: string) {
+  return response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1] ?? fallback;
+}
+
+async function download(response: Response, fallbackFilename: string) {
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new ApiError(response.status, detail || `Download failed (${response.status}).`);
+  }
+  return {
+    blob: await response.blob(),
+    filename: filenameFrom(response, fallbackFilename),
+  };
+}
+
 export const cloudflareAuthorPlatform: AuthorPlatform = {
   async checkSession(authorization) {
     const response = await fetch(apiUrl("/api/author/check"), {
@@ -21,18 +36,27 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
   },
 
   async downloadBackup(authorization) {
-    const response = await fetch(apiUrl("/api/author/backup"), {
+    return download(await fetch(apiUrl("/api/author/backup"), {
       headers: { Authorization: `Bearer ${authorization}` },
+    }), `pre-programmed-backup-${Date.now()}.json`);
+  },
+
+  async downloadProject(authorization) {
+    return download(await fetch(apiUrl("/api/author/project/export"), {
+      headers: { Authorization: `Bearer ${authorization}` },
+    }), `pre-programmed-project-${Date.now()}.ppgame`);
+  },
+
+  async importProject(authorization, file) {
+    const response = await fetch(apiUrl("/api/author/project/import"), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${authorization}`,
+        "Content-Type": "application/json",
+      },
+      body: await file.text(),
     });
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new ApiError(response.status, detail || `Backup failed (${response.status}).`);
-    }
-    return {
-      blob: await response.blob(),
-      filename: response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1]
-        ?? `pre-programmed-backup-${Date.now()}.json`,
-    };
+    return (await readJson<{ snapshot: ProjectSnapshot }>(response)).snapshot;
   },
 
   async readWorkspace(authorization) {
