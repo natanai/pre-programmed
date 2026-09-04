@@ -5,7 +5,6 @@ import { assetUrl } from "../../data/assets";
 import { ApiError, apiUrl } from "../cloudflare/http";
 
 const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((asset) => [asset.id, asset] as const));
-const DATABASE_MEDIA_TYPES = new Set(["image/svg+xml"]);
 
 function databaseContentUrl(contentKey: string) {
   return apiUrl(`/api/media/content/${encodeURIComponent(contentKey)}`);
@@ -33,13 +32,14 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 /**
- * Browser Media content boundary.
+ * Browser Media content resolution boundary.
  *
  * - contentKey means Author-generated textual Media stored in D1.
  * - no contentKey means a version-controlled file discovered from public/assets.
  *
- * Binary files are deliberately not uploaded through this port. Authors add
- * those to the repository, while synth definitions live directly in project D1.
+ * Durable Author-generated content is written only through Media's project
+ * mutation contract. This browser port intentionally has no independent upload
+ * path, so content and its Media definition cannot diverge.
  */
 export const configuredAssetContentStore = {
   urlFor(asset: Pick<MediaAsset, "id" | "contentKey">) {
@@ -62,22 +62,6 @@ export const configuredAssetContentStore = {
       intrinsicHeight: entry.dimensions?.height ?? null,
       authoringMode: entry.authoringMode,
     };
-  },
-
-  async upload(authorization: string, contentKey: string, content: Blob) {
-    const contentType = (content.type || "application/octet-stream").split(";", 1)[0].toLowerCase();
-    if (!DATABASE_MEDIA_TYPES.has(contentType)) {
-      throw new Error("Only Author-generated SVG content is stored in D1. Add audio and other file media under public/assets with an .asset.json sidecar.");
-    }
-    const response = await fetch(apiUrl(`/api/author/media/content/${encodeURIComponent(contentKey)}`), {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${authorization}`,
-        "Content-Type": contentType,
-      },
-      body: content,
-    });
-    if (!response.ok) await responseError(response, `Generated asset save failed (${response.status}).`);
   },
 
   async fetch(asset: Pick<MediaAsset, "id" | "contentKey">) {
