@@ -41,6 +41,7 @@ jobs:
           PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_NAME: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_ID: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_ID }}
+          PRE_PROGRAMMED_CLIENT_ORIGIN: ${{ vars.PRE_PROGRAMMED_CLIENT_ORIGIN }}
         run: node scripts/prepare-deployment-wrangler.mjs .wrangler.deploy.jsonc
 
       - name: Deploy API Worker
