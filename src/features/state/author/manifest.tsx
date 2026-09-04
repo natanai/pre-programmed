@@ -11,6 +11,7 @@ import {
 } from "./ruleAdapters";
 import { stateProjectReferences } from "./references";
 import { stateAuthorSearch, stateAuthorTools } from "./tools";
+import { stateStatusAuthorWorkspace } from "./statusWorkspace";
 import { STATE_WORKSPACES, type StateAuthorResourceKind } from "./workspaces";
 
 const DEFINITIONS_ROUTE = { type: "feature", feature: "state", workspace: "definitions" } as const;
@@ -33,7 +34,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
   id: "state",
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "state") return null;
-    if (route.workspace === "status") return "Status";
+    if (route.workspace === "status") return "Player status";
     if (route.workspace !== "definitions") return null;
     const id = route.data?.resourceId;
     const variable = snapshot.variables.find((candidate) => candidate.id === id);
@@ -77,7 +78,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
   references: [stateProjectReferences],
   tools: stateAuthorTools,
   search: stateAuthorSearch,
-  workspaces: [...STATE_WORKSPACES],
+  workspaces: [stateStatusAuthorWorkspace, ...STATE_WORKSPACES],
   resources: [
     {
       kind: "variable",
