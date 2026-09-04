@@ -6,9 +6,8 @@ import type { ApplicationCommandCapability } from "./capability";
 /**
  * Explicit composition root for targetless application capabilities.
  *
- * Features contribute stable operation IDs here. Authored project grammar
- * decides which player-facing words expose ordinary capabilities; explicitly
- * system-level patterns remain available across every project revision.
+ * Features contribute stable operation IDs here. Editable project command
+ * grammar decides which player-facing words expose those capabilities.
  */
 export const APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCommandCapability[] = [
   ...INVENTORY_APPLICATION_COMMAND_CAPABILITIES,

@@ -1,4 +1,9 @@
-import { DEFAULT_COMMAND_PROJECT_SETTINGS } from "./defaultCatalog";
+import {
+  CURRENT_COMMAND_STARTER_REVISION,
+  DEFAULT_COMMAND_PROJECT_SETTINGS,
+  LEGACY_COMMAND_STARTER_REVISION,
+  starterCommandsAfter,
+} from "./defaultCatalog";
 import type { CommandProjectSettings } from "./model";
 
 export type CommandsProjectSettingsSlice = {
@@ -16,6 +21,11 @@ function stringArray(value: unknown) {
 /**
  * Normalize the Commands-owned settings slice while preserving authored empty
  * command configuration as intentional data rather than silently repairing it.
+ *
+ * Starter command releases are the one exception: a release newer than the
+ * project's recorded starter revision is installed once, then the revision is
+ * advanced. From that point the installed command is ordinary author data and
+ * may be changed or deleted permanently.
  */
 export function normalizeCommandsProjectSettings(root: Record<string, unknown>): CommandsProjectSettingsSlice {
   const hasCommands = Boolean(root.commands && typeof root.commands === "object");
@@ -66,9 +76,25 @@ export function normalizeCommandsProjectSettings(root: Record<string, unknown>):
     })
     : [];
 
+  if (!hasCommands) {
+    return structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS);
+  }
+
+  const storedRevision = typeof commandsValue.starterRevision === "number"
+    && Number.isInteger(commandsValue.starterRevision)
+    && commandsValue.starterRevision >= 0
+    ? commandsValue.starterRevision
+    : LEGACY_COMMAND_STARTER_REVISION;
+  const existingIds = new Set(commands.map((command) => command.id));
+  const existingOperations = new Set(commands.map((command) => command.operation));
+  const newStarters = starterCommandsAfter(storedRevision)
+    .filter((command) => !existingIds.has(command.id) && !existingOperations.has(command.operation));
+
   return {
-    commands: hasCommands
-      ? { referenceSources, commands }
-      : structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS.commands),
+    commands: {
+      starterRevision: Math.max(storedRevision, CURRENT_COMMAND_STARTER_REVISION),
+      referenceSources,
+      commands: [...commands, ...newStarters],
+    },
   };
 }

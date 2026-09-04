@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
+import { authorOperationDefinitions } from "../../../author/operations/catalog";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
-import { commandReferenceSourceByKind, commandReferenceSources } from "../referenceCatalog";
+import type { ApplicationCommandCapability } from "../../../engine/application/capability";
 import type { CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
-import { authorOperationDefinitions } from "../../../author/operations/catalog";
+import { commandReferenceSourceByKind, commandReferenceSources } from "../referenceCatalog";
 import "./commandSettings.css";
 
 const OPERATION_ID_PATTERN = /^[a-z][a-z0-9_.-]{0,63}$/;
 const PLACEHOLDER_PATTERN = /\{([a-z][a-z0-9_-]*)\}/gi;
+const CUSTOM_ACTION = "__custom__";
 
 function operationIdFromLabel(label: string) {
   return label
@@ -29,6 +31,14 @@ function placeholderNames(patterns: string[]) {
     for (const match of pattern.matchAll(PLACEHOLDER_PATTERN)) seen.add(match[1].toLowerCase());
   }
   return [...seen];
+}
+
+function applicationCapability(operation: string): ApplicationCommandCapability | undefined {
+  return APPLICATION_COMMAND_CAPABILITIES.find((candidate) => candidate.operation === operation);
+}
+
+function actionLabel(command: CommandDefinition) {
+  return applicationCapability(command.operation)?.label ?? command.operation;
 }
 
 function referenceSetting(commands: CommandProjectSettings, sourceKind: string): ReferenceSourceSetting {
@@ -59,30 +69,19 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
   const referenceSources = commandReferenceSources();
   const enabledSources = context.snapshot.settings.commands.referenceSources.filter((source) => source.enabled).length;
   const enabledCommands = context.snapshot.settings.commands.commands.filter((command) => command.enabled).length;
+
   return <div className="command-settings-overview">
-    <div className="command-settings-guide">
-      <p><strong>PLAYER COMMAND</strong><span>What a player can type, what operation it attempts, and which target receives it.</span></p>
-      <p><strong>TARGET NAME / ALIAS</strong><span>A word that identifies an existing item, character, location, variable, or computed value.</span></p>
-      <p><strong>RESOURCE OPERATION</strong><span>What a particular resource can do. For example, edit an Item’s inspect/use/equip behavior under Inventory.</span></p>
-    </div>
     <button type="button" className="command-settings-create" onClick={() => context.pushTask({
       type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
     })}>[+ NEW PLAYER COMMAND]</button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
-      <span><strong>PLAYER COMMANDS</strong><small>Create project-wide typed phrases such as <code>polish {"{item}"}</code> or <code>go {"{location}"}</code>.</small></span>
+      <span><strong>PLAYER COMMANDS</strong><small>Project-wide player inputs and what they do.</small></span>
       <span>{enabledCommands} ›</span>
     </button>
     <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "references" })}>
-      <span><strong>TARGET NAMES + ALIASES</strong><small>Choose which authored things commands can name and add alternate words for them.</small></span>
+      <span><strong>TARGET NAMES + ALIASES</strong><small>Alternate names players can use for authored things.</small></span>
       <span>{enabledSources}/{referenceSources.length} ›</span>
     </button>
-    <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "capabilities" })}>
-      <span><strong>APPLICATION ACTIONS</strong><small>Connect player wording to module-provided, targetless actions such as opening Inventory.</small></span>
-      <span>{APPLICATION_COMMAND_CAPABILITIES.length} ›</span>
-    </button>
-    <p className="command-settings-note">
-      Item operations such as inspect, use, and equip are configured on each Item. They appear in Player Commands only when you author typed grammar that invokes them.
-    </p>
   </div>;
 }
 
@@ -95,8 +94,6 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
   return <section className="author-panel author-panel-frame command-settings-workspace player-interactions-workspace">
     <header><span>PLAYER INTERACTIONS</span><span>PLAY + BUILD</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">Start from what the player types or the thing they act on. Scene responses, reusable wording, and target behavior remain owned by their feature while this workspace connects the journey.</p>
-
       <h3>CURRENT SCENE · #{node?.nodeNumber ?? "?"}</h3>
       {validInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => context.pushTask({
         type: "feature", feature: "narrative", workspace: "interaction", data: { interactionId: interaction.id },
@@ -104,17 +101,17 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
         <span><strong>{interaction.wording || interaction.aliases[0] || "Untitled input"}</strong><small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"}</small></span><span>›</span>
       </button>)}
       <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "narrative", workspace: "interaction" })}>
-        <span><strong>+ CURRENT-SCENE INPUT</strong><small>Define text that is valid only here and what happens in response.</small></span><span>›</span>
+        <span><strong>+ CURRENT-SCENE INPUT</strong><small>Input that works only at this node.</small></span><span>›</span>
       </button>
       <button type="button" onClick={() => context.pushTask({
         type: "feature", feature: "narrative", workspace: "interaction", data: { ...(invalidInput ? { interactionId: invalidInput.id } : {}), fallback: "true" },
       })}>
-        <span><strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong><small>What still happens when player text does not match.</small></span><span>›</span>
+        <span><strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong><small>Response when nothing matches.</small></span><span>›</span>
       </button>
 
-      <h3>REUSABLE PLAYER LANGUAGE</h3>
+      <h3>PROJECT-WIDE</h3>
       <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
-        <span><strong>PLAYER COMMANDS</strong><small>Create wording such as polish {"{item}"}, then continue directly into target behavior.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
+        <span><strong>PLAYER COMMANDS</strong><small>Reusable typed commands.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
       </button>
 
       <h3>ITEM BEHAVIOR</h3>
@@ -134,9 +131,9 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
       </article>)}
       {!context.snapshot.items.length ? <div className="command-settings-empty">NO ITEMS YET.</div> : null}
 
-      <h3>OTHER TARGET BEHAVIOR</h3>
+      <h3>OTHER TARGETS</h3>
       <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" })}>
-        <span><strong>PEOPLE, PLACES + STATE</strong><small>Configure operations and responses on characters, locations, and exposed status values.</small></span><span>›</span>
+        <span><strong>PEOPLE, PLACES + STATE</strong><small>Target behavior outside Inventory.</small></span><span>›</span>
       </button>
     </div>
   </section>;
@@ -148,7 +145,6 @@ function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContex
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>TARGET NAMES + ALIASES</span><span>{configured.filter((source) => source.enabled).length} ENABLED</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">Enable a target type when Player Commands should recognize its existing names. Open it to add alternate words. This does not create an operation or command by itself.</p>
       {referenceSources.map((source) => {
         const setting = configured.find((candidate) => candidate.sourceKind === source.kind);
         const count = source.candidates(context.snapshot, context.playState).length;
@@ -207,25 +203,23 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>TARGET NAMES · {source.label}</span></header>
     <div className="author-panel-body command-reference-editor">
-      <p className="command-settings-note">{source.description}</p>
-      <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enable this reference source</label>
-      <label className="check-label"><input type="checkbox" checked={draft.includeDefaults} onChange={(event) => setDraft({ ...draft, includeDefaults: event.target.checked })} /> accept normal names / labels / keys / tags supplied by this module</label>
-      <h3>CUSTOM TARGET ALIASES</h3>
-      <p className="command-settings-note">Optional. One alias per line. Turn off normal names above if you want only your own vocabulary.</p>
+      <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> recognize this target type</label>
+      <label className="check-label"><input type="checkbox" checked={draft.includeDefaults} onChange={(event) => setDraft({ ...draft, includeDefaults: event.target.checked })} /> use normal names / labels / keys / tags</label>
+      <h3>CUSTOM ALIASES</h3>
       <div className="command-reference-candidates">
         {candidates.map((candidate) => <label key={candidate.id}>
           <span>{candidate.label}</span>
           <textarea
             rows={2}
             value={(draft.aliases[candidate.id] ?? []).join("\n")}
-            placeholder="additional words or phrases"
+            placeholder="one additional name per line"
             onChange={(event) => setDraft({
               ...draft,
               aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) },
             })}
           />
         </label>)}
-        {!candidates.length ? <span className="muted">No targets currently exist for this source.</span> : null}
+        {!candidates.length ? <span className="muted">No targets currently exist for this type.</span> : null}
       </div>
     </div>
     <div className="author-actions author-panel-footer"><button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button></div>
@@ -237,17 +231,20 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>PLAYER COMMANDS</span><span>{commands.length} {commands.length === 1 ? "COMMAND" : "COMMANDS"}</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">This list contains only project-wide typed commands. Inventory is currently the sole starter command. Item operations such as inspect, use, and equip remain on each Item unless you create player wording for them here.</p>
       {commands.map((command) => <button type="button" key={command.id} onClick={() => context.pushTask({
         type: "feature",
         feature: "commands",
         workspace: "command",
         data: { commandId: command.id },
       })}>
-        <span><strong>{command.label || command.operation}</strong><small>{command.patterns.join(" · ") || "no player input patterns"}</small><small>{command.targetSlot ? "TARGETED" : "APPLICATION / NO TARGET"} · {command.operation}</small></span>
+        <span>
+          <strong>{command.label || command.operation}</strong>
+          <small>{command.patterns.join(" · ") || "no player inputs"}</small>
+          <small>ACTION · {actionLabel(command)}</small>
+        </span>
         <span>{command.enabled ? "ON" : "OFF"} ›</span>
       </button>)}
-      {!commands.length ? <div className="command-settings-empty">NO PROJECT COMMANDS YET.</div> : null}
+      {!commands.length ? <div className="command-settings-empty">NO PLAYER COMMANDS.</div> : null}
     </div>
     <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask({
       type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" },
@@ -255,31 +252,12 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
   </section>;
 }
 
-function CapabilitiesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
-  return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>APPLICATION ACTIONS</span><span>{APPLICATION_COMMAND_CAPABILITIES.length}</span></header>
-    <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">Capabilities are actions supplied by engine modules. They have no mandatory player-facing words. Create a command, then choose whatever language fits this game.</p>
-      {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <button type="button" key={capability.operation} onClick={() => context.pushTask({
-        type: "feature",
-        feature: "commands",
-        workspace: "command",
-        data: { commandId: "new", operation: capability.operation },
-      })}>
-        <span><strong>{capability.label}</strong><small>{capability.description}</small></span>
-        <span>{capability.operation} ›</span>
-      </button>)}
-      {!APPLICATION_COMMAND_CAPABILITIES.length ? <div className="command-settings-empty">NO APPLICATION CAPABILITIES ARE INSTALLED.</div> : null}
-    </div>
-  </section>;
-}
-
 function CommandEditor({ context, commandId, initialOperation = "" }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string }) {
   const existing = context.snapshot.settings.commands.commands.find((command) => command.id === commandId);
-  const capability = APPLICATION_COMMAND_CAPABILITIES.find((candidate) => candidate.operation === initialOperation);
+  const initialCapability = applicationCapability(initialOperation);
   const initial: CommandDefinition = structuredClone(existing ?? {
     id: crypto.randomUUID(),
-    label: capability?.label ?? "",
+    label: initialCapability?.label ?? "",
     operation: initialOperation,
     enabled: true,
     patterns: [],
@@ -297,6 +275,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
   const dirty = JSON.stringify(currentForDirty) !== baseline || pendingSourceKinds.length > 0;
   const slotNames = placeholderNames(currentForDirty.patterns);
   const availableSources = commandReferenceSources();
+  const selectedCapability = applicationCapability(draft.operation);
   const enabledSourceKinds = new Set([
     ...context.snapshot.settings.commands.referenceSources
       .filter((source) => source.enabled)
@@ -368,7 +347,7 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
 
   const remove = async () => {
     if (!savedCommand) return;
-    const commands = {
+    const commands: CommandProjectSettings = {
       ...context.snapshot.settings.commands,
       commands: context.snapshot.settings.commands.commands.filter((candidate) => candidate.id !== savedCommand.id),
     };
@@ -390,30 +369,56 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
     });
   };
 
+  const chooseAction = (operation: string) => {
+    if (operation === CUSTOM_ACTION) {
+      setOperationTouched(false);
+      setDraft({ ...draft, operation: operationIdFromLabel(draft.label) });
+      return;
+    }
+    const capability = applicationCapability(operation);
+    if (!capability) return;
+    setOperationTouched(true);
+    setDraft({
+      ...draft,
+      label: draft.label.trim() ? draft.label : capability.label,
+      operation: capability.operation,
+      targetSlot: "",
+    });
+  };
+
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>PLAYER COMMAND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body command-editor-body">
-      <p className="command-settings-journey"><strong>1 · WORDING</strong><span>→</span><strong>2 · TARGET</strong><span>→</span><strong>3 · TARGET BEHAVIOR</strong></p>
-      <p className="command-settings-note">Example: name the command “Polish,” add <code>polish {"{item}"}</code>, set <code>{"{item}"}</code> to Inventory Items, and make it the primary target. Save the wording and target first; target behavior is then an explicit next action.</p>
       <label>COMMAND NAME
         <input value={draft.label} autoFocus={!existing} onChange={(event) => {
           const label = event.target.value;
-          setDraft({ ...draft, label, operation: operationTouched ? draft.operation : operationIdFromLabel(label) });
+          setDraft({
+            ...draft,
+            label,
+            operation: !selectedCapability && !operationTouched ? operationIdFromLabel(label) : draft.operation,
+          });
         }} />
-        <small>The author-facing name shown in this list. This is what was previously described as the command label.</small>
       </label>
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enabled</label>
-      <label>PLAYER INPUT PATTERNS · ONE PER LINE
-        <textarea rows={5} value={patternsText} onChange={(event) => updatePatterns(event.target.value)} placeholder={"{location}\ngo {location}\nwalk to {location}"} />
-        <small>Literal words are matched as written. Braced names create argument slots.</small>
+      <label>PLAYER INPUTS · ONE PER LINE
+        <textarea rows={5} value={patternsText} onChange={(event) => updatePatterns(event.target.value)} placeholder={"save\nsave game"} />
       </label>
-      <label>OPERATION ID
-        <input list="engine-capability-operation-ids" value={draft.operation} onChange={(event) => { setOperationTouched(true); setDraft({ ...draft, operation: event.target.value.toLowerCase() }); }} autoCapitalize="none" autoCorrect="off" spellCheck={false} />
-        <datalist id="engine-capability-operation-ids">{APPLICATION_COMMAND_CAPABILITIES.map((candidate) => <option key={candidate.operation} value={candidate.operation}>{candidate.label}</option>)}</datalist>
-        <small>Stable engine action ID, generated from the command name unless you edit it. Examples: polish, examine, go, or combat.attack.</small>
+      <label>ACTION
+        <select value={selectedCapability?.operation ?? CUSTOM_ACTION} onChange={(event) => chooseAction(event.target.value)}>
+          <option value={CUSTOM_ACTION}>CUSTOM / TARGET ACTION</option>
+          {APPLICATION_COMMAND_CAPABILITIES.map((capability) => <option key={capability.operation} value={capability.operation}>{capability.label}</option>)}
+        </select>
+        {selectedCapability ? <small>{selectedCapability.description}</small> : null}
       </label>
+      {!selectedCapability ? <label>ACTION ID
+        <input value={draft.operation} onChange={(event) => {
+          setOperationTouched(true);
+          setDraft({ ...draft, operation: event.target.value.toLowerCase() });
+        }} autoCapitalize="none" autoCorrect="off" spellCheck={false} placeholder="polish" />
+        <small>Used to connect this wording to target behavior or another module.</small>
+      </label> : null}
       {draft.slots.length ? <div className="command-slot-editor">
-        <h3>ARGUMENT SLOTS</h3>
+        <h3>INPUT PARTS</h3>
         {draft.slots.map((slot) => <label key={slot.name}><span>{`{${slot.name}}`}</span>
           <select value={slot.sourceKind} onChange={(event) => setDraft({
             ...draft,
@@ -423,17 +428,16 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
             {availableSources.map((source) => <option key={source.kind} value={source.kind}>{source.label}{enabledSourceKinds.has(source.kind) ? "" : " · OFF"}</option>)}
           </select>
           {slot.sourceKind !== "text" && !enabledSourceKinds.has(slot.sourceKind)
-            ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} is not recognized yet. <button type="button" onClick={() => stageSource(slot.sourceKind)}>[ENABLE WITH SAVE]</button></small>
+            ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} is off. <button type="button" onClick={() => stageSource(slot.sourceKind)}>[ENABLE WITH SAVE]</button></small>
             : pendingSourceKinds.includes(slot.sourceKind)
-              ? <small className="command-slot-source-warning">{commandReferenceSourceByKind(slot.sourceKind)?.label ?? slot.sourceKind} will be enabled when this command is saved.</small>
+              ? <small className="command-slot-source-warning">Will be enabled when this command is saved.</small>
               : null}
         </label>)}
-        <label>PRIMARY TARGET
+        <label>TARGET
           <select value={draft.targetSlot} onChange={(event) => setDraft({ ...draft, targetSlot: event.target.value })}>
-            <option value="">NONE / APPLICATION OR META COMMAND</option>
+            <option value="">NO TARGET</option>
             {draft.slots.filter((slot) => slot.sourceKind !== "text").map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
           </select>
-          <small>The resolved target that receives this operation. With no target, an installed application capability can handle the operation.</small>
         </label>
       </div> : null}
       {savedCommand ? <div className="command-delete-zone">
@@ -463,11 +467,10 @@ function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel
   return <section className="author-panel author-panel-frame command-settings-workspace target-behaviors-workspace">
     <header><span>{commandLabel || operation.toUpperCase()} · TARGET BEHAVIOR</span></header>
     <div className="author-panel-body command-settings-list">
-      <p className="command-settings-note">The player wording is ready. Choose a {adapter?.label ?? "target"} to define what its <strong>{operation}</strong> operation says, changes, or triggers. You can create the needed target without leaving this journey.</p>
       {targets.map((target) => <button type="button" key={target.id} onClick={() => adapter && context.pushTask(adapter.editRoute(target.id, operation))}>
         <span><strong>{target.label}</strong><small>{target.available ? "available" : "not available"} · {target.responseCount} response{target.responseCount === 1 ? "" : "s"}{target.detail ? ` · ${target.detail}` : ""}</small></span><span>›</span>
       </button>)}
-      {!adapter ? <div className="command-settings-empty">THIS TARGET MODULE DOES NOT PROVIDE AN AUTHORING ROUTE.</div> : null}
+      {!adapter ? <div className="command-settings-empty">NO AUTHORING ROUTE FOR THIS TARGET TYPE.</div> : null}
       {adapter && !targets.length ? <div className="command-settings-empty">NO {adapter.label.toUpperCase()}S EXIST YET.</div> : null}
     </div>
     {adapter?.createRoute ? <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask(adapter.createRoute!(operation))}>[+ CREATE {adapter.label.toUpperCase()}]</button></div> : null}
@@ -478,7 +481,7 @@ export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSec
   {
     id: "commands",
     label: "PLAYER LANGUAGE",
-    description: "Create player commands, configure target names and aliases, and connect wording to engine actions.",
+    description: "Player commands and target names.",
     order: 20,
     render: (context) => <CommandsOverview context={context} />,
   },
@@ -488,8 +491,7 @@ export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: 
   if (route.type !== "feature" || route.feature !== "commands") return null;
   if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;
   if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
-  if (route.workspace === "grammar") return <CommandGrammarWorkspace context={context} />;
-  if (route.workspace === "capabilities") return <CapabilitiesWorkspace context={context} />;
+  if (route.workspace === "grammar" || route.workspace === "capabilities") return <CommandGrammarWorkspace context={context} />;
   if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} />;
   if (route.workspace === "interactions") return <PlayerInteractionsWorkspace context={context} />;
   if (route.workspace === "target-behaviors") return <TargetBehaviorsWorkspace

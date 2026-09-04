@@ -50,25 +50,6 @@
   flex: 0 0 auto;
 }
 
-.command-settings-guide {
-  display: grid;
-  gap: .55rem;
-  padding: .8rem;
-  border: 1px solid var(--dos-line);
-}
-
-.command-settings-guide p {
-  min-width: 0;
-  margin: 0;
-  display: grid;
-  gap: .15rem;
-  line-height: 1.3;
-}
-
-.command-settings-guide span {
-  color: var(--dos-muted);
-}
-
 .command-settings-create {
   justify-content: flex-start !important;
   min-height: 2.75rem !important;
@@ -123,6 +104,7 @@
 .command-reference-candidates textarea,
 .command-editor-body textarea,
 .command-editor-body input,
+.command-editor-body select,
 .command-slot-editor select {
   width: 100%;
   box-sizing: border-box;
@@ -192,19 +174,6 @@
   flex-wrap: wrap;
   gap: .7rem;
   align-items: center;
-}
-
-.command-settings-journey {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .35em .65em;
-  margin: 0;
-  color: var(--dos-muted);
-}
-
-.command-settings-journey strong {
-  color: var(--dos-text);
-  font-weight: 400;
 }
 
 .command-settings-empty {
