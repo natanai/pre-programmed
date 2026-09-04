@@ -6,15 +6,17 @@ export type ApplicationCommandAction = {
 };
 
 /**
- * A shell-level capability that authored targetless command grammar may invoke.
+ * A shell-level capability that player command grammar may invoke.
  *
- * The operation ID is stable module vocabulary; player-facing words remain
- * project grammar. Player workspace actions are deliberately distinct from
- * Author task routes so a normal player command can never enter Author mode.
+ * Most player wording remains authored project grammar. `systemPatterns` is
+ * reserved for installation-independent application commands such as portable
+ * save/load that must exist even in projects created before the capability was
+ * installed.
  */
 export type ApplicationCommandCapability = {
   operation: string;
   label: string;
   description: string;
+  systemPatterns?: readonly string[];
   action: ApplicationCommandAction;
 };
