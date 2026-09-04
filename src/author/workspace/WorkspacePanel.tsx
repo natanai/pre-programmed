@@ -26,6 +26,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
   const [savingBookmark, setSavingBookmark] = useState(false);
+  const [deletingBookmarkId, setDeletingBookmarkId] = useState("");
   const [confirmUndo, setConfirmUndo] = useState(false);
   const [undoing, setUndoing] = useState(false);
 
@@ -36,6 +37,10 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
   useEffect(refresh, [token, snapshot.revision]);
 
   const currentNode = snapshot.nodes.find((node) => node.id === playState.currentNodeId);
+  const previousNodeId = playState.traversal.length > 1 ? playState.traversal.at(-2) : undefined;
+  const previousNode = previousNodeId
+    ? snapshot.nodes.find((node) => node.id === previousNodeId)
+    : undefined;
   const normalizedQuery = query.trim().toLowerCase();
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     if (!normalizedQuery) return true;
@@ -57,6 +62,24 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
     setConfirmUndo(false);
   };
 
+  const navigateBack = () => {
+    if (!previousNodeId || !previousNode) return;
+    const traversal = playState.traversal.slice(0, -1);
+    const navigationState: PlayState = {
+      ...structuredClone(playState),
+      currentNodeId: previousNodeId,
+      traversal,
+    };
+    onRestore({
+      id: `author-navigation:${crypto.randomUUID()}`,
+      nodeId: previousNodeId,
+      traversal,
+      playState: navigationState,
+      note: "",
+      createdAt: new Date().toISOString(),
+    });
+  };
+
   const createBookmark = async () => {
     if (savingBookmark) return;
     setSavingBookmark(true);
@@ -72,6 +95,19 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
       setNote("");
     } finally {
       setSavingBookmark(false);
+    }
+  };
+
+  const deleteBookmark = async (bookmark: AuthorBookmark) => {
+    if (deletingBookmarkId) return;
+    setDeletingBookmarkId(bookmark.id);
+    try {
+      await onSave(
+        [{ type: "bookmark.delete", id: bookmark.id }],
+        `Deleted saved location${bookmark.note ? `: ${bookmark.note}` : ""}`,
+      );
+    } finally {
+      setDeletingBookmarkId("");
     }
   };
 
@@ -91,9 +127,9 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
   const totalCount = view === "locations" ? bookmarks.length : revisions.length;
 
   return <section className="author-panel author-panel-frame workspace-panel native-workspace-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>{view === "locations" ? "SAVED LOCATIONS" : "HISTORY"}</span></header>
+    <header><span>{view === "locations" ? "LOCATIONS" : "HISTORY"}</span></header>
     <div className="author-panel-body workspace-native-body">
-      <nav className="panel-tabs workspace-tabs" aria-label="Saved locations and history">
+      <nav className="panel-tabs workspace-tabs" aria-label="Locations and history">
         <button type="button" aria-pressed={view === "locations"} onClick={() => switchView("locations")}>LOCATIONS</button>
         <button type="button" aria-pressed={view === "history"} onClick={() => switchView("history")}>HISTORY</button>
       </nav>
@@ -123,26 +159,43 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "loca
             <strong>#{currentNode?.nodeNumber ?? "?"}</strong>
             <span>{currentNode?.text.slice(0, 110) || "Current scene"}</span>
           </div>
+          <div className="workspace-location-navigation">
+            <button type="button" disabled={!previousNode} onClick={navigateBack}>
+              [{previousNode ? `← BACK TO #${previousNode.nodeNumber}` : "← NO PREVIOUS NODE"}]
+            </button>
+            {previousNode ? <small>{previousNode.text.slice(0, 100) || "Previous scene"}</small> : <small>This run is already at the beginning of its traversal.</small>}
+          </div>
+        </div>
+
+        <section className="workspace-saved-locations" aria-label="Saved locations">
+          <div className="workspace-subsection-heading">
+            <strong>SAVED LOCATIONS</strong>
+            <small>{bookmarks.length}</small>
+          </div>
           <div className="bookmark-create workspace-bookmark-create">
             <input aria-label="Saved location name" placeholder="optional name" value={note} onChange={(event) => setNote(event.target.value)} />
             <button type="button" disabled={savingBookmark} onClick={() => void createBookmark()}>[{savingBookmark ? "SAVING..." : "SAVE HERE"}]</button>
           </div>
-        </div>
 
-        <div className="workspace-native-list" aria-label="Saved locations">
-          {filteredBookmarks.map((bookmark) => {
-            const node = snapshot.nodes.find((candidate) => candidate.id === bookmark.nodeId);
-            return <article className="workspace-native-row workspace-location-row" key={bookmark.id}>
-              <span className="workspace-row-copy">
-                <strong>{bookmark.note || `Node #${node?.nodeNumber ?? "?"}`}</strong>
-                <small>#{node?.nodeNumber ?? "?"} · {node?.text.slice(0, 90) || "Saved location"}</small>
-                <small>{new Date(bookmark.createdAt).toLocaleString()}</small>
-              </span>
-              <button type="button" onClick={() => onRestore(bookmark)}>[LOAD]</button>
-            </article>;
-          })}
-          {!filteredBookmarks.length ? <span className="workspace-empty workspace-native-empty">{normalizedQuery ? "NO MATCHING SAVED LOCATIONS." : "NO SAVED LOCATIONS."}</span> : null}
-        </div>
+          <div className="workspace-native-list" aria-label="Saved locations">
+            {filteredBookmarks.map((bookmark) => {
+              const node = snapshot.nodes.find((candidate) => candidate.id === bookmark.nodeId);
+              const deleting = deletingBookmarkId === bookmark.id;
+              return <article className="workspace-native-row workspace-location-row" key={bookmark.id}>
+                <span className="workspace-row-copy">
+                  <strong>{bookmark.note || `Node #${node?.nodeNumber ?? "?"}`}</strong>
+                  <small>#{node?.nodeNumber ?? "?"} · {node?.text.slice(0, 90) || "Saved location"}</small>
+                  <small>{new Date(bookmark.createdAt).toLocaleString()}</small>
+                </span>
+                <span className="workspace-row-actions">
+                  <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => onRestore(bookmark)}>[LOAD]</button>
+                  <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => void deleteBookmark(bookmark)}>[{deleting ? "DELETING..." : "DELETE"}]</button>
+                </span>
+              </article>;
+            })}
+            {!filteredBookmarks.length ? <span className="workspace-empty workspace-native-empty">{normalizedQuery ? "NO MATCHING SAVED LOCATIONS." : "NO SAVED LOCATIONS."}</span> : null}
+          </div>
+        </section>
       </div> : <div className="workspace-view workspace-history-view">
         <div className="workspace-native-list revisions" aria-label="Revision history">
           {filteredRevisions.map((revision) => <article className="workspace-native-row workspace-revision-row" key={revision.revision}>
