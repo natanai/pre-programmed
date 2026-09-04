@@ -52,6 +52,7 @@ import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
 import { buildGraphIndex, notationForNode } from "./features/narrative/graph";
 import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
+import { resolveActiveNodeAnchor } from "./features/narrative/anchor";
 import { interpolateText } from "./features/narrative/interpolation";
 import { applyOperations } from "./engine/project/mutations";
 import {
@@ -175,6 +176,7 @@ export default function App() {
   const currentNode = snapshot && playState
     ? snapshot.nodes.find((node) => node.id === playState.currentNodeId) ?? null
     : null;
+  const activeNodeAnchor = snapshot && playState ? resolveActiveNodeAnchor(snapshot, playState) : null;
   const graph = useMemo(() => snapshot ? buildGraphIndex(snapshot) : null, [snapshot]);
   const currentNotation = snapshot && playState && graph
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
@@ -919,6 +921,10 @@ export default function App() {
         secret={requestingKey}
         immediateChoices={requestingKey ? [] : immediateTerminalChoices}
         menuChoices={requestingKey ? [] : promptTerminalChoices}
+        anchor={!requestingKey && activeNodeAnchor ? {
+          text: activeNodeAnchor.text,
+          onEdit: authorExperience ? () => openAuthorResource("node", activeNodeAnchor.sourceNodeId) : undefined,
+        } : null}
         ariaLabel={requestingKey ? "Author key" : "Universe command"}
       /> : null}
 
