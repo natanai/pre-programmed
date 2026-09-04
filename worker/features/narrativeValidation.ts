@@ -4,6 +4,22 @@ import type { WorkerMutationValidator } from "./validationTypes";
 export const narrativeMutationValidator: WorkerMutationValidator = {
   types: ["node.upsert", "interaction.upsert", "interaction.delete"],
   validate(operation) {
+    if (operation.type === "node.upsert") {
+      if (!object(operation.node)) return "Node is invalid.";
+      const anchor = operation.node.anchor;
+      if (anchor === undefined) return null;
+      if (!object(anchor) || !["set", "continue", "clear"].includes(String(anchor.mode))) {
+        return "Node anchor behavior is invalid.";
+      }
+      if (typeof anchor.text !== "string" || anchor.text.length > 4000) {
+        return "Node anchor text is invalid.";
+      }
+      if (anchor.mode === "set" && !anchor.text.trim()) {
+        return "Set anchors need text.";
+      }
+      return null;
+    }
+
     if (operation.type !== "interaction.upsert" || !object(operation.interaction)) return null;
     const interaction = operation.interaction;
 
