@@ -1,7 +1,30 @@
+import type { AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { ProjectSnapshot } from "../../engine/project/model";
 import { getAuthorResourceProvider } from "../features/registry";
 import type { AuthorTaskCompletion, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorResourceTools } from "./types";
+
+export function authorRouteForResource(
+  snapshot: ProjectSnapshot,
+  kind: string,
+  id: string,
+  focus?: Readonly<Record<string, string>>,
+): AuthorTaskRoute | undefined {
+  const provider = getAuthorResourceProvider(kind);
+  if (!provider?.editRoute) return undefined;
+  const resource = provider.list(snapshot).find((option) => option.id === id || option.value === id);
+  if (!resource) return undefined;
+  const route = provider.editRoute(resource);
+  if (!route || route.type !== "feature" || !focus || !Object.keys(focus).length) return route;
+  return { ...route, data: { ...route.data, ...focus } };
+}
+
+export function authorRouteForSource(
+  snapshot: ProjectSnapshot,
+  source: AuthoredSourceIdentity,
+): AuthorTaskRoute | undefined {
+  return authorRouteForResource(snapshot, source.resourceKind, source.resourceId, source.focus);
+}
 
 export function buildAuthorResourceTools(
   snapshot: ProjectSnapshot,
