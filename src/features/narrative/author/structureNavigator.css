@@ -126,7 +126,17 @@
   -webkit-overflow-scrolling: touch;
 }
 
-.structure-jump-results > button {
+.structure-jump-result-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.structure-jump-result-row:last-of-type {
+  border-bottom: 0;
+}
+
+.structure-jump-result-main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -134,13 +144,16 @@
   width: 100%;
   min-height: 3.25em;
   padding: .45em .55em !important;
-  border-bottom: 1px dotted var(--dos-line) !important;
   color: var(--dos-text);
   text-align: left;
 }
 
-.structure-jump-results > button:last-of-type {
-  border-bottom: 0 !important;
+.structure-reference-edit {
+  min-width: 4.5em;
+  padding: .3em .45em !important;
+  border-left: 1px dotted var(--dos-line) !important;
+  color: var(--dos-muted) !important;
+  white-space: nowrap;
 }
 
 .structure-jump-copy {
@@ -232,6 +245,16 @@
   gap: .3em;
 }
 
+.structure-destination-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: 1px dotted var(--dos-line);
+}
+
+.structure-destination-row .branch-destination {
+  border: 0 !important;
+}
+
 .structure-outcomes .branch-destination,
 .structure-outcomes .stay-destination {
   grid-column: auto;
@@ -297,7 +320,8 @@
   .structure-path-step > button,
   .structure-jump-control > input,
   .structure-jump-control > button,
-  .structure-jump-results > button,
+  .structure-jump-result-main,
+  .structure-reference-edit,
   .focused-structure-panel .structure-node,
   .focused-structure-panel .branch-destination,
   .focused-structure-panel .branch-edit {
@@ -305,7 +329,7 @@
     font-size: max(16px, 1em);
   }
 
-  .structure-jump-results > button {
+  .structure-jump-result-main {
     min-height: 3.5em;
   }
 
