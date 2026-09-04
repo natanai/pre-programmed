@@ -53,7 +53,10 @@ export type Interaction = {
   sourceNodeId: string;
   wording: string;
   matchMode?: InteractionMatchMode;
+  /** Where an otherwise visible choice is presented. Typed matching never depends on this field. */
   choiceVisibility: InteractionChoiceVisibility;
+  /** Whether the engine should suggest this input as a player choice. Typed matching remains valid when false. */
+  choiceVisibleWhen?: Condition;
   aliases: string[];
   tags: string[];
   notes: string;
