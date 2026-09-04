@@ -28,27 +28,43 @@ async function readCloudflareJson(response, label) {
   return payload;
 }
 
-async function tryRecoverD1DatabaseId({ accountId, apiToken, workerName }) {
+async function recoverExistingD1DatabaseId({ accountId, apiToken, workerName }) {
   const root = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/workers/scripts/${encodeURIComponent(workerName)}/versions`;
   const headers = bearerHeaders(apiToken);
 
   const listResponse = await fetch(`${root}?per_page=10`, { headers });
-  if (!listResponse.ok) return "";
-  const listPayload = await listResponse.json().catch(() => null);
+  if (listResponse.status === 404) {
+    return { workerExists: false, databaseId: "" };
+  }
+  const listPayload = await readCloudflareJson(
+    listResponse,
+    `Could not read deployed Worker versions for ${workerName}. Existing installation storage will not be replaced automatically`,
+  );
   const versions = Array.isArray(listPayload?.result?.items) ? listPayload.result.items : [];
   const versionId = versions.find((version) => typeof version?.id === "string")?.id;
-  if (!versionId) return "";
+  if (!versionId) {
+    throw new Error(
+      `Worker ${workerName} exists but no deployed version is available to recover its DB binding. Set PRE_PROGRAMMED_D1_DATABASE_ID explicitly rather than creating replacement storage.`,
+    );
+  }
 
   const detailResponse = await fetch(`${root}/${encodeURIComponent(versionId)}`, { headers });
-  if (!detailResponse.ok) return "";
-  const detailPayload = await detailResponse.json().catch(() => null);
+  const detailPayload = await readCloudflareJson(
+    detailResponse,
+    `Could not read deployed Worker version detail for ${workerName}. Existing installation storage will not be replaced automatically`,
+  );
   const bindings = detailPayload?.result?.resources?.bindings ?? [];
   const binding = bindings.find((candidate) =>
     candidate?.type === "d1"
     && candidate?.name === "DB"
     && typeof candidate?.database_id === "string"
   );
-  return binding?.database_id ?? "";
+  if (!binding) {
+    throw new Error(
+      `Worker ${workerName} already exists but its deployed version has no recoverable DB D1 binding. Set PRE_PROGRAMMED_D1_DATABASE_ID explicitly rather than creating replacement storage.`,
+    );
+  }
+  return { workerExists: true, databaseId: binding.database_id };
 }
 
 async function findD1DatabaseId({ accountId, apiToken, databaseName }) {
@@ -105,10 +121,13 @@ const apiToken = required(process.env.CLOUDFLARE_API_TOKEN, "CLOUDFLARE_API_TOKE
 let databaseId = process.env.PRE_PROGRAMMED_D1_DATABASE_ID?.trim() || "";
 
 if (!databaseId) {
-  databaseId = await tryRecoverD1DatabaseId({ accountId, apiToken, workerName });
-}
-if (!databaseId) {
-  databaseId = await ensureD1DatabaseId({ accountId, apiToken, databaseName });
+  const recovered = await recoverExistingD1DatabaseId({ accountId, apiToken, workerName });
+  if (recovered.workerExists) {
+    databaseId = recovered.databaseId;
+    console.log(`Recovered existing D1 binding for Worker ${workerName}.`);
+  } else {
+    databaseId = await ensureD1DatabaseId({ accountId, apiToken, databaseName });
+  }
 }
 
 const template = JSON.parse(await readFile(templatePath, "utf8"));
