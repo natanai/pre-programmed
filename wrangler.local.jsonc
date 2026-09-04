@@ -4,7 +4,8 @@
   "compatibility_date": "2026-08-30",
   "main": "./worker/index.ts",
   "vars": {
-    "ADMIN_KEY": "local"
+    "ADMIN_KEY": "local",
+    "CLIENT_ORIGIN": "http://localhost:5173,http://127.0.0.1:5173"
   },
   "d1_databases": [
     {
