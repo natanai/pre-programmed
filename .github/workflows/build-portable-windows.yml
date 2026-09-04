@@ -48,6 +48,9 @@ jobs:
       - name: Verify engine before packaging
         run: npm run verify
 
+      - name: Verify canonical no-cloud runtime
+        run: npm run verify:local
+
       - name: Remove installation Media from portable build workspace
         shell: pwsh
         run: |
@@ -63,9 +66,12 @@ jobs:
         working-directory: desktop
         run: npm install --no-audit --no-fund
 
-      - name: Bundle Worker for local workerd runtime
-        working-directory: desktop
-        run: node build-worker.mjs
+      - name: Bundle Worker through Wrangler
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path desktop/build -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outfile desktop/build/worker.mjs
+          if (-not (Test-Path desktop/build/worker.mjs)) { throw "Wrangler did not produce the portable Worker bundle." }
 
       - name: Reject installation-specific references
         shell: pwsh
