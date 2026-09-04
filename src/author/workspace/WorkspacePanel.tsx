@@ -9,6 +9,7 @@ import type {
   RevisionSummary,
 } from "../../engine/project/model";
 import "./workspacePanel.css";
+import "./workspacePanelLocations.css";
 
 export function WorkspacePanel({ token, snapshot, playState, initialView = "locations", onSave, onSnapshot, onRestore }: {
   token: string;
