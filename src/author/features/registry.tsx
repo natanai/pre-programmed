@@ -136,7 +136,7 @@ export function renderAuthorFeatureWorkspace(
  */
 export function describeAuthorTask(route: AuthorTaskRoute, snapshot: AuthorWorkspaceContext["snapshot"]): string {
   if (route.type === "tools") return "Author tools";
-  if (route.type === "workspace") return route.view === "history" ? "History" : "Saved locations";
+  if (route.type === "workspace") return route.view === "history" ? "History" : "Locations";
   for (const feature of AUTHOR_FEATURES) {
     const label = feature.describeTask?.(route, snapshot);
     if (label) return label;
