@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { rm } from "node:fs/promises";
 import { once } from "node:events";
 
@@ -45,12 +45,36 @@ async function stopRuntime() {
   const child = runtime;
   runtime = null;
   if (!child || child.exitCode !== null) return;
-  child.kill("SIGTERM");
+
+  if (process.platform === "win32" && child.pid) {
+    // The local launcher owns Wrangler/Vite descendants. Kill the whole tree so
+    // their SQLite/file handles are closed before persistence verification cleans up.
+    spawnSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+  } else {
+    child.kill("SIGTERM");
+  }
+
   await Promise.race([
     once(child, "exit"),
-    sleep(3000),
+    sleep(5000),
   ]);
-  await sleep(1000);
+  // Windows may release SQLite handles just after the process tree exits.
+  await sleep(process.platform === "win32" ? 1000 : 250);
+}
+
+async function removeVerificationData() {
+  let lastError = null;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    try {
+      await rm(dataDirectory, { recursive: true, force: true });
+      return;
+    } catch (error) {
+      lastError = error;
+      if (error?.code !== "EBUSY" && error?.code !== "EPERM" && error?.code !== "ENOTEMPTY") throw error;
+      await sleep(500);
+    }
+  }
+  throw lastError ?? new Error(`Could not remove ${dataDirectory}`);
 }
 
 async function login() {
@@ -103,7 +127,7 @@ function mediaHealthIsCurrent(health) {
 }
 
 try {
-  await rm(dataDirectory, { recursive: true, force: true });
+  await removeVerificationData();
 
   startRuntime();
   await waitForJson("/api/health", mediaHealthIsCurrent);
@@ -152,5 +176,5 @@ try {
   console.log(`Local runtime acceptance passed at revision ${reopened.revision} with atomic D1-generated SVG Media, persistent project state, and repository-backed file Media.`);
 } finally {
   await stopRuntime();
-  await rm(dataDirectory, { recursive: true, force: true });
+  await removeVerificationData();
 }
