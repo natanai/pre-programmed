@@ -1,3 +1,4 @@
+import type { AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import type { OperationArguments, OperationHook, OperationId, OperationTarget } from "./model";
 
@@ -9,6 +10,8 @@ export type ResolvedOperationTarget = {
   interactable: boolean;
   operations: OperationId[];
   hooks: OperationHook[];
+  /** Canonical durable owner for live Author editing of this runtime target. */
+  authorSource?: AuthoredSourceIdentity;
 };
 
 export type TargetOperationResult = {
