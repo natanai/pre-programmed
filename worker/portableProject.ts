@@ -1,5 +1,8 @@
 import type { AuthorBookmark, ProjectSnapshot } from "../src/engine/project/model";
-import { WORKER_FEATURE_PERSISTENCE } from "./features/catalog";
+import {
+  collectWorkerPortableFeatureData,
+  workerPortableFeatureRestoreStatements,
+} from "./features/catalog";
 import { WORKER_PROJECT_INTEGRITY_VALIDATORS } from "./features/validationCatalog";
 import {
   getBookmarks,
@@ -75,16 +78,12 @@ export function migratePortableProject(value: unknown): PortableProjectDocument 
 }
 
 export async function collectPortableProject(db: D1Database, exportedAt = new Date().toISOString()): Promise<PortableProjectDocument> {
-  const [snapshot, bookmarks, featureEntries] = await Promise.all([
+  const [snapshot, bookmarks, featureData] = await Promise.all([
     getProjectSnapshot(db),
     getBookmarks(db),
-    Promise.all(WORKER_FEATURE_PERSISTENCE.map(async (feature) => [
-      feature.id,
-      feature.exportPortableData ? await feature.exportPortableData(db) : undefined,
-    ] as const)),
+    collectWorkerPortableFeatureData(db),
   ]);
   const { revision: _revision, ...project } = snapshot;
-  const featureData = Object.fromEntries(featureEntries.filter((entry) => entry[1] !== undefined));
   return {
     format: PORTABLE_PROJECT_FORMAT,
     version: PORTABLE_PROJECT_VERSION,
@@ -98,7 +97,11 @@ export async function collectPortableProject(db: D1Database, exportedAt = new Da
 
 export async function restorePortableProject(db: D1Database, input: unknown) {
   const document = migratePortableProject(input);
-  const [before, beforeBookmarks] = await Promise.all([getProjectSnapshot(db), getBookmarks(db)]);
+  const [before, beforeBookmarks, beforeFeatureData] = await Promise.all([
+    getProjectSnapshot(db),
+    getBookmarks(db),
+    collectWorkerPortableFeatureData(db),
+  ]);
   const imported = { ...document.project, revision: before.revision } as ProjectSnapshot;
 
   for (const validate of WORKER_PROJECT_INTEGRITY_VALIDATORS) {
@@ -106,11 +109,10 @@ export async function restorePortableProject(db: D1Database, input: unknown) {
     if (error) throw new Error(`Portable project is not valid for the current engine: ${error}`);
   }
 
-  const statements = projectRestoreStatements(db, imported, document.bookmarks);
-  for (const feature of WORKER_FEATURE_PERSISTENCE) {
-    if (!feature.restorePortableDataStatements) continue;
-    statements.push(...feature.restorePortableDataStatements(db, document.featureData[feature.id]));
-  }
+  const statements = [
+    ...projectRestoreStatements(db, imported, document.bookmarks),
+    ...workerPortableFeatureRestoreStatements(db, document.featureData),
+  ];
   statements.push(
     db.prepare("INSERT INTO revisions (kind, entity_id, payload) VALUES (?, ?, ?)").bind(
       "project.import",
@@ -119,6 +121,7 @@ export async function restorePortableProject(db: D1Database, input: unknown) {
         description: `Import portable project format ${document.version}`,
         beforeSnapshot: before,
         beforeBookmarks,
+        beforeFeatureData,
       }),
     ),
   );
