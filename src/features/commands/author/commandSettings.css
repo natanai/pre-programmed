@@ -94,7 +94,39 @@
   gap: .7rem;
 }
 
-.command-reference-candidates > label,
+.command-reference-candidate {
+  display: grid;
+  gap: .45rem;
+  padding: .6rem;
+  border: 1px solid var(--dos-line);
+}
+
+.command-reference-candidate-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.command-reference-candidate-heading > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--dos-bright);
+}
+
+.command-reference-candidate-heading > button {
+  flex: none;
+  min-height: 2.5em;
+  padding: .3em .45em;
+  border: 0;
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+.command-reference-candidate > label,
 .command-slot-editor > label,
 .command-editor-body > label {
   display: grid;
@@ -208,6 +240,11 @@
   .command-settings-overview > button > span:last-child,
   .command-settings-list > button > span:last-child {
     margin-left: auto;
+  }
+
+  .command-reference-candidate-heading > button {
+    min-height: 2.75em;
+    min-width: 4.75em;
   }
 
   .command-slot-editor > label:not(:last-child) {
