@@ -1,10 +1,8 @@
-import { ASSET_MANIFEST } from "../../generated/assetManifest";
 import type { MediaAssetDescriptor } from "../../features/media/assets";
 import type { MediaAsset } from "../../features/media/model";
 import { assetUrl } from "../../data/assets";
 import { ApiError, apiUrl } from "../cloudflare/http";
-
-const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((asset) => [asset.id, asset] as const));
+import { repositoryAssetEntry } from "./repositoryManifest";
 
 function databaseContentUrl(contentKey: string) {
   return apiUrl(`/api/media/content/${encodeURIComponent(contentKey)}`);
@@ -35,7 +33,9 @@ function downloadBlob(blob: Blob, filename: string) {
  * Browser Media content resolution boundary.
  *
  * - contentKey means Author-generated textual Media stored in D1.
- * - no contentKey means a version-controlled file discovered from public/assets.
+ * - no contentKey means a file discovered through the repository-style Media
+ *   manifest. Hosted builds generate that manifest at build time; the portable
+ *   desktop host contributes entries from its visible assets/ folder at runtime.
  *
  * Durable Author-generated content is written only through Media's project
  * mutation contract. This browser port intentionally has no independent upload
@@ -44,16 +44,16 @@ function downloadBlob(blob: Blob, filename: string) {
 export const configuredAssetContentStore = {
   urlFor(asset: Pick<MediaAsset, "id" | "contentKey">) {
     if (asset.contentKey) return databaseContentUrl(asset.contentKey);
-    const repositoryPath = repositoryEntryByAssetId.get(asset.id)?.runtimePath;
+    const repositoryPath = repositoryAssetEntry(asset.id)?.runtimePath;
     return repositoryPath ? assetUrl(repositoryPath) : "";
   },
 
   hasRepository(assetId: string) {
-    return repositoryEntryByAssetId.has(assetId);
+    return Boolean(repositoryAssetEntry(assetId));
   },
 
   repositoryMetadata(assetId: string) {
-    const entry = repositoryEntryByAssetId.get(assetId);
+    const entry = repositoryAssetEntry(assetId);
     if (!entry) return null;
     return {
       mimeType: entry.mimeType,
