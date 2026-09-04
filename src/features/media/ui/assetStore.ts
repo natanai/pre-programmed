@@ -1,16 +1,15 @@
-import { ASSET_MANIFEST } from "../../../generated/assetManifest";
+import type { AssetManifestEntry } from "../../../generated/assetManifest";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import type { AssetStore, MediaAssetContentSource, MediaAssetDescriptor } from "../assets";
 import { normalizeMediaAssetAuthoringMode, type MediaAsset } from "../model";
 import { configuredAssetContentStore } from "../../../platform/assets/contentStore";
-
-const repositoryEntryByAssetId = new Map(ASSET_MANIFEST.map((entry) => [entry.id, entry] as const));
+import { repositoryAssetEntry, repositoryAssetManifest } from "../../../platform/assets/repositoryManifest";
 
 function normalizeAsset(asset: MediaAsset | (Omit<MediaAsset, "authoringMode"> & { authoringMode: unknown })): MediaAsset {
   return { ...asset, authoringMode: normalizeMediaAssetAuthoringMode(asset.authoringMode) } as MediaAsset;
 }
 
-function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
+function repositoryAsset(entry: AssetManifestEntry): MediaAsset {
   return {
     id: entry.id,
     name: entry.name,
@@ -27,7 +26,7 @@ function repositoryAsset(entry: (typeof ASSET_MANIFEST)[number]): MediaAsset {
 
 function contentSource(asset: MediaAsset): MediaAssetContentSource {
   if (asset.contentKey && asset.mimeType.toLowerCase() === "image/svg+xml") return "database";
-  if (repositoryEntryByAssetId.has(asset.id)) return "repository";
+  if (repositoryAssetEntry(asset.id)) return "repository";
   return "missing";
 }
 
@@ -47,16 +46,19 @@ function descriptor(asset: MediaAsset, editable: boolean): MediaAssetDescriptor 
 
 /**
  * One stable Media catalog with exactly two built-in content origins:
- * Author-generated vector SVG in D1 and version-controlled files in public/assets.
- * A metadata row without either origin is deliberately exposed as missing rather
- * than pretending that an unavailable blob provider will supply it.
+ * Author-generated vector SVG in D1 and repository-style files. Hosted builds
+ * index public/assets at build time; the portable desktop host indexes its
+ * visible assets/ directory at startup using the same sidecar contract.
+ *
+ * A metadata row without either origin remains visible as missing rather than
+ * pretending that an unavailable blob provider will supply it.
  */
 export const configuredAssetStore: AssetStore = {
   list(snapshot, kind) {
     const projectById = new Map((snapshot.mediaAssets ?? []).map((asset) => [asset.id, normalizeAsset(asset)] as const));
     const assets = new Map<string, MediaAssetDescriptor>();
 
-    for (const entry of ASSET_MANIFEST) {
+    for (const entry of repositoryAssetManifest()) {
       const repository = repositoryAsset(entry);
       const project = projectById.get(entry.id);
       const projectUsesD1Svg = Boolean(project?.contentKey && project.mimeType.toLowerCase() === "image/svg+xml");
@@ -77,7 +79,7 @@ export const configuredAssetStore: AssetStore = {
     }
 
     // Keep orphaned metadata visible so Author mode can tell the author exactly
-    // which stable ID needs a repository file instead of silently hiding the bug.
+    // which stable ID needs a file instead of silently hiding the bug.
     for (const projectValue of snapshot.mediaAssets ?? []) {
       const project = normalizeAsset(projectValue);
       if (!assets.has(project.id)) assets.set(project.id, descriptor(project, true));
