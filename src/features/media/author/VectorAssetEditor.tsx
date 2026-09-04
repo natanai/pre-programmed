@@ -86,12 +86,11 @@ function documentEqual(left: VectorGridDocument, right: VectorGridDocument) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeight, authorToken, onSave, onCancel, setWorkspaceDirty }: {
+export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeight, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: MediaAsset;
   initialWidth?: number;
   initialHeight?: number;
-  authorToken: string;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel: () => void;
   setWorkspaceDirty: (dirty: boolean) => void;
@@ -248,14 +247,17 @@ export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeig
         defaultPresentation: presentation,
         authoringMode: "vector-grid",
       });
-      await configuredAssetContentStore.upload(authorToken, contentKey, content);
       const result = await onSave(
-        [{ type: "mediaAsset.upsert", asset }],
+        [{ type: "mediaAsset.upsert", asset, generatedContent: { mimeType: "image/svg+xml", text: svg } }],
         `${initial ? "Changed" : "Added"} vector asset ${asset.name}`,
       );
       if (result.status === "saved" || result.status === "queued") {
         setName(asset.name);
         setBaseline(JSON.stringify({ name: asset.name, presentation, document }));
+      } else if (result.status === "failed") {
+        setError(result.message ?? "Vector save failed.");
+      } else {
+        setError("Project changed on another device. Synchronize before saving this vector again.");
       }
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Vector save failed.");

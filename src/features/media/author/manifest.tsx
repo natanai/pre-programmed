@@ -196,7 +196,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       if (kind === "image" && initial?.authoringMode === "vector-grid") return <VectorAssetEditor
         snapshot={context.snapshot}
         initial={initial}
-        authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}
         onSave={saveResource}
@@ -222,7 +221,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         initial={initial}
         initialWidth={routeDimension(route.data?.vectorWidth)}
         initialHeight={routeDimension(route.data?.vectorHeight)}
-        authorToken={context.authorToken}
         setWorkspaceDirty={context.setWorkspaceDirty}
         onCancel={context.leaveCurrentTask}
         onSave={async (operations, description) => {

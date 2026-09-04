@@ -1,8 +1,7 @@
+import { MAX_GENERATED_MEDIA_BYTES, type GeneratedMediaContent } from "../src/features/media/mutations";
 import { json } from "./http";
 
-export const MAX_DATABASE_TEXT_MEDIA_BYTES = 1_000_000;
 const CONTENT_KEY = /^[A-Za-z0-9_-]{8,128}$/;
-const DATABASE_TEXT_MEDIA_TYPES = new Set(["image/svg+xml"]);
 
 type MediaContentDatabase = Pick<D1Database, "prepare">;
 type TextContentRow = {
@@ -10,13 +9,6 @@ type TextContentRow = {
   content_text: string;
   byte_length: number;
 };
-
-function normalizedContentType(request: Request) {
-  return (request.headers.get("content-type") || "application/octet-stream")
-    .split(";", 1)[0]
-    .trim()
-    .toLowerCase();
-}
 
 export function mediaContentKey(pathname: string, prefix: string) {
   if (!pathname.startsWith(prefix)) return null;
@@ -48,40 +40,21 @@ export async function getMediaContent(db: MediaContentDatabase, contentKey: stri
 }
 
 /**
- * Store only engine-generated textual Media in D1. Binary file media belongs in
- * public/assets and is discovered by the generated repository manifest.
+ * Build the D1 statement for immutable Author-generated Media content. The
+ * owning mediaAsset.upsert mutation batches this with the matching metadata and
+ * project revision so generated content never has an independent save path.
  */
-export async function putMediaContent(db: MediaContentDatabase, contentKey: string, request: Request) {
-  const contentType = normalizedContentType(request);
-  if (!DATABASE_TEXT_MEDIA_TYPES.has(contentType)) {
-    return json({
-      error: "Only Author-generated SVG content is stored in D1. Add audio and other file media under public/assets with an .asset.json sidecar.",
-    }, { status: 415 });
+export function generatedMediaContentStatement(
+  db: MediaContentDatabase,
+  contentKey: string,
+  content: GeneratedMediaContent,
+) {
+  const byteLength = new TextEncoder().encode(content.text).byteLength;
+  if (byteLength > MAX_GENERATED_MEDIA_BYTES) {
+    throw new Error("Database-backed generated media must be no larger than 1 MB.");
   }
-
-  const declaredLength = Number(request.headers.get("content-length"));
-  if (Number.isFinite(declaredLength) && declaredLength > MAX_DATABASE_TEXT_MEDIA_BYTES) {
-    return json({ error: "Database-backed generated media must be no larger than 1 MB." }, { status: 413 });
-  }
-
-  const content = await request.arrayBuffer();
-  if (content.byteLength > MAX_DATABASE_TEXT_MEDIA_BYTES) {
-    return json({ error: "Database-backed generated media must be no larger than 1 MB." }, { status: 413 });
-  }
-
-  let text = "";
-  try {
-    text = new TextDecoder("utf-8", { fatal: true, ignoreBOM: false }).decode(content);
-  } catch {
-    return json({ error: "Generated text media must contain valid UTF-8." }, { status: 400 });
-  }
-
-  const result = await db.prepare(
+  return db.prepare(
     `INSERT INTO media_text_content (content_key, mime_type, content_text, byte_length)
-     VALUES (?, ?, ?, ?)
-     ON CONFLICT(content_key) DO NOTHING`,
-  ).bind(contentKey, contentType, text, content.byteLength).run();
-
-  if (!result.meta.changes) return json({ error: "Media content key already exists." }, { status: 409 });
-  return new Response(null, { status: 204 });
+     VALUES (?, ?, ?, ?)`,
+  ).bind(contentKey, content.mimeType, content.text, byteLength);
 }

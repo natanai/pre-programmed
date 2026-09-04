@@ -2,7 +2,8 @@ import type { WorkerMutationValidator } from "./validationTypes";
 import { object } from "./validationHelpers";
 import { validateSynth } from "../../src/features/media/synth";
 import type { SynthSound } from "../../src/features/media/model";
-import { VECTOR_GRID_MAX_CELLS } from "../../src/features/media/vectorAsset";
+import { MAX_GENERATED_MEDIA_BYTES } from "../../src/features/media/mutations";
+import { parseVectorGrid, VECTOR_GRID_MAX_CELLS } from "../../src/features/media/vectorAsset";
 
 function synthSound(value: unknown): value is SynthSound {
   if (!object(value)
@@ -56,6 +57,25 @@ export const mediaMutationValidator: WorkerMutationValidator = {
           || Number(asset.intrinsicWidth) <= 0 || Number(asset.intrinsicHeight) <= 0
           || Number(asset.intrinsicWidth) * Number(asset.intrinsicHeight) > VECTOR_GRID_MAX_CELLS) {
           return `Vector-grid assets require positive whole-number dimensions totaling at most ${VECTOR_GRID_MAX_CELLS} cells.`;
+        }
+      }
+
+      if (operation.generatedContent !== undefined) {
+        const generated = operation.generatedContent;
+        if (!object(generated) || generated.mimeType !== "image/svg+xml" || typeof generated.text !== "string") {
+          return "Generated Media content is invalid.";
+        }
+        if (asset.authoringMode !== "vector-grid" || asset.contentKey === null || mimeType !== generated.mimeType) {
+          return "Generated Media content must belong to its vector-grid SVG definition.";
+        }
+        const byteLength = new TextEncoder().encode(generated.text).byteLength;
+        if (byteLength > MAX_GENERATED_MEDIA_BYTES) return "Database-backed generated media must be no larger than 1 MB.";
+        if (byteLength !== asset.byteLength) return "Generated Media byte length does not match its definition.";
+        const document = parseVectorGrid(generated.text);
+        if (!document
+          || document.width !== asset.intrinsicWidth
+          || document.height !== asset.intrinsicHeight) {
+          return "Generated vector content does not match its Media definition.";
         }
       }
     }

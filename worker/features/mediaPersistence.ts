@@ -1,5 +1,6 @@
 import { normalizeMediaAssetAuthoringMode, type MediaAsset, type SynthSound } from "../../src/features/media/model";
 import { parseJson } from "../db/json";
+import { generatedMediaContentStatement } from "../mediaContent";
 import type { WorkerFeaturePersistence } from "./types";
 
 type SynthRow = { id: string; key: string; label: string; recipe_json: string };
@@ -185,27 +186,33 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
     }
     if (operation.type === "mediaAsset.upsert") {
       const asset = operation.asset;
-      return [db.prepare(
-        `INSERT INTO media_assets
-          (id, name, kind, mime_type, content_key, byte_length, intrinsic_width, intrinsic_height, default_presentation, authoring_mode, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-         ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind, mime_type=excluded.mime_type,
-           content_key=excluded.content_key, byte_length=excluded.byte_length,
-           intrinsic_width=excluded.intrinsic_width, intrinsic_height=excluded.intrinsic_height,
-           default_presentation=excluded.default_presentation, authoring_mode=excluded.authoring_mode,
-           updated_at=CURRENT_TIMESTAMP`,
-      ).bind(
-        asset.id,
-        asset.name,
-        asset.kind,
-        asset.mimeType,
-        asset.contentKey,
-        asset.byteLength,
-        asset.intrinsicWidth,
-        asset.intrinsicHeight,
-        asset.defaultPresentation,
-        asset.authoringMode,
-      )];
+      const contentStatements = operation.generatedContent && asset.contentKey
+        ? [generatedMediaContentStatement(db, asset.contentKey, operation.generatedContent)]
+        : [];
+      return [
+        ...contentStatements,
+        db.prepare(
+          `INSERT INTO media_assets
+            (id, name, kind, mime_type, content_key, byte_length, intrinsic_width, intrinsic_height, default_presentation, authoring_mode, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(id) DO UPDATE SET name=excluded.name, kind=excluded.kind, mime_type=excluded.mime_type,
+             content_key=excluded.content_key, byte_length=excluded.byte_length,
+             intrinsic_width=excluded.intrinsic_width, intrinsic_height=excluded.intrinsic_height,
+             default_presentation=excluded.default_presentation, authoring_mode=excluded.authoring_mode,
+             updated_at=CURRENT_TIMESTAMP`,
+        ).bind(
+          asset.id,
+          asset.name,
+          asset.kind,
+          asset.mimeType,
+          asset.contentKey,
+          asset.byteLength,
+          asset.intrinsicWidth,
+          asset.intrinsicHeight,
+          asset.defaultPresentation,
+          asset.authoringMode,
+        ),
+      ];
     }
     if (operation.type === "mediaAsset.delete") {
       return [db.prepare("DELETE FROM media_assets WHERE id = ?").bind(operation.id)];
