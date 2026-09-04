@@ -1,4 +1,5 @@
 import "./authorNavigation.css";
+import "./liveAuthoring.css";
 
 export function AuthorHome({
   nodeNumber,
