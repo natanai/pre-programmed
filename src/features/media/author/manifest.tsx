@@ -89,6 +89,19 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: "synth-sound",
         data: { soundId: "new", resourceTask: "media-sound" },
       }),
+      editRoute: (resource, snapshot) => snapshot.synthSounds.some((sound) => sound.id === resource.id)
+        ? {
+          type: "feature",
+          feature: "media",
+          workspace: "synth-sound",
+          data: { soundId: resource.id, resourceTask: "media-sound" },
+        }
+        : {
+          type: "feature",
+          feature: "media",
+          workspace: "asset",
+          data: { kind: "audio", assetId: resource.id, resourceTask: "media-sound" },
+        },
     },
     {
       kind: "media-audio",
