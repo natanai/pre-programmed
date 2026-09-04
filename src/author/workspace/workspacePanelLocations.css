@@ -1,0 +1,74 @@
+.workspace-location-navigation {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: .45em .75em;
+}
+
+.workspace-location-navigation button {
+  min-height: 2.75em;
+  padding: .35em .5em !important;
+}
+
+.workspace-location-navigation small {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-saved-locations {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: .5em;
+}
+
+.workspace-subsection-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .75em;
+  color: var(--dos-muted);
+}
+
+.workspace-subsection-heading strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.workspace-row-actions {
+  display: grid;
+  grid-auto-flow: row;
+  gap: .25em;
+}
+
+.workspace-row-actions button {
+  min-height: 2.75em;
+  padding: .35em .45em !important;
+}
+
+@container (max-width: 560px) {
+  .workspace-location-navigation {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-location-navigation button,
+  .workspace-row-actions button {
+    width: 100%;
+  }
+
+  .workspace-location-navigation small {
+    white-space: normal;
+    line-height: 1.2;
+  }
+}
+
+@media (pointer: coarse) {
+  .workspace-location-navigation button,
+  .workspace-row-actions button {
+    min-height: 2.75em;
+    font-size: max(16px, 1em);
+  }
+}

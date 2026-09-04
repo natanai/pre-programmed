@@ -1,4 +1,5 @@
 import { INVENTORY_APPLICATION_COMMAND_CAPABILITIES } from "../../features/inventory/applicationCommand";
+import { SESSION_APPLICATION_COMMAND_CAPABILITIES } from "../../features/session/applicationCommand";
 import { STATE_APPLICATION_COMMAND_CAPABILITIES } from "../../features/state/applicationCommand";
 import type { ApplicationCommandCapability } from "./capability";
 
@@ -6,11 +7,13 @@ import type { ApplicationCommandCapability } from "./capability";
  * Explicit composition root for targetless application capabilities.
  *
  * Features contribute stable operation IDs here. Authored project grammar
- * decides which player-facing words, if any, expose those capabilities.
+ * decides which player-facing words expose ordinary capabilities; explicitly
+ * system-level patterns remain available across every project revision.
  */
 export const APPLICATION_COMMAND_CAPABILITIES: readonly ApplicationCommandCapability[] = [
   ...INVENTORY_APPLICATION_COMMAND_CAPABILITIES,
   ...STATE_APPLICATION_COMMAND_CAPABILITIES,
+  ...SESSION_APPLICATION_COMMAND_CAPABILITIES,
 ];
 
 export const APPLICATION_COMMAND_CAPABILITY_BY_OPERATION: Readonly<Record<string, ApplicationCommandCapability>> =

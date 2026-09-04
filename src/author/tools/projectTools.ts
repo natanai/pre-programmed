@@ -8,9 +8,9 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     toolOrder: 10,
     tool: {
       id: "locations",
-      label: "SAVED LOCATIONS",
-      description: "Save or restore a play location while authoring.",
-      searchText: "bookmark bookmarks position current scene checkpoint resume load",
+      label: "LOCATIONS",
+      description: "Navigate the current run or manage saved author locations.",
+      searchText: "location locations back previous bookmark bookmarks position current scene checkpoint resume load",
       onSelect: () => context.pushTask({ type: "workspace", view: "locations" }),
     },
   },

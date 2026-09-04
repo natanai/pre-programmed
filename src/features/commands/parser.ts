@@ -1,3 +1,4 @@
+import { matchSystemApplicationCommands } from "../../engine/application/systemCommand";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { normalizePlayerInput } from "../../engine/input/normalize";
 import type { Interaction } from "../narrative/model";
@@ -193,11 +194,13 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
  * Parse player text without built-in adventure-game vocabulary.
  *
  * Precedence is deliberately explicit:
- * 1. current-scene authored aliases,
- * 2. project-wide authored command grammar,
- * 3. current-scene authored fallback.
+ * 1. installed system application commands,
+ * 2. current-scene authored aliases,
+ * 3. project-wide authored command grammar,
+ * 4. current-scene authored fallback.
  *
- * There are no hidden verb/object, known-entity, or phrase heuristics.
+ * System application commands are reserved engine/application operations such
+ * as portable save/load, not hidden adventure-game verb heuristics.
  */
 export function parseCommand(
   input: string,
@@ -205,6 +208,27 @@ export function parseCommand(
   state: PlayState,
 ): ParserResult {
   const normalizedInput = normalizeCommand(input);
+  const systemMatches = matchSystemApplicationCommands(normalizedInput);
+  if (systemMatches[0]) {
+    const match = systemMatches[0];
+    return {
+      interaction: null,
+      invocation: {
+        commandId: `application:${match.capability.operation}`,
+        label: match.capability.label,
+        operation: match.capability.operation,
+        pattern: match.pattern,
+        arguments: {},
+        target: null,
+      },
+      reason: "command-grammar",
+      matchedAlias: null,
+      matchedPattern: match.pattern,
+      candidates: [...new Set(systemMatches.map(({ capability }) => `application:${capability.operation}`))],
+      normalizedInput,
+    };
+  }
+
   const available = candidatesAtCurrentNode(snapshot, state);
   const commandInteractions = available.filter((interaction) => (interaction.matchMode ?? "command") === "command");
   const fallbackInteraction = available
