@@ -1,0 +1,53 @@
+.session-file-workspace {
+  width: min(100%, 44rem);
+  display: grid;
+  gap: .8em;
+  margin: 0 auto;
+}
+
+.session-file-workspace h2,
+.session-file-workspace p {
+  margin: 0;
+}
+
+.session-file-workspace h2 {
+  color: var(--dos-bright);
+  font-size: 1em;
+  font-weight: 400;
+}
+
+.session-file-workspace p {
+  line-height: 1.35;
+}
+
+.session-file-workspace code {
+  color: var(--dos-bright);
+  font: inherit;
+}
+
+.session-file-workspace button {
+  justify-self: start;
+  min-height: 2.75em;
+  padding: .35em .5em;
+}
+
+.session-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.session-file-status {
+  color: var(--dos-muted);
+}
+
+@media (pointer: coarse) {
+  .session-file-workspace button {
+    width: 100%;
+    font-size: max(16px, 1em);
+  }
+}
