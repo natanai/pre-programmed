@@ -16,6 +16,13 @@ export type TextPerformance = {
   cues: TextCue[];
 };
 
+export type NodeAnchorMode = "set" | "continue" | "clear";
+
+export type NodeAnchor = {
+  mode: NodeAnchorMode;
+  text: string;
+};
+
 export type GameNode = {
   id: string;
   nodeNumber: number;
@@ -25,6 +32,8 @@ export type GameNode = {
   /** Character whose voice presents this node text; null means unattributed/narration. */
   characterId: string | null;
   locationId: string | null;
+  /** Persistent player context. Missing legacy values behave as Continue. */
+  anchor?: NodeAnchor;
   performance: TextPerformance;
 };
 
