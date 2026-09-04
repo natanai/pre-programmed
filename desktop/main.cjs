@@ -149,7 +149,7 @@ async function proxyApi(request, response) {
 
 async function startLocalHost() {
   const root = configuredPortableRoot;
-  const dataRoot = path.join(root, "data", "d1");
+  const dataRoot = path.join(root, "data");
   const assetRoot = path.join(root, "assets");
   const exportRoot = path.join(root, "exports");
   await Promise.all([
