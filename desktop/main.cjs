@@ -1,0 +1,247 @@
+const { app, BrowserWindow, dialog } = require("electron");
+const { createServer } = require("node:http");
+const { mkdir, readFile, stat } = require("node:fs/promises");
+const { createReadStream } = require("node:fs");
+const path = require("node:path");
+const { pathToFileURL } = require("node:url");
+
+const CONTENT_TYPES = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".png": "image/png",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".svg": "image/svg+xml",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".ogg": "audio/ogg",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+let miniflare = null;
+let hostServer = null;
+let mainWindow = null;
+let quitting = false;
+
+function portableRoot() {
+  if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);
+  if (app.isPackaged) return path.dirname(process.execPath);
+  return path.resolve(__dirname, "portable-dev");
+}
+
+function resourcePath(name) {
+  return app.isPackaged ? path.join(process.resourcesPath, name) : path.resolve(__dirname, name);
+}
+
+function safeFile(root, pathname) {
+  let relativePath;
+  try {
+    relativePath = decodeURIComponent(pathname).replace(/^[/\\]+/, "");
+  } catch {
+    return null;
+  }
+  const resolvedRoot = path.resolve(root);
+  const candidate = path.resolve(resolvedRoot, relativePath);
+  if (candidate !== resolvedRoot && !candidate.startsWith(`${resolvedRoot}${path.sep}`)) return null;
+  return candidate;
+}
+
+async function existingFile(candidate) {
+  if (!candidate) return null;
+  try {
+    const source = await stat(candidate);
+    return source.isFile() ? candidate : null;
+  } catch {
+    return null;
+  }
+}
+
+function sendFile(response, filename) {
+  response.statusCode = 200;
+  response.setHeader("content-type", CONTENT_TYPES[path.extname(filename).toLowerCase()] ?? "application/octet-stream");
+  response.setHeader("cache-control", "no-store");
+  createReadStream(filename).pipe(response);
+}
+
+async function requestBody(request) {
+  const chunks = [];
+  for await (const chunk of request) chunks.push(Buffer.from(chunk));
+  return chunks.length ? Buffer.concat(chunks) : undefined;
+}
+
+async function proxyApi(request, response) {
+  const body = request.method === "GET" || request.method === "HEAD" ? undefined : await requestBody(request);
+  const upstream = await miniflare.dispatchFetch(`http://terminal.local${request.url}`, {
+    method: request.method,
+    headers: request.headers,
+    body,
+  });
+  response.statusCode = upstream.status;
+  for (const [name, value] of upstream.headers) {
+    if (name.toLowerCase() === "content-length") continue;
+    response.setHeader(name, value);
+  }
+  const bytes = Buffer.from(await upstream.arrayBuffer());
+  response.setHeader("content-length", String(bytes.length));
+  response.end(bytes);
+}
+
+async function startLocalHost() {
+  const root = portableRoot();
+  const dataRoot = path.join(root, "data");
+  const assetRoot = path.join(root, "assets");
+  await Promise.all([mkdir(dataRoot, { recursive: true }), mkdir(assetRoot, { recursive: true })]);
+
+  const { Miniflare } = await import("miniflare");
+  miniflare = new Miniflare({
+    host: "127.0.0.1",
+    port: 0,
+    modules: true,
+    scriptPath: resourcePath("worker.mjs"),
+    compatibilityDate: "2026-08-30",
+    bindings: { ADMIN_KEY: "local" },
+    d1Databases: { DB: "11111111-1111-4111-8111-111111111111" },
+    resourcePersistencePath: dataRoot,
+  });
+  await miniflare.ready;
+
+  let portableAssets = [];
+  let assetWarning = "";
+  try {
+    const scannerModule = await import(pathToFileURL(resourcePath("asset-manifest-lib.mjs")).href);
+    portableAssets = await scannerModule.scanAssetDirectory(assetRoot, {
+      logicalPathPrefix: "assets",
+      runtimePathPrefix: "/assets",
+    });
+  } catch (error) {
+    assetWarning = error instanceof Error ? error.message : String(error);
+  }
+
+  const clientRoot = resourcePath("client");
+  const indexPath = path.join(clientRoot, "index.html");
+  const indexTemplate = await readFile(indexPath, "utf8");
+  const manifestScript = `<script>window.__PRE_PROGRAMMED_PORTABLE_ASSETS__=${JSON.stringify(portableAssets).replace(/</g, "\\u003c")};</script>`;
+  const indexHtml = indexTemplate.includes("</head>")
+    ? indexTemplate.replace("</head>", `${manifestScript}</head>`)
+    : `${manifestScript}${indexTemplate}`;
+
+  hostServer = createServer(async (request, response) => {
+    try {
+      const url = new URL(request.url ?? "/", "http://127.0.0.1");
+      if (url.pathname.startsWith("/api/")) {
+        await proxyApi(request, response);
+        return;
+      }
+
+      if (url.pathname === "/" || url.pathname === "/index.html") {
+        const bytes = Buffer.from(indexHtml, "utf8");
+        response.writeHead(200, {
+          "content-type": "text/html; charset=utf-8",
+          "content-length": String(bytes.length),
+          "cache-control": "no-store",
+        });
+        response.end(bytes);
+        return;
+      }
+
+      if (url.pathname.startsWith("/assets/")) {
+        const external = await existingFile(safeFile(assetRoot, url.pathname.slice("/assets/".length)));
+        if (external) {
+          sendFile(response, external);
+          return;
+        }
+      }
+
+      const bundled = await existingFile(safeFile(clientRoot, url.pathname));
+      if (bundled) {
+        sendFile(response, bundled);
+        return;
+      }
+
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+    } catch (error) {
+      console.error("Portable host request failed", error);
+      response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Local engine request failed.");
+    }
+  });
+
+  await new Promise((resolve, reject) => {
+    hostServer.once("error", reject);
+    hostServer.listen(0, "127.0.0.1", resolve);
+  });
+  const address = hostServer.address();
+  if (!address || typeof address === "string") throw new Error("Portable host did not acquire a local port.");
+  return {
+    url: `http://127.0.0.1:${address.port}/`,
+    assetWarning,
+  };
+}
+
+async function shutdown() {
+  if (quitting) return;
+  quitting = true;
+  if (hostServer) {
+    await new Promise((resolve) => hostServer.close(() => resolve()));
+    hostServer = null;
+  }
+  if (miniflare) {
+    await miniflare.dispose();
+    miniflare = null;
+  }
+}
+
+async function createWindow() {
+  const { url, assetWarning } = await startLocalHost();
+  mainWindow = new BrowserWindow({
+    width: 1280,
+    height: 860,
+    minWidth: 360,
+    minHeight: 540,
+    backgroundColor: "#000000",
+    autoHideMenuBar: true,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      sandbox: true,
+    },
+  });
+  await mainWindow.loadURL(url);
+  if (assetWarning) {
+    dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "Asset folder needs attention",
+      message: "Pre-Programmed started, but one or more files in assets could not be indexed.",
+      detail: assetWarning,
+    });
+  }
+}
+
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+
+  app.whenReady().then(createWindow).catch((error) => {
+    console.error(error);
+    dialog.showErrorBox("Pre-Programmed could not start", error instanceof Error ? error.message : String(error));
+    app.quit();
+  });
+
+  app.on("window-all-closed", () => app.quit());
+  app.on("before-quit", (event) => {
+    if (quitting) return;
+    event.preventDefault();
+    shutdown().finally(() => app.quit());
+  });
+}
