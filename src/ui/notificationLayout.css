@@ -1,0 +1,74 @@
+/* Shared notification geometry. Author mode may make notification content editable,
+   but editability must not change the notification surface or its viewport behavior. */
+.inline-floating-notifications > span,
+.inline-floating-notifications > .notification-edit-target {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: max-content;
+  min-width: 0;
+  max-width: min(32em, calc(100vw - 16px));
+  padding: .25em .45em;
+  border: 1px solid #aaa;
+  background: #000;
+  color: #fff;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Interaction notifications are attached to a command line. Grow them inward from
+   the line's right edge instead of blindly extending past the mobile viewport. */
+.command-line > .inline-floating-notifications {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  width: 0;
+  margin-left: 0;
+}
+
+.command-line > .inline-floating-notifications > span,
+.command-line > .inline-floating-notifications > .notification-edit-target {
+  right: 0;
+  left: auto;
+}
+
+.floating-notifications {
+  width: min(32em, calc(100vw - 16px));
+  display: grid;
+  gap: .25em;
+  justify-items: center;
+}
+
+.floating-notifications > div,
+.floating-notifications > .notification-edit-target {
+  width: max-content;
+  min-width: 0;
+  max-width: 100%;
+  padding: .35em .6em;
+  border: 1px solid #aaa;
+  background: #000;
+  color: #fff;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+/* Provenance turns the content into a button in Author mode. It still owns the
+   same notification geometry and animation, while remaining directly editable. */
+.inline-floating-notifications > .notification-edit-target,
+.floating-notifications > .notification-edit-target {
+  pointer-events: auto;
+  animation: notification-float 4s ease-out forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .inline-floating-notifications > .notification-edit-target,
+  .floating-notifications > .notification-edit-target {
+    animation: notification-fade 4s linear forwards;
+  }
+}
+
+[data-reduce-motion="true"] .inline-floating-notifications > .notification-edit-target,
+[data-reduce-motion="true"] .floating-notifications > .notification-edit-target {
+  animation: notification-fade 4s linear forwards;
+}
