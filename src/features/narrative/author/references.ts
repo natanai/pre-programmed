@@ -31,6 +31,9 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
     };
     return [
       { ...owner, resourceKind: "node", resourceId: interaction.sourceNodeId, detail: "source node" },
+      ...(interaction.choiceVisibleWhen
+        ? fromTargets(context.condition(interaction.choiceVisibleWhen), owner).map((reference) => ({ ...reference, detail: `choice visibility · ${reference.detail}` }))
+        : []),
       ...interaction.outcomes.flatMap((outcome) => [
         ...(outcome.speakerId ? [{ ...owner, resourceKind: "character", resourceId: outcome.speakerId, detail: `speaker for ${outcome.label || "outcome"}` }] : []),
         ...(outcome.destinationNodeId ? [{ ...owner, resourceKind: "node", resourceId: outcome.destinationNodeId, detail: `destination for ${outcome.label || "outcome"}` }] : []),
