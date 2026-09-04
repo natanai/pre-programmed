@@ -82,7 +82,8 @@ async function proxyApi(request, response) {
   });
   response.statusCode = upstream.status;
   for (const [name, value] of upstream.headers) {
-    if (name.toLowerCase() === "content-length") continue;
+    const normalized = name.toLowerCase();
+    if (normalized === "content-length" || normalized === "transfer-encoding" || normalized === "connection") continue;
     response.setHeader(name, value);
   }
   const bytes = Buffer.from(await upstream.arrayBuffer());
