@@ -1,4 +1,4 @@
-import { APPLICATION_COMMAND_CAPABILITIES } from "../../engine/application/catalog";
+import { matchSystemApplicationCommands } from "../../engine/application/systemCommand";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { normalizePlayerInput } from "../../engine/input/normalize";
 import type { Interaction } from "../narrative/model";
@@ -190,15 +190,6 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
       left.pattern.localeCompare(right.pattern));
 }
 
-function systemApplicationCommandMatches(input: string) {
-  return APPLICATION_COMMAND_CAPABILITIES.flatMap((capability) =>
-    (capability.systemPatterns ?? []).flatMap((pattern) =>
-      normalizeCommand(pattern) === input ? [{ capability, pattern }] : []),
-  ).sort((left, right) =>
-    right.pattern.length - left.pattern.length
-    || left.capability.operation.localeCompare(right.capability.operation));
-}
-
 /**
  * Parse player text without built-in adventure-game vocabulary.
  *
@@ -217,7 +208,7 @@ export function parseCommand(
   state: PlayState,
 ): ParserResult {
   const normalizedInput = normalizeCommand(input);
-  const systemMatches = systemApplicationCommandMatches(normalizedInput);
+  const systemMatches = matchSystemApplicationCommands(normalizedInput);
   if (systemMatches[0]) {
     const match = systemMatches[0];
     return {
