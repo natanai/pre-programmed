@@ -11,6 +11,7 @@ import { validateMutationBody } from "./validation";
 export type Env = {
   DB: D1Database;
   ADMIN_KEY?: string;
+  CLIENT_ORIGIN?: string;
 };
 
 async function loginAuthor(request: Request, env: Env) {
@@ -137,10 +138,10 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return new Response("Pre-Programmed API", { status: 404 });
     try {
-      return withCors(request, await handleApi(request, env));
+      return withCors(request, await handleApi(request, env), env.CLIENT_ORIGIN);
     } catch (error) {
       console.error("Unhandled API request failure.", error);
-      return withCors(request, json({ error: "Server request failed." }, { status: 500 }));
+      return withCors(request, json({ error: "Server request failed." }, { status: 500 }), env.CLIENT_ORIGIN);
     }
   },
 } satisfies ExportedHandler<Env>;
