@@ -86,34 +86,15 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
 }
 
 function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceContext }) {
-  const node = context.snapshot.nodes.find((candidate) => candidate.id === context.playState.currentNodeId);
-  const sceneInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === context.playState.currentNodeId);
-  const validInputs = sceneInteractions.filter((interaction) => interaction.matchMode !== "fallback");
-  const invalidInput = sceneInteractions.find((interaction) => interaction.matchMode === "fallback");
   const otherTargetSources = commandReferenceSources().filter((source) =>
     source.kind !== "inventory.item" && context.resources.canOpenList(source.authorResourceKind));
 
   return <section className="author-panel author-panel-frame command-settings-workspace player-interactions-workspace">
-    <header><span>PLAYER INTERACTIONS</span><span>PLAY + BUILD</span></header>
+    <header><span>PLAYER INTERACTIONS</span><span>PROJECT-WIDE</span></header>
     <div className="author-panel-body command-settings-list">
-      <h3>CURRENT SCENE · #{node?.nodeNumber ?? "?"}</h3>
-      {validInputs.map((interaction) => <button type="button" key={interaction.id} onClick={() => context.pushTask({
-        type: "feature", feature: "narrative", workspace: "interaction", data: { interactionId: interaction.id },
-      })}>
-        <span><strong>{interaction.wording || interaction.aliases[0] || "Untitled input"}</strong><small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"}</small></span><span>›</span>
-      </button>)}
-      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "narrative", workspace: "interaction" })}>
-        <span><strong>+ CURRENT-SCENE INPUT</strong><small>Input that works only at this node.</small></span><span>›</span>
-      </button>
-      <button type="button" onClick={() => context.pushTask({
-        type: "feature", feature: "narrative", workspace: "interaction", data: { ...(invalidInput ? { interactionId: invalidInput.id } : {}), fallback: "true" },
-      })}>
-        <span><strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong><small>Response when nothing matches.</small></span><span>›</span>
-      </button>
-
-      <h3>PROJECT-WIDE</h3>
+      <h3>PLAYER COMMANDS</h3>
       <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
-        <span><strong>PLAYER COMMANDS</strong><small>Reusable typed commands.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
+        <span><strong>PLAYER COMMANDS</strong><small>Reusable typed commands that can work across the game.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
       </button>
 
       <h3>ITEM BEHAVIOR</h3>
