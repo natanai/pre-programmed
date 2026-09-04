@@ -60,18 +60,29 @@ export function StateStatus({
 
   if (!selectedGroup) return <div className="state-status-surface">
     <div className="state-status-group-list">
-      {groups.map(({ group, entries }) => <button
-        type="button"
-        className="state-status-group-row"
-        key={group.id}
-        onClick={() => {
-          setSelectedEntryId(null);
-          setSelectedGroupId(group.id);
-        }}
-      >
-        <span>{group.label}</span>
-        <small>{entries.length} ›</small>
-      </button>)}
+      {groups.map(({ group, entries }) => {
+        const content = <><span>{group.label}</span><small>{entries.length} ›</small></>;
+        if (onEditGroup) return <div className="state-status-group-row is-authoring" key={group.id}>
+          <button
+            type="button"
+            className="state-status-group-main"
+            onClick={() => {
+              setSelectedEntryId(null);
+              setSelectedGroupId(group.id);
+            }}
+          >{content}</button>
+          <button type="button" className="state-status-group-edit" onClick={() => onEditGroup(group.id)}>[EDIT]</button>
+        </div>;
+        return <button
+          type="button"
+          className="state-status-group-row"
+          key={group.id}
+          onClick={() => {
+            setSelectedEntryId(null);
+            setSelectedGroupId(group.id);
+          }}
+        >{content}</button>;
+      })}
       {!groups.length ? <p className="state-status-empty">No information is currently visible.</p> : null}
     </div>
   </div>;
