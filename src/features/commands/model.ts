@@ -42,11 +42,18 @@ export type CommandDefinition = {
 };
 
 export type CommandProjectSettings = {
+  /**
+   * Highest starter-command release this project has seen. Starter commands are
+   * installed only when crossing a newer release, then remain ordinary author
+   * data so edits/deletions are never silently repaired.
+   */
+  starterRevision: number;
   referenceSources: ReferenceSourceSetting[];
   commands: CommandDefinition[];
 };
 
 export const EMPTY_COMMAND_PROJECT_SETTINGS: CommandProjectSettings = {
+  starterRevision: 0,
   referenceSources: [],
   commands: [],
 };
