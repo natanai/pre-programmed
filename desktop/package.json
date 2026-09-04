@@ -4,7 +4,7 @@
   "private": true,
   "main": "main.cjs",
   "dependencies": {
-    "miniflare": "5.20260831.0-alpha"
+    "miniflare": "5.20260828.0-alpha"
   },
   "devDependencies": {
     "electron": "44.2.0",
