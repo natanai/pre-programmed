@@ -3,7 +3,7 @@ import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
-import type { GameNode } from "../model";
+import type { GameNode, NodeAnchor } from "../model";
 import { nextNodeNumber } from "../nodeNumber";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
 import "./nodeWorkspace.css";
@@ -11,6 +11,12 @@ import "./nodeWorkspace.css";
 type NodeWorkspaceDraft = {
   node: GameNode;
 };
+
+const CONTINUE_ANCHOR: NodeAnchor = { mode: "continue", text: "" };
+
+function nodeAnchor(node: GameNode): NodeAnchor {
+  return node.anchor ?? CONTINUE_ANCHOR;
+}
 
 function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "narrative" || route.workspace !== "node") return undefined;
@@ -28,6 +34,7 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     tags: [],
     characterId: null,
     locationId: null,
+    anchor: { ...CONTINUE_ANCHOR },
     performance: { charactersPerSecond: 18, cues: [] },
   } satisfies GameNode;
 }
@@ -60,12 +67,16 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   createDraft(route, context) {
     const node = nodeForRoute(route, context);
     if (!node) throw new Error("Node workspace opened without a node or create-resource task.");
-    return { node };
+    return { node: { ...node, anchor: { ...nodeAnchor(node) } } };
   },
   buildSpec({ draft, setDraft, context, route }) {
     const data = routeData(route);
     const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
     const location = context.snapshot.entities.find((entity) => entity.id === draft.node.locationId)?.name ?? "No location";
+    const anchor = nodeAnchor(draft.node);
+    const anchorSummary = anchor.mode === "set"
+      ? (anchor.text.trim() || "Set — text needed")
+      : anchor.mode === "clear" ? "Clear the active anchor" : "Continue the active anchor";
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
     const nodeInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === draft.node.id);
     const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
@@ -143,6 +154,48 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           }],
         },
         {
+          type: "disclosure",
+          id: "node-anchor",
+          label: "ANCHOR",
+          summary: anchorSummary,
+          children: [{
+            type: "custom",
+            id: "node-anchor-fields",
+            role: "specialized-control",
+            content: <div className="node-focused-form node-anchor-editor">
+              <label>BEHAVIOR
+                <select
+                  value={anchor.mode}
+                  onChange={(event) => {
+                    const mode = event.target.value as NodeAnchor["mode"];
+                    setDraft((current) => ({
+                      ...current,
+                      node: { ...current.node, anchor: { ...nodeAnchor(current.node), mode } },
+                    }));
+                  }}
+                >
+                  <option value="continue">CONTINUE</option>
+                  <option value="set">SET</option>
+                  <option value="clear">CLEAR</option>
+                </select>
+              </label>
+              {anchor.mode === "set" ? <label>ANCHOR TEXT
+                <textarea
+                  rows={3}
+                  value={anchor.text}
+                  placeholder="Persistent context shown beneath the player input"
+                  onChange={(event) => setDraft((current) => ({
+                    ...current,
+                    node: { ...current.node, anchor: { mode: "set", text: event.target.value } },
+                  }))}
+                />
+              </label> : <small>{anchor.mode === "continue"
+                ? "Keeps the most recently set anchor. This is the default for branching nodes."
+                : "Removes the active anchor when the player reaches this node."}</small>}
+            </div>,
+          }],
+        },
+        {
           type: "section",
           id: "node-input-handling",
           label: "INPUT HANDLING",
@@ -176,14 +229,18 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   },
   async save({ draft, context, route }) {
     const data = routeData(route);
+    const anchor = nodeAnchor(draft.node);
+    if (anchor.mode === "set" && !anchor.text.trim()) {
+      return { accepted: false, message: "SET anchors need text." };
+    }
     const result = await context.persist(
-      [{ type: "node.upsert", node: draft.node }],
+      [{ type: "node.upsert", node: { ...draft.node, anchor } }],
       `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
     );
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
       accepted: true,
-      draft,
+      draft: { node: { ...draft.node, anchor } },
       completion: data?.resourceTask === "node" ? {
         type: "resource",
         kind: "node",
