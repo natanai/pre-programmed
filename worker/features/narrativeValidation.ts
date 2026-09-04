@@ -10,6 +10,9 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
     if (interaction.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(interaction.choiceVisibility))) {
       return "Interaction choice visibility is invalid.";
     }
+    if (interaction.choiceVisibleWhen !== undefined && !conditionValid(interaction.choiceVisibleWhen)) {
+      return "Interaction choice visibility condition is invalid.";
+    }
     if (interaction.matchMode !== undefined && !["command", "fallback"].includes(String(interaction.matchMode))) {
       return "Interaction match mode is invalid.";
     }
