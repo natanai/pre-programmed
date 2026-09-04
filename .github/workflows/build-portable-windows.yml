@@ -191,8 +191,33 @@ jobs:
           }
 
           $zip = Join-Path $PWD "Pre-Programmed-v$env:VERSION-windows-x64.zip"
-          Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip -CompressionLevel Optimal -Force
+          if (Test-Path $zip) { Remove-Item $zip -Force }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
+          try {
+            [void]$archive.CreateEntry("assets/")
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+              $archive,
+              (Join-Path $stage "Pre-Programmed.exe"),
+              "Pre-Programmed.exe",
+              [System.IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+            [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
+              $archive,
+              (Join-Path $stage "README.txt"),
+              "README.txt",
+              [System.IO.Compression.CompressionLevel]::Optimal
+            ) | Out-Null
+          } finally {
+            $archive.Dispose()
+          }
           if (-not (Test-Path $zip)) { throw "Portable ZIP was not created." }
+          $entries = @([System.IO.Compression.ZipFile]::OpenRead($zip).Entries | ForEach-Object FullName)
+          $expectedEntries = @("assets/", "Pre-Programmed.exe", "README.txt") | Sort-Object
+          $actualEntries = @($entries) | Sort-Object
+          if (Compare-Object $expectedEntries $actualEntries) {
+            throw "Portable ZIP contents do not match the friend-facing allowlist."
+          }
           "ZIP_PATH=$zip" >> $env:GITHUB_ENV
           "ZIP_NAME=Pre-Programmed-v$env:VERSION-windows-x64" >> $env:GITHUB_ENV
 
