@@ -5,7 +5,6 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
 import type { ItemDefinition } from "../model";
-import { Inventory } from "../ui/Inventory";
 import {
   equipmentPolicyFromResult,
   equipmentPolicyRoute,
@@ -30,34 +29,6 @@ export function inventoryRoute(workspace: "inventory" | "items" | "body-types" |
     },
   };
 }
-
-export const inventoryPlayerWorkspace = defineAuthorWorkspace({
-  id: "inventory-player",
-  matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "inventory",
-  createDraft: () => ({}),
-  buildSpec: ({ context }) => ({
-    id: "inventory-player",
-    title: "Inventory",
-    context: "Items + body equipment",
-    blocks: [{
-      type: "custom",
-      id: "inventory-player-surface",
-      role: "specialized-control",
-      content: <Inventory
-        snapshot={context.snapshot}
-        state={context.playState}
-        onState={context.runtime.updateState}
-        onOutput={context.runtime.output}
-        onEvents={context.runtime.events}
-      />,
-    }],
-    actions: context.authorMode ? [
-      { id: "inventory-open-items", label: "ITEM DEFINITIONS", onAction: () => context.pushTask(inventoryRoute("items")) },
-      { id: "inventory-open-body-types", label: "BODY TYPES", onAction: () => context.pushTask(inventoryRoute("body-types")) },
-      { id: "inventory-create-item", label: "+ ITEM", onAction: () => context.pushTask(inventoryRoute("item")) },
-    ] : [],
-  }),
-});
 
 export const inventoryItemsWorkspace = defineAuthorWorkspace({
   id: "inventory-items",
@@ -247,7 +218,6 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
 });
 
 export const INVENTORY_WORKSPACES = [
-  inventoryPlayerWorkspace,
   inventoryItemsWorkspace,
   inventoryItemWorkspace,
 ] as const;
