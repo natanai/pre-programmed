@@ -1,0 +1,76 @@
+.story-inline-edit-target,
+.story-speaker-edit,
+.story-source-edit,
+.notification-edit-target {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: inherit;
+}
+
+.story-inline-edit-target,
+.story-speaker-edit,
+.notification-edit-target {
+  cursor: pointer;
+}
+
+.story-inline-edit-target {
+  display: inline;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: .18em;
+  text-decoration-thickness: 1px;
+}
+
+.story-speaker-edit {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: .18em;
+}
+
+.story-media-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35em .6em;
+}
+
+.story-source-edit {
+  min-height: 2.25em;
+  padding: .2em .35em;
+  color: var(--dos-bright);
+  cursor: pointer;
+}
+
+.notification-edit-target {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: .18em;
+}
+
+.floating-notifications .notification-edit-target {
+  display: block;
+  width: 100%;
+}
+
+@media (pointer: coarse), (max-width: 700px) {
+  .story-speaker-edit,
+  .story-source-edit,
+  .notification-edit-target {
+    min-height: 2.75em;
+  }
+
+  .story-speaker-edit,
+  .notification-edit-target {
+    padding-inline: .15em;
+  }
+
+  .story-source-edit {
+    padding-inline: .45em;
+  }
+}
