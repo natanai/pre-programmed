@@ -23,8 +23,8 @@ export const stateAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "player-status",
       label: "PLAYER STATUS",
-      description: "Preview the State groups currently visible to the player.",
-      searchText: "player status stats attributes relationship reputation visible values",
+      description: "Author the groups and values exposed through player Status.",
+      searchText: "player status stats attributes relationship reputation visible values groups author edit",
       onSelect: () => context.pushTask({ type: "feature", feature: "state", workspace: "status" }),
     },
   },
@@ -43,8 +43,8 @@ export const stateAuthorSearch: AuthorSearchContributor = (context) => [
     id: "state:status",
     groupLabel: "GAME SYSTEMS",
     label: "PLAYER STATUS",
-    description: "Preview visible State groups.",
-    searchText: "status stats player visible groups attributes relationships reputation",
+    description: "Edit player Status groups and their values.",
+    searchText: "status stats player visible groups attributes relationships reputation edit author",
     onSelect: () => context.pushTask({ type: "feature", feature: "state", workspace: "status" }),
   },
 ];
