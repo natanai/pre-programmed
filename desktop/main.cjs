@@ -196,6 +196,42 @@ async function shutdown() {
   }
 }
 
+async function runSelfTest() {
+  const { url, assetWarning } = await startLocalHost();
+  if (assetWarning) throw new Error(`Portable asset scan failed: ${assetWarning}`);
+
+  const indexResponse = await fetch(url, { cache: "no-store" });
+  const indexText = await indexResponse.text();
+  if (!indexResponse.ok || !indexText.includes("__PRE_PROGRAMMED_PORTABLE_ASSETS__")) {
+    throw new Error("Portable client did not load through the local host.");
+  }
+
+  const healthResponse = await fetch(new URL("api/health", url), { cache: "no-store" });
+  const health = await healthResponse.json();
+  if (!healthResponse.ok || health?.ok !== true || health?.authorConfigured !== true
+    || health?.mediaGeneratedPersistence !== "d1" || health?.mediaFilePersistence !== "repository") {
+    throw new Error("Portable Worker health contract failed.");
+  }
+
+  const snapshotResponse = await fetch(new URL("api/project/snapshot", url), { cache: "no-store" });
+  const snapshot = await snapshotResponse.json();
+  if (!snapshotResponse.ok || typeof snapshot?.revision !== "number" || !Array.isArray(snapshot?.nodes)) {
+    throw new Error("Portable D1 project did not initialize.");
+  }
+
+  const loginResponse = await fetch(new URL("api/author/login", url), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ key: "local" }),
+  });
+  const login = await loginResponse.json();
+  if (!loginResponse.ok || typeof login?.token !== "string" || !login.token) {
+    throw new Error("Portable Author login failed.");
+  }
+
+  await shutdown();
+}
+
 async function createWindow() {
   const { url, assetWarning } = await startLocalHost();
   mainWindow = new BrowserWindow({
@@ -232,10 +268,23 @@ if (!app.requestSingleInstanceLock()) {
     }
   });
 
-  app.whenReady().then(createWindow).catch((error) => {
+  app.whenReady().then(async () => {
+    if (process.argv.includes("--self-test")) {
+      try {
+        await runSelfTest();
+        app.exit(0);
+      } catch (error) {
+        console.error(error);
+        await shutdown().catch(() => {});
+        app.exit(1);
+      }
+      return;
+    }
+    await createWindow();
+  }).catch((error) => {
     console.error(error);
     dialog.showErrorBox("Pre-Programmed could not start", error instanceof Error ? error.message : String(error));
-    app.quit();
+    app.exit(1);
   });
 
   app.on("window-all-closed", () => app.quit());
