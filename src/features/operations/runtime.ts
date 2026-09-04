@@ -1,3 +1,4 @@
+import type { AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { evaluateCondition } from "../../engine/rules/conditions";
 import type { Effect } from "../../engine/rules/model";
@@ -22,6 +23,7 @@ export type OperationResult = {
   responseText: string;
   effects: Effect[];
   state: PlayState;
+  hookId: string | null;
 };
 
 export type OperationProvenance = {
@@ -32,6 +34,7 @@ export type OperationProvenance = {
 export type OperationExecution = Omit<OperationResult, "effects"> & {
   events: EffectEvent[];
   provenance: OperationProvenance;
+  source?: AuthoredSourceIdentity;
 };
 
 function resolveTarget(snapshot: ProjectSnapshot, state: PlayState, target: OperationTarget) {
@@ -44,6 +47,24 @@ export function operationEventKey(target: OperationTarget, operation: OperationI
 
 function operationTargetLabel(snapshot: ProjectSnapshot, state: PlayState, target: OperationTarget) {
   return resolveTarget(snapshot, state, target)?.label ?? target.id;
+}
+
+function sourceForOperation(
+  source: AuthoredSourceIdentity | undefined,
+  operation: OperationId,
+  hookId: string | null,
+): AuthoredSourceIdentity | undefined {
+  if (!source) return undefined;
+  return {
+    ...source,
+    focus: {
+      ...source.focus,
+      section: "operations",
+      operation,
+      preferredOperation: operation,
+      ...(hookId ? { hookId } : {}),
+    },
+  };
 }
 
 export function formatOperationOutput(execution: OperationExecution, previousState: PlayState) {
@@ -73,7 +94,7 @@ export function attemptOperation(
   const target = adapter?.resolve(snapshot, state, request.target) ?? null;
 
   if (!adapter || !target || !target.interactable || !target.operations.includes(request.operation)) {
-    return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState };
+    return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState, hookId: null };
   }
 
   const hook = [...target.hooks]
@@ -95,7 +116,7 @@ export function attemptOperation(
       accepted = targetResult.accepted;
       nextState = targetResult.state;
     }
-    return { eventKey, attempt, accepted, responseText: hook.responseText, effects: hook.effects, state: nextState };
+    return { eventKey, attempt, accepted, responseText: hook.responseText, effects: hook.effects, state: nextState, hookId: hook.id };
   }
 
   const fallback = adapter.defaultOperation?.({
@@ -107,7 +128,7 @@ export function attemptOperation(
     placement: request.placement,
   });
   if (!fallback) {
-    return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState };
+    return { eventKey, attempt, accepted: false, responseText: "", effects: [], state: nextState, hookId: null };
   }
   return {
     eventKey,
@@ -116,6 +137,7 @@ export function attemptOperation(
     responseText: fallback.responseText ?? "",
     effects: [],
     state: fallback.state,
+    hookId: null,
   };
 }
 
@@ -125,11 +147,13 @@ export function executeOperation(
   request: OperationRequest,
   now = Date.now(),
 ): OperationExecution {
+  const target = resolveTarget(snapshot, state, request.target);
   const provenance = {
     operation: request.operation,
     targetLabel: operationTargetLabel(snapshot, state, request.target),
   };
   const attempt = attemptOperation(snapshot, state, request);
+  const source = sourceForOperation(target?.authorSource, request.operation, attempt.hookId);
   const execution = executeEffects(snapshot, attempt.state, attempt.effects);
   const context = { snapshot, state: execution.state, now };
   return {
@@ -137,10 +161,15 @@ export function executeOperation(
     attempt: attempt.attempt,
     accepted: attempt.accepted,
     responseText: interpolateText(attempt.responseText, context),
+    hookId: attempt.hookId,
     provenance,
+    source,
     state: execution.state,
-    events: execution.events.map((event) => event.type === "notification"
-      ? { ...event, text: interpolateText(event.text, context) }
-      : event),
+    events: execution.events.map((event) => {
+      const next = event.type === "notification"
+        ? { ...event, text: interpolateText(event.text, context) }
+        : event;
+      return source ? { ...next, source } : next;
+    }),
   };
 }
