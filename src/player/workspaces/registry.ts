@@ -1,4 +1,5 @@
 import { inventoryPlayerWorkspaceContribution } from "../../features/inventory/playerWorkspace";
+import { sessionFilePlayerWorkspaceContribution } from "../../features/session/playerWorkspace";
 import { stateStatusPlayerWorkspaceContribution } from "../../features/state/playerWorkspace";
 import type {
   PlayerWorkspaceContext,
@@ -7,10 +8,11 @@ import type {
   PlayerWorkspaceRequest,
 } from "./types";
 
-/** Explicit composition root for player-owned modal workspaces. */
+/** Explicit composition root for player-owned modal/workspaces. */
 export const PLAYER_WORKSPACES: readonly PlayerWorkspaceContribution[] = [
   inventoryPlayerWorkspaceContribution,
   stateStatusPlayerWorkspaceContribution,
+  sessionFilePlayerWorkspaceContribution,
 ];
 
 export function resolvePlayerWorkspace(request: PlayerWorkspaceRequest): PlayerWorkspaceContribution | undefined {
