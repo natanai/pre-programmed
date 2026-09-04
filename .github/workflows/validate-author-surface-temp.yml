@@ -22,3 +22,5 @@ jobs:
         env:
           VITE_API_ORIGIN: https://example.invalid
           VITE_BASE_PATH: /pre-programmed/
+
+# Temporary validation only; delete before merge.
