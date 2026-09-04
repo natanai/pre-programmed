@@ -1,7 +1,7 @@
 const { app, BrowserWindow, dialog } = require("electron");
 const { createServer } = require("node:http");
 const { mkdir, readFile, stat } = require("node:fs/promises");
-const { createReadStream } = require("node:fs");
+const { createReadStream, mkdirSync } = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
@@ -22,6 +22,8 @@ const CONTENT_TYPES = {
   ".woff2": "font/woff2",
 };
 
+const DEFAULT_AUTHOR_KEY = "local";
+const INSTALLATION_FILE = "installation.txt";
 let miniflare = null;
 let hostServer = null;
 let mainWindow = null;
@@ -31,6 +33,35 @@ function portableRoot() {
   if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);
   if (app.isPackaged) return path.dirname(process.execPath);
   return path.resolve(__dirname, "portable-dev");
+}
+
+function configurePortableElectronPaths() {
+  const root = portableRoot();
+  const electronRoot = path.join(root, "data", "electron");
+  const paths = {
+    userData: path.join(electronRoot, "user-data"),
+    sessionData: path.join(electronRoot, "session-data"),
+    cache: path.join(electronRoot, "cache"),
+    crashDumps: path.join(electronRoot, "crash-dumps"),
+    logs: path.join(electronRoot, "logs"),
+    temp: path.join(electronRoot, "temp"),
+    downloads: path.join(root, "exports"),
+  };
+  for (const target of Object.values(paths)) mkdirSync(target, { recursive: true });
+  for (const [name, target] of Object.entries(paths)) app.setPath(name, target);
+  return root;
+}
+
+const configuredPortableRoot = configurePortableElectronPaths();
+
+function assertPortableElectronPaths(root) {
+  const resolvedRoot = path.resolve(root);
+  for (const name of ["userData", "sessionData", "cache", "crashDumps", "logs", "temp", "downloads"]) {
+    const configured = path.resolve(app.getPath(name));
+    if (configured !== resolvedRoot && !configured.startsWith(`${resolvedRoot}${path.sep}`)) {
+      throw new Error(`Electron path ${name} escaped the portable folder: ${configured}`);
+    }
+  }
 }
 
 function resourcePath(name) {
@@ -58,6 +89,31 @@ async function existingFile(candidate) {
   } catch {
     return null;
   }
+}
+
+async function readAuthorKey(root) {
+  const filename = path.join(root, INSTALLATION_FILE);
+  let text;
+  try {
+    text = await readFile(filename, "utf8");
+  } catch (error) {
+    if (error?.code === "ENOENT") return DEFAULT_AUTHOR_KEY;
+    throw error;
+  }
+
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+    const separator = line.indexOf("=");
+    if (separator < 0) continue;
+    const name = line.slice(0, separator).trim().toUpperCase();
+    const value = line.slice(separator + 1).trim();
+    if (name === "AUTHOR_KEY") {
+      if (!value) throw new Error(`${INSTALLATION_FILE} has an empty AUTHOR_KEY.`);
+      return value;
+    }
+  }
+  throw new Error(`${INSTALLATION_FILE} must contain an AUTHOR_KEY=... line.`);
 }
 
 function sendFile(response, filename) {
@@ -92,10 +148,16 @@ async function proxyApi(request, response) {
 }
 
 async function startLocalHost() {
-  const root = portableRoot();
-  const dataRoot = path.join(root, "data");
+  const root = configuredPortableRoot;
+  const dataRoot = path.join(root, "data", "d1");
   const assetRoot = path.join(root, "assets");
-  await Promise.all([mkdir(dataRoot, { recursive: true }), mkdir(assetRoot, { recursive: true })]);
+  const exportRoot = path.join(root, "exports");
+  await Promise.all([
+    mkdir(dataRoot, { recursive: true }),
+    mkdir(assetRoot, { recursive: true }),
+    mkdir(exportRoot, { recursive: true }),
+  ]);
+  const authorKey = await readAuthorKey(root);
 
   const workerScript = await readFile(resourcePath("worker.mjs"), "utf8");
   const { Miniflare, convertV4MiniflareOptions } = await import("miniflare");
@@ -105,7 +167,7 @@ async function startLocalHost() {
     modules: true,
     script: workerScript,
     compatibilityDate: "2026-08-30",
-    bindings: { ADMIN_KEY: "local" },
+    bindings: { ADMIN_KEY: authorKey },
     d1Databases: { DB: "11111111-1111-4111-8111-111111111111" },
     resourcePersistencePath: dataRoot,
   }));
@@ -182,6 +244,7 @@ async function startLocalHost() {
   return {
     url: `http://127.0.0.1:${address.port}/`,
     assetWarning,
+    authorKey,
   };
 }
 
@@ -199,7 +262,8 @@ async function shutdown() {
 }
 
 async function runSelfTest() {
-  const { url, assetWarning } = await startLocalHost();
+  assertPortableElectronPaths(configuredPortableRoot);
+  const { url, assetWarning, authorKey } = await startLocalHost();
   if (assetWarning) throw new Error(`Portable asset scan failed: ${assetWarning}`);
 
   const indexResponse = await fetch(url, { cache: "no-store" });
@@ -224,11 +288,11 @@ async function runSelfTest() {
   const loginResponse = await fetch(new URL("api/author/login", url), {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ key: "local" }),
+    body: JSON.stringify({ key: authorKey }),
   });
   const login = await loginResponse.json();
   if (!loginResponse.ok || typeof login?.token !== "string" || !login.token) {
-    throw new Error("Portable Author login failed.");
+    throw new Error("Portable Author login failed with installation.txt AUTHOR_KEY.");
   }
 
   const exportResponse = await fetch(new URL("api/author/project/export", url), {
