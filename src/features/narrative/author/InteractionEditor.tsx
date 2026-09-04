@@ -4,7 +4,8 @@ import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
 import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
-import type { Condition } from "../../../engine/rules/model";
+import { ConditionEditor } from "../../../author/ConditionEditor";
+import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import type {
   MutationOperation,
   PlayState,
@@ -29,7 +30,7 @@ import "./interactionEditor.css";
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
   { value: "immediate", label: "VISIBLE", help: "Show this choice without opening the prompt menu." },
   { value: "prompt", label: "ON PROMPT", help: "Show this choice when the player opens available options." },
-  { value: "typed", label: "TYPED ONLY", help: "Accept the command when typed without showing it as a player choice." },
+  { value: "typed", label: "TYPED ONLY", help: "Never suggest this choice. Typing the input directly still works." },
 ];
 
 type EditorScreen =
@@ -60,6 +61,7 @@ function normalizedInteraction(
   const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
   value.matchMode ??= fallback ? "fallback" : "command";
   value.choiceVisibility ??= fallback ? "typed" : "prompt";
+  value.choiceVisibleWhen ??= ALWAYS;
   value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => ({
     ...outcome,
     authorStatus: outcome.authorStatus ?? "configured",
@@ -241,6 +243,7 @@ export function InteractionEditor({
         wording: fallbackMode ? "" : userInputText,
         matchMode: fallbackMode ? "fallback" : "command",
         choiceVisibility: fallbackMode ? "typed" : draft.choiceVisibility,
+        choiceVisibleWhen: fallbackMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
         aliases: fallbackMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
         outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
       };
@@ -305,6 +308,7 @@ export function InteractionEditor({
       {screen.type === "input-settings" ? <InputSettings
         draft={draft}
         fallbackMode={fallbackMode}
+        snapshot={snapshot}
         onChange={setDraft}
       /> : null}
 
@@ -390,23 +394,34 @@ function InteractionOverview({
     <section className="guided-section">
       <h3>INPUT SETTINGS</h3>
       <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
-        <span>{fallbackMode ? "Author details" : "Aliases, visibility, author details"}</span>
+        <span>{fallbackMode ? "Author details" : "Aliases, visibility rules, author details"}</span>
         <span aria-hidden="true">›</span>
       </button>
     </section>
   </div>;
 }
 
-function InputSettings({ draft, fallbackMode, onChange }: {
+function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
   draft: Interaction;
   fallbackMode: boolean;
+  snapshot: ProjectSnapshot;
   onChange: (interaction: Interaction) => void;
 }) {
   const aliases = secondaryAliases(draft.wording, draft.aliases);
+  const choiceVisibleWhen = draft.choiceVisibleWhen ?? ALWAYS;
   return <div className="guided-subworkspace">
     {!fallbackMode ? <>
       <section className="guided-section">
         <h3>PLAYER VISIBILITY</h3>
+        <OutcomeComposerSection title="SHOW CHOICE WHEN" summary={conditionSummary(choiceVisibleWhen)}>
+          <p className="guided-context-copy">Controls whether this input is suggested to the player. Typing the input directly still works.</p>
+          <ConditionEditor
+            condition={choiceVisibleWhen}
+            snapshot={snapshot}
+            onChange={(condition) => onChange({ ...draft, choiceVisibleWhen: condition })}
+          />
+        </OutcomeComposerSection>
+        <h4>HOW IT IS SHOWN</h4>
         <div className="guided-option-list">{revealOptions.map((option) => <button
           type="button"
           key={option.value}
