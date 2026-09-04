@@ -86,8 +86,9 @@ export function normalizeCommandsProjectSettings(root: Record<string, unknown>):
     ? commandsValue.starterRevision
     : LEGACY_COMMAND_STARTER_REVISION;
   const existingIds = new Set(commands.map((command) => command.id));
+  const existingOperations = new Set(commands.map((command) => command.operation));
   const newStarters = starterCommandsAfter(storedRevision)
-    .filter((command) => !existingIds.has(command.id));
+    .filter((command) => !existingIds.has(command.id) && !existingOperations.has(command.operation));
 
   return {
     commands: {
