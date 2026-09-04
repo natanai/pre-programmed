@@ -20,6 +20,19 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
     }
     return null;
   },
+  resources: [{
+    kind: "player-command",
+    label: "Player Command",
+    pluralLabel: "Player Commands",
+    list: (snapshot) => snapshot.settings.commands.commands.map((command) => ({
+      id: command.id,
+      value: command.id,
+      label: command.label || command.operation,
+      detail: command.patterns.join(" · ") || command.operation,
+    })),
+    createRoute: () => ({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new", resourceTask: "player-command" } }),
+    editRoute: (resource) => ({ type: "feature", feature: "commands", workspace: "command", data: { commandId: resource.id, resourceTask: "player-command" } }),
+  }],
   tools: (context) => [{
     groupId: "scene",
     groupLabel: "CURRENT SCENE",
