@@ -1,3 +1,4 @@
+import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
 
 export const WORLD_ENTITY_OPERATION_TARGET_KIND = "world.entity";
@@ -24,6 +25,7 @@ export const WORLD_ENTITY_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       interactable: entity.interactable ?? false,
       operations: entity.operations ?? [],
       hooks: entity.hooks ?? [],
+      authorSource: authoredSource(entity.type, entity.id),
     };
   },
 };
