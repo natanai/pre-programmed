@@ -31,5 +31,14 @@ export type AuthorResourceTools = {
   canEdit: (kind: string, value: string) => boolean;
   openList: (kind: string) => void;
   create: (kind: string, onCreated: (resource: AuthorResourceResult) => void) => void;
-  edit: (kind: string, value: string, onComplete?: AuthorTaskCompletion) => void;
+  /**
+   * Enter the owning editor. Optional focus is owner-specific route metadata
+   * (for example, an operation or body slot) and never creates a second editor.
+   */
+  edit: (
+    kind: string,
+    value: string,
+    onComplete?: AuthorTaskCompletion,
+    focus?: Readonly<Record<string, string>>,
+  ) => void;
 };
