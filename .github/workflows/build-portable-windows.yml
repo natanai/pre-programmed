@@ -62,7 +62,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: dry-run-account
           CLOUDFLARE_API_TOKEN: dry-run-token
         run: |
-          $config = Join-Path $env:RUNNER_TEMP "pre-programmed-hosted-dry-run.jsonc"
+          $config = Join-Path $PWD ".wrangler.hosted-dry-run.jsonc"
           $bundle = Join-Path $env:RUNNER_TEMP "pre-programmed-hosted-worker"
           if (Test-Path $bundle) { Remove-Item $bundle -Recurse -Force }
           New-Item -ItemType Directory -Path $bundle -Force | Out-Null
