@@ -14,8 +14,8 @@ export function authorRouteForResource(
   if (!provider?.editRoute) return undefined;
   const resource = provider.list(snapshot).find((option) => option.id === id || option.value === id);
   if (!resource) return undefined;
-  const route = provider.editRoute(resource);
-  if (!route || route.type !== "feature" || !focus || !Object.keys(focus).length) return route;
+  const route = provider.editRoute(resource, snapshot);
+  if (!route || route.type !== "feature" || !focus || !Object.keys(focus).length) return route ?? undefined;
   return { ...route, data: { ...route.data, ...focus } };
 }
 
@@ -39,7 +39,7 @@ export function buildAuthorResourceTools(
     canEdit: (kind, value) => {
       const provider = getAuthorResourceProvider(kind);
       const resource = provider?.list(snapshot).find((option) => option.value === value);
-      return Boolean(provider?.editRoute && resource && provider.editRoute(resource));
+      return Boolean(provider?.editRoute && resource && provider.editRoute(resource, snapshot));
     },
     create(kind, onCreated) {
       const provider = getAuthorResourceProvider(kind);
@@ -54,7 +54,7 @@ export function buildAuthorResourceTools(
       if (!provider?.editRoute) return;
       const resource = provider.list(snapshot).find((option) => option.value === value);
       if (!resource) return;
-      const route = provider.editRoute(resource);
+      const route = provider.editRoute(resource, snapshot);
       if (route) pushTask(route, onComplete);
     },
   };
