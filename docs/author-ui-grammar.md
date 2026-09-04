@@ -10,6 +10,20 @@ The engine may be deeply composable internally, but implementation depth should 
 
 Mobile and desktop use the same task model, draft state, controls, save semantics, feature capabilities, and persistence paths. Responsive presentation may reflow or compress those controls, including when a mobile visual viewport shrinks for the keyboard.
 
+## Owning-editor reachability
+
+The recursive task system also enforces a resource-ownership rule:
+
+> **One authorable resource has one owning editor. Every Author-enabled surface that shows or references that resource should be able to enter that same editor directly.**
+
+A referencing surface is an entry point, not a second owner. It may preview, select, summarize, create, or offer an edit affordance, but actual editing should open the feature-owned task responsible for that resource's draft, validation, and save semantics.
+
+The parent task/workspace remains suspended while the owner task is nested, then resumes when the child returns. Authors should not have to back out to Author Tools and rediscover a resource they were already looking at.
+
+This applies to live player surfaces augmented by Author mode as well as Author-only workspaces. If a player-visible Status row is backed by an authorable State definition, for example, Author mode should provide a direct route to the State-owned editor rather than duplicating State editing inside Status or requiring a manual detour through the State tool.
+
+See [`author-resource-ownership.md`](author-resource-ownership.md) for the full ownership and reachability contract.
+
 ## Semantic workspace primitives
 
 Data-first Author workspaces should express ordinary tasks through a small semantic vocabulary:
