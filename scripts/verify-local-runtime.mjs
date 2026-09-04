@@ -6,7 +6,7 @@ const dataDirectory = ".wrangler/local-verification";
 const origin = "http://127.0.0.1:5173";
 const acceptanceContentKey = "local_media_acceptance_01";
 const acceptanceAssetId = "local-media-acceptance";
-const acceptanceContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect data-vector-cell="0" x="0" y="0" width="1" height="1" fill="#ffffff"/></svg>';
+const acceptanceContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#ffffff"/></svg>';
 let runtime = null;
 
 function sleep(ms) {
