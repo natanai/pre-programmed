@@ -69,8 +69,15 @@ jobs:
       - name: Bundle Worker through Wrangler
         shell: pwsh
         run: |
-          New-Item -ItemType Directory -Path desktop/build -Force | Out-Null
-          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outfile desktop/build/worker.mjs
+          $wranglerBundle = "desktop/build/wrangler"
+          New-Item -ItemType Directory -Path $wranglerBundle -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outdir $wranglerBundle
+          $javascript = @(Get-ChildItem $wranglerBundle -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($javascript.Count -ne 1) {
+            $javascript | ForEach-Object { Write-Host $_.FullName }
+            throw "Expected Wrangler dry-run to produce exactly one bundled Worker JavaScript module; found $($javascript.Count)."
+          }
+          Copy-Item $javascript[0].FullName "desktop/build/worker.mjs" -Force
           if (-not (Test-Path desktop/build/worker.mjs)) { throw "Wrangler did not produce the portable Worker bundle." }
 
       - name: Reject installation-specific references
