@@ -46,10 +46,23 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     groupOrder: 40,
     toolOrder: 30,
     tool: {
+      id: "project-file",
+      label: "PROJECT FILE",
+      description: "Export or import the portable authored game file.",
+      searchText: "project file ppgame export import transfer move portable game",
+      onSelect: () => context.pushTask({ type: "feature", feature: "project", workspace: "transfer" }),
+    },
+  },
+  {
+    groupId: "project",
+    groupLabel: "PROJECT",
+    groupOrder: 40,
+    toolOrder: 40,
+    tool: {
       id: "backup",
-      label: "BACKUP",
-      description: "Download a complete project backup.",
-      searchText: "export download save database data project",
+      label: "DATABASE BACKUP",
+      description: "Download a technical full-database recovery backup.",
+      searchText: "backup recovery database raw data emergency",
       onSelect: () => {
         context.closeAll();
         void context.downloadBackup();
