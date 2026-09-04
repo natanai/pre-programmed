@@ -5,7 +5,7 @@ const DB_NAME = "pre-programmed-player";
 const DB_VERSION = 1;
 const SESSION_STORE = "sessions";
 const AUTOSAVE_KEY = "autosave";
-const CURRENT_SESSION_VERSION = 2 as const;
+export const PLAY_SESSION_VERSION = 2 as const;
 
 export type PersistedTranscriptLine = {
   id: string;
@@ -27,12 +27,14 @@ export type PersistedPlayPresentation = {
 };
 
 export type PersistedPlaySession = {
-  version: typeof CURRENT_SESSION_VERSION;
+  version: typeof PLAY_SESSION_VERSION;
   schemaVersion: number;
   projectRevision: number;
   savedAt: string;
   playState: PlayState;
   presentation: PersistedPlayPresentation;
+  /** Imported file saves use this once so reload resumes them without a second prompt. */
+  resumeImmediately?: boolean;
 };
 
 function openDatabase() {
@@ -89,7 +91,7 @@ function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null
  * all semantic play state and text transcript lines are preserved.
  */
 export function normalizePersistedPlaySession(value: unknown): PersistedPlaySession | undefined {
-  if (!object(value) || (value.version !== 1 && value.version !== CURRENT_SESSION_VERSION)) return undefined;
+  if (!object(value) || (value.version !== 1 && value.version !== PLAY_SESSION_VERSION)) return undefined;
   if (typeof value.schemaVersion !== "number"
     || typeof value.projectRevision !== "number"
     || typeof value.savedAt !== "string"
@@ -102,7 +104,7 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
     || !object(presentation.activePerformance)) return undefined;
 
   return {
-    version: CURRENT_SESSION_VERSION,
+    version: PLAY_SESSION_VERSION,
     schemaVersion: value.schemaVersion,
     projectRevision: value.projectRevision,
     savedAt: value.savedAt,
@@ -119,6 +121,7 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
         ? presentation.pendingDestinationNodeId
         : null,
     },
+    ...(value.resumeImmediately === true ? { resumeImmediately: true } : {}),
   };
 }
 
