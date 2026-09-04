@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { getMediaContent, mediaContentKey, putMediaContent } from "../worker/mediaContent";
+import { generatedMediaContentStatement, getMediaContent, mediaContentKey } from "../worker/mediaContent";
+import { mediaMutationValidator } from "../worker/features/mediaValidation";
 
 type StoredText = { mime_type: string; content_text: string; byte_length: number };
 
@@ -15,13 +16,34 @@ function mediaDatabase() {
       async run() {
         if (!sql.includes("INSERT INTO media_text_content")) return { meta: { changes: 0 } };
         const [contentKey, mimeType, contentText, byteLength] = values as [string, string, string, number];
-        if (rows.has(contentKey)) return { meta: { changes: 0 } };
+        if (rows.has(contentKey)) throw new Error("UNIQUE constraint failed: media_text_content.content_key");
         rows.set(contentKey, { mime_type: mimeType, content_text: contentText, byte_length: byteLength });
         return { meta: { changes: 1 } };
       },
     }),
   }));
   return { db: { prepare } as unknown as D1Database, rows };
+}
+
+const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges"><rect x="0" y="0" width="1" height="1" fill="#ffffff"/></svg>';
+
+function generatedOperation(text = svg) {
+  return {
+    type: "mediaAsset.upsert",
+    asset: {
+      id: "generated-image",
+      name: "generated.svg",
+      kind: "image",
+      mimeType: "image/svg+xml",
+      contentKey: "content_01",
+      byteLength: new TextEncoder().encode(text).byteLength,
+      intrinsicWidth: 32,
+      intrinsicHeight: 32,
+      defaultPresentation: "inline",
+      authoringMode: "vector-grid",
+    },
+    generatedContent: { mimeType: "image/svg+xml", text },
+  };
 }
 
 describe("Media content storage", () => {
@@ -31,17 +53,10 @@ describe("Media content storage", () => {
     expect(mediaContentKey("/api/media/content/short", "/api/media/content/")).toBeNull();
   });
 
-  it("stores and serves Author-generated SVG text through D1", async () => {
+  it("stores and serves Author-generated SVG text through the Media-owned D1 statement", async () => {
     const { db } = mediaDatabase();
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="1" height="1"/></svg>';
-    const request = new Request("https://example.test/api/author/media/content/content_01", {
-      method: "PUT",
-      headers: { "Content-Type": "image/svg+xml" },
-      body: svg,
-    });
-
-    const stored = await putMediaContent(db, "content_01", request);
-    expect(stored.status).toBe(204);
+    const statement = generatedMediaContentStatement(db, "content_01", { mimeType: "image/svg+xml", text: svg });
+    await statement.run();
 
     const fetched = await getMediaContent(db, "content_01");
     expect(fetched.status).toBe(200);
@@ -49,36 +64,24 @@ describe("Media content storage", () => {
     await expect(fetched.text()).resolves.toBe(svg);
   });
 
-  it("keeps generated D1 content immutable", async () => {
+  it("keeps generated D1 content keys immutable", async () => {
     const { db } = mediaDatabase();
-    const first = new Request("https://example.test", {
-      method: "PUT",
-      headers: { "Content-Type": "image/svg+xml" },
-      body: "<svg></svg>",
-    });
-    const second = new Request("https://example.test", {
-      method: "PUT",
-      headers: { "Content-Type": "image/svg+xml" },
-      body: "<svg><rect/></svg>",
-    });
-
-    expect((await putMediaContent(db, "content_01", first)).status).toBe(204);
-    expect((await putMediaContent(db, "content_01", second)).status).toBe(409);
+    await generatedMediaContentStatement(db, "content_01", { mimeType: "image/svg+xml", text: svg }).run();
+    await expect(generatedMediaContentStatement(db, "content_01", { mimeType: "image/svg+xml", text: svg }).run())
+      .rejects.toThrow("UNIQUE constraint");
   });
 
-  it("rejects binary file uploads instead of advertising a missing blob provider", async () => {
-    const { db } = mediaDatabase();
-    const request = new Request("https://example.test/api/author/media/content/content_01", {
-      method: "PUT",
-      headers: { "Content-Type": "audio/wav" },
-      body: "media bytes",
-    });
+  it("validates generated SVG together with its Media definition", () => {
+    expect(mediaMutationValidator.validate(generatedOperation())).toBeNull();
+    const mismatched = generatedOperation();
+    mismatched.asset.byteLength += 1;
+    expect(mediaMutationValidator.validate(mismatched)).toContain("byte length");
+  });
 
-    const response = await putMediaContent(db, "content_01", request);
-    expect(response.status).toBe(415);
-    await expect(response.json()).resolves.toMatchObject({
-      error: expect.stringContaining("public/assets"),
-    });
+  it("rejects generated content attached to non-vector Media", () => {
+    const operation = generatedOperation() as ReturnType<typeof generatedOperation> & { asset: Record<string, unknown> };
+    operation.asset.authoringMode = "file";
+    expect(mediaMutationValidator.validate(operation)).toContain("vector-grid SVG definition");
   });
 
   it("returns 404 when generated content is not present in D1", async () => {
