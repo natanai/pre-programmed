@@ -56,7 +56,7 @@ function ProjectTransferControl({
   };
 
   return <div className="author-project-transfer">
-    <p>Export one portable .ppgame file containing the authored project, generated vector Media, synths, and saved Author locations. Ordinary image and audio files stay in the engine's assets folder.</p>
+    <p>Export one portable .ppgame file containing the authored project, generated vector Media, synths, and saved Author locations. The same project file can move between desktop/local and hosted Pre-Programmed installations. Ordinary image and audio files stay separate and reconnect by their stable Media IDs after they are copied into the destination assets folder.</p>
     <div className="author-project-transfer-actions">
       <button type="button" onClick={() => { void exportProject(); }} disabled={busy}>EXPORT PROJECT</button>
       <label>
