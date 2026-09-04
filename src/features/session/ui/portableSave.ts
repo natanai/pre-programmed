@@ -5,10 +5,10 @@ import {
   PLAY_SESSION_VERSION,
   type PersistedPlayPresentation,
   type PersistedPlaySession,
-} from "../../data/localPlaySession";
-import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { compileTextNotation } from "../narrative/textNotation";
-import { interpolateText } from "../narrative/interpolation";
+} from "../../../data/localPlaySession";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import { interpolateText } from "../../narrative/interpolation";
+import { compileTextNotation } from "../../narrative/textNotation";
 
 const PORTABLE_SAVE_FORMAT = "pre-programmed-player-save" as const;
 const PORTABLE_SAVE_VERSION = 1 as const;

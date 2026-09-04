@@ -9,7 +9,7 @@ import {
   buildPortablePlaySession,
   downloadPortablePlaySave,
   parsePortablePlaySave,
-} from "./portableSave";
+} from "./ui/portableSave";
 import "./playerWorkspace.css";
 
 const completedAutomaticDownloads = new Set<string>();
