@@ -19,6 +19,24 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
     return null;
   },
+  resources: [{
+    kind: "project-terminal",
+    label: "Terminal Prompt",
+    pluralLabel: "Terminal Prompt",
+    searchable: false,
+    list: (snapshot) => [{
+      id: "terminal",
+      value: "terminal",
+      label: snapshot.settings.terminalPrompt || "Terminal prompt",
+      detail: "Project terminal setting",
+    }],
+    editRoute: () => ({
+      type: "feature",
+      feature: "project",
+      workspace: "settings",
+      data: { section: "project-terminal" },
+    }),
+  }],
   conditions: [
     alwaysConditionAdapter,
     allConditionAdapter,
