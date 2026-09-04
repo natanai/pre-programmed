@@ -90,6 +90,8 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
   const sceneInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === context.playState.currentNodeId);
   const validInputs = sceneInteractions.filter((interaction) => interaction.matchMode !== "fallback");
   const invalidInput = sceneInteractions.find((interaction) => interaction.matchMode === "fallback");
+  const otherTargetSources = commandReferenceSources().filter((source) =>
+    source.kind !== "inventory.item" && context.resources.canOpenList(source.authorResourceKind));
 
   return <section className="author-panel author-panel-frame command-settings-workspace player-interactions-workspace">
     <header><span>PLAYER INTERACTIONS</span><span>PLAY + BUILD</span></header>
@@ -116,25 +118,23 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
 
       <h3>ITEM BEHAVIOR</h3>
       {context.snapshot.items.map((item) => <article className="player-interaction-target" key={item.id}>
-        <button type="button" className="player-interaction-target-heading" onClick={() => context.pushTask({
-          type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations" },
-        })}>
+        <button type="button" className="player-interaction-target-heading" onClick={() => context.resources.edit("item", item.id)}>
           <span><strong>{item.name || item.key || "Untitled item"}</strong><small>{(item.hooks ?? []).length} authored response{(item.hooks ?? []).length === 1 ? "" : "s"}</small></span><span>ALL ›</span>
         </button>
         <div className="player-interaction-operation-links">{authorOperationDefinitions(context.snapshot, "inventory.item").map((operation) => {
           const available = (item.operations ?? []).includes(operation.value);
           const responseCount = (item.hooks ?? []).filter((hook) => hook.operation === operation.value).length;
-          return <button type="button" className={available ? "is-available" : ""} key={operation.value} onClick={() => context.pushTask({
-            type: "feature", feature: "inventory", workspace: "item", data: { itemId: item.id, section: "operations", operation: operation.value },
-          })}>{operation.label.toUpperCase()} · {available ? "ON" : "OFF"} · {responseCount}</button>;
+          return <button type="button" className={available ? "is-available" : ""} key={operation.value} onClick={() => context.resources.edit("item", item.id, undefined)}>{operation.label.toUpperCase()} · {available ? "ON" : "OFF"} · {responseCount}</button>;
         })}</div>
       </article>)}
       {!context.snapshot.items.length ? <div className="command-settings-empty">NO ITEMS YET.</div> : null}
 
-      <h3>OTHER TARGETS</h3>
-      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" })}>
-        <span><strong>PEOPLE, PLACES + STATE</strong><small>Target behavior outside Inventory.</small></span><span>›</span>
-      </button>
+      {otherTargetSources.length ? <>
+        <h3>OTHER TARGET OWNERS</h3>
+        {otherTargetSources.map((source) => <button type="button" key={source.kind} onClick={() => context.resources.openList(source.authorResourceKind)}>
+          <span><strong>{source.label}</strong><small>{source.description}</small></span><span>›</span>
+        </button>)}
+      </> : null}
     </div>
   </section>;
 }
@@ -207,18 +207,23 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
       <label className="check-label"><input type="checkbox" checked={draft.includeDefaults} onChange={(event) => setDraft({ ...draft, includeDefaults: event.target.checked })} /> use normal names / labels / keys / tags</label>
       <h3>CUSTOM ALIASES</h3>
       <div className="command-reference-candidates">
-        {candidates.map((candidate) => <label key={candidate.id}>
-          <span>{candidate.label}</span>
-          <textarea
-            rows={2}
-            value={(draft.aliases[candidate.id] ?? []).join("\n")}
-            placeholder="one additional name per line"
-            onChange={(event) => setDraft({
-              ...draft,
-              aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) },
-            })}
-          />
-        </label>)}
+        {candidates.map((candidate) => <div className="command-reference-candidate" key={candidate.id}>
+          <div className="command-reference-candidate-heading">
+            <span>{candidate.label}</span>
+            <button type="button" onClick={() => context.resources.edit(source.authorResourceKind, candidate.id)}>[EDIT]</button>
+          </div>
+          <label>ADDITIONAL NAMES
+            <textarea
+              rows={2}
+              value={(draft.aliases[candidate.id] ?? []).join("\n")}
+              placeholder="one additional name per line"
+              onChange={(event) => setDraft({
+                ...draft,
+                aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) },
+              })}
+            />
+          </label>
+        </div>)}
         {!candidates.length ? <span className="muted">No targets currently exist for this type.</span> : null}
       </div>
     </div>
@@ -252,7 +257,7 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
   </section>;
 }
 
-function CommandEditor({ context, commandId, initialOperation = "" }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string }) {
+function CommandEditor({ context, commandId, initialOperation = "", resourceTask }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string; resourceTask?: string }) {
   const existing = context.snapshot.settings.commands.commands.find((command) => command.id === commandId);
   const initialCapability = applicationCapability(initialOperation);
   const initial: CommandDefinition = structuredClone(existing ?? {
@@ -327,6 +332,13 @@ function CommandEditor({ context, commandId, initialOperation = "" }: { context:
         setBaseline(JSON.stringify(command));
         setPendingSourceKinds([]);
         context.setWorkspaceDirty(false);
+        if (resourceTask) context.completeTask({
+          type: "resource",
+          kind: resourceTask,
+          id: command.id,
+          value: command.id,
+          label: command.label || command.operation,
+        });
         return true;
       }
       return false;
@@ -492,7 +504,7 @@ export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: 
   if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;
   if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
   if (route.workspace === "grammar" || route.workspace === "capabilities") return <CommandGrammarWorkspace context={context} />;
-  if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} />;
+  if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} resourceTask={route.data?.resourceTask} />;
   if (route.workspace === "interactions") return <PlayerInteractionsWorkspace context={context} />;
   if (route.workspace === "target-behaviors") return <TargetBehaviorsWorkspace
     context={context}
