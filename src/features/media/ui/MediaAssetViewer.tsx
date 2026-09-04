@@ -15,33 +15,40 @@ export function MediaAssetThumbnail({
   snapshot,
   assetId,
   onOpen,
+  onEdit,
 }: {
   snapshot: ProjectSnapshot;
   assetId: string;
   onOpen: () => void;
+  onEdit?: () => void;
 }) {
   const asset = configuredAssetStore.resolve(snapshot, assetId);
   if (!asset?.url || asset.kind !== "image") return null;
 
-  return <button
-    type="button"
-    className={`media-inline-asset${asset.authoringMode === "vector-grid" ? " is-vector-grid" : ""}`}
-    aria-label={`Open ${asset.name}`}
-    onPointerDown={(event) => event.stopPropagation()}
-    onClick={onOpen}
-  >
-    <img src={asset.url} alt="" />
-  </button>;
+  return <span className={`media-inline-asset-shell${onEdit ? " is-authoring" : ""}`}>
+    <button
+      type="button"
+      className={`media-inline-asset${asset.authoringMode === "vector-grid" ? " is-vector-grid" : ""}`
+      aria-label={`Open ${asset.name}`}
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={onOpen}
+    >
+      <img src={asset.url} alt="" />
+    </button>
+    {onEdit ? <button type="button" className="media-inline-asset-edit" onPointerDown={(event) => event.stopPropagation()} onClick={onEdit}>[EDIT]</button> : null}
+  </span>;
 }
 
 export function MediaAssetViewer({
   snapshot,
   assetId,
   onClose,
+  onEdit,
 }: {
   snapshot: ProjectSnapshot;
   assetId: string;
   onClose: () => void;
+  onEdit?: () => void;
 }) {
   const [zoom, setZoom] = useState(1);
   const viewerRef = useRef<HTMLElement>(null);
@@ -108,6 +115,7 @@ export function MediaAssetViewer({
         <button type="button" aria-label="Zoom out" disabled={zoom <= MIN_ZOOM} onClick={() => setZoom((value) => clampZoom(value - ZOOM_STEP))}>[−]</button>
         <button type="button" aria-label="Reset zoom" onClick={() => setZoom(1)}>[{Math.round(zoom * 100)}%]</button>
         <button type="button" aria-label="Zoom in" disabled={zoom >= MAX_ZOOM} onClick={() => setZoom((value) => clampZoom(value + ZOOM_STEP))}>[+]</button>
+        {onEdit ? <button type="button" onClick={onEdit}>[EDIT]</button> : null}
         <button type="button" onClick={onClose}>[CLOSE]</button>
       </div>
     </header>
