@@ -30,6 +30,7 @@ function launch(args) {
     stdio: "inherit",
     env: process.env,
     detached: process.platform !== "win32",
+    shell: process.platform === "win32",
   });
   children.add(child);
   child.once("exit", (code, signal) => {
