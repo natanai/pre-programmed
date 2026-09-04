@@ -1,13 +1,14 @@
+import type { AuthoredSourceIdentity } from "./authoredSource";
 import type { EffectEvent } from "../rules/effectRuntime";
 import type { ProjectSnapshot } from "../project/model";
 
 /** UI capabilities the application shell offers to feature effect presenters. */
 export type EffectPresentationSurface = {
-  notify(text: string, anchorLineId?: string): void;
+  notify(text: string, anchorLineId?: string, source?: AuthoredSourceIdentity): void;
   /** Append stable media identity; the rendering feature resolves current content. */
-  appendInlineAsset(assetId: string): void;
+  appendInlineAsset(assetId: string, source?: AuthoredSourceIdentity): void;
   /** Open stable media identity; the rendering feature resolves current content. */
-  showOverlayAsset(assetId: string): void;
+  showOverlayAsset(assetId: string, source?: AuthoredSourceIdentity): void;
 };
 
 export type EffectPresentationContext = {
