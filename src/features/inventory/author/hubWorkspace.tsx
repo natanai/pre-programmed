@@ -48,6 +48,7 @@ export const inventoryAuthorHubWorkspace = defineAuthorWorkspace({
             <button type="button" onClick={() => context.pushTask(inventoryRoute("body-type"))}>[+ BODY TYPE]</button>
             {(context.snapshot.bodyBackgrounds ?? []).map((rawBodyType) => {
               const bodyType = normalizeBodyTypeDefinition(rawBodyType);
+              const slotCount = (bodyType.slots ?? []).length;
               return <button
                 type="button"
                 className="inventory-author-resource-open"
@@ -55,7 +56,7 @@ export const inventoryAuthorHubWorkspace = defineAuthorWorkspace({
                 onClick={() => context.pushTask(inventoryRoute("body-type", bodyType.id))}
               >
                 <span>{bodyType.name || "Untitled body type"}</span>
-                <small>{bodyType.id === context.snapshot.startingBodyBackgroundId ? "starting · " : ""}{bodyType.slots.length} slot{bodyType.slots.length === 1 ? "" : "s"}</small>
+                <small>{bodyType.id === context.snapshot.startingBodyBackgroundId ? "starting · " : ""}{slotCount} slot{slotCount === 1 ? "" : "s"}</small>
               </button>;
             })}
             {!(context.snapshot.bodyBackgrounds ?? []).length ? <small>No body types yet.</small> : null}
