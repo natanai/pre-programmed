@@ -2,6 +2,7 @@ import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type M
 import { makeValueToken } from "../features/narrative/interpolation";
 import type { ProjectSnapshot } from "../engine/project/model";
 import { useAuthorResourceTools } from "./resources/context";
+import "./valueMentionField.css";
 
 type Mention = { start: number; end: number; query: string };
 type TextSelection = { start: number; end: number };
