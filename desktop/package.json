@@ -1,0 +1,14 @@
+{
+  "name": "pre-programmed-desktop-host",
+  "version": "0.0.0",
+  "private": true,
+  "main": "main.cjs",
+  "dependencies": {
+    "miniflare": "5.20260831.0-alpha"
+  },
+  "devDependencies": {
+    "electron": "44.2.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2"
+  }
+}
