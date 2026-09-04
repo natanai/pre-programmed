@@ -92,6 +92,18 @@ jobs:
         run: |
           npx electron-builder --config electron-builder.yml --win portable --x64 "--config.extraMetadata.version=$env:VERSION"
 
+      - name: Smoke-test packaged local runtime
+        shell: pwsh
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $builtExe = Join-Path "desktop/release" "Pre-Programmed-$env:VERSION-windows-x64.exe"
+          if (-not (Test-Path $builtExe)) { throw "Portable executable was not produced at $builtExe" }
+          $testRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-self-test"
+          New-Item -ItemType Directory -Path $testRoot -Force | Out-Null
+          $process = Start-Process -FilePath $builtExe -ArgumentList "--self-test" -WorkingDirectory $testRoot -PassThru -Wait
+          if ($process.ExitCode -ne 0) { throw "Packaged portable runtime self-test failed with exit code $($process.ExitCode)." }
+
       - name: Assemble friend-facing ZIP from allowlist
         shell: pwsh
         env:
