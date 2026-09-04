@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import type { AuthoredSourceIdentity } from "../../../engine/presentation/authoredSource";
 import type { EffectEvent } from "../../../engine/rules/effectRuntime";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { OperationId, OperationTarget } from "../../operations/model";
@@ -30,7 +31,7 @@ export function StateStatus({
   state: PlayState;
   initialGroupId?: string;
   onState: (state: PlayState) => void;
-  onOutput: (text: string) => void;
+  onOutput: (text: string, source?: AuthoredSourceIdentity) => void;
   onEvents: (events: EffectEvent[]) => void;
   onEditGroup?: (groupId: string) => void;
   onEditEntry?: (entry: VisibleStateEntry) => void;
@@ -54,7 +55,7 @@ export function StateStatus({
     const execution = executeOperation(snapshot, state, { operation, target: targetForEntry(entry) });
     const output = formatOperationOutput(execution, state);
     onEvents(execution.events);
-    if (output) onOutput(output);
+    if (output) onOutput(output, execution.source);
     onState(execution.state);
   };
 
