@@ -1,3 +1,10 @@
+.media-inline-asset-shell {
+  display: inline-flex;
+  align-items: center;
+  gap: .25em;
+  vertical-align: middle;
+}
+
 .media-inline-asset {
   display: inline-grid;
   place-items: center;
@@ -19,6 +26,16 @@
   width: auto;
   height: auto;
   object-fit: contain;
+}
+
+.media-inline-asset-edit {
+  min-height: 2.25em;
+  padding: .2em .3em;
+  border: 0;
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
 }
 
 .media-asset-viewer {
@@ -110,9 +127,13 @@
 }
 
 @media (max-width: 700px), (pointer: coarse) {
+  .media-inline-asset,
+  .media-inline-asset-edit {
+    min-height: 2.75em;
+  }
+
   .media-inline-asset {
     min-width: 2.75em;
-    min-height: 2.75em;
   }
 
   .media-inline-asset img {
