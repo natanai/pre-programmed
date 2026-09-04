@@ -35,10 +35,6 @@ export const inventoryPlayerWorkspaceContribution: PlayerWorkspaceContribution =
     onOutput={context.output}
     onEvents={context.events}
     onEditItem={context.author ? (itemId) => context.author?.editResource("item", itemId) : undefined}
-    onEditBodyType={context.author ? (bodyTypeId, slotId) => context.author?.editResource(
-      "body-type",
-      bodyTypeId,
-      slotId ? { slotId } : undefined,
-    ) : undefined}
+    onEditBodyType={context.author ? (bodyTypeId) => context.author?.editResource("body-type", bodyTypeId) : undefined}
   />,
 };
