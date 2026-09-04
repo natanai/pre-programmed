@@ -1,3 +1,4 @@
+import { authoredSource, type AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { evaluateCondition } from "../../engine/rules/conditions";
 import { executeEffects } from "../../engine/rules/executeEffects";
@@ -13,6 +14,7 @@ export type InteractionExecution = {
   events: EffectEvent[];
   attempt: number;
   eventKey: string;
+  source?: AuthoredSourceIdentity;
 };
 
 export function executeInteraction(
@@ -31,6 +33,7 @@ export function executeInteraction(
     .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey })) ?? null;
 
   if (!outcome) return { state, outcome, responseText: "", events: [], attempt, eventKey };
+  const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
   const execution = executeEffects(snapshot, state, outcome.effects);
   state = execution.state;
 
@@ -42,12 +45,14 @@ export function executeInteraction(
     state,
     outcome,
     responseText: interpolateText(outcome.responseText, { snapshot, state }),
-    events: execution.events.map((event) =>
-      event.type === "notification"
+    events: execution.events.map((event) => {
+      const next = event.type === "notification"
         ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
-        : event,
-    ),
+        : event;
+      return { ...next, source };
+    }),
     attempt,
     eventKey,
+    source,
   };
 }
