@@ -29,6 +29,14 @@ export function downloadAuthorBackup(token: string) {
   return configuredAuthorPlatform.downloadBackup(token);
 }
 
+export function downloadAuthorProject(token: string) {
+  return configuredAuthorPlatform.downloadProject(token);
+}
+
+export function importAuthorProject(token: string, file: Blob) {
+  return configuredAuthorPlatform.importProject(token, file);
+}
+
 export async function fetchProjectSnapshot() {
   return configuredProjectPersistence.readProject();
 }

@@ -1,4 +1,5 @@
 import { normalizeMediaAssetAuthoringMode, type MediaAsset, type SynthSound } from "../../src/features/media/model";
+import type { GeneratedMediaContent } from "../../src/features/media/mutations";
 import { parseJson } from "../db/json";
 import { generatedMediaContentStatement } from "../mediaContent";
 import type { WorkerFeaturePersistence } from "./types";
@@ -16,6 +17,40 @@ type AssetRow = {
   default_presentation: MediaAsset["defaultPresentation"];
   authoring_mode: string;
 };
+type PortableContentRow = {
+  content_key: string;
+  mime_type: string;
+  content_text: string;
+};
+type PortableMediaData = {
+  generatedContent: Array<{
+    contentKey: string;
+    mimeType: "image/svg+xml";
+    text: string;
+  }>;
+};
+
+const CONTENT_KEY = /^[A-Za-z0-9_-]{8,128}$/;
+
+function portableMediaData(value: unknown): PortableMediaData {
+  if (value === undefined) return { generatedContent: [] };
+  if (!value || typeof value !== "object" || !Array.isArray((value as PortableMediaData).generatedContent)) {
+    throw new Error("Portable project has invalid Media content data.");
+  }
+  const seen = new Set<string>();
+  const generatedContent = (value as PortableMediaData).generatedContent.map((entry) => {
+    if (!entry || typeof entry !== "object"
+      || typeof entry.contentKey !== "string" || !CONTENT_KEY.test(entry.contentKey)
+      || entry.mimeType !== "image/svg+xml"
+      || typeof entry.text !== "string") {
+      throw new Error("Portable project has invalid generated Media content.");
+    }
+    if (seen.has(entry.contentKey)) throw new Error(`Portable project repeats generated Media key ${entry.contentKey}.`);
+    seen.add(entry.contentKey);
+    return { contentKey: entry.contentKey, mimeType: "image/svg+xml" as const, text: entry.text };
+  });
+  return { generatedContent };
+}
 
 export const mediaFeaturePersistence: WorkerFeaturePersistence = {
   id: "media",
@@ -229,5 +264,36 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
       ...snapshot.synthSounds.map((sound) => ({ type: "synth.upsert" as const, sound })),
       ...(snapshot.mediaAssets ?? []).map((asset) => ({ type: "mediaAsset.upsert" as const, asset })),
     ];
+  },
+
+  async exportPortableData(db) {
+    const content = await db.prepare(
+      `SELECT DISTINCT c.content_key, c.mime_type, c.content_text
+         FROM media_text_content c
+         JOIN media_assets a ON a.content_key = c.content_key
+        ORDER BY c.content_key`,
+    ).all<PortableContentRow>();
+    return {
+      generatedContent: content.results.map((row) => {
+        if (row.mime_type !== "image/svg+xml") {
+          throw new Error(`Generated Media ${row.content_key} has unsupported MIME type ${row.mime_type}.`);
+        }
+        return {
+          contentKey: row.content_key,
+          mimeType: "image/svg+xml" as const,
+          text: row.content_text,
+        };
+      }),
+    } satisfies PortableMediaData;
+  },
+
+  restorePortableDataStatements(db, data) {
+    const portable = portableMediaData(data);
+    const statements: D1PreparedStatement[] = [db.prepare("DELETE FROM media_text_content")];
+    for (const entry of portable.generatedContent) {
+      const content: GeneratedMediaContent = { mimeType: entry.mimeType, text: entry.text };
+      statements.push(generatedMediaContentStatement(db, entry.contentKey, content));
+    }
+    return statements;
   },
 };

@@ -33,3 +33,20 @@ export function workerFeaturesForRestore() {
   return [...WORKER_FEATURE_PERSISTENCE].sort((left, right) =>
     (left.restoreOrder ?? 100) - (right.restoreOrder ?? 100) || left.id.localeCompare(right.id));
 }
+
+/** Feature-owned authored data that lives outside the ordinary ProjectSnapshot. */
+export async function collectWorkerPortableFeatureData(db: D1Database) {
+  const entries = await Promise.all(WORKER_FEATURE_PERSISTENCE.map(async (feature) => [
+    feature.id,
+    feature.exportPortableData ? await feature.exportPortableData(db) : undefined,
+  ] as const));
+  return Object.fromEntries(entries.filter((entry) => entry[1] !== undefined)) as Record<string, unknown>;
+}
+
+/** Rebuild out-of-snapshot authored data through each feature's own restore contract. */
+export function workerPortableFeatureRestoreStatements(db: D1Database, featureData: Record<string, unknown>) {
+  return WORKER_FEATURE_PERSISTENCE.flatMap((feature) =>
+    feature.restorePortableDataStatements
+      ? feature.restorePortableDataStatements(db, featureData[feature.id])
+      : []);
+}

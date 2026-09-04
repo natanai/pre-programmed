@@ -1,0 +1,23 @@
+appId: app.preprogrammed.engine
+productName: Pre-Programmed
+asar: false
+directories:
+  output: release
+files:
+  - main.cjs
+  - package.json
+extraResources:
+  - from: ../dist
+    to: client
+  - from: build/worker.mjs
+    to: worker.mjs
+  - from: ../scripts/asset-manifest-lib.mjs
+    to: asset-manifest-lib.mjs
+win:
+  target:
+    - target: portable
+      arch:
+        - x64
+  artifactName: Pre-Programmed-${version}-windows-x64.exe
+portable:
+  requestExecutionLevel: user

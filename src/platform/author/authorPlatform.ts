@@ -5,20 +5,24 @@ export type AuthorWorkspaceSnapshot = {
   bookmarks: AuthorBookmark[];
 };
 
-export type AuthorBackupDownload = {
+export type AuthorFileDownload = {
   blob: Blob;
   filename: string;
 };
 
 /**
- * Platform boundary for Author-session services that are not project
- * persistence itself. Hosted builds can authenticate over HTTP; a local
- * distribution can provide the same capabilities without a cloud account.
+ * Platform boundary for Author-session services that are not ordinary project
+ * mutation persistence itself. Hosted builds authenticate over HTTP; a local
+ * distribution provides the same capabilities against its local Worker.
+ * Whole-project import/export crosses this boundary once and then delegates to
+ * the canonical Worker feature persistence contracts.
  */
 export interface AuthorPlatform {
   checkSession(authorization: string): Promise<boolean>;
   login(key: string): Promise<string>;
-  downloadBackup(authorization: string): Promise<AuthorBackupDownload>;
+  downloadBackup(authorization: string): Promise<AuthorFileDownload>;
+  downloadProject(authorization: string): Promise<AuthorFileDownload>;
+  importProject(authorization: string, file: Blob): Promise<ProjectSnapshot>;
   readWorkspace(authorization: string): Promise<AuthorWorkspaceSnapshot>;
   undoLastRevision(authorization: string, expectedRevision: number): Promise<ProjectSnapshot>;
 }

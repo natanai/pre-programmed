@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "./types";
 import { PROJECT_GENERAL_SETTINGS } from "../settings/projectGeneralSettings";
+import { projectTransferAuthorWorkspace } from "../project/projectTransferWorkspace";
 import { projectAuthorTools } from "../tools/projectTools";
 import { WorkspacePanel } from "../workspace/WorkspacePanel";
 import {
@@ -17,6 +18,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   describeTask(route) {
     if (route.type === "workspace") return route.view === "history" ? "History" : "Locations";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
+    if (route.type === "feature" && route.feature === "project" && route.workspace === "transfer") return "Project file";
     return null;
   },
   resources: [{
@@ -47,6 +49,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   ],
   effects: [notificationEffectAdapter],
   tools: projectAuthorTools,
+  workspaces: [projectTransferAuthorWorkspace],
   projectSettings: PROJECT_GENERAL_SETTINGS,
   renderWorkspace(route, context) {
     if (route.type !== "workspace") return null;

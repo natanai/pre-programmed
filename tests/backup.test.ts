@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { collectD1Backup, collectProjectBackup, type BackupDatabase } from "../worker/backup";
 import { handleApi } from "../worker/index";
+import { migratePortableProject } from "../worker/portableProject";
+import { project } from "./fixtures";
 
 function backupDatabase() {
   const schema = [
@@ -49,5 +51,22 @@ describe("canonical project backup", () => {
       repositoryMedia: "version-controlled",
     });
     expect(backup.database.tables.nodes).toEqual([{ id: "a" }]);
+  });
+
+  it("keeps the portable project document platform-neutral for desktop, local, and hosted imports", () => {
+    const snapshot = project({ revision: 42 });
+    const { revision: _revision, ...portableSnapshot } = snapshot;
+    const document = migratePortableProject({
+      format: "pre-programmed-project",
+      version: 1,
+      exportedAt: "2026-09-04T00:00:00.000Z",
+      sourceSchemaVersion: snapshot.schemaVersion,
+      project: portableSnapshot,
+      bookmarks: [],
+      featureData: {},
+    });
+
+    expect(document.project).toEqual(portableSnapshot);
+    expect(JSON.stringify(document)).not.toMatch(/workers\.dev|cloudflare|PORTABLE_EXECUTABLE_DIR|database_id|account_id|natanai/i);
   });
 });

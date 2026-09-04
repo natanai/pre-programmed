@@ -12,6 +12,7 @@ import {
   WORKER_FEATURE_PERSISTENCE,
   workerFeaturesForReset,
   workerFeaturesForRestore,
+  workerPortableFeatureRestoreStatements,
 } from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
@@ -116,7 +117,12 @@ export async function applyMutation(db: D1Database, mutation: ProjectMutation) {
   return json({ snapshot: await getProjectSnapshot(db) });
 }
 
-function restoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks: AuthorBookmark[]): D1PreparedStatement[] {
+/**
+ * Canonical whole-project restore path. Undo and portable project import both
+ * compose feature-owned reset/restore contributions through this function;
+ * neither reimplements individual feature persistence.
+ */
+export function projectRestoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks: AuthorBookmark[]): D1PreparedStatement[] {
   const coreDeletes = [db.prepare("DELETE FROM bookmarks")];
   const featureDeletes = workerFeaturesForReset().flatMap((feature) => feature.resetStatements(db));
   const operations: MutationOperation[] = [
@@ -143,10 +149,14 @@ export async function undo(db: D1Database, expectedRevision: number) {
     description?: string;
     beforeSnapshot?: ProjectSnapshot;
     beforeBookmarks?: AuthorBookmark[];
+    beforeFeatureData?: Record<string, unknown>;
   }>(target.payload, {});
   if (!payload.beforeSnapshot) return json({ error: "This revision cannot be undone." }, { status: 409 });
   const current = await getProjectSnapshot(db);
-  const statements = restoreStatements(db, payload.beforeSnapshot, payload.beforeBookmarks ?? []);
+  const statements = projectRestoreStatements(db, payload.beforeSnapshot, payload.beforeBookmarks ?? []);
+  if (payload.beforeFeatureData) {
+    statements.push(...workerPortableFeatureRestoreStatements(db, payload.beforeFeatureData));
+  }
   statements.push(
     db.prepare("INSERT INTO revisions (kind, entity_id, payload) VALUES ('undo', ?, ?)")
       .bind(String(target.revision), JSON.stringify({ description: `Undo ${payload.description ?? target.revision}`, beforeSnapshot: current })),
