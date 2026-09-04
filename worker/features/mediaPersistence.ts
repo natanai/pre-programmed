@@ -25,7 +25,7 @@ type PortableContentRow = {
 type PortableMediaData = {
   generatedContent: Array<{
     contentKey: string;
-    mimeType: string;
+    mimeType: "image/svg+xml";
     text: string;
   }>;
 };
@@ -41,13 +41,13 @@ function portableMediaData(value: unknown): PortableMediaData {
   const generatedContent = (value as PortableMediaData).generatedContent.map((entry) => {
     if (!entry || typeof entry !== "object"
       || typeof entry.contentKey !== "string" || !CONTENT_KEY.test(entry.contentKey)
-      || typeof entry.mimeType !== "string" || !entry.mimeType
+      || entry.mimeType !== "image/svg+xml"
       || typeof entry.text !== "string") {
       throw new Error("Portable project has invalid generated Media content.");
     }
     if (seen.has(entry.contentKey)) throw new Error(`Portable project repeats generated Media key ${entry.contentKey}.`);
     seen.add(entry.contentKey);
-    return { contentKey: entry.contentKey, mimeType: entry.mimeType, text: entry.text };
+    return { contentKey: entry.contentKey, mimeType: "image/svg+xml" as const, text: entry.text };
   });
   return { generatedContent };
 }
@@ -274,11 +274,16 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
         ORDER BY c.content_key`,
     ).all<PortableContentRow>();
     return {
-      generatedContent: content.results.map((row) => ({
-        contentKey: row.content_key,
-        mimeType: row.mime_type,
-        text: row.content_text,
-      })),
+      generatedContent: content.results.map((row) => {
+        if (row.mime_type !== "image/svg+xml") {
+          throw new Error(`Generated Media ${row.content_key} has unsupported MIME type ${row.mime_type}.`);
+        }
+        return {
+          contentKey: row.content_key,
+          mimeType: "image/svg+xml" as const,
+          text: row.content_text,
+        };
+      }),
     } satisfies PortableMediaData;
   },
 
