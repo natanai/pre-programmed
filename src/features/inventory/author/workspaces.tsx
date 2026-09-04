@@ -44,27 +44,16 @@ export const inventoryItemsWorkspace = defineAuthorWorkspace({
       role: "results",
       content: <div className="inventory-author-resource-list">
         <button type="button" onClick={() => context.pushTask(inventoryRoute("item"))}>[+ ITEM]</button>
-        {context.snapshot.items.map((item) => {
-          const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
-            (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === item.id).length,
-          ));
-          return <div className="inventory-author-resource-row" key={item.id}>
-            <button type="button" className="inventory-author-resource-open" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>
-              <span>{item.name || item.key || "Untitled item"}</span><small>{item.key || "no key"}</small>
-            </button>
-            <div className="inventory-author-resource-actions">
-              <span>DEFAULT</span>
-              <button type="button" aria-label={`Decrease starting ${item.name}`} onClick={() => void context.persist([
-                { type: "item.upsert", item: { ...item, startingQuantity: Math.max(minimumStartingQuantity, (item.startingQuantity ?? 0) - 1) } },
-              ], `Changed starting ${item.name}`)}>[-]</button>
-              <strong>{item.startingQuantity ?? 0}</strong>
-              <button type="button" aria-label={`Increase starting ${item.name}`} onClick={() => void context.persist([
-                { type: "item.upsert", item: { ...item, startingQuantity: (item.startingQuantity ?? 0) + 1 } },
-              ], `Changed starting ${item.name}`)}>[+]</button>
-              <button type="button" onClick={() => context.runtime.updateState(giveInventoryItem(context.snapshot, context.playState, item.id, 1))}>[ADD TO RUN]</button>
-            </div>
-          </div>;
-        })}
+        {context.snapshot.items.map((item) => <div className="inventory-author-resource-row" key={item.id}>
+          <button type="button" className="inventory-author-resource-open" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>
+            <span>{item.name || item.key || "Untitled item"}</span><small>{item.key || "no key"}</small>
+          </button>
+          <div className="inventory-author-resource-actions">
+            <span>STARTS {item.startingQuantity ?? 0}</span>
+            <button type="button" onClick={() => context.pushTask(inventoryRoute("item", item.id))}>[EDIT]</button>
+            <button type="button" onClick={() => context.runtime.updateState(giveInventoryItem(context.snapshot, context.playState, item.id, 1))}>[ADD TO RUN]</button>
+          </div>
+        </div>)}
       </div>,
     }],
   }),
