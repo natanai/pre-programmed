@@ -6,7 +6,7 @@ const dataDirectory = ".wrangler/local-verification";
 const origin = "http://127.0.0.1:5173";
 const acceptanceContentKey = "local_media_acceptance_01";
 const acceptanceAssetId = "local-media-acceptance";
-const acceptanceContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" fill="#fff"/></svg>';
+const acceptanceContent = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect data-vector-cell="0" x="0" y="0" width="1" height="1" fill="#ffffff"/></svg>';
 let runtime = null;
 
 function sleep(ms) {
@@ -86,18 +86,6 @@ async function mutate(snapshot, token, operations, description) {
   return body.snapshot;
 }
 
-async function uploadAcceptanceMedia(token) {
-  const response = await fetch(`${origin}/api/author/media/content/${acceptanceContentKey}`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "image/svg+xml",
-    },
-    body: acceptanceContent,
-  });
-  if (!response.ok) throw new Error(`Local SVG upload failed (${response.status}): ${await response.text()}`);
-}
-
 async function readAcceptanceMedia() {
   const response = await fetch(`${origin}/api/media/content/${acceptanceContentKey}`, { cache: "no-store" });
   if (!response.ok) throw new Error(`Local SVG read failed (${response.status}): ${await response.text()}`);
@@ -125,8 +113,6 @@ try {
     && typeof snapshot?.startNodeId === "string"
     && Number.isInteger(snapshot?.revision));
   const token = await login();
-  await uploadAcceptanceMedia(token);
-  await readAcceptanceMedia();
 
   const withMedia = await mutate(initial, token, [{
     type: "mediaAsset.upsert",
@@ -142,7 +128,13 @@ try {
       defaultPresentation: "inline",
       authoringMode: "vector-grid",
     },
-  }], "Local D1 SVG media persistence acceptance");
+    generatedContent: {
+      mimeType: "image/svg+xml",
+      text: acceptanceContent,
+    },
+  }], "Local atomic D1 SVG media persistence acceptance");
+  await readAcceptanceMedia();
+
   const saved = await mutate(withMedia, token, [
     { type: "project.settings", settings: withMedia.settings },
   ], "Local D1 persistence acceptance");
@@ -157,7 +149,7 @@ try {
   if (reopened.startNodeId !== saved.startNodeId) throw new Error("Reopened local project changed identity unexpectedly.");
   await readAcceptanceMedia();
 
-  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with persistent D1 project state, D1-backed generated SVG, and repository-backed file Media.`);
+  console.log(`Local runtime acceptance passed at revision ${reopened.revision} with atomic D1-generated SVG Media, persistent project state, and repository-backed file Media.`);
 } finally {
   await stopRuntime();
   await rm(dataDirectory, { recursive: true, force: true });
