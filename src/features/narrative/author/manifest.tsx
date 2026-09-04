@@ -152,6 +152,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         <InteractionEditor
           snapshot={context.snapshot}
           playState={context.playState}
+          sourceNodeId={route.data?.sourceNodeId}
           initial={initial}
           initialCommand={route.data?.command ?? ""}
           initialOutcomeId={route.data?.outcomeId}
