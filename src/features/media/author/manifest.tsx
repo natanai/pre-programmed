@@ -1,4 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import type { AuthorResourceOption } from "../../../author/resources/types";
+import type { AuthorTaskRoute } from "../../../author/tasks/types";
+import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
@@ -13,6 +16,21 @@ function routeDimension(value: string | undefined) {
   if (!value) return undefined;
   const parsed = Number(value);
   return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
+}
+
+function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
+  if (snapshot.synthSounds.some((sound) => sound.id === resource.id)) return {
+    type: "feature",
+    feature: "media",
+    workspace: "synth-sound",
+    data: { soundId: resource.id, resourceTask: "media-sound" },
+  };
+  return {
+    type: "feature",
+    feature: "media",
+    workspace: "asset",
+    data: { kind: "audio", assetId: resource.id, resourceTask: "media-sound" },
+  };
 }
 
 export const mediaAuthorFeature: AuthorFeatureManifest = {
@@ -89,19 +107,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: "synth-sound",
         data: { soundId: "new", resourceTask: "media-sound" },
       }),
-      editRoute: (resource, snapshot) => snapshot.synthSounds.some((sound) => sound.id === resource.id)
-        ? {
-          type: "feature",
-          feature: "media",
-          workspace: "synth-sound",
-          data: { soundId: resource.id, resourceTask: "media-sound" },
-        }
-        : {
-          type: "feature",
-          feature: "media",
-          workspace: "asset",
-          data: { kind: "audio", assetId: resource.id, resourceTask: "media-sound" },
-        },
+      editRoute: mediaSoundEditRoute,
     },
     {
       kind: "media-audio",
