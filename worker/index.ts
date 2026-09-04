@@ -3,7 +3,7 @@ import { createAuthorToken, isAuthor } from "./auth";
 import { collectProjectBackup } from "./backup";
 import { ensureSchema } from "./db/schema";
 import { json, withCors } from "./http";
-import { getMediaContent, mediaContentKey, putMediaContent } from "./mediaContent";
+import { getMediaContent, mediaContentKey } from "./mediaContent";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
 import { validateMutationBody } from "./validation";
 
@@ -78,9 +78,6 @@ export async function handleApi(request: Request, env: Env) {
   if (!author && url.pathname.startsWith("/api/author/")) return json({ error: "Unauthorized" }, { status: 401 });
   await ensureSchema(env.DB);
 
-  const authorContentKey = mediaContentKey(url.pathname, "/api/author/media/content/");
-  if (authorContentKey && request.method === "PUT") return putMediaContent(env.DB, authorContentKey, request);
-
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
 
@@ -109,6 +106,11 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     if (!url.pathname.startsWith("/api/")) return new Response("Pre-Programmed API", { status: 404 });
-    return withCors(request, await handleApi(request, env));
+    try {
+      return withCors(request, await handleApi(request, env));
+    } catch (error) {
+      console.error("Unhandled API request failure.", error);
+      return withCors(request, json({ error: "Server request failed." }, { status: 500 }));
+    }
   },
 } satisfies ExportedHandler<Env>;
