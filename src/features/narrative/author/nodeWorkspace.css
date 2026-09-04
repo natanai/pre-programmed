@@ -1,0 +1,36 @@
+.node-invalid-input-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75em;
+  padding: .7em .8em;
+  border: 1px solid var(--dos-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.node-invalid-input-link > span:first-child {
+  min-width: 0;
+  display: grid;
+  gap: .25em;
+}
+
+.node-invalid-input-link strong,
+.node-invalid-input-link small {
+  display: block;
+}
+
+.node-invalid-input-link small {
+  color: var(--dos-dim);
+  line-height: 1.3;
+}
+
+@media (pointer: coarse) {
+  .node-invalid-input-link {
+    min-height: 3em;
+  }
+}
