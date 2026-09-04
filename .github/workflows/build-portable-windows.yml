@@ -51,6 +51,45 @@ jobs:
       - name: Verify canonical no-cloud runtime
         run: npm run verify:local
 
+      - name: Verify hosted deployment shape without Cloudflare
+        shell: pwsh
+        env:
+          GITHUB_REPOSITORY: example/pre-programmed-test
+          PRE_PROGRAMMED_WORKER_NAME: pre-programmed-test
+          PRE_PROGRAMMED_D1_DATABASE_NAME: pre-programmed-test-db
+          PRE_PROGRAMMED_D1_DATABASE_ID: 11111111-1111-4111-8111-222222222222
+          PRE_PROGRAMMED_CLIENT_ORIGIN: https://example.github.io
+          CLOUDFLARE_ACCOUNT_ID: dry-run-account
+          CLOUDFLARE_API_TOKEN: dry-run-token
+        run: |
+          $config = Join-Path $env:RUNNER_TEMP "pre-programmed-hosted-dry-run.jsonc"
+          $bundle = Join-Path $env:RUNNER_TEMP "pre-programmed-hosted-worker"
+          if (Test-Path $bundle) { Remove-Item $bundle -Recurse -Force }
+          New-Item -ItemType Directory -Path $bundle -Force | Out-Null
+
+          node scripts/prepare-deployment-wrangler.mjs $config
+          $parsed = Get-Content $config -Raw | ConvertFrom-Json
+          if ($parsed.name -ne "pre-programmed-test") { throw "Hosted dry-run Worker name was not installation-owned." }
+          $database = @($parsed.d1_databases | Where-Object { $_.binding -eq "DB" })
+          if ($database.Count -ne 1 -or $database[0].database_name -ne "pre-programmed-test-db" -or $database[0].database_id -ne "11111111-1111-4111-8111-222222222222") {
+            throw "Hosted dry-run D1 binding was not generated correctly."
+          }
+          if ($parsed.vars.CLIENT_ORIGIN -ne "https://example.github.io") {
+            throw "Hosted dry-run client origin was not generated correctly."
+          }
+
+          npx wrangler deploy --dry-run --config $config --outdir $bundle
+          $workerModules = @(Get-ChildItem $bundle -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($workerModules.Count -lt 1) { throw "Hosted Wrangler dry-run did not produce a Worker module." }
+
+          $env:VITE_API_ORIGIN = "https://api.example.invalid"
+          $env:VITE_BASE_PATH = "/pre-programmed-test/"
+          npm run build:pages
+          if (-not (Test-Path dist/index.html)) { throw "Hosted Pages dry-run did not produce dist/index.html." }
+
+          Remove-Item $config -Force -ErrorAction SilentlyContinue
+          Remove-Item $bundle -Recurse -Force -ErrorAction SilentlyContinue
+
       - name: Remove installation Media from portable build workspace
         shell: pwsh
         run: |
