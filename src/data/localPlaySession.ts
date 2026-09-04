@@ -1,3 +1,4 @@
+import type { AuthoredSourceIdentity } from "../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../engine/project/model";
 import type { TextPerformance } from "../features/narrative/model";
 
@@ -15,6 +16,8 @@ export type PersistedTranscriptLine = {
   command?: boolean;
   /** Stable media identity. Content location is resolved when the line renders. */
   artAssetId?: string;
+  /** Optional durable source identity used only to augment live presentation in Author mode. */
+  source?: AuthoredSourceIdentity;
 };
 
 export type PersistedPlayPresentation = {
@@ -24,6 +27,7 @@ export type PersistedPlayPresentation = {
   activeSpeakerId: string | null;
   activePerformance: TextPerformance;
   pendingDestinationNodeId: string | null;
+  activeSource?: AuthoredSourceIdentity;
 };
 
 export type PersistedPlaySession = {
@@ -68,6 +72,18 @@ function object(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object";
 }
 
+function normalizeSource(value: unknown): AuthoredSourceIdentity | undefined {
+  if (!object(value) || typeof value.resourceKind !== "string" || typeof value.resourceId !== "string") return undefined;
+  const focus = object(value.focus)
+    ? Object.fromEntries(Object.entries(value.focus).filter((entry): entry is [string, string] => typeof entry[1] === "string"))
+    : undefined;
+  return {
+    resourceKind: value.resourceKind,
+    resourceId: value.resourceId,
+    ...(focus && Object.keys(focus).length ? { focus } : {}),
+  };
+}
+
 function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null {
   if (!object(value) || typeof value.id !== "string" || typeof value.text !== "string") return null;
 
@@ -75,6 +91,7 @@ function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null
   // from an arbitrary old URL, so discard only those obsolete presentation-only lines.
   if (typeof value.artUrl === "string" && typeof value.artAssetId !== "string") return null;
 
+  const source = normalizeSource(value.source);
   return {
     id: value.id,
     text: value.text,
@@ -82,6 +99,7 @@ function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null
     ...(typeof value.speakerId === "string" || value.speakerId === null ? { speakerId: value.speakerId } : {}),
     ...(typeof value.command === "boolean" ? { command: value.command } : {}),
     ...(typeof value.artAssetId === "string" ? { artAssetId: value.artAssetId } : {}),
+    ...(source ? { source } : {}),
   };
 }
 
@@ -103,6 +121,7 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
     || typeof presentation.activeText !== "string"
     || !object(presentation.activePerformance)) return undefined;
 
+  const activeSource = normalizeSource(presentation.activeSource);
   return {
     version: PLAY_SESSION_VERSION,
     schemaVersion: value.schemaVersion,
@@ -120,6 +139,7 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
       pendingDestinationNodeId: typeof presentation.pendingDestinationNodeId === "string"
         ? presentation.pendingDestinationNodeId
         : null,
+      ...(activeSource ? { activeSource } : {}),
     },
     ...(value.resumeImmediately === true ? { resumeImmediately: true } : {}),
   };
