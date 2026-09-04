@@ -21,10 +21,47 @@
   cursor: pointer;
 }
 
+.inventory-item-author-edit {
+  position: absolute;
+  left: calc(var(--x) * 10%);
+  top: calc(var(--y) * (100% / 6));
+  z-index: 6;
+  min-width: 2.25em;
+  min-height: 2.25em;
+  margin: .12em;
+  padding: .1em .2em;
+  border: 1px solid var(--dos-line) !important;
+  background: #000 !important;
+  color: var(--dos-bright) !important;
+  font: inherit;
+  cursor: pointer;
+}
+
+.body-diagram-hit-layer > .inventory-body-slot-author-edit {
+  z-index: 5;
+  width: 2.25em !important;
+  height: 2.25em !important;
+  min-width: 2.25em !important;
+  min-height: 2.25em !important;
+  padding: .1em !important;
+  border: 1px solid var(--dos-line) !important;
+  background: rgb(0 0 0 / .9) !important;
+  color: var(--dos-bright) !important;
+  font: inherit;
+}
+
 @media (max-width: 700px), (pointer: coarse) {
   .inventory-inspector-heading-actions button,
-  .inventory-body-heading-actions button {
-    min-height: 2.75em;
+  .inventory-body-heading-actions button,
+  .inventory-item-author-edit,
+  .body-diagram-hit-layer > .inventory-body-slot-author-edit {
+    min-height: 2.75em !important;
+    min-width: 2.75em !important;
     font-size: max(16px, 1em);
+  }
+
+  .body-diagram-hit-layer > .inventory-body-slot-author-edit {
+    width: 2.75em !important;
+    height: 2.75em !important;
   }
 }
