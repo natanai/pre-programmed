@@ -27,6 +27,7 @@ type InteractionRow = {
   wording: string;
   match_mode: Interaction["matchMode"];
   choice_visibility: Interaction["choiceVisibility"];
+  choice_visible_when_json: string;
   tags_json: string;
   notes: string;
 };
@@ -76,22 +77,34 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
 
 export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
   id: "narrative",
-  migrations: [{
-    id: 17,
-    name: "narrative-shared-authored-text-performance",
-    sql: `
-      ALTER TABLE interaction_outcomes
-      ADD COLUMN response_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}';
+  migrations: [
+    {
+      id: 17,
+      name: "narrative-shared-authored-text-performance",
+      sql: `
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN response_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}';
 
-      UPDATE interaction_outcomes
-      SET response_performance_json = json_object(
-        'charactersPerSecond', response_characters_per_second,
-        'cues', json('[]')
-      );
+        UPDATE interaction_outcomes
+        SET response_performance_json = json_object(
+          'charactersPerSecond', response_characters_per_second,
+          'cues', json('[]')
+        );
 
-      UPDATE project_meta SET schema_version = 17 WHERE id = 1;
-    `,
-  }],
+        UPDATE project_meta SET schema_version = 17 WHERE id = 1;
+      `,
+    },
+    {
+      id: 30,
+      name: "narrative-interaction-choice-visibility-condition",
+      sql: `
+        ALTER TABLE interactions
+        ADD COLUMN choice_visible_when_json TEXT NOT NULL DEFAULT '{"type":"always"}';
+
+        UPDATE project_meta SET schema_version = 30 WHERE id = 1;
+      `,
+    },
+  ],
 
   async load(db) {
     const [meta, nodes, interactions, aliases, outcomes] = await Promise.all([
@@ -104,7 +117,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, choice_visible_when_json, tags_json, notes FROM interactions ORDER BY created_at, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
@@ -146,6 +159,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         wording: row.wording,
         matchMode: row.match_mode ?? "command",
         choiceVisibility: row.choice_visibility,
+        choiceVisibleWhen: parseJson(row.choice_visible_when_json, { type: "always" }),
         tags: parseJson(row.tags_json, []),
         notes: row.notes,
         aliases: (aliasGroups.get(row.id) ?? []).map((alias) => alias.alias),
@@ -198,10 +212,11 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       const value = operation.interaction;
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, choice_visible_when_json, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
+             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility,
+             choice_visible_when_json=excluded.choice_visible_when_json, tags_json=excluded.tags_json,
              notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
@@ -209,6 +224,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           value.wording,
           value.matchMode ?? "command",
           value.choiceVisibility ?? "prompt",
+          JSON.stringify(value.choiceVisibleWhen ?? { type: "always" }),
           JSON.stringify(value.tags),
           value.notes,
         ),
