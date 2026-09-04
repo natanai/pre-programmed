@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 
@@ -25,7 +26,7 @@ export type PlayerWorkspaceContext = {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   updateState: (state: PlayState) => void;
-  output: (text: string) => void;
+  output: (text: string, source?: AuthoredSourceIdentity) => void;
   events: (events: EffectEvent[]) => void;
   author?: PlayerWorkspaceAuthorBridge;
 };
