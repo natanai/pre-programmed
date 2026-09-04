@@ -4,6 +4,7 @@ import { collectProjectBackup } from "./backup";
 import { ensureSchema } from "./db/schema";
 import { json, withCors } from "./http";
 import { getMediaContent, mediaContentKey } from "./mediaContent";
+import { collectPortableProject, restorePortableProject } from "./portableProject";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
 import { validateMutationBody } from "./validation";
 
@@ -37,6 +38,33 @@ async function downloadBackup(env: Env) {
       "cache-control": "no-store",
     },
   });
+}
+
+async function downloadPortableProject(env: Env) {
+  const project = await collectPortableProject(env.DB);
+  const filename = `pre-programmed-project-${project.exportedAt.replace(/[:.]/g, "-")}.ppgame`;
+  return new Response(JSON.stringify(project, null, 2), {
+    headers: {
+      "content-type": "application/vnd.pre-programmed.project+json; charset=utf-8",
+      "content-disposition": `attachment; filename="${filename}"`,
+      "cache-control": "no-store",
+    },
+  });
+}
+
+async function importPortableProject(request: Request, env: Env) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Portable project file is not valid JSON." }, { status: 400 });
+  }
+  try {
+    return json({ snapshot: await restorePortableProject(env.DB, body) });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Portable project import failed.";
+    return json({ error: message }, { status: 400 });
+  }
 }
 
 export async function handleApi(request: Request, env: Env) {
@@ -79,6 +107,8 @@ export async function handleApi(request: Request, env: Env) {
   await ensureSchema(env.DB);
 
   if (url.pathname === "/api/author/backup" && request.method === "GET") return downloadBackup(env);
+  if (url.pathname === "/api/author/project/export" && request.method === "GET") return downloadPortableProject(env);
+  if (url.pathname === "/api/author/project/import" && request.method === "POST") return importPortableProject(request, env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
 
   if (url.pathname === "/api/author/mutate" && request.method === "POST") {
