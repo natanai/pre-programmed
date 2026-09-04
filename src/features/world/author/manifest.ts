@@ -4,6 +4,8 @@ import { WORLD_AUTHOR_OPERATION_DEFINITIONS } from "../operationAdapter";
 import { WORLD_WORKSPACES, worldEntityRoute } from "./entityWorkspaces";
 import { worldProjectReferences } from "./references";
 
+const WORLD_LIBRARY_ROUTE = { type: "feature", feature: "world", workspace: "library" } as const;
+
 export const worldAuthorFeature: AuthorFeatureManifest = {
   id: "world",
   describeTask(route, snapshot) {
@@ -51,6 +53,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
       label: "Character",
       pluralLabel: "Characters",
       list: (snapshot) => snapshot.entities.filter((item) => item.type === "character").map((item) => ({ id: item.id, value: item.id, label: item.name || item.key, detail: item.key })),
+      listRoute: () => WORLD_LIBRARY_ROUTE,
       createRoute: () => worldEntityRoute("character", undefined, true),
       editRoute: (resource) => worldEntityRoute("character", resource.id, true),
     },
@@ -59,6 +62,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
       label: "Location",
       pluralLabel: "Locations",
       list: (snapshot) => snapshot.entities.filter((item) => item.type === "location").map((item) => ({ id: item.id, value: item.id, label: item.name || item.key, detail: item.key })),
+      listRoute: () => WORLD_LIBRARY_ROUTE,
       createRoute: () => worldEntityRoute("location", undefined, true),
       editRoute: (resource) => worldEntityRoute("location", resource.id, true),
     },
@@ -73,7 +77,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
       label: "PEOPLE + PLACES",
       description: "Characters, speakers, locations, and world entities.",
       searchText: "person people character characters speaker speakers location locations place places world",
-      onSelect: () => context.pushTask({ type: "feature", feature: "world", workspace: "library" }),
+      onSelect: () => context.pushTask(WORLD_LIBRARY_ROUTE),
     },
   }],
   search: (context) => [{
@@ -82,6 +86,6 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
     label: "PEOPLE + PLACES",
     description: "Find or create characters and locations.",
     searchText: "character characters speaker person people location locations place places world",
-    onSelect: () => context.pushTask({ type: "feature", feature: "world", workspace: "library" }),
+    onSelect: () => context.pushTask(WORLD_LIBRARY_ROUTE),
   }],
 };
