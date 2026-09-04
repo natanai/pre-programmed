@@ -16,6 +16,8 @@ export type AuthorResourceProvider = {
   /** False for reference-only aliases that would duplicate a canonical resource in global search. */
   searchable?: boolean;
   list: (snapshot: ProjectSnapshot) => AuthorResourceOption[];
+  /** Canonical owner-managed collection/list task for this resource kind. */
+  listRoute?: () => AuthorTaskRoute;
   createRoute?: () => AuthorTaskRoute;
   /** The owner may use the snapshot to dispatch union/reference-only resource kinds to their canonical editor. */
   editRoute?: (resource: AuthorResourceOption, snapshot: ProjectSnapshot) => AuthorTaskRoute | null;
@@ -24,8 +26,10 @@ export type AuthorResourceProvider = {
 export type AuthorResourceTools = {
   options: (kind: string) => AuthorResourceOption[];
   label: (kind: string) => string;
+  canOpenList: (kind: string) => boolean;
   canCreate: (kind: string) => boolean;
   canEdit: (kind: string, value: string) => boolean;
+  openList: (kind: string) => void;
   create: (kind: string, onCreated: (resource: AuthorResourceResult) => void) => void;
   edit: (kind: string, value: string, onComplete?: AuthorTaskCompletion) => void;
 };
