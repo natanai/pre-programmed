@@ -1,7 +1,6 @@
 import { evaluateCondition } from "../../../engine/rules/conditions";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { readComputedValue } from "../runtimeValues";
-import type { ComputedDefinition, VariableDefinition } from "../model";
 import "./stateWorkspaces.css";
 
 function stateResourceRoute(kind: "variable" | "computed" | "state-group", id?: string) {
@@ -21,10 +20,6 @@ function displayValue(value: unknown) {
   if (typeof value === "number") return Number.isInteger(value) ? String(value) : String(Math.round(value * 100) / 100);
   if (typeof value === "boolean") return value ? "YES" : "NO";
   return value === null || value === undefined ? "—" : String(value);
-}
-
-function entryValue(definition: VariableDefinition | ComputedDefinition, context: Parameters<typeof readComputedValue>[1] extends never ? never : never) {
-  return context;
 }
 
 export const stateStatusAuthorWorkspace = defineAuthorWorkspace({
