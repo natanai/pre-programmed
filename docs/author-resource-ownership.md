@@ -10,6 +10,23 @@ A short version is: **seen means editable**.
 
 This is a modularity rule, not just a convenience rule. It keeps editing behavior with the feature that owns the data while allowing every other feature to reuse that editor through the recursive Author task system.
 
+## Core Author mode rules at a glance
+
+These are the compact invariants to preserve during rapid prototyping:
+
+1. **Play stays play.** Author mode augments the real running game; it does not replace player systems with Author copies.
+2. **Author Tools are author-facing.** A tool should manage or configure authored game systems, not merely preview what the player already sees.
+3. **Seen means editable.** If Author mode shows or references an authorable definition, the author can reach its canonical editor from that context.
+4. **One resource, one owner, one save authority.** Other surfaces may reference a resource, but they do not recreate its editor, validation, draft state, or persistence path.
+5. **Normal interaction and editing coexist.** Author mode adds edit/create affordances without stealing the surface's normal play, follow, select, inspect, or navigation action.
+6. **Nesting is the reuse mechanism.** Cross-feature editing opens the owning task recursively, preserves the suspended parent, and returns to it with Back/save completion; the master `[X]` returns to play.
+7. **Creation uses the owner too.** A referencing surface may offer `+ Create`, but it launches the owning resource task instead of a local mini-editor.
+8. **Runtime presentation preserves authoring provenance.** Player-visible authored output must retain enough stable source identity for Author mode to open the definition that produced it instead of flattening that identity away.
+9. **Cross-feature access uses contracts.** Features expose resources/capabilities/routes through shared composition contracts rather than importing and embedding one another's editor implementations.
+10. **Desktop and mobile are one Author system.** They use the same tasks, editors, mutations, save semantics, and capabilities; only responsive presentation may differ.
+
+Transient run controls are allowed when they are clearly about testing the current playthrough (for example, `ADD TO RUN` or `USE THIS RUN`). They must not become a second durable editing path for project definitions.
+
 ## 1. One resource, one owning editor
 
 Every durable authorable resource or definition has one feature that owns its canonical editor and save semantics.
@@ -74,6 +91,29 @@ The edit affordance does not have to be visually loud. A row may itself open the
 
 This rule applies to **authorable definitions**, not every transient runtime value. A live numeric value, resolved condition result, generated output string, or other runtime-only projection may not itself be durable author data. In that case the Author affordance should lead to the definition that controls it when one exists.
 
+### Preserve the surface's normal action
+
+Direct editability is additive. If the thing already has a meaningful player or navigation action, Author mode should preserve it and add editing alongside it.
+
+Examples:
+
+- a Structure destination can still be followed while also offering `EDIT` for the destination Node;
+- an Inventory item can still be selected/used while also offering a route to its Item editor;
+- a Status group can still open its player entries while also offering a route to its State group editor;
+- a Media thumbnail can still open the player viewer while also offering a route to the Media editor.
+
+Do not make authors choose between navigating the game and editing it merely because both actions concern the same visible thing.
+
+### Preserve authoring provenance through play
+
+The runtime should not flatten away the identity needed to edit authored output.
+
+When player presentation originates from authored content—such as Node prose, an Interaction response, an operation response, a Character speaker, a State interpolation, a Media asset, or an authored effect—the presentation path should retain enough stable provenance to identify the controlling resource and, when useful, the relevant subpart/operation.
+
+That provenance is an Author bridge, not player-facing game data. Ordinary players do not receive Author task or persistence capabilities. While Author mode is active, however, the live surface can use the provenance to open the owning editor directly.
+
+If a renderer receives only a flattened string or anonymous event and can no longer tell which authored definition produced it, direct Author editability has already been lost upstream.
+
 ## 5. Play surfaces and Author tools have different jobs
 
 Author mode augments the running game rather than replacing player-facing systems.
@@ -134,6 +174,8 @@ Instead, use a shared Author resource/task contract, feature-contributed route/p
 
 This preserves replaceability. If the State editor is replaced later, Status references should continue to open the State-owned editor through the same contract rather than requiring duplicate Status changes to a copied editor.
 
+Every installed feature that owns authorable resources should expose enough generic resource/capability information for other installed features to reach those owners without knowing their editor internals. “Every feature can reach every other” means composable contracts and routes, not mutual implementation imports.
+
 ## 9. One save authority
 
 Because there is one owning editor, there should also be one authoritative edit/save path for the resource.
@@ -143,6 +185,8 @@ Reference surfaces may stage their own parent changes, but they should not parti
 If the child resource has an independent lifecycle, save it through the child task. If the nested control is truly part of the parent's transaction, keep it staged in the parent rather than publishing an unrelated project mutation early.
 
 The author should always be able to answer: **which task owns the change I am making?**
+
+Runtime test controls are different from project editing. A control that deliberately changes only the current playthrough may live beside a resource reference, but it should be labeled as run/test behavior and should not also write the durable resource definition.
 
 ## 10. Modularity test
 
@@ -154,11 +198,13 @@ Before adding or changing an Author surface, identify each authorable thing it d
 4. **Nesting:** Does doing so preserve the current parent task/workspace rather than abandoning it?
 5. **No duplication:** Did this surface avoid recreating the owner's fields, validation, or save behavior?
 6. **Mode boundary:** Is an Author tool author-facing rather than a duplicate player preview?
-7. **Creation:** If the resource can be created here, does creation use the same owner?
-8. **Responsive parity:** Do mobile and desktop invoke the same task and persistence path?
-9. **Replaceability:** Could the owning feature replace its editor without every referencing feature needing its own editor rewrite?
+7. **Natural action:** Does adding Author editability preserve the surface's ordinary play/navigation action?
+8. **Provenance:** If this is rendered during play, does the runtime still know which authored definition produced it?
+9. **Creation:** If the resource can be created here, does creation use the same owner?
+10. **Responsive parity:** Do mobile and desktop invoke the same task and persistence path?
+11. **Replaceability:** Could the owning feature replace its editor without every referencing feature needing its own editor rewrite?
 
-If the answer to reachability is no, the Author experience is incomplete. If the answer to duplication, mode boundary, or replaceability is no, the modular boundary is incomplete.
+If the answer to reachability is no, the Author experience is incomplete. If the answer to duplication, mode boundary, provenance, or replaceability is no, the modular boundary is incomplete.
 
 ## Examples
 
@@ -166,13 +212,13 @@ If the answer to reachability is no, the Author experience is incomplete. If the
 
 `PLAYER STATUS` is a useful direct Author tool because authors often want to work specifically on what the game exposes as Status. The Author tool should therefore manage player groups and values directly and let every group/value enter its State-owned editor. It is **not** a literal player Status preview.
 
-The literal player Status remains the real player workspace. When Author mode is active over that workspace, the group and each authorable entry should be able to open those same State-owned editors directly.
+The literal player Status remains the real player workspace. When Author mode is active over that workspace, the group and each authorable entry should be able to open those same State-owned editors directly without losing the group's normal player navigation behavior.
 
 ### Inventory
 
 `INVENTORY` is likewise a useful direct Author tool, but it should manage item definitions, Body Types, slots, equipment rules, and related configuration rather than duplicate the player's inventory grid.
 
-The live player Inventory remains the real player surface. In Author mode, item/body affordances there open the same Inventory-owned Item or Body tasks used from Author Tools.
+The live player Inventory remains the real player surface. In Author mode, item/body affordances there open the same Inventory-owned Item or Body tasks used from Author Tools while the normal player select/use/equip interactions remain available.
 
 ### References inside another editor
 
