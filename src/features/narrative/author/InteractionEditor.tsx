@@ -10,10 +10,7 @@ import type {
   PlayState,
   ProjectSnapshot,
 } from "../../../engine/project/model";
-import { makeId } from "../../../engine/project/id";
-import { nextNodeNumber } from "../nodeNumber";
 import type {
-  GameNode,
   Interaction,
   InteractionChoiceVisibility,
   InteractionOutcome,
@@ -39,8 +36,6 @@ type EditorScreen =
   | { type: "overview" }
   | { type: "response"; outcomeId: string }
   | { type: "input-settings" };
-
-type DestinationMode = "create" | "existing";
 
 export function aliasesForUserInput(userInputText: string, aliases: string[]) {
   const trimmed = userInputText.trim();
@@ -72,13 +67,6 @@ function normalizedInteraction(
     responsePerformance: outcome.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
   })) : [{ ...createDraftOutcome(), speakerId: defaultSpeakerId }];
   return value;
-}
-
-function initialDestinationModes(interaction: Interaction) {
-  return Object.fromEntries(interaction.outcomes.map((outcome) => [
-    outcome.id,
-    outcome.destinationNodeId ? "existing" : "create",
-  ])) as Record<string, DestinationMode>;
 }
 
 function conditionSummary(condition: Condition): string {
@@ -131,37 +119,43 @@ export function InteractionEditor({
   playState,
   initial,
   initialCommand = "",
+  initialOutcomeId,
   fallback = false,
   onSave,
   onCancel,
   onDirtyChange,
   onRegisterSave,
   onPreview,
+  onCreateDestination,
+  onEditDestination,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
   initial?: Interaction;
   initialCommand?: string;
+  initialOutcomeId?: string;
   fallback?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
   onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
   onPreview?: (outcome: InteractionOutcome) => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
+  onEditDestination?: (nodeId: string) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const sourceSpeakerId = snapshot.nodes.find((node) => node.id === playState.currentNodeId)?.characterId ?? null;
   const [draft, setDraft] = useState(() => normalizedInteraction(initial, playState.currentNodeId, initialCommand, fallbackMode, sourceSpeakerId));
-  const [newNodeText, setNewNodeText] = useState<Record<string, string>>({});
-  const [destinationModes, setDestinationModes] = useState<Record<string, DestinationMode>>(() => initialDestinationModes(draft));
   const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
-  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify({ draft, newNodeText: {}, destinationModes: initialDestinationModes(draft) }));
-  const [screen, setScreen] = useState<EditorScreen>({ type: "overview" });
+  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
+  const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
+    ? { type: "response", outcomeId: initialOutcomeId }
+    : { type: "overview" });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
-  const draftSignature = JSON.stringify({ draft, newNodeText, destinationModes });
+  const draftSignature = JSON.stringify(draft);
 
   useEffect(() => {
     onDirtyChange(draftSignature !== savedSignature);
@@ -180,7 +174,6 @@ export function InteractionEditor({
   const addResponseDraft = () => {
     const outcome = { ...createDraftOutcome(draft.outcomes.length), speakerId: sourceSpeakerId };
     setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
-    setDestinationModes((current) => ({ ...current, [outcome.id]: "create" }));
     setNewOutcomeIds((current) => new Set(current).add(outcome.id));
     setScreen({ type: "response", outcomeId: outcome.id });
   };
@@ -201,11 +194,6 @@ export function InteractionEditor({
       ...current,
       outcomes: current.outcomes.filter((outcome) => outcome.id !== outcomeId).map((outcome, order) => ({ ...outcome, order })),
     }));
-    setDestinationModes((current) => {
-      const next = { ...current };
-      delete next[outcomeId];
-      return next;
-    });
     setNewOutcomeIds((current) => {
       const next = new Set(current);
       next.delete(outcomeId);
@@ -227,13 +215,9 @@ export function InteractionEditor({
       setScreen({ type: "overview" });
       return false;
     }
-    const incompleteTransition = draft.outcomes.find((outcome) => {
-      if (outcome.disposition !== "transition") return false;
-      const mode = destinationModes[outcome.id] ?? (outcome.destinationNodeId ? "existing" : "create");
-      return mode === "existing" ? !outcome.destinationNodeId : !newNodeText[outcome.id]?.trim();
-    });
+    const incompleteTransition = draft.outcomes.find((outcome) => outcome.disposition === "transition" && !outcome.destinationNodeId);
     if (incompleteTransition) {
-      setError("Choose an existing destination or write the text for a new node.");
+      setError("Choose an existing destination or create a new Node before saving.");
       setScreen({ type: "response", outcomeId: incompleteTransition.id });
       return false;
     }
@@ -246,50 +230,24 @@ export function InteractionEditor({
     setError("");
     setSaving(true);
     try {
-      let nodeNumber = nextNodeNumber(snapshot);
-      const createdNodes: GameNode[] = [];
       const interaction: Interaction = {
         ...draft,
         wording: fallbackMode ? "" : userInputText,
         matchMode: fallbackMode ? "fallback" : "command",
         choiceVisibility: fallbackMode ? "typed" : draft.choiceVisibility,
         aliases: fallbackMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
-        outcomes: draft.outcomes.map((outcome, index) => {
-          const mode = destinationModes[outcome.id] ?? (outcome.destinationNodeId ? "existing" : "create");
-          const text = newNodeText[outcome.id]?.trim();
-          if (outcome.disposition !== "transition" || mode !== "create" || !text) {
-            return { ...outcome, order: index };
-          }
-          const node: GameNode = {
-            id: makeId(),
-            nodeNumber: nodeNumber++,
-            text,
-            ending: false,
-            tags: [],
-            characterId: null,
-            locationId: null,
-            performance: { charactersPerSecond: 18, cues: [] },
-          };
-          createdNodes.push(node);
-          return { ...outcome, order: index, destinationNodeId: node.id };
-        }),
+        outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
       };
       const result = await onSave(
-        [
-          ...createdNodes.map((node): MutationOperation => ({ type: "node.upsert", node })),
-          { type: "interaction.upsert", interaction },
-        ],
+        [{ type: "interaction.upsert", interaction }],
         fallbackMode
           ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
           : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
       );
       if (result.status === "saved" || result.status === "queued") {
-        const nextModes = initialDestinationModes(interaction);
         setDraft(interaction);
-        setNewNodeText({});
-        setDestinationModes(nextModes);
         setNewOutcomeIds(new Set());
-        setSavedSignature(JSON.stringify({ draft: interaction, newNodeText: {}, destinationModes: nextModes }));
+        setSavedSignature(JSON.stringify(interaction));
         return true;
       }
       return false;
@@ -356,10 +314,12 @@ export function InteractionEditor({
         onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
         onPreview={onPreview ? () => onPreview(selectedOutcome) : undefined}
         playState={playState}
-        destinationMode={destinationModes[selectedOutcome.id] ?? (selectedOutcome.destinationNodeId ? "existing" : "create")}
-        onDestinationMode={(mode) => setDestinationModes((current) => ({ ...current, [selectedOutcome.id]: mode }))}
-        newNodeText={newNodeText[selectedOutcome.id] ?? ""}
-        onNewNodeText={(text) => setNewNodeText((current) => ({ ...current, [selectedOutcome.id]: text }))}
+        onCreateDestination={onCreateDestination ? () => onCreateDestination((nodeId) => configureOutcome(selectedOutcome.id, (outcome) => ({
+          ...outcome,
+          disposition: "transition",
+          destinationNodeId: nodeId,
+        }))) : undefined}
+        onEditDestination={onEditDestination}
         onChange={(change) => configureOutcome(selectedOutcome.id, change)}
         onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
         onRemove={draft.outcomes.length > 1 ? () => removeOutcome(selectedOutcome.id) : undefined}
@@ -470,7 +430,7 @@ function InputSettings({ draft, fallbackMode, onChange }: {
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, destinationMode, onDestinationMode, newNodeText, onNewNodeText, onText, onPerformance, onSpeaker, onPreview, onChange, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, onText, onPerformance, onSpeaker, onPreview, onCreateDestination, onEditDestination, onChange, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -478,14 +438,12 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   total: number;
   notation: string;
   autoFocusText: boolean;
-  destinationMode: DestinationMode;
-  onDestinationMode: (mode: DestinationMode) => void;
-  newNodeText: string;
-  onNewNodeText: (text: string) => void;
   onText: (text: string) => void;
   onPerformance: (performance: InteractionOutcome["responsePerformance"]) => void;
   onSpeaker: (speakerId: string | null) => void;
   onPreview?: () => void;
+  onCreateDestination?: () => void;
+  onEditDestination?: (nodeId: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
@@ -525,10 +483,8 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
           outcome={outcome}
           snapshot={snapshot}
           playState={playState}
-          destinationMode={destinationMode}
-          onDestinationMode={onDestinationMode}
-          newNodeText={newNodeText}
-          onNewNodeText={onNewNodeText}
+          onCreateDestination={onCreateDestination}
+          onEditDestination={onEditDestination}
           onChange={onChange}
         />
       </OutcomeComposerSection>
@@ -548,14 +504,12 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   </div>;
 }
 
-function AfterWorkspace({ outcome, snapshot, playState, destinationMode, onDestinationMode, newNodeText, onNewNodeText, onChange }: {
+function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onEditDestination, onChange }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
-  destinationMode: DestinationMode;
-  onDestinationMode: (mode: DestinationMode) => void;
-  newNodeText: string;
-  onNewNodeText: (text: string) => void;
+  onCreateDestination?: () => void;
+  onEditDestination?: (nodeId: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
 }) {
   const [existingNodeQuery, setExistingNodeQuery] = useState("");
@@ -569,33 +523,37 @@ function AfterWorkspace({ outcome, snapshot, playState, destinationMode, onDesti
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destinationNodeId).join("") || "[A1]"
     : "[D]";
   const destination = snapshot.nodes.find((node) => node.id === outcome.destinationNodeId);
-  const selected = outcome.disposition === "stay" ? "stay" : destinationMode;
+  const selected = outcome.disposition === "stay" ? "stay" : "existing";
 
   const choose = (value: string) => {
     if (value === "stay") {
+      setExistingNodeQuery("");
       onChange((current) => ({ ...current, disposition: "stay", destinationNodeId: null }));
       return;
     }
-    const mode = value as DestinationMode;
-    onDestinationMode(mode);
-    if (mode === "create") {
-      setExistingNodeQuery("");
-      onChange((current) => ({ ...current, disposition: "transition", destinationNodeId: null }));
-    } else {
-      onChange((current) => ({ ...current, disposition: "transition" }));
+    if (value === "create") {
+      onCreateDestination?.();
+      return;
     }
+    onChange((current) => ({ ...current, disposition: "transition" }));
   };
 
   const existingResults = <>
     {outcome.destinationNodeId ? <div className="selected-destination">
       <span>LINKED {destinationNotation}: {destination?.text ?? outcome.destinationNodeId}</span>
-      <button type="button" onClick={() => onChange((current) => ({ ...current, destinationNodeId: null }))}>[UNLINK]</button>
+      <span className="selected-destination-actions">
+        {onEditDestination ? <button type="button" onClick={() => onEditDestination(outcome.destinationNodeId!)}>[EDIT NODE]</button> : null}
+        <button type="button" onClick={() => onChange((current) => ({ ...current, destinationNodeId: null }))}>[UNLINK]</button>
+      </span>
     </div> : null}
     {existingNodeQuery.trim() ? <div className="search-strip guided-destination-results" role="listbox" aria-label="Existing destination matches">
-      {matches.length ? matches.map((result) => <button type="button" role="option" key={result.id} onClick={() => {
-        setExistingNodeQuery("");
-        onChange((current) => ({ ...current, disposition: "transition", destinationNodeId: result.id }));
-      }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>) : <span className="search-empty">No existing node matches this search.</span>}
+      {matches.length ? matches.map((result) => <div className="guided-destination-result" key={result.id}>
+        <button type="button" role="option" className="guided-destination-select" onClick={() => {
+          setExistingNodeQuery("");
+          onChange((current) => ({ ...current, disposition: "transition", destinationNodeId: result.id }));
+        }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>
+        {onEditDestination ? <button type="button" className="guided-destination-edit" onClick={() => onEditDestination(result.id)}>[EDIT]</button> : null}
+      </div>) : <span className="search-empty">No existing node matches this search.</span>}
     </div> : null}
   </>;
 
@@ -616,24 +574,12 @@ function AfterWorkspace({ outcome, snapshot, playState, destinationMode, onDesti
       {
         value: "create",
         label: "CREATE NEW",
-        help: "Continue into a new node authored here.",
-        content: [{
-          type: "field",
-          id: `new-destination-${outcome.id}`,
-          label: "New destination text",
-          labelMode: "sr-only",
-          control: "textarea",
-          rows: 4,
-          value: newNodeText,
-          onChange: onNewNodeText,
-          placeholder: "Write the new destination…",
-          help: "Saving this response creates the node and links it as the destination.",
-        }],
+        help: "Open the real Node editor. Saving that nested task returns here with the new Node linked.",
       },
       {
         value: "existing",
         label: "LINK EXISTING",
-        help: "Connect this response to a node that already exists.",
+        help: "Connect this response to a Node that already exists.",
         content: [
           {
             type: "field",
