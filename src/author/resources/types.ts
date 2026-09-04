@@ -17,7 +17,8 @@ export type AuthorResourceProvider = {
   searchable?: boolean;
   list: (snapshot: ProjectSnapshot) => AuthorResourceOption[];
   createRoute?: () => AuthorTaskRoute;
-  editRoute?: (resource: AuthorResourceOption) => AuthorTaskRoute | null;
+  /** The owner may use the snapshot to dispatch union/reference-only resource kinds to their canonical editor. */
+  editRoute?: (resource: AuthorResourceOption, snapshot: ProjectSnapshot) => AuthorTaskRoute | null;
 };
 
 export type AuthorResourceTools = {
