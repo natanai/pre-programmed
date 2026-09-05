@@ -1,5 +1,5 @@
 import type { ProjectSnapshot } from "../project/model";
-import { makeSemanticReferenceToken } from "./runtime";
+import { makeSemanticReferenceToken } from "./syntax";
 
 const LEGACY_VALUE_TOKEN = /\{\{(variable|computed):([a-z][a-z0-9_-]*)(?:\|([a-z]+))?\}\}/gi;
 
