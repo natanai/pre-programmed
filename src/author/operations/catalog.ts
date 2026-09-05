@@ -12,12 +12,13 @@ export function authorOperationDefinitions(
   targetKind: string,
 ): readonly AuthorOperationDefinition[] {
   const authoredCommandDefinitions = snapshot.settings.commands.commands.flatMap((command) => {
-    if (command.action.type !== "target-operation") return [];
-    const targetSlot = command.slots.find((slot) => slot.name === command.action.targetSlot);
+    const action = command.action;
+    if (action.type !== "target-operation") return [];
+    const targetSlot = command.slots.find((slot) => slot.name === action.targetSlot);
     if (!targetSlot || !targetSlot.sourceKinds.includes(targetKind)) return [];
     return [{
-      value: command.action.operation,
-      label: command.label || command.action.operation,
+      value: action.operation,
+      label: command.label || action.operation,
       targetKinds: [...targetSlot.sourceKinds],
     } satisfies AuthorOperationDefinition];
   });
