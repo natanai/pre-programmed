@@ -11,6 +11,7 @@ export type ParserMatchReason =
   | "normalized-alias"
   | "command-grammar"
   | "ambiguous-reference"
+  | "capture"
   | "fallback";
 
 export type CommandReferenceAmbiguity = {
@@ -201,6 +202,7 @@ export function parseCommand(input: string, snapshot: ProjectSnapshot, state: Pl
   const normalizedInput = normalizeCommand(input);
   const sceneInteractions = interactionsAtCurrentNode(snapshot, state);
   const commandInteractions = sceneInteractions.filter((interaction) => (interaction.matchMode ?? "command") === "command");
+  const captureInteraction = sceneInteractions.filter((interaction) => interaction.matchMode === "capture").sort((left, right) => left.id.localeCompare(right.id))[0];
   const fallbackInteraction = sceneInteractions.filter((interaction) => interaction.matchMode === "fallback").sort((left, right) => left.id.localeCompare(right.id))[0];
   const allAliases = commandInteractions.flatMap((interaction) => interaction.aliases.map((alias) => ({ interaction, alias })));
 
@@ -233,6 +235,7 @@ export function parseCommand(input: string, snapshot: ProjectSnapshot, state: Pl
     ambiguities: [],
   };
 
+  if (captureInteraction) return { interaction: captureInteraction, invocation: null, reason: "capture", matchedAlias: null, matchedPattern: null, candidates: [captureInteraction.id], normalizedInput, ambiguities: [] };
   if (fallbackInteraction) return { interaction: fallbackInteraction, invocation: null, reason: "fallback", matchedAlias: null, matchedPattern: null, candidates: [fallbackInteraction.id], normalizedInput, ambiguities: [] };
   return { interaction: null, invocation: null, reason: "fallback", matchedAlias: null, matchedPattern: null, candidates: [], normalizedInput, ambiguities: [] };
 }
