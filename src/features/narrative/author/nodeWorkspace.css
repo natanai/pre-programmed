@@ -34,8 +34,49 @@
   line-height: 1.3;
 }
 
+.node-speaker-editor,
+.node-scene-editor {
+  display: grid;
+  gap: .8em;
+}
+
+.node-scene-context-group {
+  display: grid;
+  gap: .45em;
+  padding-block: .15em .65em;
+  border-bottom: 1px dashed var(--dos-line);
+}
+
+.node-scene-context-group:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.node-scene-character-list {
+  display: grid;
+  gap: .35em;
+}
+
+.node-scene-character-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45em;
+}
+
+.node-scene-remove {
+  min-width: 2.25em;
+  min-height: 2.25em;
+  border: 1px solid var(--dos-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
 @media (pointer: coarse) {
-  .node-input-link {
+  .node-input-link,
+  .node-scene-remove {
     min-height: 3em;
   }
 }
