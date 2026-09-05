@@ -70,7 +70,7 @@ await replaceOnce(
 
 await replaceOnce(
   "desktop/main.cjs",
-  `    } else if (name === "INITIALIZE_UNIVERSE_TEXT") {\n      initializeUniverseText = value;\n`,
+  `    } else if (name === "INITIALIZE_UNIVERSE_TEXT") {\n      initializeUniverseText = value;\n    }\n`,
   `    }\n`,
 );
 
@@ -82,7 +82,7 @@ await replaceOnce(
 
 await replaceOnce(
   "desktop/main.cjs",
-  `      if (url.pathname === "/engine-text.txt" && typeof installation.initializeUniverseText === "string") {\n        const text = \`# Pre-Programmed portable installation-owned player text\\nINITIALIZE_UNIVERSE_TEXT=${installation.initializeUniverseText}\\n\`;\n        const bytes = Buffer.from(text, "utf8");\n        response.writeHead(200, {\n          "content-type": "text/plain; charset=utf-8",\n          "content-length": String(bytes.length),\n          "cache-control": "no-store",\n        });\n        response.end(bytes);\n        return;\n      }\n\n`,
+  `      if (url.pathname === "/engine-text.txt" && typeof installation.initializeUniverseText === "string") {\n        const text = \`# Pre-Programmed portable installation-owned player text\\nINITIALIZE_UNIVERSE_TEXT=\${installation.initializeUniverseText}\\n\`;\n        const bytes = Buffer.from(text, "utf8");\n        response.writeHead(200, {\n          "content-type": "text/plain; charset=utf-8",\n          "content-length": String(bytes.length),\n          "cache-control": "no-store",\n        });\n        response.end(bytes);\n        return;\n      }\n\n`,
   "",
 );
 
@@ -100,7 +100,7 @@ await replaceOnce(
 
 await replaceOnce(
   "desktop/main.cjs",
-  `  const engineTextResponse = await fetch(new URL("engine-text.txt", url), { cache: "no-store" });\n  const engineText = await engineTextResponse.text();\n  if (!engineTextResponse.ok || (typeof initializeUniverseText === "string"\n    && !engineText.split(/\\r?\\n/).includes(\`INITIALIZE_UNIVERSE_TEXT=${initializeUniverseText}\`))) {\n    throw new Error("Portable installation startup text contract failed.");\n  }\n\n`,
+  `  const engineTextResponse = await fetch(new URL("engine-text.txt", url), { cache: "no-store" });\n  const engineText = await engineTextResponse.text();\n  if (!engineTextResponse.ok || (typeof initializeUniverseText === "string"\n    && !engineText.split(/\\r?\\n/).includes(\`INITIALIZE_UNIVERSE_TEXT=\${initializeUniverseText}\`))) {\n    throw new Error("Portable installation startup text contract failed.");\n  }\n\n`,
   "",
 );
 
