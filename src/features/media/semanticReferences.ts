@@ -5,6 +5,7 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "media.image",
     label: "Images",
     description: "Authored image assets stored in the project Media catalog.",
+    authorSyntax: "image",
     authorResourceKind: "media-image",
     defaultProjection: "name",
     candidates: ({ snapshot }) => snapshot.mediaAssets.filter((asset) => asset.kind === "image").map((asset) => ({
@@ -25,6 +26,7 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "media.audio",
     label: "Audio files",
     description: "Authored audio assets stored in the project Media catalog.",
+    authorSyntax: "audio",
     authorResourceKind: "media-audio",
     defaultProjection: "name",
     candidates: ({ snapshot }) => snapshot.mediaAssets.filter((asset) => asset.kind === "audio").map((asset) => ({
@@ -45,6 +47,7 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "media.synth",
     label: "Synth sounds",
     description: "Authored synthesizer sounds.",
+    authorSyntax: "synth",
     authorResourceKind: "synth-sound",
     defaultProjection: "label",
     candidates: ({ snapshot }) => snapshot.synthSounds.map((sound) => ({

@@ -1,4 +1,8 @@
 import { describe, expect, it } from "vitest";
+import {
+  authorSemanticReferenceView,
+  storeAuthorSemanticReferences,
+} from "../src/engine/references/authorSyntax";
 import { migrateLegacyReferenceTokens } from "../src/engine/references/migration";
 import { semanticReferenceProvider } from "../src/engine/references/catalog";
 import {
@@ -96,6 +100,40 @@ describe("semantic reference foundation", () => {
 
     expect(migrateLegacyReferenceTokens("Health: {{variable:health}}", snapshot))
       .toBe(`Health: ${makeSemanticReferenceToken("state.variable", "variable-health", "value")}`);
+  });
+
+  it("shows stable resource ids as human-facing Author syntax without changing persistence", () => {
+    const birthplace = {
+      ...worldEntity("c6bc068b-11e5-4ca9-8fc5-18e5a1639482", "location", "Birthplace"),
+      key: "birthplace",
+    };
+    const snapshot = project({
+      nodes: [{ ...node("a", 1), locationId: birthplace.id }],
+      entities: [birthplace],
+    });
+    const context = { snapshot, state: createEmptyPlayState(snapshot) };
+    const stored = `You are born. ${makeSemanticReferenceToken("world.location", birthplace.id, "name")}`;
+    const view = authorSemanticReferenceView(stored, context);
+
+    expect(view.text).toBe("You are born. {{location:birthplace}}");
+    expect(storeAuthorSemanticReferences(view.text, context)).toBe(stored);
+  });
+
+  it("shows contextual references in compact human syntax and keeps their stable selector identity", () => {
+    const birthplace = {
+      ...worldEntity("location-birthplace", "location", "Birthplace"),
+      key: "birthplace",
+    };
+    const snapshot = project({
+      nodes: [{ ...node("a", 1), locationId: birthplace.id }],
+      entities: [birthplace],
+    });
+    const context = { snapshot, state: createEmptyPlayState(snapshot) };
+    const stored = makeSemanticReferenceToken("world.location", "current", "name");
+    const view = authorSemanticReferenceView(stored, context);
+
+    expect(view.text).toBe("{{current-location}}");
+    expect(storeAuthorSemanticReferences(view.text, context)).toBe(stored);
   });
 
   it("lets one target slot resolve multiple feature-owned semantic kinds", () => {

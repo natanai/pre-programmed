@@ -4,7 +4,9 @@ import {
   featureTextCueAuthorAdapterForCode,
   featureTextCueAuthorAdapters,
 } from "../../../author/textCues/catalog";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
 import { scanInlineTextCommands } from "../../../engine/presentation/inlineTextCommandCatalog";
+import { createEmptyPlayState } from "../../../engine/project/playState";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { TextPerformance } from "../model";
 import { interpolateText } from "../interpolation";
@@ -38,6 +40,8 @@ export function AuthoredTextEditor({
 }) {
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const referenceState = useMemo(() => playState ?? createEmptyPlayState(snapshot), [playState, snapshot]);
+  const referenceContext = useMemo(() => ({ snapshot, state: referenceState }), [snapshot, referenceState]);
   const issues = useMemo(() => validateTextNotation(value.text), [value.text]);
   const renderedText = useMemo(
     () => playState ? interpolateText(value.text, { snapshot, state: playState }) : value.text,
@@ -57,14 +61,24 @@ export function AuthoredTextEditor({
     performance: { ...next.performance, cues: [] },
   });
 
-  const focusSelection = (start: number, end = start) => window.requestAnimationFrame(() => {
+  const displaySelection = (text: string, start: number, end = start) => {
+    const view = authorSemanticReferenceView(text, referenceContext);
+    return {
+      start: view.toDisplayIndex(start),
+      end: view.toDisplayIndex(end),
+    };
+  };
+
+  const focusSelection = (text: string, start: number, end = start) => window.requestAnimationFrame(() => {
+    const display = displaySelection(text, start, end);
     textarea.current?.focus();
-    textarea.current?.setSelectionRange(start, end);
+    textarea.current?.setSelectionRange(display.start, display.end);
     setSelection({ start, end });
   });
 
-  const preserveSelectionWithoutFocus = (start: number, end = start) => window.requestAnimationFrame(() => {
-    textarea.current?.setSelectionRange(start, end);
+  const preserveSelectionWithoutFocus = (text: string, start: number, end = start) => window.requestAnimationFrame(() => {
+    const display = displaySelection(text, start, end);
+    textarea.current?.setSelectionRange(display.start, display.end);
     setSelection({ start, end });
   });
 
@@ -86,9 +100,9 @@ export function AuthoredTextEditor({
     emit({ ...value, text: nextText });
     if (!selected && prefix) {
       const start = selection.start + prefix.length;
-      focusSelection(start, start + 4);
+      focusSelection(nextText, start, start + 4);
     } else {
-      focusSelection(selection.start + insertion.length);
+      focusSelection(nextText, selection.start + insertion.length);
     }
   };
 
@@ -98,7 +112,7 @@ export function AuthoredTextEditor({
     const nextText = `${value.text.slice(0, at)}${insertion}${value.text.slice(at)}`;
     emit({ ...value, text: nextText });
     const insideBraces = at + code.length + 2;
-    preserveSelectionWithoutFocus(insideBraces);
+    preserveSelectionWithoutFocus(nextText, insideBraces);
   };
 
   const updateCommandValue = (rawEnd: number, valueStart: number, valueEnd: number, nextValue: string) => {
@@ -106,13 +120,13 @@ export function AuthoredTextEditor({
     const nextText = `${value.text.slice(0, valueStart)}${safeValue}${value.text.slice(valueEnd)}`;
     emit({ ...value, text: nextText });
     const nextCommandEnd = rawEnd + safeValue.length - (valueEnd - valueStart);
-    preserveSelectionWithoutFocus(nextCommandEnd);
+    preserveSelectionWithoutFocus(nextText, nextCommandEnd);
   };
 
   const removeCommand = (rawStart: number, rawEnd: number) => {
     const nextText = `${value.text.slice(0, rawStart)}${value.text.slice(rawEnd)}`;
     emit({ ...value, text: nextText });
-    preserveSelectionWithoutFocus(rawStart);
+    preserveSelectionWithoutFocus(nextText, rawStart);
   };
 
   return <div className="authored-text-editor">

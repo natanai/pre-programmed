@@ -5,6 +5,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "inventory.item",
     label: "Items",
     description: "Authored item definitions; command targets resolve to a carried instance when present.",
+    authorSyntax: "item",
     authorResourceKind: "item",
     defaultProjection: "name",
     targetable: true,
@@ -37,10 +38,13 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "inventory.body-type",
     label: "Body types",
     description: "Authored body/equipment layouts and the body type active in the current run.",
+    authorSyntax: "body-type",
+    authorContextKeys: ["current-body-type"],
     authorResourceKind: "body-type",
     defaultProjection: "name",
     candidates: ({ snapshot, state }) => {
-      const active = snapshot.bodyBackgrounds.find((bodyType) => bodyType.id === state.bodyBackgroundId);
+      const bodyTypes = snapshot.bodyBackgrounds ?? [];
+      const active = bodyTypes.find((bodyType) => bodyType.id === state.bodyBackgroundId);
       return [
         {
           id: "current",
@@ -53,7 +57,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
           author: active ? { resourceKind: "body-type", resourceId: active.id } : undefined,
           contextual: true,
         },
-        ...snapshot.bodyBackgrounds.map((bodyType) => ({
+        ...bodyTypes.map((bodyType) => ({
           id: bodyType.id,
           key: bodyType.id,
           label: bodyType.name || "Untitled body type",
@@ -64,7 +68,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
         })),
       ];
     },
-    projectResource: (id, snapshot) => id !== "current" && snapshot.bodyBackgrounds.some((definition) => definition.id === id)
+    projectResource: (id, snapshot) => id !== "current" && (snapshot.bodyBackgrounds ?? []).some((definition) => definition.id === id)
       ? { resourceKind: "body-type", resourceId: id }
       : null,
   },

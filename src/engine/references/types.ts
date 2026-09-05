@@ -52,6 +52,10 @@ export type SemanticReferenceProvider = {
   kind: string;
   label: string;
   description: string;
+  /** Short human-facing namespace used in editable text, e.g. `location` or `variable`. */
+  authorSyntax?: string;
+  /** Contextual keys this provider owns in editable text, e.g. `current-location`. */
+  authorContextKeys?: readonly string[];
   /** Canonical resource provider used to create new static candidates in Author mode. */
   authorResourceKind?: string;
   /** Projection inserted immediately after a nested create task returns a new resource. */

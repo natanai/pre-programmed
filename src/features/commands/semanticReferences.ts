@@ -13,6 +13,7 @@ export const COMMAND_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferencePro
   kind: "commands.player-command",
   label: "Player commands",
   description: "Authored project-wide player command definitions.",
+  authorSyntax: "player-command",
   authorResourceKind: "player-command",
   defaultProjection: "label",
   candidates: ({ snapshot }) => snapshot.settings.commands.commands.map((command) => ({

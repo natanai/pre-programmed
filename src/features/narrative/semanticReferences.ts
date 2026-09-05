@@ -5,6 +5,8 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "narrative.node",
     label: "Nodes",
     description: "Authored narrative nodes and the node active in the current run.",
+    authorSyntax: "node",
+    authorContextKeys: ["current-node"],
     authorResourceKind: "node",
     defaultProjection: "label",
     candidates: ({ snapshot, state }) => {
@@ -49,6 +51,7 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "narrative.interaction",
     label: "Scene inputs",
     description: "Authored node-specific player inputs and invalid-input definitions.",
+    authorSyntax: "input",
     authorResourceKind: "interaction",
     defaultProjection: "label",
     candidates: ({ snapshot }) => snapshot.interactions.map((interaction) => ({

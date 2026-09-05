@@ -6,6 +6,7 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "state.variable",
     label: "Variables",
     description: "Authored mutable values, including flags and numeric player state.",
+    authorSyntax: "variable",
     authorResourceKind: "variable",
     defaultProjection: "value",
     targetable: true,
@@ -32,6 +33,7 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "state.computed",
     label: "Computed values",
     description: "Authored read-only values calculated from the current run.",
+    authorSyntax: "computed",
     authorResourceKind: "computed",
     defaultProjection: "value",
     targetable: true,
@@ -59,6 +61,7 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     kind: "state.group",
     label: "Player groups",
     description: "Authored State presentation groups.",
+    authorSyntax: "state-group",
     authorResourceKind: "state-group",
     defaultProjection: "label",
     candidates: ({ snapshot }) => snapshot.stateGroups.map((group) => ({
