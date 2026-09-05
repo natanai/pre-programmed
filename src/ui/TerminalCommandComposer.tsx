@@ -74,6 +74,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     anchor = null,
     ariaLabel,
   }, ref) {
+    const stackRef = useRef<HTMLDivElement>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const secretInputRef = useRef<HTMLInputElement>(null);
     const editorRef = useRef<HTMLDivElement>(null);
@@ -129,6 +130,36 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
         syncCaret();
       });
     };
+
+    useLayoutEffect(() => {
+      const stack = stackRef.current;
+      if (!stack) return;
+      const root = document.documentElement;
+      let frame = 0;
+      const publishOrigin = () => {
+        window.cancelAnimationFrame(frame);
+        frame = window.requestAnimationFrame(() => {
+          const rect = stack.getBoundingClientRect();
+          root.style.setProperty("--terminal-command-right", `${rect.right}px`);
+          root.style.setProperty("--terminal-command-float-bottom", `${Math.max(0, window.innerHeight - rect.top + 4)}px`);
+        });
+      };
+      const resizeObserver = new ResizeObserver(publishOrigin);
+      resizeObserver.observe(stack);
+      const experienceObserver = new MutationObserver(publishOrigin);
+      experienceObserver.observe(root, { attributes: true, attributeFilter: ["data-author-experience"] });
+      window.addEventListener("resize", publishOrigin);
+      window.addEventListener("pointermove", publishOrigin, { passive: true });
+      document.fonts?.ready.then(publishOrigin).catch(() => undefined);
+      publishOrigin();
+      return () => {
+        window.cancelAnimationFrame(frame);
+        resizeObserver.disconnect();
+        experienceObserver.disconnect();
+        window.removeEventListener("resize", publishOrigin);
+        window.removeEventListener("pointermove", publishOrigin);
+      };
+    }, []);
 
     useLayoutEffect(() => {
       if (secret) return;
@@ -211,7 +242,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const mirrorValue = secret ? "•".repeat(value.length) : value;
     const mirrorCaret = Math.min(caretIndex, mirrorValue.length);
 
-    return <div className="terminal-command-stack">
+    return <div ref={stackRef} className="terminal-command-stack">
       <form
         className="prompt-line terminal-command-composer"
         onSubmit={handleSubmit}
