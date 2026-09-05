@@ -17,6 +17,7 @@ import "./stateWorkspaces.css";
 const ALWAYS: Condition = { type: "always" };
 const WHEN_TEMPLATE: Condition = { type: "flag", key: "", value: true };
 const SELF_FLAG_KEY = "__author_self_flag__";
+const SELF_STRING_KEY = "__author_self_string__";
 
 export type StateAuthorResourceKind = "variable" | "number-variable" | "flag" | "computed" | "state-group";
 
@@ -74,16 +75,30 @@ function isSelfTrueCondition(condition: Condition, key: string) {
     && (condition.key === SELF_FLAG_KEY || Boolean(key) && condition.key === key);
 }
 
+function selfSetCondition(key: string): Condition {
+  return { type: "variable", key: key || SELF_STRING_KEY, operator: "neq", value: "" };
+}
+
+function isSelfSetCondition(condition: Condition, key: string) {
+  return condition.type === "variable"
+    && condition.operator === "neq"
+    && condition.value === ""
+    && (condition.key === SELF_STRING_KEY || Boolean(key) && condition.key === key);
+}
+
 function entryVisibilityChoice(
   id: string,
   condition: Condition,
   snapshot: ProjectSnapshot,
   setCondition: (condition: Condition) => void,
   selfBooleanKey?: string,
+  selfStringKey?: string,
 ): AuthorUiNode {
   const supportsSelfTrue = selfBooleanKey !== undefined;
+  const supportsSelfSet = selfStringKey !== undefined;
   const selfTrue = supportsSelfTrue && isSelfTrueCondition(condition, selfBooleanKey);
-  const value = selfTrue ? "self-true" : condition.type === "always" ? "always" : "when";
+  const selfSet = supportsSelfSet && isSelfSetCondition(condition, selfStringKey);
+  const value = selfTrue ? "self-true" : selfSet ? "self-set" : condition.type === "always" ? "always" : "when";
   return {
     type: "choice",
     id: `${id}-visibility`,
@@ -93,6 +108,7 @@ function entryVisibilityChoice(
     onChange: (choice) => {
       if (choice === "always") setCondition(ALWAYS);
       else if (choice === "self-true" && supportsSelfTrue) setCondition(selfTrueCondition(selfBooleanKey));
+      else if (choice === "self-set" && supportsSelfSet) setCondition(selfSetCondition(selfStringKey));
       else setCondition(WHEN_TEMPLATE);
     },
     options: [
@@ -101,6 +117,11 @@ function entryVisibilityChoice(
         value: "self-true",
         label: "WHEN TRUE",
         help: "Show this flag only while its own value is true.",
+      }] : []),
+      ...(supportsSelfSet ? [{
+        value: "self-set",
+        label: "WHEN SET",
+        help: "Show this text value only after it contains text.",
       }] : []),
       {
         value: "when",
@@ -122,6 +143,7 @@ function presentationNodes(
   snapshot: ProjectSnapshot,
   setPresentation: (presentation: StatePlayerPresentation | null) => void,
   selfBooleanKey?: string,
+  selfStringKey?: string,
 ): AuthorUiNode[] {
   const visible = Boolean(presentation);
   return [{
@@ -179,6 +201,7 @@ function presentationNodes(
               visibleWhen,
             }),
             selfBooleanKey,
+            selfStringKey,
           ),
         ] : [],
       },
@@ -314,15 +337,20 @@ export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>(
               placeholder: "generated from name",
               help: "Stable rule/text key.",
               onChange: (key) => setDraft((current) => {
-                const selfVisible = current.valueType === "boolean"
+                const selfTrue = current.valueType === "boolean"
                   && Boolean(current.playerPresentation)
                   && isSelfTrueCondition(current.playerPresentation!.visibleWhen, current.key);
+                const selfSet = current.valueType === "string"
+                  && Boolean(current.playerPresentation)
+                  && isSelfSetCondition(current.playerPresentation!.visibleWhen, current.key);
                 return {
                   ...current,
                   key,
-                  playerPresentation: selfVisible && current.playerPresentation
+                  playerPresentation: selfTrue && current.playerPresentation
                     ? { ...current.playerPresentation, visibleWhen: selfTrueCondition(key) }
-                    : current.playerPresentation,
+                    : selfSet && current.playerPresentation
+                      ? { ...current.playerPresentation, visibleWhen: selfSetCondition(key) }
+                      : current.playerPresentation,
                 };
               }),
             },
@@ -334,15 +362,26 @@ export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>(
               presentation: "segmented" as const,
               onChange: (valueType: string) => setDraft((current) => {
                 const nextType = valueType as VariableDefinition["valueType"];
-                const selfVisible = current.valueType === "boolean"
+                const selfTrue = current.valueType === "boolean"
                   && Boolean(current.playerPresentation)
                   && isSelfTrueCondition(current.playerPresentation!.visibleWhen, current.key);
+                const selfSet = current.valueType === "string"
+                  && Boolean(current.playerPresentation)
+                  && isSelfSetCondition(current.playerPresentation!.visibleWhen, current.key);
+                const selfVisibility = selfTrue || selfSet;
                 return {
                   ...current,
                   valueType: nextType,
                   initialValue: nextType === "boolean" ? false : nextType === "number" ? 0 : "",
-                  playerPresentation: selfVisible && nextType !== "boolean" && current.playerPresentation
-                    ? { ...current.playerPresentation, visibleWhen: ALWAYS }
+                  playerPresentation: selfVisibility && current.playerPresentation
+                    ? {
+                        ...current.playerPresentation,
+                        visibleWhen: nextType === "boolean"
+                          ? selfTrueCondition(current.key)
+                          : nextType === "string"
+                            ? selfSetCondition(current.key)
+                            : ALWAYS,
+                      }
                     : current.playerPresentation,
                 };
               }),
@@ -375,6 +414,7 @@ export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>(
             context.snapshot,
             (playerPresentation) => setDraft((current) => ({ ...current, playerPresentation })),
             draft.valueType === "boolean" ? draft.key : undefined,
+            draft.valueType === "string" ? draft.key : undefined,
           ),
         },
         {
@@ -411,16 +451,21 @@ export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>(
     });
     const lockedType = route.data?.resourceKind === "flag" ? "boolean" : route.data?.resourceKind === "number-variable" ? "number" : null;
     const valueType = lockedType ?? draft.valueType;
-    const selfVisible = valueType === "boolean"
+    const selfTrue = valueType === "boolean"
       && Boolean(draft.playerPresentation)
       && isSelfTrueCondition(draft.playerPresentation!.visibleWhen, draft.key);
+    const selfSet = valueType === "string"
+      && Boolean(draft.playerPresentation)
+      && isSelfSetCondition(draft.playerPresentation!.visibleWhen, draft.key);
     const saved = {
       ...draft,
       key,
       valueType,
-      playerPresentation: selfVisible && draft.playerPresentation
+      playerPresentation: selfTrue && draft.playerPresentation
         ? { ...draft.playerPresentation, visibleWhen: selfTrueCondition(key) }
-        : draft.playerPresentation,
+        : selfSet && draft.playerPresentation
+          ? { ...draft.playerPresentation, visibleWhen: selfSetCondition(key) }
+          : draft.playerPresentation,
     };
     const result = await context.persist([{ type: "variable.upsert", definition: saved }], `Save variable ${saved.label || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
