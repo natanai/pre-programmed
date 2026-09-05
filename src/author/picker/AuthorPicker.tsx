@@ -20,6 +20,12 @@ export type AuthorPickerItem = {
     ariaLabel?: string;
     onSelect: () => void;
   };
+  choices?: readonly {
+    id: string;
+    label: string;
+    ariaLabel?: string;
+    onSelect: () => void;
+  }[];
 };
 
 export type AuthorPickerGroup = {
@@ -219,6 +225,15 @@ export function AuthorPicker({
               aria-label={item.secondary.ariaLabel ?? item.secondary.label}
               onClick={item.secondary.onSelect}
             >{item.secondary.label}</button> : null}
+            {item.choices?.length ? <div className="author-picker-choices" aria-label={`Choose ${item.label} value`}>
+              <span>AS:</span>
+              {item.choices.map((choice) => <button
+                type="button"
+                key={choice.id}
+                aria-label={choice.ariaLabel ?? choice.label}
+                onClick={choice.onSelect}
+              >{choice.label}</button>)}
+            </div> : null}
           </div>;
         })}
       </section> : null)}
