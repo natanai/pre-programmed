@@ -8,19 +8,17 @@ export const SESSION_STARTER_COMMANDS: readonly CommandDefinition[] = [
   {
     id: "starter-session-save-file",
     label: "Save Game",
-    operation: "session.save-file",
     enabled: true,
     patterns: ["save", "save game"],
     slots: [],
-    targetSlot: "",
+    action: { type: "application", operation: "session.save-file" },
   },
   {
     id: "starter-session-load-file",
     label: "Load Game",
-    operation: "session.load-file",
     enabled: true,
     patterns: ["load", "load game"],
     slots: [],
-    targetSlot: "",
+    action: { type: "application", operation: "session.load-file" },
   },
 ];
