@@ -11,9 +11,6 @@ export function node(id: string, nodeNumber: number, ending = false): GameNode {
     ending,
     tags: [],
     locationId: null,
-    locationMode: "continue",
-    conversationCharacterId: null,
-    conversationMode: "continue",
     performance: { charactersPerSecond: 18, cues: [] },
     dialoguePerformance: { charactersPerSecond: 18, cues: [] },
   };
