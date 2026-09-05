@@ -1,9 +1,16 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "../../../engine/application/catalog";
+import type { CommandDefinition } from "../model";
 import {
   COMMAND_PROJECT_SETTINGS_SECTION,
   renderCommandSettingsWorkspace,
 } from "./CommandSettings";
+
+function commandActionLabel(command: CommandDefinition) {
+  if (command.action.type === "response") return "Respond with text";
+  if (command.action.type === "target-operation") return `Target · ${command.action.operation}`;
+  return APPLICATION_COMMAND_CAPABILITY_BY_OPERATION[command.action.operation]?.label ?? command.action.operation;
+}
 
 export const commandsAuthorFeature: AuthorFeatureManifest = {
   id: "commands",
@@ -27,8 +34,8 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
     list: (snapshot) => snapshot.settings.commands.commands.map((command) => ({
       id: command.id,
       value: command.id,
-      label: command.label || command.operation,
-      detail: command.patterns.join(" · ") || command.operation,
+      label: command.label || commandActionLabel(command),
+      detail: command.patterns.join(" · ") || commandActionLabel(command),
     })),
     createRoute: () => ({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new", resourceTask: "player-command" } }),
     editRoute: (resource) => ({ type: "feature", feature: "commands", workspace: "command", data: { commandId: resource.id, resourceTask: "player-command" } }),
@@ -53,7 +60,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
       groupLabel: "PLAYER LANGUAGE",
       label: "PLAYER COMMANDS",
       description: "Edit project-wide player inputs and actions.",
-      searchText: "command commands valid input wording phrase grammar action operation target typed text inspect use polish save load",
+      searchText: "command commands valid input wording phrase grammar action operation target typed text inspect use polish save load response",
       onSelect: () => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" }),
     },
     {
@@ -61,20 +68,17 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
       groupLabel: "PLAYER LANGUAGE",
       label: "TARGET NAMES + ALIASES",
       description: "Alternate names player commands can recognize.",
-      searchText: "reference references name names alias aliases item character location variable computed vocabulary",
+      searchText: "reference references name names alias aliases item character location variable computed vocabulary current here",
       onSelect: () => context.pushTask({ type: "feature", feature: "commands", workspace: "references" }),
     },
-    ...context.snapshot.settings.commands.commands.map((command) => {
-      const action = APPLICATION_COMMAND_CAPABILITY_BY_OPERATION[command.operation];
-      return {
-        id: `commands:command:${command.id}`,
-        groupLabel: "PLAYER COMMANDS",
-        label: command.label || command.operation,
-        description: `${command.patterns.join(" · ") || "No player inputs"} · ${action?.label ?? command.operation}`,
-        searchText: `${command.label} ${command.operation} ${action?.label ?? ""} ${command.patterns.join(" ")} ${command.slots.map((slot) => `${slot.name} ${slot.sourceKind}`).join(" ")} ${command.targetSlot}`,
-        onSelect: () => context.pushTask({ type: "feature" as const, feature: "commands", workspace: "command", data: { commandId: command.id } }),
-      };
-    }),
+    ...context.snapshot.settings.commands.commands.map((command) => ({
+      id: `commands:command:${command.id}`,
+      groupLabel: "PLAYER COMMANDS",
+      label: command.label || commandActionLabel(command),
+      description: `${command.patterns.join(" · ") || "No player inputs"} · ${commandActionLabel(command)}`,
+      searchText: `${command.label} ${commandActionLabel(command)} ${command.patterns.join(" ")} ${command.slots.map((slot) => `${slot.name} ${slot.sourceKinds.join(" ")}`).join(" ")}`,
+      onSelect: () => context.pushTask({ type: "feature" as const, feature: "commands", workspace: "command", data: { commandId: command.id } }),
+    })),
   ],
   renderWorkspace: renderCommandSettingsWorkspace,
 };
