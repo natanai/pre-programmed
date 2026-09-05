@@ -171,7 +171,7 @@ describe("semantic reference foundation", () => {
     expect(result.ambiguities[0]?.candidates).toHaveLength(2);
   });
 
-  it("executes a project-wide response command with live semantic interpolation", () => {
+  it("executes a project-wide response command with live semantic interpolation and canonical provenance", () => {
     const kitchen = worldEntity("kitchen", "location", "Kitchen");
     const currentLocation = makeSemanticReferenceToken("world.location", "current", "name");
     const base = project({
@@ -205,6 +205,10 @@ describe("semantic reference foundation", () => {
     });
     expect(execution.accepted).toBe(true);
     expect(execution.responseText).toBe("You are in Kitchen.");
-    expect(execution.source).toMatchObject({ kind: "player-command", id: "where-command" });
+    expect(execution.source).toMatchObject({
+      resourceKind: "player-command",
+      resourceId: "where-command",
+      focus: { operation: "commands.respond" },
+    });
   });
 });
