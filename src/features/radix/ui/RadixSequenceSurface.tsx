@@ -40,6 +40,8 @@ export function RadixSequenceSurface({
 }: RadixSequenceSurfaceProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toneRef = useRef<ProceduralToneSession | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const [stats, setStats] = useState({ accesses: 0, digit: 0, complete: false });
 
   useEffect(() => {
@@ -138,7 +140,7 @@ export function RadixSequenceSurface({
       setStats({ accesses, digit, complete: true });
       draw();
       holdTimer = window.setTimeout(() => {
-        if (!cancelled) onComplete();
+        if (!cancelled) onCompleteRef.current();
       }, sequence.finishHoldMs);
     };
 
@@ -193,7 +195,7 @@ export function RadixSequenceSurface({
       toneRef.current?.stop();
       toneRef.current = null;
     };
-  }, [onComplete, runKey, runtimeSeed, sequence, synth]);
+  }, [runKey, runtimeSeed, sequence, synth]);
 
   return <section
     className={`radix-sequence-surface radix-width-${sequence.widthMode}`}
