@@ -1,4 +1,9 @@
-import { nodeLocationMode, normalizeNodeLocationContext } from "../../src/features/narrative/locationContext";
+import {
+  nodeConversation,
+  nodeLocationMode,
+  nodePresentCharacters,
+  normalizeNodeSceneContext,
+} from "../../src/features/narrative/sceneContext";
 import type { GameNode, Interaction } from "../../src/features/narrative/model";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
@@ -21,6 +26,10 @@ type NodeRow = {
   character_id: string | null;
   location_id: string | null;
   location_mode: "set" | "continue" | "clear" | null;
+  present_characters_mode: "set" | "continue" | "clear" | null;
+  present_character_ids_json: string | null;
+  conversation_mode: "set" | "continue" | "clear" | null;
+  conversation_character_ids_json: string | null;
   anchor_mode: "set" | "continue" | "clear" | null;
   anchor_text: string | null;
 };
@@ -158,6 +167,27 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 36 WHERE id = 1;
       `,
     },
+    {
+      id: 37,
+      name: "narrative-node-scene-context",
+      sql: `
+        ALTER TABLE node_context
+        ADD COLUMN present_characters_mode TEXT NOT NULL DEFAULT 'continue'
+        CHECK (present_characters_mode IN ('set', 'continue', 'clear'));
+
+        ALTER TABLE node_context
+        ADD COLUMN present_character_ids_json TEXT NOT NULL DEFAULT '[]';
+
+        ALTER TABLE node_context
+        ADD COLUMN conversation_mode TEXT NOT NULL DEFAULT 'continue'
+        CHECK (conversation_mode IN ('set', 'continue', 'clear'));
+
+        ALTER TABLE node_context
+        ADD COLUMN conversation_character_ids_json TEXT NOT NULL DEFAULT '[]';
+
+        UPDATE project_meta SET schema_version = 37 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -166,7 +196,9 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       db.prepare(
         `SELECT n.id, n.node_number, n.text, n.characters_per_second,
                 d.ending, d.tags_json, d.performance_json, d.anchor_mode, d.anchor_text,
-                c.character_id, c.location_id, c.location_mode
+                c.character_id, c.location_id, c.location_mode,
+                c.present_characters_mode, c.present_character_ids_json,
+                c.conversation_mode, c.conversation_character_ids_json
            FROM nodes n
            LEFT JOIN node_details d ON d.node_id = n.id
            LEFT JOIN node_context c ON c.node_id = n.id
@@ -200,6 +232,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           cues: [],
         }));
         const locationMode = row.location_mode ?? (row.location_id ? "set" : "continue");
+        const presentMode = row.present_characters_mode ?? "continue";
+        const conversationMode = row.conversation_mode ?? "continue";
         return {
           id: row.id,
           nodeNumber: row.node_number,
@@ -209,6 +243,14 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           characterId: row.character_id,
           locationId: locationMode === "set" ? row.location_id : null,
           locationMode,
+          presentCharacters: {
+            mode: presentMode,
+            characterIds: presentMode === "set" ? parseJson(row.present_character_ids_json, []) : [],
+          },
+          conversation: {
+            mode: conversationMode,
+            characterIds: conversationMode === "set" ? parseJson(row.conversation_character_ids_json, []) : [],
+          },
           anchor: {
             mode: row.anchor_mode ?? "continue",
             text: row.anchor_text ?? "",
@@ -251,9 +293,11 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
 
   mutationStatements(db, operation) {
     if (operation.type === "node.upsert") {
-      const node = normalizeNodeLocationContext(operation.node);
+      const node = normalizeNodeSceneContext(operation.node);
       const anchor = node.anchor ?? { mode: "continue" as const, text: "" };
       const locationMode = nodeLocationMode(node);
+      const presentCharacters = nodePresentCharacters(node);
+      const conversation = nodeConversation(node);
       return [
         db.prepare(
           `INSERT INTO nodes (id, node_number, text, characters_per_second, updated_at)
@@ -276,11 +320,27 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           anchor.text,
         ),
         db.prepare(
-          `INSERT INTO node_context (node_id, character_id, location_id, location_mode)
-           VALUES (?, ?, ?, ?)
+          `INSERT INTO node_context
+             (node_id, character_id, location_id, location_mode,
+              present_characters_mode, present_character_ids_json,
+              conversation_mode, conversation_character_ids_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(node_id) DO UPDATE SET character_id=excluded.character_id,
-             location_id=excluded.location_id, location_mode=excluded.location_mode`,
-        ).bind(node.id, node.characterId, node.locationId, locationMode),
+             location_id=excluded.location_id, location_mode=excluded.location_mode,
+             present_characters_mode=excluded.present_characters_mode,
+             present_character_ids_json=excluded.present_character_ids_json,
+             conversation_mode=excluded.conversation_mode,
+             conversation_character_ids_json=excluded.conversation_character_ids_json`,
+        ).bind(
+          node.id,
+          node.characterId,
+          node.locationId,
+          locationMode,
+          presentCharacters.mode,
+          JSON.stringify(presentCharacters.characterIds),
+          conversation.mode,
+          JSON.stringify(conversation.characterIds),
+        ),
       ];
     }
 
