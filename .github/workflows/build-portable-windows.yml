@@ -17,9 +17,9 @@ jobs:
     env:
       CSC_IDENTITY_AUTO_DISCOVERY: "false"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -102,7 +102,7 @@ jobs:
 
       - name: Install isolated desktop host dependencies
         working-directory: desktop
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
 
       - name: Bundle Worker through Wrangler
         shell: pwsh
@@ -141,7 +141,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          npx electron-builder --config electron-builder.yml --win --x64 --dir "--config.extraMetadata.version=$env:VERSION"
+          npx electron-builder --config electron-builder.yml --win --x64 --dir --publish never "--config.extraMetadata.version=$env:VERSION"
 
       - name: Stage extracted portable folder
         id: stage
@@ -218,6 +218,9 @@ jobs:
             throw "Portable installation.txt did not reset to its friend-facing Author-key default."
           }
 
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "assets") -Force).Count -ne 0) {
+            throw "Portable assets folder must be empty before distribution."
+          }
           if (@(Get-ChildItem (Join-Path $env:APP_ROOT "data") -Force).Count -ne 0) {
             throw "Portable data folder must be empty before distribution."
           }
@@ -272,6 +275,9 @@ jobs:
           }
           if ($entries | Where-Object { $_ -match '(^|/)(AGENTS\.md|FOUNDATION\.md|DOS-VISUAL-TARGET\.md|CODEX-HANDOFF\.md)$' }) {
             throw "Agent-facing documentation leaked into portable ZIP."
+          }
+          if ($entries | Where-Object { $_ -match '\.zip$' }) {
+            throw "Nested ZIP detected inside portable distribution."
           }
 
           "ZIP_PATH=$zip" >> $env:GITHUB_ENV
