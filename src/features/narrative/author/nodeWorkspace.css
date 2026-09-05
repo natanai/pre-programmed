@@ -97,21 +97,6 @@
   padding-inline: 0;
 }
 
-.node-prose-grid {
-  display: grid;
-  gap: .9em;
-  min-width: 0;
-}
-
-.node-prose-grid.has-dialogue {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
-  align-items: start;
-}
-
-.node-prose-grid > * {
-  min-width: 0;
-}
-
 .node-anchor-body {
   padding: .7em;
   border-top: 1px dashed var(--dos-line);

@@ -74,11 +74,16 @@ export type InteractionOutcome = {
   label: string;
   authorStatus: "draft" | "configured";
   condition: Condition;
+  /** Optional narration shown before this response's spoken line. */
   responseText: string;
-  /** Optional voice for this immediate response; destination Node dialogue is owned by the Node. */
+  /** Optional spoken line. In a conversation, the source Node's conversation character owns the voice. */
+  dialogueText?: string;
+  /** Explicit fallback voice only when the source Node is not in an active conversation. */
   speakerId?: string | null;
-  /** The same authored-text performance contract used by Node prose. */
+  /** Narration delivery. */
   responsePerformance: TextPerformance;
+  /** Spoken-line delivery. */
+  dialoguePerformance?: TextPerformance;
   effects: Effect[];
   disposition: InteractionDisposition;
   destinationNodeId: string | null;

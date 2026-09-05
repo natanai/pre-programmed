@@ -71,6 +71,50 @@ describe("D1 migration safety", () => {
     }
   });
 
+  it("moves legacy speaker-authored interaction text into dialogue without losing its voice", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const proseMigration = migrations.find((migration) => migration.id === 40);
+    expect(proseMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 40)) {
+        applyMigration(database, migration.sql);
+      }
+      const start = database.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").get() as { start_node_id: string };
+      database.exec(`
+        INSERT INTO entity_definitions (id, key, entity_type, name)
+        VALUES ('marta', 'marta', 'character', 'Marta');
+        INSERT INTO interactions (id, source_node_id, wording)
+        VALUES ('ask', '${start.start_node_id}', 'ask');
+        INSERT INTO interaction_outcomes
+          (id, interaction_id, response_text, response_speaker_id, response_characters_per_second, response_performance_json)
+        VALUES
+          ('answer', 'ask', 'Hello.', 'marta', 27, '{"charactersPerSecond":27,"cues":[]}');
+      `);
+
+      applyMigration(database, proseMigration!.sql);
+      const row = database.prepare(`
+        SELECT response_text, response_dialogue_text, response_speaker_id,
+               response_performance_json, response_dialogue_performance_json
+        FROM interaction_outcomes WHERE id = 'answer'
+      `).get() as {
+        response_text: string;
+        response_dialogue_text: string;
+        response_speaker_id: string | null;
+        response_performance_json: string;
+        response_dialogue_performance_json: string;
+      };
+      expect(row.response_text).toBe("");
+      expect(row.response_dialogue_text).toBe("Hello.");
+      expect(row.response_speaker_id).toBe("marta");
+      expect(JSON.parse(row.response_performance_json).charactersPerSecond).toBe(18);
+      expect(JSON.parse(row.response_dialogue_performance_json).charactersPerSecond).toBe(27);
+    } finally {
+      database.close();
+    }
+  });
+
   it("turns legacy exposed State values into ordinary Status-group membership", () => {
     const database = new DatabaseSync(":memory:");
     const migrations = currentMigrations();

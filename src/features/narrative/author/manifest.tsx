@@ -165,10 +165,10 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
           initialOutcomeId={route.data?.outcomeId}
           fallback={fallback}
           onRegisterSave={context.registerWorkspaceSave}
-          onPreview={(outcome) => context.runtime.preview({
-            text: outcome.responseText,
-            performance: outcome.responsePerformance,
-            speakerId: outcome.speakerId,
+          onPreview={(value, speakerId, outcome) => context.runtime.preview({
+            text: value.text,
+            performance: value.performance,
+            speakerId,
             events: previewEventsForEffects(outcome.effects, context.snapshot),
           })}
           onCreateDestination={(onCreated) => context.resources.create("node", (resource) => onCreated(resource.id))}

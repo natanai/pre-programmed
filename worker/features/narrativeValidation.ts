@@ -105,6 +105,13 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (!validLegacyQueuedOutcome && !textPerformanceValid(performance)) {
         return "Response text performance is invalid.";
       }
+      if (candidate.dialogueText !== undefined
+        && (typeof candidate.dialogueText !== "string" || candidate.dialogueText.length > 20000)) {
+        return "Response dialogue text is invalid.";
+      }
+      if (candidate.dialoguePerformance !== undefined && !textPerformanceValid(candidate.dialoguePerformance)) {
+        return "Response dialogue performance is invalid.";
+      }
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (
         typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128
       )) {

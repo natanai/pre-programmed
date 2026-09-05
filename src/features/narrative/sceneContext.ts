@@ -111,3 +111,21 @@ export function resolveActiveNodeConversationContext(
 ): ActiveNodeConversationContext | null {
   return resolveActiveNodeContext(snapshot, state).conversation;
 }
+
+/** Resolve the conversation specifically at one Node on the current real traversal. */
+export function resolveNodeConversationContext(
+  snapshot: ProjectSnapshot,
+  state: Pick<PlayState, "traversal">,
+  nodeId: string,
+): ActiveNodeConversationContext | null {
+  const traversalIndex = state.traversal.lastIndexOf(nodeId);
+  if (traversalIndex >= 0) {
+    return resolveActiveNodeConversationContext(snapshot, {
+      traversal: state.traversal.slice(0, traversalIndex + 1),
+    });
+  }
+  const node = snapshot.nodes.find((candidate) => candidate.id === nodeId);
+  if (!node || nodeConversationMode(node) !== "set") return null;
+  const characterId = nodeConversationCharacterId(node);
+  return characterId ? { characterId, sourceNodeId: node.id } : null;
+}

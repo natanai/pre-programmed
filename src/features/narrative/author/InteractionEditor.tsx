@@ -23,6 +23,8 @@ import {
 } from "../../../author/outcomes/OutcomeComposer";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
+import { interactionOutcomeProse, normalizeInteractionOutcomeProse } from "../interactionProse";
+import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
 import { validateTextNotation } from "../textNotation";
 import "./interactionEditor.css";
@@ -55,19 +57,15 @@ function normalizedInteraction(
   sourceNodeId: string,
   command: string,
   fallback: boolean,
-  defaultSpeakerId: string | null,
 ) {
-  const creating = !initial;
   const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
   value.matchMode ??= fallback ? "fallback" : "command";
   value.choiceVisibility ??= fallback ? "typed" : "prompt";
   value.choiceVisibleWhen ??= ALWAYS;
-  value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => ({
+  value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => normalizeInteractionOutcomeProse({
     ...outcome,
     authorStatus: outcome.authorStatus ?? "configured",
-    speakerId: outcome.speakerId ?? (creating ? defaultSpeakerId : null),
-    responsePerformance: outcome.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
-  })) : [{ ...createDraftOutcome(), speakerId: defaultSpeakerId }];
+  })) : [createDraftOutcome()];
   return value;
 }
 
@@ -93,15 +91,19 @@ function conditionSummary(condition: Condition): string {
 }
 
 function responseSnippet(outcome: InteractionOutcome) {
-  const text = outcome.responseText.trim().replace(/\s+/g, " ");
+  const prose = interactionOutcomeProse(outcome);
+  const text = [prose.narrationText, prose.dialogueText].filter((value) => value.trim()).join(" / ").trim().replace(/\s+/g, " ");
   if (text) return text.length > 72 ? `${text.slice(0, 69)}...` : text;
   if (outcome.effects.length) return `${outcome.effects.length} effect${outcome.effects.length === 1 ? "" : "s"}, no response text`;
   return "No response yet";
 }
 
-function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
-  if (!outcome.speakerId) return "Narration";
-  return snapshot.entities.find((entity) => entity.type === "character" && entity.id === outcome.speakerId)?.name ?? "Unknown speaker";
+function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome, conversationCharacterId: string | null) {
+  const prose = interactionOutcomeProse(outcome);
+  if (!prose.dialogueText.trim()) return "Narration";
+  const speakerId = conversationCharacterId ?? outcome.speakerId;
+  if (!speakerId) return "Conversation at runtime";
+  return snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId)?.name ?? "Unknown speaker";
 }
 
 function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
@@ -143,14 +145,13 @@ export function InteractionEditor({
   onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
-  onPreview?: (outcome: InteractionOutcome) => void;
+  onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
   onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
   onEditDestination?: (nodeId: string) => void;
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const resolvedSourceNodeId = initial?.sourceNodeId ?? sourceNodeId ?? playState.currentNodeId;
-  const sourceSpeakerId = snapshot.nodes.find((node) => node.id === resolvedSourceNodeId)?.characterId ?? null;
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, resolvedSourceNodeId, initialCommand, fallbackMode, sourceSpeakerId));
+  const [draft, setDraft] = useState(() => normalizedInteraction(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
   const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
   const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
@@ -162,9 +163,11 @@ export function InteractionEditor({
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const draftSignature = JSON.stringify(draft);
   const captureMode = !fallbackMode && draft.matchMode === "capture";
-  const sourcePlayState = draft.sourceNodeId === playState.currentNodeId
-    ? playState
+  const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
+  const sourcePlayState = sourceTraversalIndex >= 0
+    ? { ...playState, currentNodeId: draft.sourceNodeId, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
     : { ...playState, currentNodeId: draft.sourceNodeId };
+  const conversationCharacterId = resolveNodeConversationContext(snapshot, sourcePlayState, draft.sourceNodeId)?.characterId ?? null;
 
   useEffect(() => {
     onDirtyChange(draftSignature !== savedSignature);
@@ -181,7 +184,7 @@ export function InteractionEditor({
   };
 
   const addResponseDraft = () => {
-    const outcome = { ...createDraftOutcome(draft.outcomes.length), speakerId: sourceSpeakerId };
+    const outcome = createDraftOutcome(draft.outcomes.length);
     setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
     setNewOutcomeIds((current) => new Set(current).add(outcome.id));
     setScreen({ type: "response", outcomeId: outcome.id });
@@ -238,7 +241,9 @@ export function InteractionEditor({
       setScreen({ type: "response", outcomeId: incompleteTransition.id });
       return false;
     }
-    const invalidText = draft.outcomes.find((outcome) => validateTextNotation(outcome.responseText).length);
+    const invalidText = draft.outcomes.find((outcome) =>
+      validateTextNotation(outcome.responseText).length
+      || validateTextNotation(outcome.dialogueText ?? "").length);
     if (invalidText) {
       setError("Fix the response text rule error before saving.");
       setScreen({ type: "response", outcomeId: invalidText.id });
@@ -309,6 +314,7 @@ export function InteractionEditor({
         fallbackMode={fallbackMode}
         captureMode={captureMode}
         snapshot={snapshot}
+        conversationCharacterId={conversationCharacterId}
         notationForOutcome={notationForOutcome}
         autoFocusWording={!initial}
         onWording={(wording) => setDraft({ ...draft, wording })}
@@ -333,10 +339,8 @@ export function InteractionEditor({
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
         autoFocusText={!initial || newOutcomeIds.has(selectedOutcome.id)}
-        onText={(responseText) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responseText }))}
-        onPerformance={(responsePerformance) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, responsePerformance }))}
-        onSpeaker={(speakerId) => configureOutcome(selectedOutcome.id, (outcome) => ({ ...outcome, speakerId }))}
-        onPreview={onPreview ? () => onPreview(selectedOutcome) : undefined}
+        conversationCharacterId={conversationCharacterId}
+        onPreview={onPreview ? (value, speakerId) => onPreview(value, speakerId, selectedOutcome) : undefined}
         playState={sourcePlayState}
         onCreateDestination={onCreateDestination ? () => onCreateDestination((nodeId) => configureOutcome(selectedOutcome.id, (outcome) => ({
           ...outcome,
@@ -369,6 +373,7 @@ function InteractionOverview({
   fallbackMode,
   captureMode,
   snapshot,
+  conversationCharacterId,
   notationForOutcome,
   autoFocusWording,
   onWording,
@@ -381,6 +386,7 @@ function InteractionOverview({
   fallbackMode: boolean;
   captureMode: boolean;
   snapshot: ProjectSnapshot;
+  conversationCharacterId: string | null;
   notationForOutcome: (outcome: InteractionOutcome) => string;
   autoFocusWording: boolean;
   onWording: (wording: string) => void;
@@ -414,7 +420,7 @@ function InteractionOverview({
           <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
           <span className="response-summary-content">
             <strong>{index + 1}. {responseSnippet(outcome)}</strong>
-            <small>SPEAKER: {responseSpeakerLabel(snapshot, outcome)} · WHEN: {conditionSummary(outcome.condition)} · AFTER: {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
+            <small>SPEAKER: {responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · WHEN: {conditionSummary(outcome.condition)} · AFTER: {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
           </span>
           <span aria-hidden="true">›</span>
         </button>)}
@@ -483,7 +489,7 @@ function InputSettings({ draft, fallbackMode, captureMode, snapshot, onChange }:
   </div>;
 }
 
-function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, onText, onPerformance, onSpeaker, onPreview, onCreateDestination, onEditDestination, onChange, onMove, onRemove }: {
+function ResponseWorkspace({ outcome, snapshot, playState, index, total, notation, autoFocusText, conversationCharacterId, onPreview, onCreateDestination, onEditDestination, onChange, onMove, onRemove }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -491,41 +497,67 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   total: number;
   notation: string;
   autoFocusText: boolean;
-  onText: (text: string) => void;
-  onPerformance: (performance: InteractionOutcome["responsePerformance"]) => void;
-  onSpeaker: (speakerId: string | null) => void;
-  onPreview?: () => void;
+  conversationCharacterId: string | null;
+  onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
   onCreateDestination?: () => void;
   onEditDestination?: (nodeId: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove?: () => void;
 }) {
+  const prose = interactionOutcomeProse(outcome);
+  const dialogueSpeakerId = conversationCharacterId ?? outcome.speakerId ?? null;
+  const dialogueSpeakerName = dialogueSpeakerId
+    ? snapshot.entities.find((entity) => entity.type === "character" && entity.id === dialogueSpeakerId)?.name ?? "Unknown character"
+    : "";
+  const showDialogueEditor = Boolean(conversationCharacterId || outcome.speakerId || prose.dialogueText.trim());
+  const dialogueLabel = dialogueSpeakerName
+    ? `${dialogueSpeakerName.toUpperCase()} SAYS`
+    : "DIALOGUE — CHOOSE SPEAKER";
+
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
     <section className="guided-section response-writing-section">
       <h3>RESPONSE</h3>
-      <label>SPEAKER
+      {!conversationCharacterId ? <label>SPEAKER
         <ReferenceField
           kind="character"
           value={outcome.speakerId ?? ""}
-          onChange={(speakerId) => onSpeaker(speakerId || null)}
+          onChange={(speakerId) => onChange((current) => ({ ...current, speakerId: speakerId || null }))}
           placeholder="none / narration"
         />
-        <small>The selected character's name is shown with this response in play.</small>
-      </label>
-      <AuthoredTextEditor
-        value={{ text: outcome.responseText, performance: outcome.responsePerformance }}
-        snapshot={snapshot}
-        label={`RESPONSE TEXT ${index + 1}`}
-        rows={5}
-        autoFocus={autoFocusText}
-        onChange={(value: AuthoredTextValue) => {
-          onText(value.text);
-          onPerformance(value.performance);
-        }}
-        onPreview={onPreview ? () => onPreview() : undefined}
-      />
+        <small>Optional outside a conversation. In an active conversation, the Node's conversation character is used automatically.</small>
+      </label> : null}
+      <div className={`narrative-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
+        <AuthoredTextEditor
+          value={{ text: prose.narrationText, performance: prose.narrationPerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label="NARRATION"
+          rows={5}
+          autoFocus={autoFocusText && !dialogueSpeakerId}
+          onChange={(value) => onChange((current) => ({
+            ...current,
+            responseText: value.text,
+            responsePerformance: value.performance,
+          }))}
+          onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
+        />
+        {showDialogueEditor ? <AuthoredTextEditor
+          value={{ text: prose.dialogueText, performance: prose.dialoguePerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label={dialogueLabel}
+          rows={5}
+          autoFocus={autoFocusText && Boolean(dialogueSpeakerId)}
+          onChange={(value) => onChange((current) => ({
+            ...current,
+            dialogueText: value.text,
+            dialoguePerformance: value.performance,
+          }))}
+          onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
+        /> : null}
+      </div>
     </section>
     <div className="interaction-outcome-composer" aria-label="Complete response outcome">
       <OutcomeComposerSection title="WHEN" summary={conditionSummary(outcome.condition)}>
