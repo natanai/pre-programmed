@@ -8,6 +8,7 @@ import {
 import { createEmptyPlayState } from "../engine/project/playState";
 import type { PlayState, ProjectSnapshot } from "../engine/project/model";
 import { useAuthorResourceTools } from "./resources/context";
+import { useAuthorPlayStateOptional } from "./runtime/playStateContext";
 import "./valueMentionField.css";
 
 type Mention = { start: number; end: number; query: string };
@@ -50,15 +51,17 @@ export function ValueMentionField({
   onSelectionChange?: (selection: TextSelection) => void;
 }) {
   const resources = useAuthorResourceTools();
+  const authorPlayState = useAuthorPlayStateOptional();
+  const livePlayState = playState ?? authorPlayState;
   const control = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [mention, setMention] = useState<Mention | null>(null);
   const [selection, setSelection] = useState(0);
   const referenceState = useMemo(
-    () => playState ?? createEmptyPlayState(snapshot),
-    [playState, snapshot],
+    () => livePlayState ?? createEmptyPlayState(snapshot),
+    [livePlayState, snapshot],
   );
   const candidates = useMemo(() => semanticReferenceEntries({ snapshot, state: referenceState })
-    .filter((entry) => playState || !entry.candidate.contextual), [snapshot, referenceState, playState]);
+    .filter((entry) => livePlayState || !entry.candidate.contextual), [snapshot, referenceState, livePlayState]);
   const matches = useMemo(() => {
     if (!mention) return [];
     const query = mention.query.toLowerCase();
