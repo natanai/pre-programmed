@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { readdir, readFile, stat } from "node:fs/promises";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, relative, resolve, sep } from "node:path";
 
 const EXTENSIONS = new Set([".png", ".webp", ".gif", ".svg", ".mp3", ".wav", ".ogg"]);
@@ -73,14 +73,32 @@ function normalizeAuthoringMode(value, sidecarPath) {
   throw new Error(`Asset sidecar ${sidecarPath} has an invalid authoringMode.`);
 }
 
-async function readIdentity(path, assetRoot) {
+function generatedIdentityId(assetPath) {
+  return `repo:/assets/${assetPath}`;
+}
+
+async function writeIdentityReceipt(sidecarPath, id) {
+  try {
+    await writeFile(sidecarPath, `${JSON.stringify({ id }, null, 2)}\n`, { encoding: "utf8", flag: "wx" });
+  } catch (error) {
+    if (error?.code === "EEXIST") return;
+    // Read-only builds still get the same deterministic ID. Local/portable
+    // installs write the receipt when possible so identity can travel with a
+    // file if it is later moved or renamed.
+    console.warn(`Could not write Media identity receipt ${sidecarPath}: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+async function readIdentity(path, assetRoot, assetPath) {
   const sidecarPath = `${path}.asset.json`;
   let text;
   try {
     text = await readFile(sidecarPath, "utf8");
   } catch (error) {
     if (error?.code === "ENOENT") {
-      throw new Error(`Asset ${relative(assetRoot, path)} is missing ${relative(assetRoot, sidecarPath)}. Every file asset needs a stable identity sidecar.`);
+      const id = generatedIdentityId(assetPath);
+      await writeIdentityReceipt(sidecarPath, id);
+      return { id, authoringMode: "file" };
     }
     throw error;
   }
@@ -94,6 +112,9 @@ async function readIdentity(path, assetRoot) {
   if (value.defaultPresentation !== undefined && !["inline", "overlay"].includes(value.defaultPresentation)) {
     throw new Error(`Asset sidecar ${sidecarPath} has an invalid defaultPresentation.`);
   }
+  // Older receipts may contain these fields. Keep reading them as migration
+  // defaults, but new receipts contain identity only; authored metadata belongs
+  // to the Media resource in project persistence.
   return { ...value, id: value.id.trim(), authoringMode: normalizeAuthoringMode(value.authoringMode, sidecarPath) };
 }
 
@@ -108,7 +129,9 @@ function joinedPrefix(prefix, assetPath, leadingSlash) {
  *
  * Hosted builds call this at build time for public/assets. The portable desktop
  * host calls the same scanner at runtime for the visible assets/ folder beside
- * the executable, so stable Media identity and validation do not fork.
+ * the executable. A neighboring identity receipt is optional: bare files get a
+ * deterministic repo:/assets/<relative-path> ID, and writable installs emit an
+ * id-only receipt automatically so that identity can move with the file later.
  */
 export async function scanAssetDirectory(assetRoot, options = {}) {
   const root = resolve(assetRoot);
@@ -123,7 +146,7 @@ export async function scanAssetDirectory(assetRoot, options = {}) {
     const extension = extname(path).toLowerCase();
     const assetPath = relative(root, path).split(sep).join("/");
     const source = await stat(path);
-    const identity = await readIdentity(path, root);
+    const identity = await readIdentity(path, root, assetPath);
     if (ids.has(identity.id)) throw new Error(`Duplicate file Media id ${identity.id}.`);
     ids.add(identity.id);
     assets.push({
