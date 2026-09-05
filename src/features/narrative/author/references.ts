@@ -1,4 +1,5 @@
 import type { ProjectReferenceContribution, ResourceReference } from "../../../author/references/types";
+import { nodeLocationMode } from "../locationContext";
 
 function fromTargets(
   targets: readonly ResourceReference[],
@@ -17,7 +18,9 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
     };
     return [
       ...(node.characterId ? [{ ...owner, resourceKind: "character", resourceId: node.characterId, detail: "node speaker" }] : []),
-      ...(node.locationId ? [{ ...owner, resourceKind: "location", resourceId: node.locationId, detail: "node location" }] : []),
+      ...(nodeLocationMode(node) === "set" && node.locationId
+        ? [{ ...owner, resourceKind: "location", resourceId: node.locationId, detail: "node location" }]
+        : []),
       ...fromTargets(context.text(node.text), owner),
     ];
   }),
