@@ -1,13 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../../../author/features/types";
 import { OutcomeEffectsEditor } from "../../../author/outcomes/OutcomeComposer";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
 import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "../../../engine/references/catalog";
-import type { SemanticReferenceProvider } from "../../../engine/references/types";
 import { AuthoredTextEditor } from "../../narrative/author/AuthoredTextEditor";
-import type { CommandAction, CommandDefinition, CommandProjectSettings, ReferenceSourceSetting } from "../model";
+import type { CommandAction, CommandDefinition, CommandProjectSettings, CommandSlotDefinition, ReferenceSourceSetting } from "../model";
 import "./commandSettings.css";
 
 const OPERATION_ID_PATTERN = /^[a-z][a-z0-9_.-]{0,63}$/;
@@ -18,14 +17,19 @@ const TARGET_ACTION = "__target__";
 function patternLines(value: string) {
   return value.split("\n").map((line) => line.trim()).filter(Boolean);
 }
+
 function placeholderNames(patterns: string[]) {
   const seen = new Set<string>();
-  for (const pattern of patterns) for (const match of pattern.matchAll(PLACEHOLDER_PATTERN)) seen.add(match[1].toLowerCase());
+  for (const pattern of patterns) {
+    for (const match of pattern.matchAll(PLACEHOLDER_PATTERN)) seen.add(match[1].toLowerCase());
+  }
   return [...seen];
 }
+
 function targetProviders() {
   return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
 }
+
 function referenceSetting(commands: CommandProjectSettings, sourceKind: string): ReferenceSourceSetting {
   return structuredClone(commands.referenceSources.find((setting) => setting.sourceKind === sourceKind) ?? {
     sourceKind,
@@ -34,6 +38,7 @@ function referenceSetting(commands: CommandProjectSettings, sourceKind: string):
     aliases: {},
   });
 }
+
 function updateReferenceSetting(commands: CommandProjectSettings, setting: ReferenceSourceSetting): CommandProjectSettings {
   return {
     ...commands,
@@ -42,19 +47,23 @@ function updateReferenceSetting(commands: CommandProjectSettings, setting: Refer
       : [...commands.referenceSources, setting],
   };
 }
+
 async function persistCommands(context: AuthorWorkspaceContext, commands: CommandProjectSettings, description: string) {
   return context.persist([{ type: "project.settings", settings: { ...context.snapshot.settings, commands } }], description);
 }
+
 function actionChoice(action: CommandAction) {
   if (action.type === "response") return RESPONSE_ACTION;
   if (action.type === "target-operation") return TARGET_ACTION;
   return `application:${action.operation}`;
 }
+
 function actionLabel(action: CommandAction) {
   if (action.type === "response") return "Respond with text";
   if (action.type === "target-operation") return action.operation ? `Target · ${action.operation}` : "Target operation";
   return APPLICATION_COMMAND_CAPABILITIES.find((capability) => capability.operation === action.operation)?.label ?? action.operation;
 }
+
 function defaultResponseAction(): CommandAction {
   return {
     type: "response",
@@ -88,7 +97,12 @@ function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceCont
         <span><strong>PLAYER COMMANDS</strong><small>Reusable typed commands that work across the game.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
       </button>
       <h3>TARGET OWNERS</h3>
-      {targetProviders().map((provider) => <button type="button" key={provider.kind} disabled={!provider.authorResourceKind || !context.resources.canOpenList(provider.authorResourceKind)} onClick={() => provider.authorResourceKind && context.resources.openList(provider.authorResourceKind)}>
+      {targetProviders().map((provider) => <button
+        type="button"
+        key={provider.kind}
+        disabled={!provider.authorResourceKind || !context.resources.canOpenList(provider.authorResourceKind)}
+        onClick={() => provider.authorResourceKind && context.resources.openList(provider.authorResourceKind)}
+      >
         <span><strong>{provider.label.toUpperCase()}</strong><small>{provider.description}</small></span><span>›</span>
       </button>)}
     </div>
@@ -120,18 +134,35 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
   const [saving, setSaving] = useState(false);
   const dirty = JSON.stringify(draft) !== baseline;
   const candidates = provider?.candidates({ snapshot: context.snapshot, state: context.playState }) ?? [];
-  useEffect(() => { context.setWorkspaceDirty(dirty); return () => context.setWorkspaceDirty(false); }, [context.setWorkspaceDirty, dirty]);
+
+  useEffect(() => {
+    context.setWorkspaceDirty(dirty);
+    return () => context.setWorkspaceDirty(false);
+  }, [context.setWorkspaceDirty, dirty]);
+
   const save = async (): Promise<boolean> => {
     if (!provider) return false;
     setSaving(true);
     try {
       const result = await persistCommands(context, updateReferenceSetting(context.snapshot.settings.commands, draft), `Changed ${provider.label} player vocabulary`);
-      if (result.status === "saved" || result.status === "queued") { setBaseline(JSON.stringify(draft)); context.setWorkspaceDirty(false); return true; }
+      if (result.status === "saved" || result.status === "queued") {
+        setBaseline(JSON.stringify(draft));
+        context.setWorkspaceDirty(false);
+        return true;
+      }
       return false;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
-  useEffect(() => { context.registerWorkspaceSave(provider ? save : null); return () => context.registerWorkspaceSave(null); });
+
+  useEffect(() => {
+    context.registerWorkspaceSave(provider ? save : null);
+    return () => context.registerWorkspaceSave(null);
+  });
+
   if (!provider) return <section className="author-panel author-panel-frame"><header>REFERENCE SOURCE</header><p>UNKNOWN SOURCE.</p></section>;
+
   return <section className="author-panel author-panel-frame command-settings-workspace">
     <header><span>TARGET NAMES · {provider.label.toUpperCase()}</span></header>
     <div className="author-panel-body command-reference-editor">
@@ -140,15 +171,22 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
       <h3>CUSTOM ALIASES</h3>
       <div className="command-reference-candidates">
         {candidates.map((candidate) => <div className="command-reference-candidate" key={candidate.id}>
-          <div className="command-reference-candidate-heading"><span>{candidate.label}{candidate.detail ? <small>{candidate.detail}</small> : null}</span>
-            {candidate.author && context.resources.canEdit(candidate.author.resourceKind, candidate.author.resourceId) ? <button type="button" onClick={() => context.resources.edit(candidate.author!.resourceKind, candidate.author!.resourceId)}>[EDIT]</button> : null}
+          <div className="command-reference-candidate-heading">
+            <span>{candidate.label}{candidate.detail ? <small>{candidate.detail}</small> : null}</span>
+            {candidate.author && context.resources.canEdit(candidate.author.resourceKind, candidate.author.resourceId)
+              ? <button type="button" onClick={() => context.resources.edit(candidate.author!.resourceKind, candidate.author!.resourceId)}>[EDIT]</button>
+              : null}
           </div>
-          <label>ADDITIONAL NAMES<textarea rows={2} value={(draft.aliases[candidate.id] ?? []).join("\n")} placeholder="one additional player name per line" onChange={(event) => setDraft({ ...draft, aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) } })} /></label>
+          <label>ADDITIONAL NAMES
+            <textarea rows={2} value={(draft.aliases[candidate.id] ?? []).join("\n")} placeholder="one additional player name per line" onChange={(event) => setDraft({ ...draft, aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) } })} />
+          </label>
         </div>)}
       </div>
     </div>
     <div className="author-actions author-panel-footer">
-      {provider.authorResourceKind && context.resources.canCreate(provider.authorResourceKind) ? <button type="button" onClick={() => context.resources.create(provider.authorResourceKind!, () => undefined)}>[+ CREATE {provider.label.toUpperCase()}]</button> : null}
+      {provider.authorResourceKind && context.resources.canCreate(provider.authorResourceKind)
+        ? <button type="button" onClick={() => context.resources.create(provider.authorResourceKind!, () => undefined)}>[+ CREATE {provider.label.toUpperCase()}]</button>
+        : null}
       <button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
     </div>
   </section>;
@@ -171,7 +209,11 @@ function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext 
 function CommandEditor({ context, commandId, initialOperation = "", resourceTask }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string; resourceTask?: string }) {
   const existing = context.snapshot.settings.commands.commands.find((command) => command.id === commandId);
   const initial: CommandDefinition = structuredClone(existing ?? {
-    id: crypto.randomUUID(), label: "", enabled: true, patterns: [], slots: [],
+    id: crypto.randomUUID(),
+    label: "",
+    enabled: true,
+    patterns: [],
+    slots: [],
     action: initialOperation ? { type: "target-operation", operation: initialOperation, targetSlot: "" } : defaultResponseAction(),
   });
   const [draft, setDraft] = useState(initial);
@@ -181,16 +223,17 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   const [confirmDelete, setConfirmDelete] = useState(false);
   const patterns = patternLines(patternsText);
   const slotNames = placeholderNames(patterns);
-  const slots = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
-  const currentForDirty = { ...draft, patterns, slots };
-  const dirty = JSON.stringify(currentForDirty) !== baseline;
+  const slots: CommandSlotDefinition[] = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
+  const dirty = JSON.stringify({ ...draft, patterns, slots }) !== baseline;
   const providers = targetProviders();
-  const selectedKinds = [...new Set(slots.flatMap((slot) => slot.sourceKinds))];
-  const knownOperations = useMemo(() => [...new Map(selectedKinds.flatMap((kind) => context.resolveCommandTarget(kind)
-    ? []
-    : []).map((item: never) => [item, item])).values()], [selectedKinds, context]);
-  void knownOperations;
-  useEffect(() => { context.setWorkspaceDirty(dirty); return () => context.setWorkspaceDirty(false); }, [context.setWorkspaceDirty, dirty]);
+  const targetActionKinds = draft.action.type === "target-operation"
+    ? slots.find((slot) => slot.name === draft.action.targetSlot)?.sourceKinds ?? []
+    : [];
+
+  useEffect(() => {
+    context.setWorkspaceDirty(dirty);
+    return () => context.setWorkspaceDirty(false);
+  }, [context.setWorkspaceDirty, dirty]);
 
   const setSlotKinds = (name: string, sourceKinds: string[]) => setDraft((current) => ({
     ...current,
@@ -198,16 +241,31 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
       ? { name, sourceKinds }
       : current.slots.find((slot) => slot.name === slotName) ?? { name: slotName, sourceKinds: [] }),
   }));
+
   const chooseAction = (value: string) => {
-    if (value === RESPONSE_ACTION) { setDraft({ ...draft, action: draft.action.type === "response" ? draft.action : defaultResponseAction() }); return; }
-    if (value === TARGET_ACTION) { setDraft({ ...draft, action: draft.action.type === "target-operation" ? draft.action : { type: "target-operation", operation: "inspect", targetSlot: slots.find((slot) => slot.sourceKinds.length)?.name ?? "" } }); return; }
-    const operation = value.replace(/^application:/, "");
-    setDraft({ ...draft, action: { type: "application", operation } });
+    if (value === RESPONSE_ACTION) {
+      setDraft((current) => ({ ...current, action: current.action.type === "response" ? current.action : defaultResponseAction() }));
+      return;
+    }
+    if (value === TARGET_ACTION) {
+      setDraft((current) => ({
+        ...current,
+        action: current.action.type === "target-operation"
+          ? current.action
+          : { type: "target-operation", operation: "inspect", targetSlot: slots.find((slot) => slot.sourceKinds.length)?.name ?? "" },
+      }));
+      return;
+    }
+    setDraft((current) => ({ ...current, action: { type: "application", operation: value.replace(/^application:/, "") } }));
   };
+
   const save = async (): Promise<boolean> => {
     if (!draft.label.trim() || !patterns.length) return false;
     const normalizedSlots = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
-    if (draft.action.type === "target-operation" && (!OPERATION_ID_PATTERN.test(draft.action.operation) || !normalizedSlots.some((slot) => slot.name === draft.action.targetSlot && slot.sourceKinds.length))) return false;
+    if (draft.action.type === "target-operation" && (
+      !OPERATION_ID_PATTERN.test(draft.action.operation)
+      || !normalizedSlots.some((slot) => slot.name === draft.action.targetSlot && slot.sourceKinds.length)
+    )) return false;
     const command: CommandDefinition = { ...draft, label: draft.label.trim(), patterns, slots: normalizedSlots };
     let commands: CommandProjectSettings = {
       ...context.snapshot.settings.commands,
@@ -223,16 +281,28 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     try {
       const result = await persistCommands(context, commands, `${existing ? "Changed" : "Created"} command ${command.label}`);
       if (result.status !== "saved" && result.status !== "queued") return false;
-      setDraft(command); setPatternsText(command.patterns.join("\n")); setBaseline(JSON.stringify(command)); context.setWorkspaceDirty(false);
+      setDraft(command);
+      setPatternsText(command.patterns.join("\n"));
+      setBaseline(JSON.stringify(command));
+      context.setWorkspaceDirty(false);
       if (resourceTask === "player-command") context.completeTask({ type: "resource", kind: "player-command", id: command.id, value: command.id, label: command.label });
       return true;
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   };
-  useEffect(() => { context.registerWorkspaceSave(save); return () => context.registerWorkspaceSave(null); });
+
+  useEffect(() => {
+    context.registerWorkspaceSave(save);
+    return () => context.registerWorkspaceSave(null);
+  });
 
   const remove = async () => {
     if (!existing) return;
-    const commands = { ...context.snapshot.settings.commands, commands: context.snapshot.settings.commands.commands.filter((command) => command.id !== existing.id) };
+    const commands = {
+      ...context.snapshot.settings.commands,
+      commands: context.snapshot.settings.commands.commands.filter((command) => command.id !== existing.id),
+    };
     const result = await persistCommands(context, commands, `Deleted command ${existing.label}`);
     if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
   };
@@ -245,14 +315,19 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
       <label>PLAYER INPUTS<textarea rows={4} value={patternsText} placeholder={'where\nwhere am i\ninspect {target}'} onChange={(event) => setPatternsText(event.target.value)} /></label>
       <small>One pattern per line. Use {'{name}'} for a value the player supplies.</small>
 
-      {slots.length ? <section className="command-slot-editor"><h3>INPUT VALUES</h3>{slots.map((slot) => <div className="command-slot-row" key={slot.name}>
-        <strong>{`{${slot.name}}`}</strong>
-        <label className="check-label"><input type="checkbox" checked={!slot.sourceKinds.length} onChange={() => setSlotKinds(slot.name, [])} /> FREE TEXT</label>
-        {providers.map((provider) => <div key={provider.kind} className="command-slot-source-row">
-          <label className="check-label"><input type="checkbox" checked={slot.sourceKinds.includes(provider.kind)} onChange={(event) => setSlotKinds(slot.name, event.target.checked ? [...slot.sourceKinds, provider.kind] : slot.sourceKinds.filter((kind) => kind !== provider.kind))} /> {provider.label.toUpperCase()}</label>
-          {provider.authorResourceKind && context.resources.canOpenList(provider.authorResourceKind) ? <button type="button" onClick={() => context.resources.openList(provider.authorResourceKind!)}>[OPEN]</button> : null}
+      {slots.length ? <section className="command-slot-editor">
+        <h3>INPUT VALUES</h3>
+        {slots.map((slot) => <div className="command-slot-row" key={slot.name}>
+          <strong>{`{${slot.name}}`}</strong>
+          <label className="check-label"><input type="checkbox" checked={!slot.sourceKinds.length} onChange={() => setSlotKinds(slot.name, [])} /> FREE TEXT</label>
+          {providers.map((provider) => <div key={provider.kind} className="command-slot-source-row">
+            <label className="check-label"><input type="checkbox" checked={slot.sourceKinds.includes(provider.kind)} onChange={(event) => setSlotKinds(slot.name, event.target.checked ? [...slot.sourceKinds, provider.kind] : slot.sourceKinds.filter((kind) => kind !== provider.kind))} /> {provider.label.toUpperCase()}</label>
+            {provider.authorResourceKind && context.resources.canOpenList(provider.authorResourceKind)
+              ? <button type="button" onClick={() => context.resources.openList(provider.authorResourceKind!)}>[OPEN]</button>
+              : null}
+          </div>)}
         </div>)}
-      </div>)}</section> : null}
+      </section> : null}
 
       <label>ACTION<select value={actionChoice(draft.action)} onChange={(event) => chooseAction(event.target.value)}>
         <option value={RESPONSE_ACTION}>RESPOND WITH TEXT</option>
@@ -261,30 +336,34 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
       </select></label>
 
       {draft.action.type === "response" ? <section className="command-response-editor">
-        <ReferenceField kind="character" value={draft.action.speakerId ?? ""} onChange={(speakerId) => setDraft({ ...draft, action: { ...draft.action, speakerId: speakerId || null } })} placeholder="none / narration" />
+        <label>SPEAKER <ReferenceField kind="character" value={draft.action.speakerId ?? ""} onChange={(speakerId) => setDraft((current) => current.action.type === "response" ? { ...current, action: { ...current.action, speakerId: speakerId || null } } : current)} placeholder="none / narration" /></label>
         <AuthoredTextEditor
           value={{ text: draft.action.responseText, performance: draft.action.responsePerformance }}
           snapshot={context.snapshot}
           playState={context.playState}
           label="RESPONSE TEXT"
           rows={5}
-          onChange={(value) => setDraft({ ...draft, action: { ...draft.action, responseText: value.text, responsePerformance: value.performance } })}
+          onChange={(value) => setDraft((current) => current.action.type === "response" ? { ...current, action: { ...current.action, responseText: value.text, responsePerformance: value.performance } } : current)}
           onPreview={(value) => context.runtime.preview({ text: value.text, performance: value.performance, speakerId: draft.action.type === "response" ? draft.action.speakerId : null })}
         />
-        <OutcomeEffectsEditor effects={draft.action.effects} snapshot={context.snapshot} onChange={(effects) => setDraft({ ...draft, action: { ...draft.action, effects } })} />
+        <OutcomeEffectsEditor effects={draft.action.effects} snapshot={context.snapshot} onChange={(effects) => setDraft((current) => current.action.type === "response" ? { ...current, action: { ...current.action, effects } } : current)} />
       </section> : null}
 
       {draft.action.type === "target-operation" ? <section className="command-target-action">
-        <label>ACTION ID<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft({ ...draft, action: { ...draft.action, operation: event.target.value } })} /></label>
-        <label>TARGET VALUE<select value={draft.action.targetSlot} onChange={(event) => setDraft({ ...draft, action: { ...draft.action, targetSlot: event.target.value } })}>
-          <option value="">CHOOSE…</option>{slots.filter((slot) => slot.sourceKinds.length).map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
+        <label>ACTION ID<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, operation: event.target.value } } : current)} /></label>
+        <label>TARGET VALUE<select value={draft.action.targetSlot} onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, targetSlot: event.target.value } } : current)}>
+          <option value="">CHOOSE…</option>
+          {slots.filter((slot) => slot.sourceKinds.length).map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
         </select></label>
-        {draft.action.targetSlot ? (slots.find((slot) => slot.name === draft.action.type === "target-operation" ? draft.action.targetSlot : "")?.sourceKinds ?? []).map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: draft.action.type === "target-operation" ? draft.action.operation : "", commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>) : null}
+        {targetActionKinds.map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: draft.action.type === "target-operation" ? draft.action.operation : "", commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>)}
       </section> : null}
     </div>
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {existing ? confirmDelete ? <><button type="button" onClick={() => void remove()}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button> : null}
+      {existing ? confirmDelete
+        ? <><button type="button" onClick={() => void remove()}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></>
+        : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button>
+        : null}
     </div>
   </section>;
 }
@@ -295,7 +374,9 @@ function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel
   return <section className="author-panel author-panel-frame command-settings-workspace target-behaviors-workspace">
     <header><span>{commandLabel || operation.toUpperCase()} · TARGET BEHAVIOR</span></header>
     <div className="author-panel-body command-settings-list">
-      {targets.map((target) => <button type="button" key={target.id} onClick={() => adapter && context.pushTask(adapter.editRoute(target.id, operation))}><span><strong>{target.label}</strong><small>{target.available ? "available" : "not available"} · {target.responseCount} response{target.responseCount === 1 ? "" : "s"}</small></span><span>›</span></button>)}
+      {targets.map((target) => <button type="button" key={target.id} onClick={() => adapter && context.pushTask(adapter.editRoute(target.id, operation))}>
+        <span><strong>{target.label}</strong><small>{target.available ? "available" : "not available"} · {target.responseCount} response{target.responseCount === 1 ? "" : "s"}</small></span><span>›</span>
+      </button>)}
       {!adapter ? <div className="command-settings-empty">NO AUTHORING ROUTE FOR THIS TARGET TYPE.</div> : null}
       {adapter && !targets.length ? <div className="command-settings-empty">NO {adapter.label.toUpperCase()}S EXIST YET.</div> : null}
     </div>
@@ -303,7 +384,13 @@ function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel
   </section>;
 }
 
-export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSection[] = [{ id: "commands", label: "PLAYER LANGUAGE", description: "Player commands and target names.", order: 20, render: (context) => <CommandsOverview context={context} /> }];
+export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSection[] = [{
+  id: "commands",
+  label: "PLAYER LANGUAGE",
+  description: "Player commands and target names.",
+  order: 20,
+  render: (context) => <CommandsOverview context={context} />,
+}];
 
 export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "commands") return null;
