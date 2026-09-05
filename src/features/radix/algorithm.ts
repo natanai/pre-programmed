@@ -67,13 +67,6 @@ export function radixSortEvents(initial: readonly number[], radix: number) {
 
   while (Math.floor(maximum / divisor) > 0) {
     const buckets = Array.from({ length: radix }, () => [] as number[]);
-    const bucketStarts: number[] = [];
-    let cursor = 0;
-    for (let bucket = 0; bucket < radix; bucket += 1) {
-      bucketStarts.push(cursor);
-      cursor += buckets[bucket].length;
-    }
-    events.push({ type: "markers", indexes: bucketStarts, accesses });
 
     for (let index = 0; index < array.length; index += 1) {
       const value = array[index];
@@ -83,7 +76,7 @@ export function radixSortEvents(initial: readonly number[], radix: number) {
       buckets[bucket].push(value);
     }
 
-    cursor = 0;
+    let cursor = 0;
     const markers: number[] = [];
     for (let bucket = 0; bucket < radix; bucket += 1) {
       markers.push(cursor);
