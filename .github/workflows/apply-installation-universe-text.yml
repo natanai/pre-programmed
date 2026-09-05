@@ -43,7 +43,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add -A -- . ':!.github/workflows/build-portable-windows.yml' ':!scripts/.apply-installation-universe-text-fixed.mjs'
           if git diff --cached --quiet; then
             echo "No patch changes to commit."
             exit 0
