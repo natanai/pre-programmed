@@ -6,6 +6,7 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     label: "Nodes",
     description: "Authored narrative nodes and the node active in the current run.",
     authorSyntax: "node",
+    authorContextKeys: ["current-node"],
     authorResourceKind: "node",
     defaultProjection: "label",
     candidates: ({ snapshot, state }) => {
