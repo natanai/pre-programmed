@@ -29,6 +29,7 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
       ...(conversation.mode === "set"
         ? conversation.characterIds.map((characterId) => ({ ...owner, resourceKind: "character" as const, resourceId: characterId, detail: "node conversation participant" }))
         : []),
+      ...fromTargets(context.effects(node.entryEffects ?? []), owner).map((reference) => ({ ...reference, detail: `node entry · ${reference.detail}` })),
       ...fromTargets(context.text(node.text), owner),
     ];
   }),
