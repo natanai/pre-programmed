@@ -1,0 +1,55 @@
+name: Apply Radix caption ownership fix
+
+on:
+  push:
+    branches:
+      - fix/radix-caption-owner
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    if: github.event.head_commit.message == 'Run Radix caption ownership cleanup'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/radix-caption-owner
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Apply ownership cleanup
+        run: node scripts/apply-radix-caption-owner-fix.mjs
+
+      - name: Verify desktop host syntax
+        run: node --check desktop/main.cjs
+
+      - name: Reject old caption override outside packaging workflow
+        shell: bash
+        run: |
+          if git grep -n -E 'INITIALIZE_UNIVERSE_TEXT|loadInstallationPublicSettings|installationText' -- ':!.github/workflows/build-portable-windows.yml'; then
+            echo 'Legacy startup-caption ownership remains outside the packaging workflow.' >&2
+            exit 1
+          fi
+
+      - name: Verify engine
+        run: npm run verify
+
+      - name: Verify local persistence runtime
+        run: npm run verify:local
+
+      - name: Commit verified source cleanup
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Use Sort Sequence caption as the launch caption"
+          git push origin HEAD:fix/radix-caption-owner
