@@ -6,6 +6,21 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
   validate(operation) {
     if (operation.type === "node.upsert") {
       if (!object(operation.node)) return "Node is invalid.";
+
+      const locationMode = operation.node.locationMode;
+      if (locationMode !== undefined) {
+        if (!["set", "continue", "clear"].includes(String(locationMode))) {
+          return "Node location behavior is invalid.";
+        }
+        if (locationMode === "set") {
+          if (typeof operation.node.locationId !== "string" || !operation.node.locationId) {
+            return "Set Node locations need a Location.";
+          }
+        } else if (operation.node.locationId !== null && operation.node.locationId !== undefined) {
+          return "Continue and Clear Node locations cannot store a Location id.";
+        }
+      }
+
       const anchor = operation.node.anchor;
       if (anchor === undefined) return null;
       if (!object(anchor) || !["set", "continue", "clear"].includes(String(anchor.mode))) {
