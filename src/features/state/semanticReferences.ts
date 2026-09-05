@@ -55,4 +55,27 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
       ? { resourceKind: "computed", resourceId: id }
       : null,
   },
+  {
+    kind: "state.group",
+    label: "Player groups",
+    description: "Authored State presentation groups.",
+    authorResourceKind: "state-group",
+    defaultProjection: "label",
+    candidates: ({ snapshot }) => snapshot.stateGroups.map((group) => ({
+      id: group.id,
+      key: `group-${group.id}`,
+      label: group.label || "Untitled player group",
+      detail: `presentation order ${group.order + 1}`,
+      aliases: [group.label].filter(Boolean),
+      defaultProjection: "label",
+      projections: {
+        label: group.label,
+        order: group.order,
+      },
+      author: { resourceKind: "state-group", resourceId: group.id },
+    })),
+    projectResource: (id, snapshot) => snapshot.stateGroups.some((group) => group.id === id)
+      ? { resourceKind: "state-group", resourceId: id }
+      : null,
+  },
 ];
