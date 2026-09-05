@@ -9,10 +9,10 @@ import {
 import {
   createSeededArray,
   frequencyForValue,
-  radixSortEvents,
   resolveRadixSeed,
+  sortEvents,
 } from "../algorithm";
-import type { RadixSequenceDefinition } from "../model";
+import { SORT_ALGORITHM_LABELS, type RadixSequenceDefinition } from "../model";
 import "./radixSequence.css";
 
 export type RadixSequenceSurfaceProps = {
@@ -43,11 +43,10 @@ export function RadixSequenceSurface({
   const onCompleteRef = useRef(onComplete);
   onCompleteRef.current = onComplete;
   const [stats, setStats] = useState({ accesses: 0, digit: 0, complete: false });
+  const [awaitingAudioGesture, setAwaitingAudioGesture] = useState(false);
 
-  // Project snapshots are routinely re-created after synchronization. Keep one
-  // presentation run tied to authored content rather than object identity so a
-  // random-seeded sequence cannot silently restart when an equivalent snapshot
-  // arrives. Real authored sequence/synth changes still restart the live run.
+  // Synchronization can recreate equivalent project objects. Keep an active run
+  // tied to authored content, not object identity, so random seeds stay stable.
   const sequenceSignature = JSON.stringify(sequence);
   const synthSignature = JSON.stringify(synth ?? null);
   const stableSequence = useMemo(() => sequence, [sequenceSignature]);
@@ -58,9 +57,10 @@ export function RadixSequenceSurface({
     let frame = 0;
     let holdTimer = 0;
     let resizeObserver: ResizeObserver | null = null;
+    let started = false;
     const seed = resolveRadixSeed(stableSequence, runtimeSeed);
     const values = createSeededArray(stableSequence.arraySize, seed);
-    const { events } = radixSortEvents(values, stableSequence.radix);
+    const { events } = sortEvents(values, stableSequence.algorithm, stableSequence.radix);
     const working = [...values];
     let activeIndex = -1;
     let markers: number[] = [];
@@ -71,12 +71,7 @@ export function RadixSequenceSurface({
     let digit = 0;
     let toneCount = 0;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    const ensureTone = async () => {
-      if (!stableSequence.soundEnabled || toneRef.current || cancelled) return;
-      toneRef.current = await createProceduralToneSession(stableSynth, stableSequence.volume);
-    };
-    void ensureTone();
+    setAwaitingAudioGesture(false);
 
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -113,23 +108,13 @@ export function RadixSequenceSurface({
       if (event.type === "access") {
         activeIndex = event.index;
         if (!reducedMotion && stableSequence.soundEnabled && toneCount++ % stableSequence.toneStride === 0) {
-          toneRef.current?.tone(frequencyForValue(
-            event.value,
-            working.length,
-            stableSequence.minFrequency,
-            stableSequence.maxFrequency,
-          ));
+          toneRef.current?.tone(frequencyForValue(event.value, working.length, stableSequence.minFrequency, stableSequence.maxFrequency));
         }
       } else if (event.type === "write") {
         working[event.index] = event.value;
         activeIndex = event.index;
         if (!reducedMotion && stableSequence.soundEnabled && toneCount++ % stableSequence.toneStride === 0) {
-          toneRef.current?.tone(frequencyForValue(
-            event.value,
-            working.length,
-            stableSequence.minFrequency,
-            stableSequence.maxFrequency,
-          ));
+          toneRef.current?.tone(frequencyForValue(event.value, working.length, stableSequence.minFrequency, stableSequence.maxFrequency));
         }
       } else if (event.type === "markers") {
         markers = event.indexes;
@@ -183,24 +168,39 @@ export function RadixSequenceSurface({
       frame = window.requestAnimationFrame(tick);
     };
 
+    const begin = async () => {
+      if (started || cancelled) return;
+      if (stableSequence.soundEnabled) {
+        const unlocked = await unlockProceduralAudio();
+        if (!unlocked || cancelled) {
+          if (!cancelled) setAwaitingAudioGesture(true);
+          return;
+        }
+        toneRef.current = await createProceduralToneSession(stableSynth, stableSequence.volume);
+      }
+      if (cancelled) return;
+      started = true;
+      setAwaitingAudioGesture(false);
+      lastTime = performance.now();
+      frame = window.requestAnimationFrame(tick);
+    };
+
     draw();
     resizeObserver = new ResizeObserver(draw);
     resizeObserver.observe(canvas);
-    frame = window.requestAnimationFrame(tick);
+    void begin();
 
-    const unlock = () => {
-      void unlockProceduralAudio().then(ensureTone);
-    };
-    window.addEventListener("pointerdown", unlock, { passive: true });
-    window.addEventListener("keydown", unlock);
+    const unlock = () => { void begin(); };
+    window.addEventListener("pointerdown", unlock, { passive: true, capture: true });
+    window.addEventListener("keydown", unlock, true);
 
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(frame);
       window.clearTimeout(holdTimer);
       resizeObserver?.disconnect();
-      window.removeEventListener("pointerdown", unlock);
-      window.removeEventListener("keydown", unlock);
+      window.removeEventListener("pointerdown", unlock, true);
+      window.removeEventListener("keydown", unlock, true);
       toneRef.current?.stop();
       toneRef.current = null;
     };
@@ -212,18 +212,19 @@ export function RadixSequenceSurface({
       "--radix-height": `${sequence.heightPx}px`,
       "--radix-bg": sequence.backgroundColor,
     } as React.CSSProperties}
-    aria-label={sequence.label || "Radix sort presentation"}
+    aria-label={sequence.label || "Sort presentation"}
     data-source-kind={source?.resourceKind}
     data-source-id={source?.resourceId}
   >
     <div className="radix-canvas-frame">
       <canvas ref={canvasRef} className="radix-canvas" />
       {sequence.showAlgorithmLabel || sequence.showStats ? <div className="radix-meta" aria-live="off">
-        {sequence.showAlgorithmLabel ? <span>RADIX SORT (LSD) · BASE {sequence.radix}</span> : null}
+        {sequence.showAlgorithmLabel ? <span>{SORT_ALGORITHM_LABELS[sequence.algorithm]}{sequence.algorithm === "radix-lsd" ? ` · BASE ${sequence.radix}` : ""}</span> : null}
         {sequence.showStats ? <span>{stats.accesses} ARRAY ACCESSES · PASS {stats.digit}{stats.complete ? " · COMPLETE" : ""}</span> : null}
       </div> : null}
     </div>
     {sequence.caption ? <div className="radix-caption">{sequence.caption}</div> : null}
+    {awaitingAudioGesture ? <div className="radix-audio-gate" role="status">[TAP / PRESS ANY KEY TO START WITH SOUND]</div> : null}
     {authorMode && (onEditSequence || onEditSource) ? <div className="radix-author-actions">
       {onEditSequence ? <button type="button" onClick={(event) => { event.stopPropagation(); onEditSequence(); }}>[EDIT SEQUENCE]</button> : null}
       {onEditSource ? <button type="button" onClick={(event) => { event.stopPropagation(); onEditSource(); }}>[EDIT SOURCE]</button> : null}
