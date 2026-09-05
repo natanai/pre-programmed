@@ -23,6 +23,8 @@ export type NodeAnchor = {
   text: string;
 };
 
+export type NodeLocationMode = "set" | "continue" | "clear";
+
 export type GameNode = {
   id: string;
   nodeNumber: number;
@@ -31,7 +33,13 @@ export type GameNode = {
   tags: string[];
   /** Character whose voice presents this node text; null means unattributed/narration. */
   characterId: string | null;
+  /** Location selected when `locationMode` is `set`. */
   locationId: string | null;
+  /**
+   * Persistent World context authored by this Node. Missing legacy values mean
+   * Set when a locationId exists, otherwise Continue.
+   */
+  locationMode?: NodeLocationMode;
   /** Persistent player context. Missing legacy values behave as Continue. */
   anchor?: NodeAnchor;
   performance: TextPerformance;
