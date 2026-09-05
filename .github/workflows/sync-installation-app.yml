@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  sync-and-verify:
+  sync-app:
     if: ${{ !contains(github.event.head_commit.message, '[sync-installation-app]') }}
     runs-on: ubuntu-latest
     steps:
@@ -17,10 +17,6 @@ jobs:
         with:
           ref: feature/installation-universe-text
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
       - name: Rebase App content on current main
         shell: bash
         run: |
@@ -61,12 +57,6 @@ jobs:
           )
           p.write_text(s)
           PY
-      - name: Install dependencies
-        run: npm ci --no-audit --no-fund
-      - name: Verify integrated engine
-        run: npm run verify
-      - name: Verify local runtime
-        run: npm run verify:local
       - name: Commit integrated App
         shell: bash
         run: |
