@@ -115,12 +115,19 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
       label: bodyType.name,
       searchText: `${bodyType.name} ${bodyType.assetId} ${(bodyType.slots ?? []).flatMap((slot) => [slot.name, slot.key]).join(" ")} ${(bodyType.startingEquipment ?? []).flatMap((assignment) => [assignment.slotKey, assignment.itemId]).join(" ")} ${snapshot.startingBodyBackgroundId === bodyType.id ? "starting default active body" : ""}`,
     })),
-    ...snapshot.settings.commands.commands.map((command) => ({
-      id: command.id,
-      kind: "command" as const,
-      label: command.label || command.operation,
-      searchText: `${command.label} ${command.operation} ${command.patterns.join(" ")} ${command.slots.flatMap((slot) => [slot.name, slot.sourceKind]).join(" ")} ${command.targetSlot}`,
-    })),
+    ...snapshot.settings.commands.commands.map((command) => {
+      const actionText = command.action.type === "response"
+        ? `respond response ${command.action.responseText}`
+        : command.action.type === "application"
+          ? `application ${command.action.operation}`
+          : `target operation ${command.action.operation} ${command.action.targetSlot}`;
+      return {
+        id: command.id,
+        kind: "command" as const,
+        label: command.label || "Untitled command",
+        searchText: `${command.label} ${actionText} ${command.patterns.join(" ")} ${command.slots.flatMap((slot) => [slot.name, ...slot.sourceKinds]).join(" ")}`,
+      };
+    }),
     ...getAuthorSearchDocumentContributions().flatMap((contribution) => contribution(snapshot)),
   ];
 }
