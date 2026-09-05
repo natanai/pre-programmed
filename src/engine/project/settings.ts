@@ -7,6 +7,11 @@ import {
   normalizeInventoryMutationOperation,
   normalizeInventoryProjectSlice,
 } from "../../features/inventory/projectNormalization";
+import {
+  DEFAULT_RADIX_PROJECT_SETTINGS,
+  normalizeRadixProjectSettings,
+  type RadixProjectSettingsSlice,
+} from "../../features/radix/projectSettings";
 import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
 import { migrateSnapshotReferenceTokens } from "../references/migration";
 import type { ProjectMutation, ProjectSnapshot } from "./model";
@@ -14,11 +19,13 @@ import type { ProjectMutation, ProjectSnapshot } from "./model";
 export type ProjectSettings = {
   /** Player-facing terminal prompt for this game/project. */
   terminalPrompt: string;
-} & CommandsProjectSettingsSlice;
+} & CommandsProjectSettingsSlice
+  & RadixProjectSettingsSlice;
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   terminalPrompt: "U:\\>",
   ...structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_RADIX_PROJECT_SETTINGS),
 };
 
 /**
@@ -34,6 +41,7 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
       ? root.terminalPrompt.slice(0, 32)
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
     ...normalizeCommandsProjectSettings(root),
+    ...normalizeRadixProjectSettings(root),
   };
 }
 

@@ -1,9 +1,11 @@
 import { MEDIA_INLINE_TEXT_COMMANDS } from "../../features/media/inlineTextCommands";
+import { RADIX_INLINE_TEXT_COMMANDS } from "../../features/radix/inlineTextCommands";
 import type { InlineTextCommandDefinition, ParsedInlineTextCommand } from "./inlineTextCommandTypes";
 
 /** Explicit composition root for feature-owned inline text commands. */
 const INLINE_TEXT_COMMANDS: readonly InlineTextCommandDefinition[] = [
   ...MEDIA_INLINE_TEXT_COMMANDS,
+  ...RADIX_INLINE_TEXT_COMMANDS,
 ];
 
 const COMMANDS_BY_CODE = new Map(INLINE_TEXT_COMMANDS.map((definition) => [definition.code, definition]));
