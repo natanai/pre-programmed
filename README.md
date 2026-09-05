@@ -224,9 +224,9 @@ The **Build portable Windows engine** GitHub Actions workflow is manual-only. To
 2. Select **Build portable Windows engine**.
 3. Choose **Run workflow**.
 4. Enter a semver-like version such as `0.1.0` or `0.1.0-beta.1`.
-5. Download the resulting `Pre-Programmed-v<version>-windows-x64` artifact when the workflow finishes.
+5. When the workflow finishes, open the new GitHub Release `v<version>` and download `Pre-Programmed-v<version>-windows-x64.zip` directly from its Assets.
 
-The workflow verifies the engine, persistent no-cloud runtime, and hosted deployment shape before packaging. It removes `public/assets/` only inside the disposable Actions checkout so the distributed ZIP contains no installation's repository Media or authored game. It then builds and smoke-tests a self-contained, pre-extracted Windows folder and uploads that folder as a ZIP.
+The workflow only publishes versioned releases from `main`, and an existing release tag cannot be replaced: choose a new version for each published build. The workflow verifies the engine, persistent no-cloud runtime, and hosted deployment shape before packaging. It removes `public/assets/` only inside the disposable Actions checkout so the distributed ZIP contains no installation's repository Media or authored game. It then builds and smoke-tests a self-contained, pre-extracted Windows folder and attaches that single ZIP directly to the GitHub Release rather than wrapping it inside an Actions artifact ZIP.
 
 Recipients extract the whole `Pre-Programmed` folder and run `Pre-Programmed.exe` in place. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine. Runtime state, D1 data, cache, exports, and local installation configuration stay beneath that extracted folder.
 
