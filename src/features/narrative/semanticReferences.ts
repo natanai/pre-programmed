@@ -6,6 +6,7 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     label: "Nodes",
     description: "Authored narrative nodes and the node active in the current run.",
     authorResourceKind: "node",
+    defaultProjection: "label",
     candidates: ({ snapshot, state }) => {
       const current = snapshot.nodes.find((node) => node.id === state.currentNodeId);
       return [
@@ -49,6 +50,7 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     label: "Scene inputs",
     description: "Authored node-specific player inputs and invalid-input definitions.",
     authorResourceKind: "interaction",
+    defaultProjection: "label",
     candidates: ({ snapshot }) => snapshot.interactions.map((interaction) => ({
       id: interaction.id,
       key: `input-${interaction.id.slice(0, 8)}`,
