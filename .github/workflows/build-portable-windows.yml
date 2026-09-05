@@ -9,7 +9,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-portable-windows:
@@ -33,6 +33,13 @@ jobs:
             throw "Version must be semver-like, such as 0.1.0 or 0.1.0-beta.1"
           }
           "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Verify release source
+        shell: pwsh
+        run: |
+          if ("${{ github.ref }}" -ne "refs/heads/main") {
+            throw "Versioned portable releases must be built from main."
+          }
 
       - name: Install engine dependencies
         run: npm ci --no-audit --no-fund
@@ -287,12 +294,26 @@ jobs:
           }
 
           "ZIP_PATH=$zip" >> $env:GITHUB_ENV
-          "ZIP_NAME=Pre-Programmed-v$env:VERSION-windows-x64" >> $env:GITHUB_ENV
 
-      - name: Upload portable ZIP
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_PATH }}
-          if-no-files-found: error
-          retention-days: 30
+      - name: Publish GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          $tag = "v$env:VERSION"
+          $existingTag = git ls-remote --tags origin "refs/tags/$tag"
+          if ($existingTag) {
+            throw "Release tag $tag already exists. Choose a new version so published builds stay immutable."
+          }
+
+          $arguments = @(
+            "release", "create", $tag, $env:ZIP_PATH,
+            "--repo", $env:GITHUB_REPOSITORY,
+            "--target", $env:GITHUB_SHA,
+            "--title", "Pre-Programmed $tag",
+            "--generate-notes"
+          )
+          if ($env:VERSION -match '-') { $arguments += "--prerelease" }
+          & gh @arguments
+          if ($LASTEXITCODE -ne 0) { throw "GitHub Release publication failed." }
