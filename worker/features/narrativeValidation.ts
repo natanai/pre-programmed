@@ -41,6 +41,9 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (presentError) return presentError;
       const conversationError = characterContextError(operation.node.conversation, "conversation");
       if (conversationError) return conversationError;
+      if (operation.node.entryEffects !== undefined && !effectsValid(operation.node.entryEffects)) {
+        return "Node entry effects are invalid.";
+      }
 
       const anchor = operation.node.anchor;
       if (anchor === undefined) return null;

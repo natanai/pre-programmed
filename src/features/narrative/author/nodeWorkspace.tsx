@@ -1,3 +1,4 @@
+import { EffectsEditor } from "../../../author/EffectsEditor";
 import type { AuthorWorkspaceContext } from "../../../author/features/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
@@ -47,6 +48,7 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     presentCharacters: { mode: "continue", characterIds: [] },
     conversation: { mode: "continue", characterIds: [] },
     anchor: { ...CONTINUE_ANCHOR },
+    entryEffects: [],
     performance: { charactersPerSecond: 18, cues: [] },
   } satisfies GameNode;
 }
@@ -169,6 +171,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       node: {
         ...normalizeNodeSceneContext(node),
         anchor: { ...nodeAnchor(node) },
+        entryEffects: structuredClone(node.entryEffects ?? []),
       },
     };
   },
@@ -179,6 +182,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const presentCharacters = nodePresentCharacters(draft.node);
     const conversation = nodeConversation(draft.node);
     const anchor = nodeAnchor(draft.node);
+    const entryEffects = draft.node.entryEffects ?? [];
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
 
     const traversalIndex = context.playState.traversal.lastIndexOf(draft.node.id);
@@ -327,6 +331,28 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             <label>SPEAKER <ReferenceField kind="character" value={draft.node.characterId ?? ""} onChange={(characterId) => setDraft((current) => ({ ...current, node: { ...current.node, characterId: characterId || null } }))} placeholder="none / narration" /></label>
             <small>{speaker === "Narration" ? "Narration" : speaker} presents this Node text. Speaker does not start, continue, or end a conversation.</small>
           </div>,
+        },
+        {
+          type: "disclosure",
+          id: "node-entry-effects",
+          label: "ON ENTER",
+          summary: entryEffects.length ? `${entryEffects.length} effect${entryEffects.length === 1 ? "" : "s"}` : "No entry effects",
+          children: [{
+            type: "custom",
+            id: "node-entry-effects-editor",
+            role: "specialized-control",
+            content: <div className="node-focused-form">
+              <small>These effects run whenever player traversal enters this Node. They use the same canonical effect definitions as responses, rules, and operations.</small>
+              <EffectsEditor
+                effects={entryEffects}
+                snapshot={context.snapshot}
+                onChange={(effects) => setDraft((current) => ({
+                  ...current,
+                  node: { ...current.node, entryEffects: effects },
+                }))}
+              />
+            </div>,
+          }],
         },
         {
           type: "disclosure",
@@ -480,7 +506,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   async save({ draft, context, route }) {
     const data = routeData(route);
     const anchor = nodeAnchor(draft.node);
-    const node = { ...normalizeNodeSceneContext(draft.node), anchor };
+    const node = { ...normalizeNodeSceneContext(draft.node), anchor, entryEffects: draft.node.entryEffects ?? [] };
     const result = await context.persist(
       [{ type: "node.upsert", node }],
       `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
