@@ -124,7 +124,9 @@ export function authorSemanticReferenceView(
 
 function matchingContextualReference(head: string, context: SemanticReferenceContext) {
   const normalized = head.toLowerCase();
-  const matches = SEMANTIC_REFERENCE_PROVIDERS.flatMap((provider) => provider.candidates(context)
+  const providers = SEMANTIC_REFERENCE_PROVIDERS.filter((provider) =>
+    provider.authorContextKeys?.some((key) => key.toLowerCase() === normalized));
+  const matches = providers.flatMap((provider) => provider.candidates(context)
     .filter((candidate) => candidate.contextual && candidate.key.toLowerCase() === normalized)
     .map((candidate) => ({ provider, candidate })));
   return matches.length === 1 ? matches[0] : null;
