@@ -1,6 +1,7 @@
 import type { EffectEvent } from "../engine/rules/effectRuntime";
 import type { EffectPresentationContext, EffectEventPresenter } from "../engine/presentation/effectPresentation";
 import { presentMediaEffectEvent } from "../features/media/ui/effectPresentation";
+import { presentRadixEffectEvent } from "../features/radix/ui/effectPresentation";
 
 const presentCoreEffectEvent: EffectEventPresenter = (event, context) => {
   if (event.type !== "notification") return false;
@@ -12,6 +13,7 @@ const presentCoreEffectEvent: EffectEventPresenter = (event, context) => {
 const EFFECT_EVENT_PRESENTERS: readonly EffectEventPresenter[] = [
   presentCoreEffectEvent,
   presentMediaEffectEvent,
+  presentRadixEffectEvent,
 ];
 
 export function presentEffectEvent(event: EffectEvent, context: EffectPresentationContext) {
