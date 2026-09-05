@@ -74,6 +74,7 @@ export function AuthorPicker({
   const panel = useRef<HTMLElement | null>(null);
   const search = useRef<HTMLInputElement | null>(null);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [expandedChoicesId, setExpandedChoicesId] = useState<string | null>(null);
   const [position, setPosition] = useState<PickerPosition | null>(null);
   const items = useMemo(() => groups.flatMap((group) => group.items), [groups]);
 
@@ -139,7 +140,14 @@ export function AuthorPicker({
     };
   }, [open, anchorRef, onClose]);
 
-  useEffect(() => setActiveIndex(0), [query]);
+  useEffect(() => {
+    setActiveIndex(0);
+    setExpandedChoicesId(null);
+  }, [query]);
+
+  useEffect(() => {
+    if (!open) setExpandedChoicesId(null);
+  }, [open]);
 
   useEffect(() => {
     if (!open || !items.length) return;
@@ -205,6 +213,7 @@ export function AuthorPicker({
         {group.items.map((item) => {
           index += 1;
           const itemIndex = index;
+          const choicesOpen = expandedChoicesId === item.id;
           return <div className="author-picker-row" key={item.id} data-author-picker-index={itemIndex}>
             <button
               type="button"
@@ -219,20 +228,29 @@ export function AuthorPicker({
               </span>
               {item.meta ? <span className="author-picker-meta">{item.meta}</span> : null}
             </button>
-            {item.secondary ? <button
-              type="button"
-              className="author-picker-secondary"
-              aria-label={item.secondary.ariaLabel ?? item.secondary.label}
-              onClick={item.secondary.onSelect}
-            >{item.secondary.label}</button> : null}
-            {item.choices?.length ? <div className="author-picker-choices" aria-label={`Choose ${item.label} value`}>
-              <span>AS:</span>
+            {(item.choices?.length || item.secondary) ? <div className="author-picker-row-actions">
+              {item.choices?.length ? <button
+                type="button"
+                className="author-picker-secondary"
+                aria-expanded={choicesOpen}
+                aria-label={`Choose which value of ${item.label} to insert`}
+                onClick={() => setExpandedChoicesId((current) => current === item.id ? null : item.id)}
+              >[AS]</button> : null}
+              {item.secondary ? <button
+                type="button"
+                className="author-picker-secondary"
+                aria-label={item.secondary.ariaLabel ?? item.secondary.label}
+                onClick={item.secondary.onSelect}
+              >{item.secondary.label}</button> : null}
+            </div> : null}
+            {choicesOpen && item.choices?.length ? <div className="author-picker-choices" aria-label={`Choose ${item.label} value`}>
+              <span>INSERT AS</span>
               {item.choices.map((choice) => <button
                 type="button"
                 key={choice.id}
                 aria-label={choice.ariaLabel ?? choice.label}
                 onClick={choice.onSelect}
-              >{choice.label}</button>)}
+              >[{choice.label}]</button>)}
             </div> : null}
           </div>;
         })}
