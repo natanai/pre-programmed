@@ -9,6 +9,7 @@ import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext, Autho
 import { AuthorResourceProvider } from "../resources/context";
 import { buildAuthorResourceTools } from "../resources/runtime";
 import type { AuthorResourceTools } from "../resources/types";
+import { AuthorPlayStateProvider } from "../runtime/playStateContext";
 import type {
   AuthorLeaveConfirmation,
   AuthorTaskCompletion,
@@ -116,7 +117,9 @@ function AuthorTaskSurface({
     aria-hidden={!active}
     style={active ? undefined : { display: "none" }}
   >
-    <AuthorResourceProvider tools={resources}>{workspace}</AuthorResourceProvider>
+    <AuthorPlayStateProvider state={playState}>
+      <AuthorResourceProvider tools={resources}>{workspace}</AuthorResourceProvider>
+    </AuthorPlayStateProvider>
   </div>;
 }
 
