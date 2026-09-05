@@ -53,10 +53,6 @@ export function getAuthorResourceProvider(kind: string): AuthorResourceProvider 
   return undefined;
 }
 
-export function getAuthorCommandReferenceSources() {
-  return AUTHOR_FEATURES.flatMap((feature) => feature.commandReferences ?? []);
-}
-
 export function getAuthorCommandTargetAdapter(sourceKind: string) {
   return AUTHOR_FEATURES
     .flatMap((feature) => feature.commandTargets ?? [])
