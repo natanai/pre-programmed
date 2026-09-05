@@ -7,11 +7,14 @@ import {
   type PersistedPlaySession,
 } from "../../../data/localPlaySession";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
+import { authoredSource } from "../../../engine/presentation/authoredSource";
 import { interpolateText } from "../../narrative/interpolation";
+import { resolveActiveNodeConversationContext } from "../../narrative/sceneContext";
 import { compileTextNotation } from "../../narrative/textNotation";
 
 const PORTABLE_SAVE_FORMAT = "pre-programmed-player-save" as const;
 const PORTABLE_SAVE_VERSION = 1 as const;
+const DEFAULT_TEXT_PERFORMANCE = { charactersPerSecond: 18, cues: [] };
 
 export type PortablePlaySave = {
   format: typeof PORTABLE_SAVE_FORMAT;
@@ -35,22 +38,29 @@ function currentPresentation(
       transcript: previous?.presentation.transcript ?? [],
       activeText: "",
       activeSpeakerId: null,
-      activePerformance: { charactersPerSecond: 18, cues: [] },
+      activePerformance: DEFAULT_TEXT_PERFORMANCE,
       pendingDestinationNodeId: null,
     };
   }
 
-  const compiled = compileTextNotation(
-    interpolateText(node.text, { snapshot, state }),
-    node.performance,
-  );
+  const narration = interpolateText(node.text, { snapshot, state });
+  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state });
+  const beginsWithDialogue = !narration && Boolean(dialogue);
+  const performance = beginsWithDialogue
+    ? node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE
+    : node.performance;
+  const compiled = compileTextNotation(beginsWithDialogue ? dialogue : narration, performance);
+  const conversation = beginsWithDialogue
+    ? resolveActiveNodeConversationContext(snapshot, state)
+    : null;
   return {
     transcript: previous?.presentation.transcript ?? [],
     activeText: compiled.text,
     activeNodeId: node.id,
-    activeSpeakerId: node.characterId,
+    activeSpeakerId: conversation?.characterId ?? null,
     activePerformance: compiled.performance,
     pendingDestinationNodeId: null,
+    activeSource: authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }),
   };
 }
 
