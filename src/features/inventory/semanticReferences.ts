@@ -5,6 +5,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "inventory.item",
     label: "Items",
     description: "Authored item definitions; command targets resolve to a carried instance when present.",
+    authorSyntax: "item",
     authorResourceKind: "item",
     defaultProjection: "name",
     targetable: true,
@@ -37,6 +38,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     kind: "inventory.body-type",
     label: "Body types",
     description: "Authored body/equipment layouts and the body type active in the current run.",
+    authorSyntax: "body-type",
     authorResourceKind: "body-type",
     defaultProjection: "name",
     candidates: ({ snapshot, state }) => {
