@@ -226,9 +226,11 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   const slots: CommandSlotDefinition[] = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
   const dirty = JSON.stringify({ ...draft, patterns, slots }) !== baseline;
   const providers = targetProviders();
-  const targetActionKinds = draft.action.type === "target-operation"
-    ? slots.find((slot) => slot.name === draft.action.targetSlot)?.sourceKinds ?? []
+  const targetAction = draft.action.type === "target-operation" ? draft.action : null;
+  const targetActionKinds = targetAction
+    ? slots.find((slot) => slot.name === targetAction.targetSlot)?.sourceKinds ?? []
     : [];
+  const targetOperation = targetAction?.operation ?? "";
 
   useEffect(() => {
     context.setWorkspaceDirty(dirty);
@@ -355,7 +357,7 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
           <option value="">CHOOSE…</option>
           {slots.filter((slot) => slot.sourceKinds.length).map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
         </select></label>
-        {targetActionKinds.map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: draft.action.type === "target-operation" ? draft.action.operation : "", commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>)}
+        {targetActionKinds.map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: targetOperation, commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>)}
       </section> : null}
     </div>
     <div className="author-actions author-panel-footer">
