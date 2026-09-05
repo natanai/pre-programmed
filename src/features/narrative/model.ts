@@ -56,6 +56,8 @@ export type GameNode = {
   conversation?: NodeCharacterContext;
   /** Persistent player-facing anchor context. Missing legacy values mean Continue. */
   anchor?: NodeAnchor;
+  /** Effects executed once whenever runtime traversal enters this Node. */
+  entryEffects?: Effect[];
   performance: TextPerformance;
 };
 
