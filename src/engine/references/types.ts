@@ -54,6 +54,8 @@ export type SemanticReferenceProvider = {
   description: string;
   /** Canonical resource provider used to create new static candidates in Author mode. */
   authorResourceKind?: string;
+  /** Projection inserted immediately after a nested create task returns a new resource. */
+  defaultProjection?: string;
   /** Whether this provider may be selected for a Player Command target slot. */
   targetable?: boolean;
   candidates: (context: SemanticReferenceContext) => SemanticReferenceCandidate[];
