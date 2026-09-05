@@ -3,6 +3,8 @@ name: Temporary lightweight Node verification
 on:
   push:
     branches: [lightweight-node-conversation]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
