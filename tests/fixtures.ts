@@ -3,7 +3,17 @@ import type { ProjectSnapshot } from "../src/engine/project/model";
 import type { GameNode, Interaction } from "../src/features/narrative/model";
 
 export function node(id: string, nodeNumber: number, ending = false): GameNode {
-  return { id, nodeNumber, text: `node ${id}`, ending, tags: [], characterId: null, locationId: null, performance: { charactersPerSecond: 18, cues: [] } };
+  return {
+    id,
+    nodeNumber,
+    text: `node ${id}`,
+    dialogueText: "",
+    ending,
+    tags: [],
+    locationId: null,
+    performance: { charactersPerSecond: 18, cues: [] },
+    dialoguePerformance: { charactersPerSecond: 18, cues: [] },
+  };
 }
 
 export function interaction(id: string, sourceNodeId: string, destinationNodeId: string | null, aliases = [id]): Interaction {

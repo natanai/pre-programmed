@@ -1,5 +1,8 @@
 import type { SemanticReferenceCandidate, SemanticReferenceProvider } from "../../engine/references/types";
-import { resolveActiveNodeLocationContext } from "../narrative/sceneContext";
+import {
+  resolveActiveNodeConversationContext,
+  resolveActiveNodeLocationContext,
+} from "../narrative/sceneContext";
 import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
 import type { EntityDefinition } from "./model";
 
@@ -16,7 +19,7 @@ function entityCandidate(entity: EntityDefinition): SemanticReferenceCandidate {
       key: entity.key,
       description: entity.description,
     },
-    target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id },
+    ...(entity.type === "location" ? { target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id } } : {}),
     author: { resourceKind: entity.type, resourceId: entity.id },
   };
 }
@@ -49,26 +52,26 @@ const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ sn
   }];
 };
 
-const currentSpeakerCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state }) => {
+const currentConversationCharacterCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state }) => {
   const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
-  const entity = node?.characterId
-    ? snapshot.entities.find((candidate) => candidate.id === node.characterId && candidate.type === "character")
+  const active = resolveActiveNodeConversationContext(snapshot, state);
+  const entity = active
+    ? snapshot.entities.find((candidate) => candidate.id === active.characterId && candidate.type === "character")
     : undefined;
   return [{
     id: "current",
-    key: "current-speaker",
-    label: "Current speaker",
+    key: "current-conversation-character",
+    label: "Conversation character",
     detail: entity
-      ? `Currently ${entity.name || entity.key}`
-      : "Current node has no character",
-    aliases: ["current speaker", "speaker", "this speaker"],
+      ? `Currently with ${entity.name || entity.key}`
+      : "No active conversation",
+    aliases: ["conversation character", "current character", "current speaker", "speaker"],
     defaultProjection: "name",
     projections: {
       name: entity?.name ?? "",
       key: entity?.key ?? "",
       description: entity?.description ?? "",
     },
-    ...(entity ? { target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id } } : {}),
     author: entity
       ? { resourceKind: "character", resourceId: entity.id }
       : node ? { resourceKind: "node", resourceId: node.id } : undefined,
@@ -97,14 +100,13 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
   {
     kind: "world.character",
     label: "Characters",
-    description: "Authored people and the speaker assigned to the current Node.",
+    description: "Authored people and the Character carried by the active Node conversation.",
     authorSyntax: "character",
-    authorContextKeys: ["current-speaker"],
+    authorContextKeys: ["current-conversation-character", "current-character", "current-speaker"],
     authorResourceKind: "character",
     defaultProjection: "name",
-    targetable: true,
     candidates: (context) => [
-      ...currentSpeakerCandidates(context),
+      ...currentConversationCharacterCandidates(context),
       ...context.snapshot.entities.filter((entity) => entity.type === "character").map(entityCandidate),
     ],
     projectResource: (id, snapshot) => id !== "current" && snapshot.entities.some((entity) => entity.id === id && entity.type === "character")

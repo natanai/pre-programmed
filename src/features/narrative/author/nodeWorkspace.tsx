@@ -6,14 +6,14 @@ import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import { resolveActiveNodeAnchor } from "../anchor";
-import type { GameNode, NodeAnchor, NodeCharacterContext, NodeContextMode } from "../model";
+import type { GameNode, NodeAnchor, NodeContextMode, TextPerformance } from "../model";
 import { nextNodeNumber } from "../nodeNumber";
 import {
-  nodeConversation,
+  nodeConversationCharacterId,
+  nodeConversationMode,
   nodeLocationMode,
-  nodePresentCharacters,
-  normalizeNodeSceneContext,
-  resolveActiveNodeSceneContext,
+  normalizeNodeContext,
+  resolveActiveNodeContext,
 } from "../sceneContext";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
 import "./nodeWorkspace.css";
@@ -23,9 +23,14 @@ type NodeWorkspaceDraft = {
 };
 
 const CONTINUE_ANCHOR: NodeAnchor = { mode: "continue", text: "" };
+const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
 
 function nodeAnchor(node: GameNode): NodeAnchor {
   return node.anchor ?? CONTINUE_ANCHOR;
+}
+
+function nodeDialoguePerformance(node: GameNode): TextPerformance {
+  return node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE;
 }
 
 function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
@@ -40,16 +45,17 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     id: makeId(),
     nodeNumber: nextNodeNumber(context.snapshot),
     text: "",
+    dialogueText: "",
     ending: false,
     tags: [],
-    characterId: null,
     locationId: null,
     locationMode: "continue",
-    presentCharacters: { mode: "continue", characterIds: [] },
-    conversation: { mode: "continue", characterIds: [] },
+    conversationCharacterId: null,
+    conversationMode: "continue",
     anchor: { ...CONTINUE_ANCHOR },
     entryEffects: [],
-    performance: { charactersPerSecond: 18, cues: [] },
+    performance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
+    dialoguePerformance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
   } satisfies GameNode;
 }
 
@@ -70,90 +76,15 @@ function inputRoute(nodeId: string, interactionId?: string, fallback = false): A
   };
 }
 
-function clip(value: string, length = 38) {
+function clip(value: string, length = 42) {
   const clean = value.trim().replace(/\s+/g, " ");
   return clean.length > length ? `${clean.slice(0, length - 1)}…` : clean;
 }
 
-function characterNames(context: AuthorWorkspaceContext, ids: readonly string[]) {
-  return ids.map((id) => {
-    const entity = context.snapshot.entities.find((candidate) => candidate.id === id && candidate.type === "character");
-    return entity?.name || entity?.key || "missing character";
-  });
-}
-
-function CharacterContextEditor({
-  label,
-  value,
-  inheritedIds,
-  context,
-  onChange,
-}: {
-  label: string;
-  value: NodeCharacterContext;
-  inheritedIds: readonly string[];
-  context: AuthorWorkspaceContext;
-  onChange: (value: NodeCharacterContext) => void;
-}) {
-  const inheritedNames = characterNames(context, inheritedIds);
-  return <div className="node-scene-context-group">
-    <label>{label} BEHAVIOR
-      <select
-        value={value.mode}
-        onChange={(event) => {
-          const mode = event.target.value as NodeContextMode;
-          onChange({
-            mode,
-            characterIds: mode === "set" ? [...(value.characterIds.length ? value.characterIds : inheritedIds)] : [],
-          });
-        }}
-      >
-        <option value="continue">CONTINUE</option>
-        <option value="set">SET</option>
-        <option value="clear">CLEAR</option>
-      </select>
-    </label>
-    {value.mode === "set" ? <>
-      <div className="node-scene-character-list">
-        {value.characterIds.map((characterId, index) => <div className="node-scene-character-row" key={`${characterId}-${index}`}>
-          <ReferenceField
-            kind="character"
-            value={characterId}
-            onChange={(nextId) => onChange({
-              mode: "set",
-              characterIds: value.characterIds
-                .map((id, candidateIndex) => candidateIndex === index ? nextId : id)
-                .filter(Boolean),
-            })}
-            placeholder="choose character"
-          />
-          <button
-            type="button"
-            className="node-scene-remove"
-            aria-label={`Remove ${label.toLowerCase()} character`}
-            onClick={() => onChange({
-              mode: "set",
-              characterIds: value.characterIds.filter((_, candidateIndex) => candidateIndex !== index),
-            })}
-          >×</button>
-        </div>)}
-      </div>
-      <label>+ CHARACTER
-        <ReferenceField
-          kind="character"
-          value=""
-          onChange={(characterId) => {
-            if (!characterId || value.characterIds.includes(characterId)) return;
-            onChange({ mode: "set", characterIds: [...value.characterIds, characterId] });
-          }}
-          placeholder="choose character"
-        />
-      </label>
-      {!value.characterIds.length ? <small>Set needs at least one character, or use Clear for none.</small> : null}
-    </> : <small>{value.mode === "continue"
-      ? `Keeps the characters established by the path${inheritedNames.length ? ` — ${inheritedNames.join(", ")}` : ""}. New branching Nodes default to Continue.`
-      : "Clears this part of the scene when the player reaches this Node."}</small>}
-  </div>;
+function entityName(context: AuthorWorkspaceContext, id: string | null | undefined, type: "character" | "location") {
+  if (!id) return "";
+  const entity = context.snapshot.entities.find((candidate) => candidate.id === id && candidate.type === type);
+  return entity?.name || entity?.key || "missing resource";
 }
 
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
@@ -169,7 +100,9 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     if (!node) throw new Error("Node workspace opened without a node or create-resource task.");
     return {
       node: {
-        ...normalizeNodeSceneContext(node),
+        ...normalizeNodeContext(node),
+        dialogueText: node.dialogueText ?? "",
+        dialoguePerformance: structuredClone(nodeDialoguePerformance(node)),
         anchor: { ...nodeAnchor(node) },
         entryEffects: structuredClone(node.entryEffects ?? []),
       },
@@ -177,10 +110,8 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   },
   buildSpec({ draft, setDraft, context, route }) {
     const data = routeData(route);
-    const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
     const locationMode = nodeLocationMode(draft.node);
-    const presentCharacters = nodePresentCharacters(draft.node);
-    const conversation = nodeConversation(draft.node);
+    const conversationMode = nodeConversationMode(draft.node);
     const anchor = nodeAnchor(draft.node);
     const entryEffects = draft.node.entryEffects ?? [];
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
@@ -200,68 +131,44 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       currentNodeId: context.playState.traversal[traversalIndex - 1],
       traversal: context.playState.traversal.slice(0, traversalIndex),
     } : null;
-    const resolvedScene = currentTraversalState
-      ? resolveActiveNodeSceneContext(snapshotWithDraft, currentTraversalState)
+    const resolvedContext = currentTraversalState
+      ? resolveActiveNodeContext(snapshotWithDraft, currentTraversalState)
       : null;
-    const inheritedScene = inheritedTraversalState
-      ? resolveActiveNodeSceneContext(snapshotWithDraft, inheritedTraversalState)
+    const inheritedContext = inheritedTraversalState
+      ? resolveActiveNodeContext(snapshotWithDraft, inheritedTraversalState)
       : null;
     const resolvedAnchor = currentTraversalState
       ? resolveActiveNodeAnchor(snapshotWithDraft, currentTraversalState)
       : null;
+    const inheritedAnchor = inheritedTraversalState
+      ? resolveActiveNodeAnchor(snapshotWithDraft, inheritedTraversalState)
+      : null;
 
-    const selectedLocation = draft.node.locationId
-      ? context.snapshot.entities.find((entity) => entity.id === draft.node.locationId && entity.type === "location")
-      : undefined;
-    const resolvedLocation = resolvedScene?.location
-      ? context.snapshot.entities.find((entity) => entity.id === resolvedScene.location?.locationId && entity.type === "location")
-      : undefined;
-    const locationSummary = locationMode === "set"
-      ? `Set — ${selectedLocation?.name || selectedLocation?.key || "location needed"}`
-      : locationMode === "clear"
-        ? "Clear location"
-        : resolvedScene
-          ? `Continue — ${resolvedLocation?.name || resolvedLocation?.key || "none"}`
-          : "Continue location at runtime";
+    const resolvedLocationId = resolvedContext?.location?.locationId
+      ?? (locationMode === "set" ? draft.node.locationId : null);
+    const resolvedConversationId = resolvedContext?.conversation?.characterId
+      ?? (conversationMode === "set" ? nodeConversationCharacterId(draft.node) : null);
+    const locationName = entityName(context, resolvedLocationId, "location");
+    const conversationName = entityName(context, resolvedConversationId, "character");
+    const locationLabel = locationMode === "clear"
+      ? "NO LOCATION"
+      : locationName || (locationMode === "continue" ? "LOCATION AT RUNTIME" : "LOCATION NEEDED");
+    const conversationLabel = conversationMode === "clear"
+      ? "NO CONVERSATION"
+      : conversationName ? `WITH ${conversationName}` : (conversationMode === "continue" ? "NO CONVERSATION ON THIS PATH" : "CHARACTER NEEDED");
 
-    const presentNames = resolvedScene?.presentCharacters
-      ? characterNames(context, resolvedScene.presentCharacters.characterIds)
-      : [];
-    const presentSummary = presentCharacters.mode === "set"
-      ? `Set — ${characterNames(context, presentCharacters.characterIds).join(", ") || "characters needed"}`
-      : presentCharacters.mode === "clear"
-        ? "Clear characters present"
-        : resolvedScene
-          ? `Continue — ${presentNames.join(", ") || "none"}`
-          : "Continue characters at runtime";
+    const locationReferenceId = locationMode === "set"
+      ? draft.node.locationId ?? ""
+      : locationMode === "continue" ? inheritedContext?.location?.locationId ?? "" : "";
+    const conversationReferenceId = conversationMode === "set"
+      ? nodeConversationCharacterId(draft.node) ?? ""
+      : conversationMode === "continue" ? inheritedContext?.conversation?.characterId ?? "" : "";
 
-    const conversationNames = resolvedScene?.conversation
-      ? characterNames(context, resolvedScene.conversation.characterIds)
-      : [];
-    const conversationSummary = conversation.mode === "set"
-      ? `Set — ${characterNames(context, conversation.characterIds).join(", ") || "characters needed"}`
-      : conversation.mode === "clear"
-        ? "End conversation"
-        : resolvedScene
-          ? `Continue — ${conversationNames.join(", ") || "none"}`
-          : "Continue conversation at runtime";
-
-    const anchorSummary = anchor.mode === "set"
-      ? (anchor.text.trim() || "Set — text needed")
-      : anchor.mode === "clear"
-        ? "Clear anchor"
-        : currentTraversalState
-          ? `Continue — ${resolvedAnchor?.text ? clip(resolvedAnchor.text) : "none"}`
-          : "Continue anchor at runtime";
-
-    const sceneSummary = resolvedScene && currentTraversalState
-      ? [
-        resolvedLocation?.name || resolvedLocation?.key || "no location",
-        `${presentNames.length} present`,
-        conversationNames.length ? `with ${conversationNames.join(", ")}` : "no conversation",
-        resolvedAnchor?.text ? `anchor: ${clip(resolvedAnchor.text, 28)}` : "no anchor",
-      ].join(" · ")
-      : [locationSummary, presentSummary, conversationSummary, anchorSummary].join(" · ");
+    const dialogueText = draft.node.dialogueText ?? "";
+    const showDialogueEditor = Boolean(resolvedConversationId || dialogueText.trim());
+    const dialogueLabel = conversationName
+      ? `${conversationName.toUpperCase()} SAYS`
+      : "DIALOGUE — SET A CONVERSATION CHARACTER";
 
     const nodeInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === draft.node.id);
     const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
@@ -303,34 +210,195 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       blocks: [
         {
           type: "custom",
-          id: "node-text",
-          role: "specialized-control",
-          content: <AuthoredTextEditor
-            value={{ text: draft.node.text, performance: draft.node.performance }}
-            snapshot={context.snapshot}
-            playState={context.playState}
-            label="NODE TEXT"
-            rows={7}
-            autoFocus={!data?.nodeId}
-            onChange={(value) => setDraft((current) => ({
-              ...current,
-              node: { ...current.node, text: value.text, performance: value.performance },
-            }))}
-            onPreview={(value) => context.runtime.preview({
-              text: value.text,
-              performance: value.performance,
-              speakerId: draft.node.characterId,
-            })}
-          />,
+          id: "node-context-strip",
+          role: "resource-picker",
+          content: <details className="node-context-strip">
+            <summary>
+              <span className="node-context-primary">{locationLabel} <span aria-hidden="true">·</span> {conversationLabel}</span>
+              <span className="node-context-change">[CHANGE]</span>
+            </summary>
+            <div className="node-context-fields">
+              <div className="node-context-cell">
+                <strong>WHERE IS THIS HAPPENING?</strong>
+                <ReferenceField
+                  kind="location"
+                  value={locationReferenceId}
+                  allowEmpty={false}
+                  onChange={(locationId) => setDraft((current) => ({
+                    ...current,
+                    node: { ...current.node, locationMode: "set", locationId: locationId || null },
+                  }))}
+                  placeholder="choose location"
+                />
+                <div className="node-context-actions">
+                  <button
+                    type="button"
+                    disabled={locationMode === "continue"}
+                    onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "continue", locationId: null } }))}
+                  >[CONTINUE FROM PATH]</button>
+                  <button
+                    type="button"
+                    disabled={locationMode === "clear"}
+                    onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "clear", locationId: null } }))}
+                  >[NO LOCATION]</button>
+                </div>
+              </div>
+
+              <div className="node-context-cell">
+                <strong>IS THIS A CONVERSATION? IF SO, WITH WHO?</strong>
+                <ReferenceField
+                  kind="character"
+                  value={conversationReferenceId}
+                  allowEmpty={false}
+                  onChange={(characterId) => setDraft((current) => ({
+                    ...current,
+                    node: {
+                      ...current.node,
+                      conversationMode: "set",
+                      conversationCharacterId: characterId || null,
+                    },
+                  }))}
+                  placeholder="choose character"
+                />
+                <div className="node-context-actions">
+                  <button
+                    type="button"
+                    disabled={conversationMode === "continue"}
+                    onClick={() => setDraft((current) => ({
+                      ...current,
+                      node: { ...current.node, conversationMode: "continue", conversationCharacterId: null },
+                    }))}
+                  >[CONTINUE FROM PATH]</button>
+                  <button
+                    type="button"
+                    disabled={conversationMode === "clear"}
+                    onClick={() => setDraft((current) => ({
+                      ...current,
+                      node: { ...current.node, conversationMode: "clear", conversationCharacterId: null },
+                    }))}
+                  >[END CONVERSATION]</button>
+                </div>
+              </div>
+            </div>
+          </details>,
         },
         {
           type: "custom",
-          id: "node-speaker",
-          role: "resource-picker",
-          content: <div className="node-focused-form node-speaker-editor">
-            <label>SPEAKER <ReferenceField kind="character" value={draft.node.characterId ?? ""} onChange={(characterId) => setDraft((current) => ({ ...current, node: { ...current.node, characterId: characterId || null } }))} placeholder="none / narration" /></label>
-            <small>{speaker === "Narration" ? "Narration" : speaker} presents this Node text. Speaker does not start, continue, or end a conversation.</small>
+          id: "node-prose",
+          role: "specialized-control",
+          content: <div className={`node-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
+            <AuthoredTextEditor
+              value={{ text: draft.node.text, performance: draft.node.performance }}
+              snapshot={context.snapshot}
+              playState={context.playState}
+              label="NARRATION"
+              rows={6}
+              autoFocus={!data?.nodeId && !resolvedConversationId}
+              onChange={(value) => setDraft((current) => ({
+                ...current,
+                node: { ...current.node, text: value.text, performance: value.performance },
+              }))}
+              onPreview={(value) => context.runtime.preview({
+                text: value.text,
+                performance: value.performance,
+                speakerId: null,
+              })}
+            />
+            {showDialogueEditor ? <AuthoredTextEditor
+              value={{ text: dialogueText, performance: nodeDialoguePerformance(draft.node) }}
+              snapshot={context.snapshot}
+              playState={context.playState}
+              label={dialogueLabel}
+              rows={6}
+              autoFocus={!data?.nodeId && Boolean(resolvedConversationId)}
+              onChange={(value) => setDraft((current) => ({
+                ...current,
+                node: { ...current.node, dialogueText: value.text, dialoguePerformance: value.performance },
+              }))}
+              onPreview={(value) => context.runtime.preview({
+                text: value.text,
+                performance: value.performance,
+                speakerId: resolvedConversationId,
+              })}
+            /> : null}
           </div>,
+        },
+        {
+          type: "section",
+          id: "node-input-handling",
+          label: "INPUT HANDLING",
+          summary: inputSummary,
+          children: nodeExists ? [{
+            type: "custom",
+            id: "node-input-list",
+            role: "results",
+            content: inputRows,
+          }] : [{
+            type: "status",
+            id: "node-input-save-first",
+            tone: "info",
+            text: "Save this Node before configuring its node-specific inputs and invalid response.",
+          }],
+        },
+        {
+          type: "custom",
+          id: "node-anchor",
+          role: "specialized-control",
+          content: <details className="node-anchor-strip">
+            <summary>
+              <span>ANCHOR <strong>{anchor.mode === "set"
+                ? clip(anchor.text) || "text needed"
+                : anchor.mode === "clear"
+                  ? "—"
+                  : resolvedAnchor?.text ? clip(resolvedAnchor.text) : "—"}</strong></span>
+              <span>[EDIT]</span>
+            </summary>
+            <div className="node-anchor-body">
+              {anchor.mode === "set" ? <ValueMentionField
+                snapshot={context.snapshot}
+                playState={context.playState}
+                multiline
+                rows={3}
+                value={anchor.text}
+                placeholder="Persistent context shown beneath the player input"
+                onValueChange={(text) => setDraft((current) => ({
+                  ...current,
+                  node: { ...current.node, anchor: { mode: "set", text } },
+                }))}
+              /> : <small>{anchor.mode === "continue"
+                ? `Inherited from the path${inheritedAnchor?.text ? ` — ${clip(inheritedAnchor.text)}` : " — none"}.`
+                : "No anchor is active after this Node."}</small>}
+              <div className="node-context-actions">
+                <button
+                  type="button"
+                  disabled={anchor.mode === "set"}
+                  onClick={() => setDraft((current) => ({
+                    ...current,
+                    node: {
+                      ...current.node,
+                      anchor: { mode: "set", text: inheritedAnchor?.text ?? "" },
+                    },
+                  }))}
+                >[SET ANCHOR]</button>
+                <button
+                  type="button"
+                  disabled={anchor.mode === "continue"}
+                  onClick={() => setDraft((current) => ({
+                    ...current,
+                    node: { ...current.node, anchor: { mode: "continue", text: "" } },
+                  }))}
+                >[CONTINUE FROM PATH]</button>
+                <button
+                  type="button"
+                  disabled={anchor.mode === "clear"}
+                  onClick={() => setDraft((current) => ({
+                    ...current,
+                    node: { ...current.node, anchor: { mode: "clear", text: "" } },
+                  }))}
+                >[CLEAR]</button>
+              </div>
+            </div>
+          </details>,
         },
         {
           type: "disclosure",
@@ -356,98 +424,6 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         },
         {
           type: "disclosure",
-          id: "node-scene",
-          label: "SCENE",
-          summary: sceneSummary,
-          children: [{
-            type: "custom",
-            id: "node-scene-fields",
-            role: "resource-picker",
-            content: <div className="node-focused-form node-scene-editor">
-              <div className="node-scene-context-group">
-                <label>LOCATION BEHAVIOR
-                  <select
-                    value={locationMode}
-                    onChange={(event) => {
-                      const mode = event.target.value as NodeContextMode;
-                      setDraft((current) => ({
-                        ...current,
-                        node: {
-                          ...current.node,
-                          locationMode: mode,
-                          locationId: mode === "set"
-                            ? current.node.locationId || inheritedScene?.location?.locationId || null
-                            : null,
-                        },
-                      }));
-                    }}
-                  >
-                    <option value="continue">CONTINUE</option>
-                    <option value="set">SET</option>
-                    <option value="clear">CLEAR</option>
-                  </select>
-                </label>
-                {locationMode === "set" ? <label>LOCATION <ReferenceField kind="location" value={draft.node.locationId ?? ""} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "set", locationId: locationId || null } }))} placeholder="choose location" /></label>
-                  : <small>{locationMode === "continue"
-                    ? `Keeps the location established by the path${resolvedLocation ? ` — ${resolvedLocation.name || resolvedLocation.key}` : ""}. New branching Nodes default to Continue.`
-                    : "Clears the active location when the player reaches this Node."}</small>}
-              </div>
-
-              <CharacterContextEditor
-                label="CHARACTERS PRESENT"
-                value={presentCharacters}
-                inheritedIds={inheritedScene?.presentCharacters?.characterIds ?? []}
-                context={context}
-                onChange={(value) => setDraft((current) => ({ ...current, node: { ...current.node, presentCharacters: value } }))}
-              />
-
-              <CharacterContextEditor
-                label="CONVERSATION"
-                value={conversation}
-                inheritedIds={inheritedScene?.conversation?.characterIds ?? []}
-                context={context}
-                onChange={(value) => setDraft((current) => ({ ...current, node: { ...current.node, conversation: value } }))}
-              />
-
-              <div className="node-scene-context-group node-anchor-editor">
-                <label>ANCHOR BEHAVIOR
-                  <select
-                    value={anchor.mode}
-                    onChange={(event) => {
-                      const mode = event.target.value as NodeAnchor["mode"];
-                      setDraft((current) => ({
-                        ...current,
-                        node: { ...current.node, anchor: { ...nodeAnchor(current.node), mode } },
-                      }));
-                    }}
-                  >
-                    <option value="continue">CONTINUE</option>
-                    <option value="set">SET</option>
-                    <option value="clear">CLEAR</option>
-                  </select>
-                </label>
-                {anchor.mode === "set" ? <label>ANCHOR TEXT
-                  <ValueMentionField
-                    snapshot={context.snapshot}
-                    playState={context.playState}
-                    multiline
-                    rows={3}
-                    value={anchor.text}
-                    placeholder="Persistent context shown beneath the player input"
-                    onValueChange={(text) => setDraft((current) => ({
-                      ...current,
-                      node: { ...current.node, anchor: { mode: "set", text } },
-                    }))}
-                  />
-                </label> : <small>{anchor.mode === "continue"
-                  ? `Keeps the anchor established by the path${resolvedAnchor?.text ? ` — ${clip(resolvedAnchor.text)}` : ""}. It can be changed independently inside or outside conversations.`
-                  : "Removes the active anchor when the player reaches this Node without changing the rest of the scene."}</small>}
-              </div>
-            </div>,
-          }],
-        },
-        {
-          type: "disclosure",
           id: "node-organization",
           label: "ORGANIZATION",
           summary: draft.node.tags.length ? `${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : "No tags",
@@ -457,25 +433,8 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             role: "specialized-control",
             content: <div className="node-focused-form">
               <label>AUTHOR TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
-              <small>Tags are for Author search and organization. They do not establish scene context or change gameplay.</small>
+              <small>Tags are for Author search and organization. They do not change gameplay.</small>
             </div>,
-          }],
-        },
-        {
-          type: "section",
-          id: "node-input-handling",
-          label: "INPUT HANDLING",
-          summary: inputSummary,
-          children: nodeExists ? [{
-            type: "custom",
-            id: "node-input-list",
-            role: "results",
-            content: inputRows,
-          }] : [{
-            type: "status",
-            id: "node-input-save-first",
-            tone: "info",
-            text: "Save this Node before configuring its node-specific inputs and invalid response.",
           }],
         },
         {
@@ -496,17 +455,22 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   canSave({ draft }) {
     const anchor = nodeAnchor(draft.node);
     const locationMode = nodeLocationMode(draft.node);
-    const presentCharacters = nodePresentCharacters(draft.node);
-    const conversation = nodeConversation(draft.node);
+    const conversationMode = nodeConversationMode(draft.node);
     return (anchor.mode !== "set" || Boolean(anchor.text.trim()))
       && (locationMode !== "set" || Boolean(draft.node.locationId))
-      && (presentCharacters.mode !== "set" || presentCharacters.characterIds.length > 0)
-      && (conversation.mode !== "set" || conversation.characterIds.length > 0);
+      && (conversationMode !== "set" || Boolean(nodeConversationCharacterId(draft.node)))
+      && !(conversationMode === "clear" && Boolean(draft.node.dialogueText?.trim()));
   },
   async save({ draft, context, route }) {
     const data = routeData(route);
     const anchor = nodeAnchor(draft.node);
-    const node = { ...normalizeNodeSceneContext(draft.node), anchor, entryEffects: draft.node.entryEffects ?? [] };
+    const node = {
+      ...normalizeNodeContext(draft.node),
+      dialogueText: draft.node.dialogueText ?? "",
+      dialoguePerformance: nodeDialoguePerformance(draft.node),
+      anchor,
+      entryEffects: draft.node.entryEffects ?? [],
+    };
     const result = await context.persist(
       [{ type: "node.upsert", node }],
       `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,

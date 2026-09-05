@@ -79,7 +79,7 @@ describe("deterministic parser", () => {
     expect(result.invocation?.arguments.target).toMatchObject({ sourceKind: "world.location", candidateId: "current" });
   });
 
-  it("lets one target slot accept several feature-owned kinds", () => {
+  it("keeps Character identities out of project-wide target operations", () => {
     const snapshot = project({
       entities: [
         { id: "kitchen", key: "kitchen", type: "location", name: "Kitchen", description: "", tags: [] },
@@ -96,10 +96,10 @@ describe("deterministic parser", () => {
     });
     const state = createEmptyPlayState(snapshot);
     expect(parseCommand("inspect kitchen", snapshot, state).invocation?.target?.id).toBe("kitchen");
-    expect(parseCommand("inspect guard", snapshot, state).invocation?.target?.id).toBe("guard");
+    expect(parseCommand("inspect guard", snapshot, state).invocation).toBeNull();
   });
 
-  it("reports semantic target ambiguity instead of choosing by ID order", () => {
+  it("does not let a Character name create target ambiguity with a Location", () => {
     const snapshot = project({
       entities: [
         { id: "alex-place", key: "alex-place", type: "location", name: "Alex", description: "", tags: [] },
@@ -115,9 +115,8 @@ describe("deterministic parser", () => {
       }], ["world.location", "world.character"]),
     });
     const result = parseCommand("inspect alex", snapshot, createEmptyPlayState(snapshot));
-    expect(result.reason).toBe("ambiguous-reference");
-    expect(result.invocation).toBeNull();
-    expect(result.ambiguities[0].candidates).toHaveLength(2);
+    expect(result.reason).toBe("command-grammar");
+    expect(result.invocation?.target).toEqual({ kind: "world.entity", id: "alex-place" });
   });
 
   it("transports text-response commands through the generic operation runtime", () => {

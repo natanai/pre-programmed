@@ -1,5 +1,5 @@
 import type { ProjectReferenceContribution, ResourceReference } from "../../../author/references/types";
-import { nodeConversation, nodeLocationMode, nodePresentCharacters } from "../sceneContext";
+import { nodeConversationCharacterId, nodeConversationMode, nodeLocationMode } from "../sceneContext";
 
 function fromTargets(
   targets: readonly ResourceReference[],
@@ -16,21 +16,17 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
       ownerLabel: `Node #${node.nodeNumber}`,
       route: { type: "feature" as const, feature: "narrative", workspace: "node", data: { nodeId: node.id } },
     };
-    const presentCharacters = nodePresentCharacters(node);
-    const conversation = nodeConversation(node);
+    const conversationCharacterId = nodeConversationCharacterId(node);
     return [
-      ...(node.characterId ? [{ ...owner, resourceKind: "character", resourceId: node.characterId, detail: "node speaker" }] : []),
       ...(nodeLocationMode(node) === "set" && node.locationId
         ? [{ ...owner, resourceKind: "location", resourceId: node.locationId, detail: "node location" }]
         : []),
-      ...(presentCharacters.mode === "set"
-        ? presentCharacters.characterIds.map((characterId) => ({ ...owner, resourceKind: "character" as const, resourceId: characterId, detail: "character present in node scene" }))
-        : []),
-      ...(conversation.mode === "set"
-        ? conversation.characterIds.map((characterId) => ({ ...owner, resourceKind: "character" as const, resourceId: characterId, detail: "node conversation participant" }))
+      ...(nodeConversationMode(node) === "set" && conversationCharacterId
+        ? [{ ...owner, resourceKind: "character", resourceId: conversationCharacterId, detail: "node conversation character" }]
         : []),
       ...fromTargets(context.effects(node.entryEffects ?? []), owner).map((reference) => ({ ...reference, detail: `node entry · ${reference.detail}` })),
       ...fromTargets(context.text(node.text), owner),
+      ...fromTargets(context.text(node.dialogueText ?? ""), owner).map((reference) => ({ ...reference, detail: `node dialogue · ${reference.detail}` })),
     ];
   }),
   ...snapshot.interactions.flatMap((interaction) => {

@@ -3,7 +3,11 @@ import { createEmptyPlayState } from "../src/engine/project/playState";
 import { makeSemanticReferenceToken, interpolateSemanticReferences } from "../src/engine/references/runtime";
 import { parseCommand } from "../src/features/commands/parser";
 import { resolveActiveNodeAnchor } from "../src/features/narrative/anchor";
-import { resolveActiveNodeLocationContext, resolveActiveNodeSceneContext } from "../src/features/narrative/sceneContext";
+import {
+  resolveActiveNodeContext,
+  resolveActiveNodeConversationContext,
+  resolveActiveNodeLocationContext,
+} from "../src/features/narrative/sceneContext";
 import { node, project } from "./fixtures";
 
 function location(id: string, name: string) {
@@ -28,11 +32,10 @@ function character(id: string, name: string) {
   };
 }
 
-describe("Node Scene context", () => {
-  it("sets, continues, and clears each hand-authored scene dimension independently", () => {
+describe("lightweight Node context", () => {
+  it("carries only location and one conversation character through traversal", () => {
     const kitchen = location("kitchen", "Kitchen");
     const marta = character("marta", "Marta");
-    const guard = character("guard", "Guard");
     const snapshot = project({
       startNodeId: "a",
       nodes: [
@@ -40,67 +43,63 @@ describe("Node Scene context", () => {
           ...node("a", 1),
           locationMode: "set",
           locationId: kitchen.id,
-          presentCharacters: { mode: "set", characterIds: [marta.id, guard.id] },
-          conversation: { mode: "clear", characterIds: [] },
+          conversationMode: "clear",
+          conversationCharacterId: null,
           anchor: { mode: "set", text: "ASK ABOUT THE LETTER" },
         },
         {
           ...node("b", 2),
           locationMode: "continue",
           locationId: null,
-          presentCharacters: { mode: "continue", characterIds: [] },
-          conversation: { mode: "set", characterIds: [marta.id] },
+          conversationMode: "set",
+          conversationCharacterId: marta.id,
+          dialogueText: "What do you want?",
           anchor: { mode: "continue", text: "" },
         },
         {
           ...node("c", 3),
           locationMode: "continue",
           locationId: null,
-          presentCharacters: { mode: "set", characterIds: [guard.id] },
-          conversation: { mode: "continue", characterIds: [] },
+          conversationMode: "continue",
+          conversationCharacterId: null,
           anchor: { mode: "clear", text: "" },
         },
         {
           ...node("d", 4),
           locationMode: "clear",
           locationId: null,
-          presentCharacters: { mode: "clear", characterIds: [] },
-          conversation: { mode: "clear", characterIds: [] },
+          conversationMode: "clear",
+          conversationCharacterId: null,
           anchor: { mode: "continue", text: "" },
         },
       ],
-      entities: [kitchen, marta, guard],
+      entities: [kitchen, marta],
     });
     const base = createEmptyPlayState(snapshot);
     const talking = { ...base, currentNodeId: "b", traversal: ["a", "b"] };
-    const changedPresence = { ...base, currentNodeId: "c", traversal: ["a", "b", "c"] };
+    const anchorCleared = { ...base, currentNodeId: "c", traversal: ["a", "b", "c"] };
     const cleared = { ...base, currentNodeId: "d", traversal: ["a", "b", "c", "d"] };
 
-    expect(resolveActiveNodeSceneContext(snapshot, talking)).toEqual({
+    expect(resolveActiveNodeContext(snapshot, talking)).toEqual({
       location: { locationId: kitchen.id, sourceNodeId: "a" },
-      presentCharacters: { characterIds: [marta.id, guard.id], sourceNodeId: "a" },
-      conversation: { characterIds: [marta.id], sourceNodeId: "b" },
+      conversation: { characterId: marta.id, sourceNodeId: "b" },
     });
     expect(resolveActiveNodeAnchor(snapshot, talking)?.text).toBe("ASK ABOUT THE LETTER");
 
-    expect(resolveActiveNodeSceneContext(snapshot, changedPresence)).toEqual({
+    expect(resolveActiveNodeContext(snapshot, anchorCleared)).toEqual({
       location: { locationId: kitchen.id, sourceNodeId: "a" },
-      presentCharacters: { characterIds: [guard.id], sourceNodeId: "c" },
-      conversation: { characterIds: [marta.id], sourceNodeId: "b" },
+      conversation: { characterId: marta.id, sourceNodeId: "b" },
     });
-    expect(resolveActiveNodeAnchor(snapshot, changedPresence)).toBeNull();
+    expect(resolveActiveNodeAnchor(snapshot, anchorCleared)).toBeNull();
 
-    expect(resolveActiveNodeSceneContext(snapshot, cleared)).toEqual({
-      location: null,
-      presentCharacters: null,
-      conversation: null,
-    });
+    expect(resolveActiveNodeContext(snapshot, cleared)).toEqual({ location: null, conversation: null });
     expect(base).not.toHaveProperty("currentLocationId");
-    expect(base).not.toHaveProperty("presentCharacterIds");
-    expect(base).not.toHaveProperty("conversationCharacterIds");
+    expect(base).not.toHaveProperty("conversationCharacterId");
   });
 
-  it("lets the same Continue Node inherit different scene context from different real branches", () => {
+  it("lets the same Continue Node inherit different location and conversation from real branches", () => {
+    const kitchen = location("kitchen", "Kitchen");
+    const alley = location("alley", "Back Alley");
     const marta = character("marta", "Marta");
     const guard = character("guard", "Guard");
     const snapshot = project({
@@ -109,39 +108,67 @@ describe("Node Scene context", () => {
         { ...node("start", 1) },
         {
           ...node("marta-branch", 2),
-          presentCharacters: { mode: "set", characterIds: [marta.id] },
-          conversation: { mode: "set", characterIds: [marta.id] },
+          locationMode: "set",
+          locationId: kitchen.id,
+          conversationMode: "set",
+          conversationCharacterId: marta.id,
         },
         {
           ...node("guard-branch", 3),
-          presentCharacters: { mode: "set", characterIds: [guard.id] },
-          conversation: { mode: "set", characterIds: [guard.id] },
+          locationMode: "set",
+          locationId: alley.id,
+          conversationMode: "set",
+          conversationCharacterId: guard.id,
         },
         {
           ...node("shared", 4),
-          presentCharacters: { mode: "continue", characterIds: [] },
-          conversation: { mode: "continue", characterIds: [] },
+          locationMode: "continue",
+          locationId: null,
+          conversationMode: "continue",
+          conversationCharacterId: null,
         },
       ],
-      entities: [marta, guard],
+      entities: [kitchen, alley, marta, guard],
     });
     const base = createEmptyPlayState(snapshot);
 
-    const fromMarta = resolveActiveNodeSceneContext(snapshot, {
+    const fromMarta = resolveActiveNodeContext(snapshot, {
       ...base,
       currentNodeId: "shared",
       traversal: ["start", "marta-branch", "shared"],
     });
-    const fromGuard = resolveActiveNodeSceneContext(snapshot, {
+    const fromGuard = resolveActiveNodeContext(snapshot, {
       ...base,
       currentNodeId: "shared",
       traversal: ["start", "guard-branch", "shared"],
     });
 
-    expect(fromMarta.presentCharacters?.characterIds).toEqual([marta.id]);
-    expect(fromMarta.conversation?.characterIds).toEqual([marta.id]);
-    expect(fromGuard.presentCharacters?.characterIds).toEqual([guard.id]);
-    expect(fromGuard.conversation?.characterIds).toEqual([guard.id]);
+    expect(fromMarta).toEqual({
+      location: { locationId: kitchen.id, sourceNodeId: "marta-branch" },
+      conversation: { characterId: marta.id, sourceNodeId: "marta-branch" },
+    });
+    expect(fromGuard).toEqual({
+      location: { locationId: alley.id, sourceNodeId: "guard-branch" },
+      conversation: { characterId: guard.id, sourceNodeId: "guard-branch" },
+    });
+  });
+
+  it("makes current Character references follow the inherited conversation", () => {
+    const marta = character("marta", "Marta");
+    const snapshot = project({
+      startNodeId: "a",
+      nodes: [
+        { ...node("a", 1), conversationMode: "set", conversationCharacterId: marta.id },
+        { ...node("b", 2), conversationMode: "continue", conversationCharacterId: null },
+      ],
+      entities: [marta],
+    });
+    const state = { ...createEmptyPlayState(snapshot), currentNodeId: "b", traversal: ["a", "b"] };
+    const name = makeSemanticReferenceToken("world.character", "current", "name");
+
+    expect(resolveActiveNodeConversationContext(snapshot, state))
+      .toEqual({ characterId: marta.id, sourceNodeId: "a" });
+    expect(interpolateSemanticReferences(name, { snapshot, state })).toBe("Marta");
   });
 
   it("makes current-location name and description follow the inherited active location", () => {

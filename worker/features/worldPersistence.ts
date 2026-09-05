@@ -14,6 +14,12 @@ type EntityRow = {
   operations_json: string;
 };
 
+function canonicalEntity(entity: EntityDefinition): EntityDefinition {
+  return entity.type === "character"
+    ? { ...entity, interactable: false, operations: [], hooks: [] }
+    : entity;
+}
+
 export const worldFeaturePersistence: WorkerFeaturePersistence = {
   id: "world",
 
@@ -26,7 +32,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
     ]);
 
     return {
-      entities: entities.results.map((row): EntityDefinition => ({
+      entities: entities.results.map((row): EntityDefinition => canonicalEntity({
         id: row.id,
         key: row.key,
         type: row.entity_type,
@@ -42,7 +48,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
 
   mutationStatements(db, operation) {
     if (operation.type !== "entity.upsert") return null;
-    const entity = operation.entity;
+    const entity = canonicalEntity(operation.entity);
     return [
       db.prepare(
         `INSERT INTO entity_definitions
@@ -71,6 +77,6 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
   },
 
   restoreOperations(snapshot) {
-    return snapshot.entities.map((entity) => ({ type: "entity.upsert" as const, entity }));
+    return snapshot.entities.map((entity) => ({ type: "entity.upsert" as const, entity: canonicalEntity(entity) }));
   },
 };

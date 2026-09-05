@@ -1,20 +1,12 @@
 import { conditionValid, effectsValid, object } from "./validationHelpers";
 import type { WorkerMutationValidator } from "./validationTypes";
 
-function characterContextError(value: unknown, label: string) {
-  if (value === undefined) return null;
-  if (!object(value) || !["set", "continue", "clear"].includes(String(value.mode))) {
-    return `Node ${label} behavior is invalid.`;
-  }
-  if (!Array.isArray(value.characterIds)) return `Node ${label} characters are invalid.`;
-  const ids = value.characterIds;
-  if (ids.some((id) => typeof id !== "string" || !id || id.length > 128)) {
-    return `Node ${label} characters are invalid.`;
-  }
-  if (new Set(ids).size !== ids.length) return `Node ${label} cannot contain the same character twice.`;
-  if (value.mode === "set" && ids.length === 0) return `Set Node ${label} needs at least one character.`;
-  if (value.mode !== "set" && ids.length > 0) return `Continue and Clear Node ${label} cannot store character ids.`;
-  return null;
+function textPerformanceValid(value: unknown) {
+  return object(value)
+    && Number.isInteger(value.charactersPerSecond)
+    && (value.charactersPerSecond as number) >= 1
+    && (value.charactersPerSecond as number) <= 120
+    && Array.isArray(value.cues);
 }
 
 export const narrativeMutationValidator: WorkerMutationValidator = {
@@ -37,10 +29,33 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
         }
       }
 
-      const presentError = characterContextError(operation.node.presentCharacters, "characters-present");
-      if (presentError) return presentError;
-      const conversationError = characterContextError(operation.node.conversation, "conversation");
-      if (conversationError) return conversationError;
+      const conversationMode = operation.node.conversationMode;
+      if (conversationMode !== undefined) {
+        if (!["set", "continue", "clear"].includes(String(conversationMode))) {
+          return "Node conversation behavior is invalid.";
+        }
+        if (conversationMode === "set") {
+          if (typeof operation.node.conversationCharacterId !== "string"
+            || !operation.node.conversationCharacterId
+            || operation.node.conversationCharacterId.length > 128) {
+            return "A conversation needs one Character.";
+          }
+        } else if (operation.node.conversationCharacterId !== null
+          && operation.node.conversationCharacterId !== undefined) {
+          return "Continue and Clear conversations cannot store a Character id.";
+        }
+      }
+
+      if (operation.node.dialogueText !== undefined
+        && (typeof operation.node.dialogueText !== "string" || operation.node.dialogueText.length > 20000)) {
+        return "Node dialogue text is invalid.";
+      }
+      if (operation.node.dialoguePerformance !== undefined && !textPerformanceValid(operation.node.dialoguePerformance)) {
+        return "Node dialogue performance is invalid.";
+      }
+      if (conversationMode === "clear" && typeof operation.node.dialogueText === "string" && operation.node.dialogueText.trim()) {
+        return "A Node that ends the conversation cannot also contain conversation dialogue.";
+      }
       if (operation.node.entryEffects !== undefined && !effectsValid(operation.node.entryEffects)) {
         return "Node entry effects are invalid.";
       }
@@ -87,11 +102,7 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       const legacySpeed = candidate.responseCharactersPerSecond;
       const validLegacyQueuedOutcome = performance === undefined
         && (legacySpeed === undefined || (Number.isInteger(legacySpeed) && (legacySpeed as number) >= 1 && (legacySpeed as number) <= 120));
-      if (!validLegacyQueuedOutcome && (!object(performance)
-        || !Number.isInteger(performance.charactersPerSecond)
-        || (performance.charactersPerSecond as number) < 1
-        || (performance.charactersPerSecond as number) > 120
-        || !Array.isArray(performance.cues))) {
+      if (!validLegacyQueuedOutcome && !textPerformanceValid(performance)) {
         return "Response text performance is invalid.";
       }
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (

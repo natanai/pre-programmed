@@ -53,6 +53,7 @@ import { presentEffectEvents } from "./ui/effectPresentationCatalog";
 import { buildGraphIndex, notationForNode } from "./features/narrative/graph";
 import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
 import { resolveActiveNodeAnchor } from "./features/narrative/anchor";
+import { resolveActiveNodeConversationContext } from "./features/narrative/sceneContext";
 import { interpolateText } from "./features/narrative/interpolation";
 import { applyOperations } from "./engine/project/mutations";
 import {
@@ -86,6 +87,7 @@ import { PlayerSessionGate } from "./ui/PlayerSessionGate";
 import { useTerminalViewport } from "./ui/useTerminalViewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
+const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
 
 type TranscriptLine = PersistedTranscriptLine;
 
@@ -162,7 +164,7 @@ export default function App() {
   const [activeNodeId, setActiveNodeId] = useState<string | undefined>();
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<AuthoredSourceIdentity | undefined>();
-  const [activePerformance, setActivePerformance] = useState<TextPerformance>({ charactersPerSecond: 18, cues: [] });
+  const [activePerformance, setActivePerformance] = useState<TextPerformance>({ ...DEFAULT_TEXT_PERFORMANCE });
   const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
   const [pendingPlaySession, setPendingPlaySession] = useState<PersistedPlaySession | null>(null);
@@ -188,6 +190,16 @@ export default function App() {
     ? snapshot.nodes.find((node) => node.id === playState.currentNodeId) ?? null
     : null;
   const activeNodeAnchor = snapshot && playState ? resolveActiveNodeAnchor(snapshot, playState) : null;
+  const activeNodePresentation = snapshot && activeNodeId
+    ? snapshot.nodes.find((node) => node.id === activeNodeId) ?? null
+    : null;
+  const nodeDialoguePending = Boolean(
+    activeNodePresentation
+    && activeSource?.resourceKind === "node"
+    && activeSource.resourceId === activeNodePresentation.id
+    && activeSource.focus?.section === "narration"
+    && activeNodePresentation.dialogueText?.trim(),
+  );
   const graph = useMemo(() => snapshot ? buildGraphIndex(snapshot) : null, [snapshot]);
   const currentNotation = snapshot && playState && graph
     ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
@@ -235,11 +247,11 @@ export default function App() {
   }, [projectClockSchedule]);
 
   useEffect(() => {
-    if (!typewriter.complete || pendingDestinationNodeId || panel || playerWorkspace || pendingPlaySession || activeRadix) return;
+    if (!typewriter.complete || nodeDialoguePending || pendingDestinationNodeId || panel || playerWorkspace || pendingPlaySession || activeRadix) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [typewriter.complete, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey, activeRadix]);
+  }, [typewriter.complete, nodeDialoguePending, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey, activeRadix]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -273,13 +285,41 @@ export default function App() {
   const showNode = (project: ProjectSnapshot, node: GameNode, state: PlayState) => {
     if (startupActiveRef.current) return;
     firedCueIds.current = new Set();
-    const compiled = compileTextNotation(interpolateText(node.text, { snapshot: project, state }), node.performance);
+    const narration = interpolateText(node.text, { snapshot: project, state });
+    const dialogue = interpolateText(node.dialogueText ?? "", { snapshot: project, state });
+    const beginsWithDialogue = !narration && Boolean(dialogue);
+    const rawText = beginsWithDialogue ? dialogue : narration;
+    const performance = beginsWithDialogue ? node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE : node.performance;
+    const compiled = compileTextNotation(rawText, performance);
+    const conversation = beginsWithDialogue ? resolveActiveNodeConversationContext(project, state) : null;
     setActiveText(compiled.text);
     setActiveNodeId(node.id);
-    setActiveSpeakerId(node.characterId);
-    setActiveSource(authoredSource("node", node.id));
+    setActiveSpeakerId(conversation?.characterId ?? null);
+    setActiveSource(authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }));
     setActivePerformance(compiled.performance);
   };
+
+  useEffect(() => {
+    if (!typewriter.complete || !nodeDialoguePending || !snapshot || !playState || !activeNodePresentation) return;
+    const dialogue = interpolateText(activeNodePresentation.dialogueText ?? "", { snapshot, state: playState });
+    if (!dialogue) return;
+    if (activeText) {
+      setTranscript((lines) => [...lines, {
+        id: crypto.randomUUID(),
+        text: activeText,
+        nodeId: activeNodePresentation.id,
+        speakerId: activeSpeakerId,
+        source: activeSource,
+      }]);
+    }
+    firedCueIds.current = new Set();
+    const compiled = compileTextNotation(dialogue, activeNodePresentation.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE);
+    const conversation = resolveActiveNodeConversationContext(snapshot, playState);
+    setActiveText(compiled.text);
+    setActiveSpeakerId(conversation?.characterId ?? null);
+    setActiveSource(authoredSource("node", activeNodePresentation.id, { section: "dialogue" }));
+    setActivePerformance(compiled.performance);
+  }, [typewriter.complete, nodeDialoguePending, snapshot, playState, activeNodePresentation, activeText, activeSpeakerId, activeSource]);
 
   useEffect(() => {
     if (!snapshot || !playState || !playSessionReady || pendingPlaySession || startupRunRef.current) return;
@@ -294,7 +334,7 @@ export default function App() {
     setActiveNodeId(undefined);
     setActiveSpeakerId(null);
     setActiveSource(undefined);
-    setActivePerformance({ charactersPerSecond: 18, cues: [] });
+    setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
     setPendingDestinationNodeId(null);
     setActiveRadix({
       sequenceId: sequence.id,
@@ -376,7 +416,7 @@ export default function App() {
     setActiveNodeId(undefined);
     setActiveSpeakerId(null);
     setActiveSource(undefined);
-    setActivePerformance({ charactersPerSecond: 18, cues: [] });
+    setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
     setPendingDestinationNodeId(null);
     firedCueIds.current = new Set();
     completedPendingDestination.current = "";
@@ -675,7 +715,7 @@ export default function App() {
     execution: RuntimePresentationExecution,
     previousState: PlayState,
     commandLineId: string,
-    performance: TextPerformance = { charactersPerSecond: 18, cues: [] },
+    performance: TextPerformance = DEFAULT_TEXT_PERFORMANCE,
     speakerId: string | null = null,
   ) => {
     setPlayState(execution.state);
@@ -795,7 +835,7 @@ export default function App() {
         execution,
         commandState,
         commandLineId,
-        responseAction?.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
+        responseAction?.responsePerformance ?? DEFAULT_TEXT_PERFORMANCE,
         responseAction?.speakerId ?? null,
       );
       if (!execution.accepted && !execution.responseText && authorMode && authorView) {
@@ -820,7 +860,7 @@ export default function App() {
       execution,
       commandState,
       commandLineId,
-      execution.outcome?.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
+      execution.outcome?.responsePerformance ?? DEFAULT_TEXT_PERFORMANCE,
       execution.outcome?.speakerId ?? null,
     );
   };
@@ -912,7 +952,7 @@ export default function App() {
       : undefined;
   const matchedAuthorRoute = matchedAuthorSource ? authorRouteForSource(snapshot, matchedAuthorSource) : undefined;
   const activePresentationSource = activeSource ?? (activeNodeId ? authoredSource("node", activeNodeId) : undefined);
-  const activePresentationEditable = authorExperience && typewriter.complete && canEditAuthorSource(activePresentationSource);
+  const activePresentationEditable = authorExperience && typewriter.complete && !nodeDialoguePending && canEditAuthorSource(activePresentationSource);
   const authorToolGroups = buildAuthorToolGroups({
     snapshot,
     playState,
@@ -1013,16 +1053,16 @@ export default function App() {
         value={command}
         onChange={setCommand}
         onSubmit={(value) => {
-          if (!typewriter.complete || pendingDestinationNodeId) {
+          if (!typewriter.complete || nodeDialoguePending || pendingDestinationNodeId) {
             typewriter.completeImmediately();
             return;
           }
           void handleTerminalValue(value);
         }}
         secret={requestingKey}
-        immediateChoices={requestingKey || !typewriter.complete || Boolean(pendingDestinationNodeId) ? [] : immediateTerminalChoices}
-        menuChoices={requestingKey || !typewriter.complete || Boolean(pendingDestinationNodeId) ? [] : promptTerminalChoices}
-        anchor={!requestingKey && !pendingDestinationNodeId && activeNodeAnchor ? {
+        immediateChoices={requestingKey || !typewriter.complete || nodeDialoguePending || Boolean(pendingDestinationNodeId) ? [] : immediateTerminalChoices}
+        menuChoices={requestingKey || !typewriter.complete || nodeDialoguePending || Boolean(pendingDestinationNodeId) ? [] : promptTerminalChoices}
+        anchor={!requestingKey && !nodeDialoguePending && !pendingDestinationNodeId && activeNodeAnchor ? {
           text: activeNodeAnchor.text,
           onEdit: authorExperience ? () => openAuthorResource("node", activeNodeAnchor.sourceNodeId) : undefined,
         } : null}
@@ -1030,7 +1070,7 @@ export default function App() {
       /> : null}
 
       <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !requestingKey && !command && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix
+        {authorExperience && typewriter.complete && !nodeDialoguePending && !pendingDestinationNodeId && !requestingKey && !command && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix
           ? renderAuthorFeaturePlaySurfaces({
             snapshot,
             playState,
@@ -1039,7 +1079,7 @@ export default function App() {
           })
           : null}
 
-        {authorExperience && typewriter.complete && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix ? <AuthorHome
+        {authorExperience && typewriter.complete && !nodeDialoguePending && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
