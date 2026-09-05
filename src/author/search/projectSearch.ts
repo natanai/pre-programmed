@@ -1,7 +1,7 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
 import { normalizeCommand } from "../../features/narrative/parser";
-import { nodeConversation, nodePresentCharacters } from "../../features/narrative/sceneContext";
+import { nodeConversationCharacterId } from "../../features/narrative/sceneContext";
 import { getAuthorSearchDocumentContributions } from "../features/registry";
 import type { SearchDocument, SearchKind } from "./types";
 
@@ -17,12 +17,9 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
   return [
     ...snapshot.nodes.map((node) => {
       const interactions = snapshot.interactions.filter((interaction) => interaction.sourceNodeId === node.id);
-      const sceneCharacterIds = new Set([
-        ...nodePresentCharacters(node).characterIds,
-        ...nodeConversation(node).characterIds,
-      ]);
+      const conversationCharacterId = nodeConversationCharacterId(node);
       const context = snapshot.entities.filter((entity) =>
-        entity.id === node.characterId || entity.id === node.locationId || sceneCharacterIds.has(entity.id),
+        entity.id === node.locationId || entity.id === conversationCharacterId,
       );
       const referencedItemIds = new Set(interactions.flatMap((interaction) =>
         interaction.outcomes.flatMap((outcome) => outcome.effects.flatMap((effect) =>
@@ -32,12 +29,14 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         )),
       ));
       const referencedItems = snapshot.items.filter((item) => referencedItemIds.has(item.id));
+      const prose = node.text || node.dialogueText || "";
       return {
         id: node.id,
         kind: "node" as const,
-        label: `#${String(node.nodeNumber).padStart(3, "0")} ${node.text.slice(0, 90)}`,
+        label: `#${String(node.nodeNumber).padStart(3, "0")} ${prose.slice(0, 90)}`,
         searchText: [
           node.text,
+          node.dialogueText ?? "",
           ...node.tags,
           ...interactions.flatMap((interaction) => [
             interaction.wording,
@@ -53,6 +52,7 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
             ]),
           ]),
           JSON.stringify(node.performance.cues),
+          JSON.stringify(node.dialoguePerformance?.cues ?? []),
           ...context.flatMap((entity) => [entity.key, entity.name, entity.description, ...entity.tags]),
           ...referencedItems.flatMap((item) => [item.key, item.name, item.description, ...item.tags]),
         ].join(" "),
