@@ -14,7 +14,7 @@
 }
 
 .radix-width-terminal {
-  width: min(100%, var(--terminal-command-width, 960px));
+  width: min(100%, calc(var(--terminal-command-right, 972px) - max(12px, env(safe-area-inset-left))));
 }
 
 .radix-width-viewport {
