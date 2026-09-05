@@ -46,6 +46,7 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
             ...interaction.outcomes.flatMap((outcome) => [
               outcome.label,
               outcome.responseText,
+              outcome.dialogueText ?? "",
               JSON.stringify(outcome.condition),
               JSON.stringify(outcome.effects),
               outcome.speakerId ?? "",
@@ -73,6 +74,7 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         ...interaction.outcomes.flatMap((outcome) => [
           outcome.label,
           outcome.responseText,
+          outcome.dialogueText ?? "",
           JSON.stringify(outcome.condition),
           JSON.stringify(outcome.effects),
           outcome.speakerId ?? "",

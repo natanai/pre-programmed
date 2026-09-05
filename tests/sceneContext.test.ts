@@ -3,12 +3,13 @@ import { createEmptyPlayState } from "../src/engine/project/playState";
 import { makeSemanticReferenceToken, interpolateSemanticReferences } from "../src/engine/references/runtime";
 import { parseCommand } from "../src/features/commands/parser";
 import { resolveActiveNodeAnchor } from "../src/features/narrative/anchor";
+import { executeInteraction } from "../src/features/narrative/runtime";
 import {
   resolveActiveNodeContext,
   resolveActiveNodeConversationContext,
   resolveActiveNodeLocationContext,
 } from "../src/features/narrative/sceneContext";
-import { node, project } from "./fixtures";
+import { interaction, node, project } from "./fixtures";
 
 function location(id: string, name: string) {
   return {
@@ -169,6 +170,23 @@ describe("lightweight Node context", () => {
     expect(resolveActiveNodeConversationContext(snapshot, state))
       .toEqual({ characterId: marta.id, sourceNodeId: "a" });
     expect(interpolateSemanticReferences(name, { snapshot, state })).toBe("Marta");
+
+    const ask = interaction("ask", "b", "c");
+    ask.outcomes[0] = {
+      ...ask.outcomes[0],
+      responseText: "You hesitate.",
+      dialogueText: "Come with me.",
+    };
+    const withResponse = {
+      ...snapshot,
+      nodes: [...snapshot.nodes, { ...node("c", 3), conversationMode: "continue", conversationCharacterId: null }],
+      interactions: [ask],
+    };
+    const execution = executeInteraction(withResponse, state, ask);
+    expect(execution.responseText).toBe("You hesitate.");
+    expect(execution.dialogueText).toBe("Come with me.");
+    expect(execution.dialogueSpeakerId).toBe(marta.id);
+    expect(execution.state.currentNodeId).toBe("c");
   });
 
   it("makes current-location name and description follow the inherited active location", () => {

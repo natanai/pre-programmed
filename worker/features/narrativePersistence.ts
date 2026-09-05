@@ -4,6 +4,7 @@ import {
   nodeLocationMode,
   normalizeNodeContext,
 } from "../../src/features/narrative/sceneContext";
+import { normalizeInteractionOutcomeProse } from "../../src/features/narrative/interactionProse";
 import type { GameNode, Interaction, TextPerformance } from "../../src/features/narrative/model";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
@@ -63,9 +64,11 @@ type OutcomeRow = {
   author_status: Interaction["outcomes"][number]["authorStatus"];
   condition_json: string;
   response_text: string;
+  response_dialogue_text: string;
   response_speaker_id: string | null;
   response_characters_per_second: number;
   response_performance_json: string;
+  response_dialogue_performance_json: string;
   effects_json: string;
   disposition: "stay" | "transition";
   destination_node_id: string | null;
@@ -278,6 +281,27 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 39 WHERE id = 1;
       `,
     },
+    {
+      id: 40,
+      name: "narrative-interaction-conversation-prose",
+      sql: `
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN response_dialogue_text TEXT NOT NULL DEFAULT '';
+
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN response_dialogue_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}';
+
+        UPDATE interaction_outcomes
+        SET response_dialogue_text = response_text,
+            response_dialogue_performance_json = response_performance_json,
+            response_text = '',
+            response_characters_per_second = 18,
+            response_performance_json = '{"charactersPerSecond":18,"cues":[]}'
+        WHERE response_speaker_id IS NOT NULL;
+
+        UPDATE project_meta SET schema_version = 40 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -300,8 +324,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       db.prepare("SELECT interaction_id, alias, order_index FROM interaction_aliases ORDER BY order_index, alias")
         .all<AliasRow>(),
       db.prepare(
-        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_speaker_id,
-                response_characters_per_second, response_performance_json, effects_json, disposition, destination_node_id
+        `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_dialogue_text, response_speaker_id,
+                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition, destination_node_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
     ]);
@@ -369,11 +393,16 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           authorStatus: outcome.author_status,
           condition: parseJson(outcome.condition_json, { type: "always" }),
           responseText: outcome.response_text,
+          dialogueText: outcome.response_dialogue_text ?? "",
           speakerId: outcome.response_speaker_id,
           responsePerformance: migrateLegacyMediaCues(parseJson(outcome.response_performance_json, {
             charactersPerSecond: outcome.response_characters_per_second,
             cues: [],
           })),
+          dialoguePerformance: migrateLegacyMediaCues(parseJson(
+            outcome.response_dialogue_performance_json,
+            DEFAULT_TEXT_PERFORMANCE,
+          )),
           effects: migrateLegacyMediaEffects(parseJson(outcome.effects_json, [])) as Interaction["outcomes"][number]["effects"],
           disposition: outcome.disposition,
           destinationNodeId: outcome.destination_node_id,
@@ -462,32 +491,32 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         db.prepare("DELETE FROM interaction_aliases WHERE interaction_id = ?").bind(value.id),
         db.prepare("DELETE FROM interaction_outcomes WHERE interaction_id = ?").bind(value.id),
         ...value.aliases.map((alias, index) => db.prepare("INSERT INTO interaction_aliases (interaction_id, alias, order_index) VALUES (?, ?, ?)").bind(value.id, alias, index)),
-        ...value.outcomes.map((outcome) => {
-          const legacyOutcome = outcome as typeof outcome & { responseCharactersPerSecond?: number };
-          const performance = outcome.responsePerformance ?? {
-            charactersPerSecond: legacyOutcome.responseCharactersPerSecond ?? 18,
-            cues: [],
-          };
+        ...value.outcomes.map((rawOutcome) => {
+          const outcome = normalizeInteractionOutcomeProse(rawOutcome);
+          const performance = outcome.responsePerformance ?? DEFAULT_TEXT_PERFORMANCE;
+          const dialoguePerformance = outcome.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE;
           return db.prepare(
-          `INSERT INTO interaction_outcomes
-           (id, interaction_id, order_index, label, condition_json, response_text, response_speaker_id,
-            response_characters_per_second, response_performance_json, effects_json, disposition, destination_node_id, author_status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        ).bind(
-          outcome.id,
-          value.id,
-          outcome.order,
-          outcome.label,
-          JSON.stringify(outcome.condition),
-          outcome.responseText,
-          outcome.speakerId ?? null,
-          performance.charactersPerSecond,
-          JSON.stringify(performance),
-          JSON.stringify(outcome.effects),
-          outcome.disposition,
-          outcome.destinationNodeId,
-          outcome.authorStatus ?? "configured",
-        );
+            `INSERT INTO interaction_outcomes
+             (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text, response_speaker_id,
+              response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition, destination_node_id, author_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ).bind(
+            outcome.id,
+            value.id,
+            outcome.order,
+            outcome.label,
+            JSON.stringify(outcome.condition),
+            outcome.responseText,
+            outcome.dialogueText ?? "",
+            outcome.speakerId ?? null,
+            performance.charactersPerSecond,
+            JSON.stringify(performance),
+            JSON.stringify(dialoguePerformance),
+            JSON.stringify(outcome.effects),
+            outcome.disposition,
+            outcome.destinationNodeId,
+            outcome.authorStatus ?? "configured",
+          );
         }),
       ];
     }

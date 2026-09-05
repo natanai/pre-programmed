@@ -5,13 +5,17 @@ import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
 import { transitionState } from "./effectRuntime";
+import { interactionOutcomeProse } from "./interactionProse";
 import { interpolateText } from "./interpolation";
 import type { Interaction, InteractionOutcome } from "./model";
+import { resolveNodeConversationContext } from "./sceneContext";
 
 export type InteractionExecution = {
   state: PlayState;
   outcome: InteractionOutcome | null;
   responseText: string;
+  dialogueText: string;
+  dialogueSpeakerId: string | null;
   events: EffectEvent[];
   attempt: number;
   eventKey: string;
@@ -72,7 +76,11 @@ export function executeInteraction(
     .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
     .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey })) ?? null;
 
-  if (!outcome) return { state, outcome, responseText: "", events: [], attempt, eventKey };
+  if (!outcome) return {
+    state, outcome, responseText: "", dialogueText: "", dialogueSpeakerId: null, events: [], attempt, eventKey,
+  };
+  const prose = interactionOutcomeProse(outcome);
+  const sourceConversation = resolveNodeConversationContext(snapshot, initialState, interaction.sourceNodeId);
   const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
   const execution = executeEffects(snapshot, state, outcome.effects, {
     bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
@@ -99,7 +107,9 @@ export function executeInteraction(
   return {
     state,
     outcome,
-    responseText: interpolateText(outcome.responseText, { snapshot, state }),
+    responseText: interpolateText(prose.narrationText, { snapshot, state }),
+    dialogueText: interpolateText(prose.dialogueText, { snapshot, state }),
+    dialogueSpeakerId: sourceConversation?.characterId ?? outcome.speakerId ?? null,
     events: [...interactionEvents, ...entry.events],
     attempt,
     eventKey,

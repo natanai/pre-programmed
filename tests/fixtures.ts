@@ -20,8 +20,8 @@ export function interaction(id: string, sourceNodeId: string, destinationNodeId:
   return {
     id, sourceNodeId, wording: id, choiceVisibility: "prompt", aliases, tags: [], notes: "",
     outcomes: [{
-      id: `${id}-outcome`, order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "",
-      speakerId: null, responsePerformance: { charactersPerSecond: 18, cues: [] }, effects: [], disposition: destinationNodeId ? "transition" : "stay", destinationNodeId,
+      id: `${id}-outcome`, order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "", dialogueText: "",
+      speakerId: null, responsePerformance: { charactersPerSecond: 18, cues: [] }, dialoguePerformance: { charactersPerSecond: 18, cues: [] }, effects: [], disposition: destinationNodeId ? "transition" : "stay", destinationNodeId,
     }],
   };
 }

@@ -286,7 +286,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           type: "custom",
           id: "node-prose",
           role: "specialized-control",
-          content: <div className={`node-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
+          content: <div className={`narrative-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
             <AuthoredTextEditor
               value={{ text: draft.node.text, performance: draft.node.performance }}
               snapshot={context.snapshot}
