@@ -83,6 +83,16 @@
 .radix-author-actions button:hover,
 .radix-author-actions button:focus-visible { color: var(--dos-bright); outline: 1px dotted currentColor; }
 
+@media (min-width: 1000px) and (pointer: fine) {
+  html[data-author-experience="true"] .radix-width-terminal {
+    width: min(100%, calc(
+      var(--terminal-command-right, calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap) + 960px))
+      - var(--author-desktop-suite-width)
+      - var(--author-desktop-suite-gap)
+    ));
+  }
+}
+
 @media (max-width: 640px) {
   .radix-sequence-surface { bottom: calc(50% + 2.45em); gap: .4em; }
   .radix-canvas-frame { height: min(var(--radix-height, 360px), 34dvh); }
