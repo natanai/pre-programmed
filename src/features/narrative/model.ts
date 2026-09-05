@@ -36,6 +36,11 @@ export type GameNode = {
   dialogueText?: string;
   ending: boolean;
   tags: string[];
+  /**
+   * Legacy input only. Current Node persistence strips this former Speaker field
+   * after migrating its text/identity into conversation + dialogue.
+   */
+  characterId?: string | null;
   /** Location selected when `locationMode` is `set`. */
   locationId: string | null;
   /** Missing legacy values mean Set when a locationId exists, otherwise Continue. */
