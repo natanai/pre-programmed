@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import { AuthorPicker, type AuthorPickerGroup } from "../picker/AuthorPicker";
 import { searchAuthorEntries } from "./authorSearch";
 import type { AuthorSearchEntry } from "./types";
@@ -8,6 +8,10 @@ export function AuthorQuickFind({ entries }: { entries: readonly AuthorSearchEnt
   const [query, setQuery] = useState("");
   const trigger = useRef<HTMLButtonElement | null>(null);
   const results = useMemo(() => query.trim() ? searchAuthorEntries(entries, query, 12) : [], [entries, query]);
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+  }, []);
   const groups = useMemo<AuthorPickerGroup[]>(() => {
     const grouped = new Map<string, AuthorSearchEntry[]>();
     for (const entry of results) {
@@ -23,18 +27,12 @@ export function AuthorQuickFind({ entries }: { entries: readonly AuthorSearchEnt
         label: entry.label,
         detail: entry.description,
         onSelect: () => {
-          setOpen(false);
-          setQuery("");
+          close();
           entry.onSelect();
         },
       })),
     }));
-  }, [results]);
-
-  const close = () => {
-    setOpen(false);
-    setQuery("");
-  };
+  }, [results, close]);
 
   return <div className="author-quick-find">
     <button ref={trigger} type="button" aria-expanded={open} onClick={() => open ? close() : setOpen(true)}>
