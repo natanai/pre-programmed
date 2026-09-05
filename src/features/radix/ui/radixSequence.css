@@ -14,7 +14,7 @@
 }
 
 .radix-width-terminal {
-  width: min(100%, 960px);
+  width: min(100%, calc(var(--terminal-command-right, 972px) - max(12px, env(safe-area-inset-left))));
 }
 
 .radix-width-viewport {
@@ -52,12 +52,18 @@
   text-shadow: 0 1px #000;
 }
 
-.radix-caption {
+.radix-caption,
+.radix-audio-gate {
   align-self: center;
   max-width: min(90vw, 960px);
   padding: 0 .75em;
   text-align: center;
   white-space: pre-wrap;
+}
+
+.radix-audio-gate {
+  color: var(--dos-muted);
+  pointer-events: none;
 }
 
 .radix-author-actions {
@@ -76,6 +82,16 @@
 }
 .radix-author-actions button:hover,
 .radix-author-actions button:focus-visible { color: var(--dos-bright); outline: 1px dotted currentColor; }
+
+@media (min-width: 1000px) and (pointer: fine) {
+  html[data-author-experience="true"] .radix-width-terminal {
+    width: min(100%, calc(
+      var(--terminal-command-right, calc(var(--author-desktop-suite-width) + var(--author-desktop-suite-gap) + 960px))
+      - var(--author-desktop-suite-width)
+      - var(--author-desktop-suite-gap)
+    ));
+  }
+}
 
 @media (max-width: 640px) {
   .radix-sequence-surface { bottom: calc(50% + 2.45em); gap: .4em; }

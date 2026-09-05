@@ -1,0 +1,45 @@
+.universe-bootstrap {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: #000;
+  color: var(--dos-bright, #ddd);
+  font-family: "PreProgrammed VGA", monospace;
+  font-size: var(--terminal-font-size, 16px);
+}
+
+.universe-bootstrap-action {
+  padding: .55em .75em;
+  border: 1px solid var(--dos-bright, #ddd);
+  border-radius: 0;
+  background: #000;
+  color: var(--dos-bright, #ddd);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.universe-bootstrap-action:hover,
+.universe-bootstrap-action:focus-visible {
+  color: #fff !important;
+  outline: 1px dotted currentColor;
+  outline-offset: 3px;
+}
+
+.universe-bootstrap-action:disabled {
+  opacity: .7;
+  cursor: default;
+}
+
+.universe-bootstrap-note {
+  position: absolute;
+  top: calc(50% + 2.6em);
+  left: 12px;
+  right: 12px;
+  color: var(--dos-muted, #777);
+  text-align: center;
+}

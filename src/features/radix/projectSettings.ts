@@ -2,6 +2,7 @@ import {
   DEFAULT_RADIX_STARTUP,
   type RadixProjectSettings,
   type RadixSequenceDefinition,
+  type SortAlgorithm,
 } from "./model";
 
 export type RadixProjectSettingsSlice = {
@@ -14,6 +15,8 @@ export const DEFAULT_RADIX_PROJECT_SETTINGS: RadixProjectSettingsSlice = {
     startup: structuredClone(DEFAULT_RADIX_STARTUP),
   },
 };
+
+const SORT_ALGORITHMS = new Set<SortAlgorithm>(["radix-lsd", "quick", "merge", "heap", "shell"]);
 
 function boundedNumber(value: unknown, fallback: number, min: number, max: number) {
   return typeof value === "number" && Number.isFinite(value)
@@ -29,11 +32,15 @@ function normalizeSequence(value: unknown): RadixSequenceDefinition | null {
   if (!value || typeof value !== "object") return null;
   const item = value as Record<string, unknown>;
   if (typeof item.id !== "string" || !item.id) return null;
+  const algorithm = typeof item.algorithm === "string" && SORT_ALGORITHMS.has(item.algorithm as SortAlgorithm)
+    ? item.algorithm as SortAlgorithm
+    : "radix-lsd";
   return {
     id: item.id,
-    label: typeof item.label === "string" && item.label.trim() ? item.label : "Radix sequence",
+    label: typeof item.label === "string" && item.label.trim() ? item.label : "Sort sequence",
     caption: typeof item.caption === "string" ? item.caption : "loading universe",
     widthMode: item.widthMode === "terminal" ? "terminal" : "viewport",
+    algorithm,
     arraySize: Math.round(boundedNumber(item.arraySize, 256, 8, 1024)),
     radix: Math.round(boundedNumber(item.radix, 4, 2, 16)),
     delayMs: boundedNumber(item.delayMs, 2, 0, 250),

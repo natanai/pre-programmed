@@ -1,10 +1,24 @@
 import type { SynthSound, SynthVoice } from "../model";
 
 let sharedContext: AudioContext | null = null;
+let primedContext: AudioContext | null = null;
 
 function audioContext() {
   if (!sharedContext || sharedContext.state === "closed") sharedContext = new AudioContext();
   return sharedContext;
+}
+
+function primeRunningContext(context: AudioContext) {
+  if (primedContext === context) return;
+  const gain = context.createGain();
+  gain.gain.value = 0;
+  const oscillator = context.createOscillator();
+  oscillator.frequency.value = 220;
+  oscillator.connect(gain).connect(context.destination);
+  const now = context.currentTime;
+  oscillator.start(now);
+  oscillator.stop(now + 0.02);
+  primedContext = context;
 }
 
 export function scheduleSynthVoice(
@@ -42,11 +56,22 @@ export function scheduleSynthVoice(
   oscillator.stop(start + duration + 0.01);
 }
 
+export function proceduralAudioReady() {
+  return sharedContext?.state === "running";
+}
+
+/**
+ * Must be called from a player gesture when reliable browser audio is required.
+ * A silent oscillator primes Safari/WebKit's output path without producing an
+ * audible boot sound of its own.
+ */
 export async function unlockProceduralAudio() {
   const context = audioContext();
   if (context.state === "suspended") {
     try { await context.resume(); } catch { /* browser gesture policy: a later gesture may resume it */ }
   }
+  if (context.state === "running") primeRunningContext(context);
+  return context.state === "running";
 }
 
 export type ProceduralToneSession = {

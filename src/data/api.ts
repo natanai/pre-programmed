@@ -7,6 +7,8 @@ export { API_ORIGIN, ApiError, apiUrl, readJson } from "../platform/cloudflare/h
 
 export const SNAPSHOT_RETRY_DELAYS_MS = [1_000, 2_000, 4_000, 8_000, 15_000] as const;
 
+let primedProjectSnapshot: Promise<ProjectSnapshot> | null = null;
+
 export function authorLoginErrorMessage(error: unknown) {
   if (error instanceof ApiError && error.status === 503) return "AUTHOR ACCESS NOT CONFIGURED.";
   if (error instanceof ApiError && error.status === 401) return "ACCESS KEY DOES NOT MATCH.";
@@ -37,7 +39,29 @@ export function importAuthorProject(token: string, file: Blob) {
   return configuredAuthorPlatform.importProject(token, file);
 }
 
+/**
+ * Starts the first project read before the player enters the universe. The App
+ * later consumes this same promise through fetchProjectSnapshot, avoiding a
+ * duplicate first network/database read.
+ */
+export function primeProjectSnapshot() {
+  if (!primedProjectSnapshot) {
+    primedProjectSnapshot = waitForProjectSnapshot({
+      fetchSnapshot: () => configuredProjectPersistence.readProject(),
+    }).catch((error) => {
+      primedProjectSnapshot = null;
+      throw error;
+    });
+  }
+  return primedProjectSnapshot;
+}
+
 export async function fetchProjectSnapshot() {
+  if (primedProjectSnapshot) {
+    const primed = primedProjectSnapshot;
+    primedProjectSnapshot = null;
+    return primed;
+  }
   return configuredProjectPersistence.readProject();
 }
 

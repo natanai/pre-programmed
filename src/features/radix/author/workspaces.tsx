@@ -2,8 +2,14 @@ import { useEffect, useMemo, useState } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { AuthorProjectSettingsSection } from "../../../author/features/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import type { RadixSequenceDefinition } from "../model";
+import {
+  SORT_ALGORITHM_LABELS,
+  type RadixSequenceDefinition,
+  type SortAlgorithm,
+} from "../model";
 import { createRadixSequence } from "../model";
+
+const SORT_ALGORITHMS = Object.entries(SORT_ALGORITHM_LABELS) as Array<[SortAlgorithm, string]>;
 
 function numberValue(value: string, fallback: number, min: number, max: number, integer = false) {
   const parsed = Number(value);
@@ -30,13 +36,18 @@ function validSequence(sequence: RadixSequenceDefinition) {
     && [sequence.backgroundColor, sequence.barColor, sequence.accessColor, sequence.markerColor].every(validColor);
 }
 
+function sequenceDetail(sequence: RadixSequenceDefinition) {
+  const base = sequence.algorithm === "radix-lsd" ? ` · base ${sequence.radix}` : "";
+  return `${SORT_ALGORITHM_LABELS[sequence.algorithm]} · ${sequence.arraySize} values${base} · ${sequence.widthMode}`;
+}
+
 export const radixSequenceListWorkspace = defineAuthorWorkspace<null>({
   id: "radix-sequences",
   matches: (route) => route.type === "feature" && route.feature === "radix" && route.workspace === "sequences",
   createDraft: () => null,
   buildSpec: ({ context }) => ({
     id: "radix-sequences",
-    title: "RADIX SEQUENCES",
+    title: "SORT SEQUENCES",
     context: "Reusable sorting presentations. Startup, nodes, responses, commands, and rules can all reference the same sequence.",
     blocks: [{
       type: "custom",
@@ -47,8 +58,8 @@ export const radixSequenceListWorkspace = defineAuthorWorkspace<null>({
           type="button"
           key={sequence.id}
           onClick={() => context.pushTask({ type: "feature", feature: "radix", workspace: "sequence", data: { sequenceId: sequence.id } })}
-        ><span>{sequence.label}</span><span>{sequence.arraySize} values · base {sequence.radix} · {sequence.widthMode}</span></button>)
-        : <div className="workspace-empty">NO RADIX SEQUENCES YET.</div>}
+        ><span>{sequence.label}</span><span>{sequenceDetail(sequence)}</span></button>)
+        : <div className="workspace-empty">NO SORT SEQUENCES YET.</div>}
       </div>,
     }],
     actions: [{
@@ -77,7 +88,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
       ...context.snapshot.settings,
       radix: { ...context.snapshot.settings.radix, sequences },
     };
-    const result = await context.persist([{ type: "project.settings", settings }], `Saved radix sequence ${draft.label}`);
+    const result = await context.persist([{ type: "project.settings", settings }], `Saved sort sequence ${draft.label}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     const resourceTask = route.data?.resourceTask;
     return {
@@ -96,8 +107,8 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
   },
   buildSpec: ({ context, draft, setDraft }) => ({
     id: `radix-sequence-${draft.id}`,
-    title: `RADIX · ${draft.label || "NEW"}`,
-    context: "A reusable, deterministic LSD radix-sort presentation. Random seeds vary per run; fixed number/text seeds reproduce the same starting universe.",
+    title: `SORT · ${draft.label || "NEW"}`,
+    context: "A reusable deterministic sorting presentation. Random seeds vary per run; fixed number/text seeds reproduce the same starting universe.",
     blocks: [
       {
         type: "section",
@@ -109,7 +120,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
           { type: "field", id: "radix-caption", label: "CAPTION", control: "textarea", rows: 2, value: draft.caption, onChange: (caption) => setDraft({ ...draft, caption }), help: "Player-facing text shown below the visualization. Leave blank for no caption." },
           { type: "choice", id: "radix-width", label: "WIDTH", value: draft.widthMode, onChange: (widthMode) => setDraft({ ...draft, widthMode: widthMode === "terminal" ? "terminal" : "viewport" }), presentation: "segmented", options: [
             { value: "viewport", label: "VIEWPORT", help: "Use the full screen width." },
-            { value: "terminal", label: "TERMINAL", help: "Lock to the terminal text/input width." },
+            { value: "terminal", label: "TERMINAL", help: "Lock to the player terminal content width." },
           ] },
         ],
       },
@@ -118,8 +129,9 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
         id: "radix-sort",
         label: "SORT",
         children: [
-          { type: "field", id: "radix-array-size", label: "ARRAY SIZE", control: "number", inputMode: "numeric", value: draft.arraySize, onChange: (value) => setDraft({ ...draft, arraySize: numberValue(value, draft.arraySize, 8, 1024, true) }), help: "8–1024 values. More values create a denser visual and longer performance." },
-          { type: "field", id: "radix-base", label: "RADIX / BASE", control: "number", inputMode: "numeric", value: draft.radix, onChange: (value) => setDraft({ ...draft, radix: numberValue(value, draft.radix, 2, 16, true) }), help: "Base 4 approximates the Sound of Sorting LSD example." },
+          { type: "choice", id: "sort-algorithm", label: "ALGORITHM", value: draft.algorithm, onChange: (algorithm) => setDraft({ ...draft, algorithm: SORT_ALGORITHMS.some(([value]) => value === algorithm) ? algorithm as SortAlgorithm : "radix-lsd" }), presentation: "stacked", options: SORT_ALGORITHMS.map(([value, label]) => ({ value, label })) },
+          { type: "field", id: "radix-array-size", label: "ARRAY SIZE", control: "number", inputMode: "numeric", value: draft.arraySize, onChange: (value) => setDraft({ ...draft, arraySize: numberValue(value, draft.arraySize, 8, 1024, true) }), help: "8–1024 values. More values create a denser visual and usually a longer performance." },
+          ...(draft.algorithm === "radix-lsd" ? [{ type: "field" as const, id: "radix-base", label: "RADIX / BASE", control: "number" as const, inputMode: "numeric" as const, value: draft.radix, onChange: (value: string) => setDraft({ ...draft, radix: numberValue(value, draft.radix, 2, 16, true) }), help: "Base 4 approximates the Sound of Sorting LSD example." }] : []),
           { type: "field", id: "radix-delay", label: "EVENT DELAY (MS)", control: "number", inputMode: "decimal", value: draft.delayMs, onChange: (value) => setDraft({ ...draft, delayMs: numberValue(value, draft.delayMs, 0, 250) }) },
           { type: "field", id: "radix-hold", label: "FINISH HOLD (MS)", control: "number", inputMode: "numeric", value: draft.finishHoldMs, onChange: (value) => setDraft({ ...draft, finishHoldMs: numberValue(value, draft.finishHoldMs, 0, 10000) }) },
           { type: "choice", id: "radix-seed-mode", label: "SEED MODE", value: draft.seedMode, onChange: (seedMode) => setDraft({ ...draft, seedMode: seedMode === "number" || seedMode === "text" ? seedMode : "random" }), presentation: "stacked", options: [
@@ -191,7 +203,7 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
           startup: { enabled, sequenceId },
         },
       };
-      const result = await context.persist([{ type: "project.settings", settings }], "Changed player startup radix sequence");
+      const result = await context.persist([{ type: "project.settings", settings }], "Changed player startup sort sequence");
       if (result.status === "saved" || result.status === "queued") context.setWorkspaceDirty(false);
     } finally {
       setSaving(false);
@@ -200,7 +212,7 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
 
   return <div className="project-setting-card">
     <h3>PLAYER STARTUP</h3>
-    <p className="project-settings-description">Run one reusable radix sequence before the opening node on a genuinely new game. Continuing a saved game does not replay it.</p>
+    <p className="project-settings-description">Run one reusable sort sequence before the opening node on a genuinely new game. Continuing a saved game does not replay it.</p>
     <label className="check-label"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /> enabled on new game</label>
     <ReferenceField kind="radix-sequence" value={sequenceId} onChange={setSequenceId} placeholder="Choose startup sequence" />
     <div className="project-setting-actions">
@@ -213,7 +225,7 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
 export const RADIX_PROJECT_SETTINGS: readonly AuthorProjectSettingsSection[] = [{
   id: "radix-startup",
   label: "STARTUP SEQUENCE",
-  description: "Choose whether a reusable radix presentation runs before the opening node.",
+  description: "Choose whether a reusable sort presentation runs before the opening node.",
   order: 20,
   render: (context) => <RadixStartupSettings context={context} />,
 }];

@@ -1,4 +1,5 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
+import { SORT_ALGORITHM_LABELS } from "../model";
 import { radixEffectAdapter } from "./ruleAdapters";
 import { RADIX_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 import {
@@ -11,10 +12,10 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
   id: "radix",
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "radix") return null;
-    if (route.workspace === "sequences") return "Radix sequences";
+    if (route.workspace === "sequences") return "Sort sequences";
     if (route.workspace === "sequence") {
       const sequence = snapshot.settings.radix.sequences.find((candidate) => candidate.id === route.data?.sequenceId);
-      return sequence?.label || "New radix sequence";
+      return sequence?.label || "New sort sequence";
     }
     return null;
   },
@@ -23,13 +24,13 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
   projectSettings: RADIX_PROJECT_SETTINGS,
   resources: [{
     kind: "radix-sequence",
-    label: "Radix Sequence",
-    pluralLabel: "Radix Sequences",
+    label: "Sort Sequence",
+    pluralLabel: "Sort Sequences",
     list: (snapshot) => snapshot.settings.radix.sequences.map((sequence) => ({
       id: sequence.id,
       value: sequence.id,
       label: sequence.label,
-      detail: `${sequence.arraySize} values · base ${sequence.radix} · ${sequence.widthMode}`,
+      detail: `${SORT_ALGORITHM_LABELS[sequence.algorithm]} · ${sequence.arraySize} values · ${sequence.widthMode}`,
     })),
     createRoute: () => ({
       type: "feature",
@@ -51,14 +52,14 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
     toolOrder: 10,
     tool: {
       id: "radix-sequences",
-      label: "RADIX SEQUENCES",
+      label: "SORT SEQUENCES",
       description: "Create reusable sorting visuals for startup, nodes, responses, and other authored effects.",
-      searchText: "radix sort sorting loading universe startup transition thinking procedural visualization sound",
+      searchText: "radix quick merge heap shell sort sorting loading universe startup transition thinking procedural visualization sound",
       onSelect: () => context.pushTask({ type: "feature", feature: "radix", workspace: "sequences" }),
     },
   }],
   terminalShortcuts: [{
-    commands: ["/radix", "radix"],
+    commands: ["/radix", "radix", "/sort", "sort"],
     route: { type: "feature", feature: "radix", workspace: "sequences" },
   }],
   workspaces: [radixSequenceListWorkspace, radixSequenceEditorWorkspace],
