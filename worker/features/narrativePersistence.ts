@@ -23,6 +23,7 @@ type NodeRow = {
   ending: number | null;
   tags_json: string | null;
   performance_json: string | null;
+  entry_effects_json: string | null;
   character_id: string | null;
   location_id: string | null;
   location_mode: "set" | "continue" | "clear" | null;
@@ -188,6 +189,16 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 37 WHERE id = 1;
       `,
     },
+    {
+      id: 38,
+      name: "narrative-node-entry-effects",
+      sql: `
+        ALTER TABLE node_details
+        ADD COLUMN entry_effects_json TEXT NOT NULL DEFAULT '[]';
+
+        UPDATE project_meta SET schema_version = 38 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -195,7 +206,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       db.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").first<{ start_node_id: string }>(),
       db.prepare(
         `SELECT n.id, n.node_number, n.text, n.characters_per_second,
-                d.ending, d.tags_json, d.performance_json, d.anchor_mode, d.anchor_text,
+                d.ending, d.tags_json, d.performance_json, d.entry_effects_json, d.anchor_mode, d.anchor_text,
                 c.character_id, c.location_id, c.location_mode,
                 c.present_characters_mode, c.present_character_ids_json,
                 c.conversation_mode, c.conversation_character_ids_json
@@ -255,6 +266,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             mode: row.anchor_mode ?? "continue",
             text: row.anchor_text ?? "",
           },
+          entryEffects: migrateLegacyMediaEffects(parseJson(row.entry_effects_json, [])) as GameNode["entryEffects"],
           performance: {
             charactersPerSecond: performance.charactersPerSecond ?? row.characters_per_second,
             cues: performance.cues ?? [],
@@ -306,16 +318,17 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
              characters_per_second=excluded.characters_per_second, updated_at=CURRENT_TIMESTAMP`,
         ).bind(node.id, node.nodeNumber, node.text, node.performance.charactersPerSecond),
         db.prepare(
-          `INSERT INTO node_details (node_id, ending, tags_json, performance_json, anchor_mode, anchor_text)
-           VALUES (?, ?, ?, ?, ?, ?)
+          `INSERT INTO node_details (node_id, ending, tags_json, performance_json, entry_effects_json, anchor_mode, anchor_text)
+           VALUES (?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(node_id) DO UPDATE SET ending=excluded.ending, tags_json=excluded.tags_json,
-             performance_json=excluded.performance_json, anchor_mode=excluded.anchor_mode,
-             anchor_text=excluded.anchor_text`,
+             performance_json=excluded.performance_json, entry_effects_json=excluded.entry_effects_json,
+             anchor_mode=excluded.anchor_mode, anchor_text=excluded.anchor_text`,
         ).bind(
           node.id,
           Number(node.ending),
           JSON.stringify(node.tags),
           JSON.stringify(node.performance),
+          JSON.stringify(node.entryEffects ?? []),
           anchor.mode,
           anchor.text,
         ),
