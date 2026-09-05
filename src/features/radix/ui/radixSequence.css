@@ -14,7 +14,7 @@
 }
 
 .radix-width-terminal {
-  width: min(100%, 960px);
+  width: min(100%, var(--terminal-command-width, 960px));
 }
 
 .radix-width-viewport {
@@ -52,12 +52,18 @@
   text-shadow: 0 1px #000;
 }
 
-.radix-caption {
+.radix-caption,
+.radix-audio-gate {
   align-self: center;
   max-width: min(90vw, 960px);
   padding: 0 .75em;
   text-align: center;
   white-space: pre-wrap;
+}
+
+.radix-audio-gate {
+  color: var(--dos-muted);
+  pointer-events: none;
 }
 
 .radix-author-actions {
