@@ -1,20 +1,31 @@
-import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
+import { semanticReferenceProvider } from "../../engine/references/catalog";
 import { normalizePlayerInput } from "../../engine/input/normalize";
+import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import type { Interaction } from "../narrative/model";
 import type { OperationArguments, OperationTarget } from "../operations/model";
-import type { CommandDefinition } from "./model";
-import { commandReferenceSourceByKind } from "./referenceCatalog";
+import type { CommandAction, CommandDefinition } from "./model";
 
 export type ParserMatchReason =
   | "exact-alias"
   | "normalized-alias"
   | "command-grammar"
+  | "ambiguous-reference"
   | "fallback";
+
+export type CommandReferenceAmbiguity = {
+  slot: string;
+  input: string;
+  candidates: Array<{
+    sourceKind: string;
+    candidateId: string;
+    label: string;
+  }>;
+};
 
 export type CommandInvocation = {
   commandId: string;
   label: string;
-  operation: string;
+  action: CommandAction;
   pattern: string;
   arguments: OperationArguments;
   target: OperationTarget | null;
@@ -28,6 +39,7 @@ export type ParserResult = {
   matchedPattern: string | null;
   candidates: string[];
   normalizedInput: string;
+  ambiguities: CommandReferenceAmbiguity[];
 };
 
 export function normalizeCommand(value: string) {
@@ -96,37 +108,67 @@ function commandSpecificity(parts: PatternPart[]) {
   return words * 1000 + characters * 10 - slots;
 }
 
-function referenceArgument(
+type ResolvedReference = {
+  sourceKind: string;
+  candidateId: string;
+  label: string;
+  target: OperationTarget;
+};
+
+function referenceMatches(
   snapshot: ProjectSnapshot,
   state: PlayState,
-  sourceKind: string,
+  sourceKinds: readonly string[],
   captured: string,
-) {
-  const sourceSetting = snapshot.settings.commands.referenceSources.find(
-    (setting) => setting.sourceKind === sourceKind && setting.enabled,
-  );
-  const source = commandReferenceSourceByKind(sourceKind);
-  if (!sourceSetting || !source) return null;
-
+): ResolvedReference[] {
   const normalizedCapture = normalizeCommand(captured);
-  const matches = source.candidates(snapshot, state).flatMap((candidate) => {
-    const defaults = sourceSetting.includeDefaults ? candidate.aliases : [];
-    const aliases = [...defaults, ...(sourceSetting.aliases[candidate.id] ?? [])]
-      .map(normalizeCommand)
-      .filter(Boolean);
-    return aliases.includes(normalizedCapture) ? [candidate] : [];
-  }).sort((left, right) => left.id.localeCompare(right.id));
+  return sourceKinds.flatMap((sourceKind) => {
+    const sourceSetting = snapshot.settings.commands.referenceSources.find(
+      (setting) => setting.sourceKind === sourceKind && setting.enabled,
+    );
+    const provider = semanticReferenceProvider(sourceKind);
+    if (!sourceSetting || !provider?.targetable) return [];
 
-  const candidate = matches[0];
-  if (!candidate) return null;
-  return {
-    kind: "target" as const,
-    sourceKind,
-    candidateId: candidate.id,
-    label: candidate.label,
-    target: candidate.target,
-  };
+    return provider.candidates({ snapshot, state }).flatMap((candidate) => {
+      if (!candidate.target) return [];
+      const defaults = sourceSetting.includeDefaults
+        ? [candidate.key, ...candidate.aliases]
+        : [];
+      const aliases = [...defaults, ...(sourceSetting.aliases[candidate.id] ?? [])]
+        .map(normalizeCommand)
+        .filter(Boolean);
+      return aliases.includes(normalizedCapture)
+        ? [{
+            sourceKind,
+            candidateId: candidate.id,
+            label: candidate.label,
+            target: candidate.target,
+          }]
+        : [];
+    });
+  }).sort((left, right) =>
+    left.sourceKind.localeCompare(right.sourceKind)
+    || left.candidateId.localeCompare(right.candidateId));
 }
+
+function sameResolvedReference(left: ResolvedReference, right: ResolvedReference) {
+  return left.sourceKind === right.sourceKind
+    && left.candidateId === right.candidateId
+    && left.target.kind === right.target.kind
+    && left.target.id === right.target.id;
+}
+
+function distinctReferences(matches: ResolvedReference[]) {
+  return matches.filter((match, index) => !matches.slice(0, index).some((existing) => sameResolvedReference(existing, match)));
+}
+
+type CommandPatternMatch = {
+  command: CommandDefinition;
+  pattern: string;
+  score: number;
+  invocation: CommandInvocation | null;
+  ambiguities: CommandReferenceAmbiguity[];
+};
 
 function matchCommandPattern(
   command: CommandDefinition,
@@ -134,7 +176,7 @@ function matchCommandPattern(
   input: string,
   snapshot: ProjectSnapshot,
   state: PlayState,
-) {
+): CommandPatternMatch | null {
   const parts = parsePattern(pattern);
   const compiled = patternRegex(parts);
   if (!compiled) return null;
@@ -142,34 +184,54 @@ function matchCommandPattern(
   if (!match) return null;
 
   const args: OperationArguments = {};
+  const ambiguities: CommandReferenceAmbiguity[] = [];
   let captureIndex = 1;
   for (const slotName of compiled.captures) {
     const captured = match[captureIndex++]?.trim() ?? "";
     if (!captured) return null;
     const slot = command.slots.find((candidate) => candidate.name === slotName);
-    const sourceKind = slot?.sourceKind ?? "text";
-    if (sourceKind === "text") {
+    const sourceKinds = slot?.sourceKinds ?? [];
+    if (!sourceKinds.length) {
       args[slotName] = { kind: "text", value: captured };
       continue;
     }
-    const reference = referenceArgument(snapshot, state, sourceKind, captured);
-    if (!reference) return null;
-    args[slotName] = reference;
+    const matches = distinctReferences(referenceMatches(snapshot, state, sourceKinds, captured));
+    if (!matches.length) return null;
+    if (matches.length > 1) {
+      ambiguities.push({
+        slot: slotName,
+        input: captured,
+        candidates: matches.map(({ sourceKind, candidateId, label }) => ({ sourceKind, candidateId, label })),
+      });
+      continue;
+    }
+    const reference = matches[0];
+    args[slotName] = {
+      kind: "target",
+      sourceKind: reference.sourceKind,
+      candidateId: reference.candidateId,
+      label: reference.label,
+      target: reference.target,
+    };
   }
 
-  const targetArgument = command.targetSlot ? args[command.targetSlot] : undefined;
-  if (command.targetSlot && (!targetArgument || targetArgument.kind !== "target")) return null;
+  const targetSlot = command.action.type === "target-operation" ? command.action.targetSlot : "";
+  const targetArgument = targetSlot ? args[targetSlot] : undefined;
+  if (!ambiguities.length && targetSlot && (!targetArgument || targetArgument.kind !== "target")) return null;
 
   return {
-    invocation: {
+    command,
+    pattern,
+    score: commandSpecificity(parts),
+    ambiguities,
+    invocation: ambiguities.length ? null : {
       commandId: command.id,
       label: command.label,
-      operation: command.operation,
+      action: command.action,
       pattern,
       arguments: args,
       target: targetArgument?.kind === "target" ? targetArgument.target : null,
-    } satisfies CommandInvocation,
-    score: commandSpecificity(parts),
+    },
   };
 }
 
@@ -178,7 +240,7 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
     .filter((command) => command.enabled)
     .flatMap((command) => command.patterns.flatMap((pattern) => {
       const match = matchCommandPattern(command, pattern, input, snapshot, state);
-      return match ? [{ command, pattern, ...match }] : [];
+      return match ? [match] : [];
     }))
     .sort((left, right) =>
       right.score - left.score ||
@@ -195,8 +257,8 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
  * 2. project-wide authored Player Commands,
  * 3. current-scene authored fallback.
  *
- * Player-choice visibility never changes recognition. This also guarantees that
- * Author mode only captures genuinely unrecognized text as a new draft input.
+ * Semantic target ambiguity is never resolved by array/id order. An authored
+ * invalid-input response may still handle that attempt, but no target action runs.
  */
 export function parseCommand(
   input: string,
@@ -227,6 +289,7 @@ export function parseCommand(
       matchedPattern: null,
       candidates: exact.map(({ interaction }) => interaction.id),
       normalizedInput,
+      ambiguities: [],
     };
   }
 
@@ -244,19 +307,34 @@ export function parseCommand(
       matchedPattern: null,
       candidates: normalized.map(({ interaction }) => interaction.id),
       normalizedInput,
+      ambiguities: [],
     };
   }
 
   const grammarMatches = projectGrammarMatches(normalizedInput, snapshot, state);
-  if (grammarMatches[0]) {
+  const strongest = grammarMatches[0];
+  if (strongest?.ambiguities.length) {
+    return {
+      interaction: fallbackInteraction ?? null,
+      invocation: null,
+      reason: "ambiguous-reference",
+      matchedAlias: null,
+      matchedPattern: strongest.pattern,
+      candidates: [...new Set(grammarMatches.filter((match) => match.score === strongest.score).map(({ command }) => command.id))],
+      normalizedInput,
+      ambiguities: strongest.ambiguities,
+    };
+  }
+  if (strongest?.invocation) {
     return {
       interaction: null,
-      invocation: grammarMatches[0].invocation,
+      invocation: strongest.invocation,
       reason: "command-grammar",
       matchedAlias: null,
-      matchedPattern: grammarMatches[0].pattern,
-      candidates: [...new Set(grammarMatches.map(({ command }) => command.id))],
+      matchedPattern: strongest.pattern,
+      candidates: [...new Set(grammarMatches.filter((match) => match.score === strongest.score).map(({ command }) => command.id))],
       normalizedInput,
+      ambiguities: [],
     };
   }
 
@@ -269,6 +347,7 @@ export function parseCommand(
       matchedPattern: null,
       candidates: [fallbackInteraction.id],
       normalizedInput,
+      ambiguities: [],
     };
   }
 
@@ -280,5 +359,6 @@ export function parseCommand(
     matchedPattern: null,
     candidates: [],
     normalizedInput,
+    ambiguities: [],
   };
 }
