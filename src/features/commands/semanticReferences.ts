@@ -14,6 +14,7 @@ export const COMMAND_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferencePro
   label: "Player commands",
   description: "Authored project-wide player command definitions.",
   authorResourceKind: "player-command",
+  defaultProjection: "label",
   candidates: ({ snapshot }) => snapshot.settings.commands.commands.map((command) => ({
     id: command.id,
     key: keyFromLabel(command.label, `command-${command.id.slice(0, 8)}`),
