@@ -1,6 +1,12 @@
 import { useMemo, useRef, useState, type ChangeEvent, type KeyboardEvent, type MouseEvent, type RefObject, type SyntheticEvent } from "react";
-import { makeValueToken } from "../features/narrative/interpolation";
-import type { ProjectSnapshot } from "../engine/project/model";
+import { SEMANTIC_REFERENCE_PROVIDERS } from "../engine/references/catalog";
+import {
+  makeSemanticReferenceToken,
+  semanticReferenceEntries,
+  tokenForSemanticReference,
+} from "../engine/references/runtime";
+import { createEmptyPlayState } from "../engine/project/playState";
+import type { PlayState, ProjectSnapshot } from "../engine/project/model";
 import { useAuthorResourceTools } from "./resources/context";
 import "./valueMentionField.css";
 
@@ -17,6 +23,7 @@ function mentionAt(value: string, cursor: number): Mention | null {
 
 export function ValueMentionField({
   snapshot,
+  playState,
   value,
   onValueChange,
   multiline = false,
@@ -29,6 +36,8 @@ export function ValueMentionField({
   onSelectionChange,
 }: {
   snapshot: ProjectSnapshot;
+  /** Live context enables selectors such as @current-location. Static references still work without it. */
+  playState?: PlayState;
   value: string;
   onValueChange: (value: string) => void;
   multiline?: boolean;
@@ -44,29 +53,36 @@ export function ValueMentionField({
   const control = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
   const [mention, setMention] = useState<Mention | null>(null);
   const [selection, setSelection] = useState(0);
-  const candidates = useMemo(() => [
-    ...snapshot.variables.map((item) => ({
-      id: item.id,
-      key: item.key,
-      label: item.label,
-      kind: "variable" as const,
-      token: makeValueToken("variable", item.key),
-    })),
-    ...snapshot.computedValues.map((item) => ({
-      id: item.id,
-      key: item.key,
-      label: item.label,
-      kind: "computed" as const,
-      token: makeValueToken("computed", item.key, item.format),
-    })),
-  ], [snapshot.variables, snapshot.computedValues]);
+  const referenceState = useMemo(
+    () => playState ?? createEmptyPlayState(snapshot),
+    [playState, snapshot],
+  );
+  const candidates = useMemo(() => semanticReferenceEntries({ snapshot, state: referenceState })
+    .filter((entry) => playState || !entry.candidate.contextual), [snapshot, referenceState, playState]);
   const matches = useMemo(() => {
     if (!mention) return [];
     const query = mention.query.toLowerCase();
     return candidates
-      .filter((item) => !query || `${item.key} ${item.label}`.toLowerCase().includes(query))
-      .slice(0, 6);
+      .filter(({ provider, candidate }) => !query || [
+        candidate.key,
+        candidate.label,
+        candidate.detail ?? "",
+        provider.label,
+        ...candidate.aliases,
+      ].join(" ").toLowerCase().includes(query))
+      .sort((left, right) => Number(Boolean(right.candidate.contextual)) - Number(Boolean(left.candidate.contextual))
+        || left.provider.label.localeCompare(right.provider.label)
+        || left.candidate.label.localeCompare(right.candidate.label))
+      .slice(0, 12);
   }, [candidates, mention]);
+  const creatableProviders = useMemo(() => {
+    if (!mention) return [];
+    const query = mention.query.toLowerCase();
+    return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) =>
+      provider.authorResourceKind
+      && resources.canCreate(provider.authorResourceKind)
+      && (!query || `${provider.label} ${provider.kind}`.toLowerCase().includes(query)));
+  }, [mention, resources]);
 
   const syncMention = (next: string, cursor: number | null) => {
     setMention(mentionAt(next, cursor ?? next.length));
@@ -77,10 +93,10 @@ export function ValueMentionField({
     const end = Math.max(start, element.selectionEnd ?? start);
     onSelectionChange?.({ start, end });
   };
-  const selectMatch = (match: (typeof matches)[number]) => {
+  const insertToken = (token: string) => {
     if (!mention) return;
-    const next = `${value.slice(0, mention.start)}${match.token}${value.slice(mention.end)}`;
-    const cursor = mention.start + match.token.length;
+    const next = `${value.slice(0, mention.start)}${token}${value.slice(mention.end)}`;
+    const cursor = mention.start + token.length;
     onValueChange(next);
     setMention(null);
     window.requestAnimationFrame(() => {
@@ -89,9 +105,24 @@ export function ValueMentionField({
       if (control.current) reportSelection(control.current);
     });
   };
+  const selectMatch = (match: (typeof matches)[number]) => {
+    insertToken(tokenForSemanticReference(match.provider, match.candidate));
+  };
   const editMatch = (match: (typeof matches)[number]) => {
+    const owner = match.candidate.author;
+    if (!owner) return;
     setMention(null);
-    resources.edit(match.kind, match.id);
+    resources.edit(owner.resourceKind, owner.resourceId);
+  };
+  const createFromProvider = (provider: (typeof creatableProviders)[number]) => {
+    if (!provider.authorResourceKind) return;
+    resources.create(provider.authorResourceKind, (resource) => {
+      insertToken(makeSemanticReferenceToken(
+        provider.kind,
+        resource.id,
+        provider.defaultProjection ?? "label",
+      ));
+    });
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (mention && matches.length) {
@@ -140,22 +171,36 @@ export function ValueMentionField({
     {multiline
       ? <textarea {...common} rows={rows} ref={(element) => { control.current = element; if (textareaRef) textareaRef.current = element; }} />
       : <input {...common} ref={(element) => { control.current = element; }} />}
-    {mention ? <div className="value-mention-menu" role="listbox" aria-label="Matching values">
-      {matches.length ? matches.map((match, index) => <div className="value-mention-option" key={`${match.kind}:${match.id}`}>
+    {mention ? <div className="value-mention-menu" role="listbox" aria-label="Matching engine references">
+      {matches.map((match, index) => <div className="value-mention-option" key={`${match.provider.kind}:${match.candidate.id}`}>
         <button
           type="button"
           className="value-mention-insert"
           role="option"
-          aria-selected={index === selection % matches.length}
+          aria-selected={index === selection % Math.max(1, matches.length)}
           onPointerDown={(event) => { event.preventDefault(); selectMatch(match); }}
-        ><span>{match.label}</span><span>@{match.key}</span></button>
-        <button
+        >
+          <span><strong>{match.candidate.label}</strong>{match.candidate.detail ? <small>{match.candidate.detail}</small> : null}</span>
+          <span>@{match.candidate.key}</span>
+        </button>
+        {match.candidate.author && resources.canEdit(match.candidate.author.resourceKind, match.candidate.author.resourceId)
+          ? <button
+              type="button"
+              className="value-mention-edit"
+              aria-label={`Edit ${match.candidate.label}`}
+              onPointerDown={(event) => { event.preventDefault(); editMatch(match); }}
+            >[EDIT]</button>
+          : null}
+      </div>)}
+      {creatableProviders.length ? <div className="value-mention-create-list">
+        {creatableProviders.map((provider) => <button
           type="button"
-          className="value-mention-edit"
-          aria-label={`Edit ${match.label}`}
-          onPointerDown={(event) => { event.preventDefault(); editMatch(match); }}
-        >[EDIT]</button>
-      </div>) : <span>NO MATCH</span>}
+          className="value-mention-create"
+          key={provider.kind}
+          onPointerDown={(event) => { event.preventDefault(); createFromProvider(provider); }}
+        >[+ CREATE {provider.label.toUpperCase()}]</button>)}
+      </div> : null}
+      {!matches.length && !creatableProviders.length ? <span className="value-mention-empty">NO MATCH</span> : null}
     </div> : null}
   </div>;
 }
