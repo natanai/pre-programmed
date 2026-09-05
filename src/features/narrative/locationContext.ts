@@ -6,9 +6,9 @@ export {
 export type { ActiveNodeLocationContext } from "./sceneContext";
 
 import type { GameNode } from "./model";
-import { normalizeNodeSceneContext } from "./sceneContext";
+import { normalizeNodeContext } from "./sceneContext";
 
-/** Compatibility projection while existing callers move to the complete Scene contract. */
+/** Compatibility projection for callers that only own Location behavior. */
 export function normalizeNodeLocationContext(node: GameNode): GameNode {
-  return normalizeNodeSceneContext(node);
+  return normalizeNodeContext(node);
 }
