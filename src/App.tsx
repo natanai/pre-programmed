@@ -728,7 +728,15 @@ export default function App() {
         operation: parsed.invocation.operation,
         arguments: parsed.invocation.arguments,
       });
-      presentRuntimeExecution(snapshot, execution, commandState, commandLineId);
+      const responseAction = parsed.invocation.action.type === "response" ? parsed.invocation.action : null;
+      presentRuntimeExecution(
+        snapshot,
+        execution,
+        commandState,
+        commandLineId,
+        responseAction?.responsePerformance ?? { charactersPerSecond: 18, cues: [] },
+        responseAction?.speakerId ?? null,
+      );
       if (!execution.accepted && !execution.responseText && authorMode && authorView) {
         setAuthorMessage(`TARGET DOES NOT HANDLE ${parsed.invocation.operation.toUpperCase()}.`);
       }
