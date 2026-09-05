@@ -264,9 +264,10 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   const save = async (): Promise<boolean> => {
     if (!draft.label.trim() || !patterns.length) return false;
     const normalizedSlots = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
-    if (draft.action.type === "target-operation" && (
-      !OPERATION_ID_PATTERN.test(draft.action.operation)
-      || !normalizedSlots.some((slot) => slot.name === draft.action.targetSlot && slot.sourceKinds.length)
+    const action = draft.action;
+    if (action.type === "target-operation" && (
+      !OPERATION_ID_PATTERN.test(action.operation)
+      || !normalizedSlots.some((slot) => slot.name === action.targetSlot && slot.sourceKinds.length)
     )) return false;
     const command: CommandDefinition = { ...draft, label: draft.label.trim(), patterns, slots: normalizedSlots };
     let commands: CommandProjectSettings = {
