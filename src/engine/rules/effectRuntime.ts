@@ -3,6 +3,7 @@ import type { MediaEffectEvent } from "../../features/media/effectEvents";
 import type { RadixEffectEvent } from "../../features/radix/effectEvents";
 import type { Effect } from "./model";
 import type { PlayState, ProjectSnapshot } from "../project/model";
+import type { RuleRuntimeContext } from "./runtimeBindings";
 
 /** Presentation events that remain available without optional features. */
 export type CoreEffectEvent = { type: "notification"; text: string };
@@ -26,6 +27,7 @@ export type EffectHandler = (
   effect: Effect,
   snapshot: ProjectSnapshot,
   state: PlayState,
+  context: RuleRuntimeContext,
 ) => EffectExecution;
 
 export function unchangedEffect(state: PlayState): EffectExecution {
