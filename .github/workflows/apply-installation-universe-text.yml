@@ -24,7 +24,7 @@ jobs:
           cache: npm
 
       - name: Apply repository patch
-        run: node scripts/apply-installation-universe-text.mjs
+        run: node scripts/apply-installation-universe-text-v2.mjs
 
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
