@@ -9,6 +9,8 @@ export type EffectPresentationSurface = {
   appendInlineAsset(assetId: string, source?: AuthoredSourceIdentity): void;
   /** Open stable media identity; the rendering feature resolves current content. */
   showOverlayAsset(assetId: string, source?: AuthoredSourceIdentity): void;
+  /** Run a reusable authored radix presentation on the live player surface. */
+  showRadixSequence(sequenceId: string, source?: AuthoredSourceIdentity): void;
 };
 
 export type EffectPresentationContext = {
