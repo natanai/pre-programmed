@@ -136,7 +136,7 @@ describe("semantic reference foundation", () => {
     expect(storeAuthorSemanticReferences(view.text, context)).toBe(stored);
   });
 
-  it("lets one target slot resolve multiple feature-owned semantic kinds", () => {
+  it("keeps Character identities referenceable without making them global operation targets", () => {
     const kitchen = worldEntity("kitchen", "location", "Kitchen");
     const guide = worldEntity("guide", "character", "Guide");
     const base = project({
@@ -156,10 +156,11 @@ describe("semantic reference foundation", () => {
     ]);
     const state = createEmptyPlayState(snapshot);
 
+    expect(interpolateSemanticReferences(makeSemanticReferenceToken("world.character", guide.id, "name"), { snapshot, state }))
+      .toBe("Guide");
     expect(parseCommand("inspect kitchen", snapshot, state).invocation?.target)
       .toEqual({ kind: "world.entity", id: kitchen.id });
-    expect(parseCommand("inspect guide", snapshot, state).invocation?.target)
-      .toEqual({ kind: "world.entity", id: guide.id });
+    expect(parseCommand("inspect guide", snapshot, state).invocation).toBeNull();
   });
 
   it("resolves contextual player vocabulary such as here through the same current-location identity", () => {
@@ -187,7 +188,7 @@ describe("semantic reference foundation", () => {
     });
   });
 
-  it("reports cross-kind alias collisions instead of selecting an arbitrary target", () => {
+  it("does not let a descriptive Character collide with a targetable Location", () => {
     const place = worldEntity("alex-place", "location", "Alex");
     const person = worldEntity("alex-person", "character", "Alex");
     const base = project({ entities: [place, person] });
@@ -204,9 +205,9 @@ describe("semantic reference foundation", () => {
     ]);
     const result = parseCommand("inspect Alex", snapshot, createEmptyPlayState(snapshot));
 
-    expect(result.reason).toBe("ambiguous-reference");
-    expect(result.invocation).toBeNull();
-    expect(result.ambiguities[0]?.candidates).toHaveLength(2);
+    expect(result.reason).toBe("command-grammar");
+    expect(result.invocation?.target).toEqual({ kind: "world.entity", id: place.id });
+    expect(result.ambiguities).toHaveLength(0);
   });
 
   it("executes a project-wide response command with live semantic interpolation and canonical provenance", () => {
