@@ -5,8 +5,9 @@ import {
   featureTextCueAuthorAdapters,
 } from "../../../author/textCues/catalog";
 import { scanInlineTextCommands } from "../../../engine/presentation/inlineTextCommandCatalog";
-import type { ProjectSnapshot } from "../../../engine/project/model";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { TextPerformance } from "../model";
+import { interpolateText } from "../interpolation";
 import { compileTextNotation, validateTextNotation } from "../textNotation";
 import { TextRulesReference, type InlineTextRule } from "./TextRulesReference";
 import "./authoredTextEditor.css";
@@ -19,6 +20,7 @@ export type AuthoredTextValue = {
 export function AuthoredTextEditor({
   value,
   snapshot,
+  playState,
   label,
   rows = 6,
   autoFocus = false,
@@ -27,6 +29,7 @@ export function AuthoredTextEditor({
 }: {
   value: AuthoredTextValue;
   snapshot: ProjectSnapshot;
+  playState?: PlayState;
   label: string;
   rows?: number;
   autoFocus?: boolean;
@@ -36,9 +39,13 @@ export function AuthoredTextEditor({
   const textarea = useRef<HTMLTextAreaElement>(null);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const issues = useMemo(() => validateTextNotation(value.text), [value.text]);
+  const renderedText = useMemo(
+    () => playState ? interpolateText(value.text, { snapshot, state: playState }) : value.text,
+    [value.text, snapshot, playState],
+  );
   const compiled = useMemo(
-    () => compileTextNotation(value.text, value.performance),
-    [value.text, value.performance],
+    () => compileTextNotation(renderedText, value.performance),
+    [renderedText, value.performance],
   );
   const featureCommands = featureTextCueAuthorAdapters();
   const configuredCommands = scanInlineTextCommands(value.text)
@@ -112,6 +119,7 @@ export function AuthoredTextEditor({
     <label className="authored-text-field">{label}
       <ValueMentionField
         snapshot={snapshot}
+        playState={playState}
         multiline
         rows={rows}
         textareaRef={textarea}

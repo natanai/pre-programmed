@@ -8,6 +8,7 @@ import {
   normalizeInventoryProjectSlice,
 } from "../../features/inventory/projectNormalization";
 import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
+import { migrateSnapshotReferenceTokens } from "../references/migration";
 import type { ProjectMutation, ProjectSnapshot } from "./model";
 
 export type ProjectSettings = {
@@ -53,12 +54,13 @@ type SnapshotLike = Omit<
  * this composition root only assembles the normalized snapshot.
  */
 export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
-  return {
+  const normalized = {
     ...snapshot,
     ...normalizeStateProjectSlice(snapshot),
     ...normalizeInventoryProjectSlice(snapshot),
     settings: normalizeProjectSettings(snapshot.settings),
-  };
+  } as ProjectSnapshot;
+  return migrateSnapshotReferenceTokens(normalized);
 }
 
 /**

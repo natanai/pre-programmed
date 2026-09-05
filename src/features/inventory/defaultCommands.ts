@@ -9,10 +9,9 @@ export const INVENTORY_STARTER_COMMANDS: readonly CommandDefinition[] = [
   {
     id: "starter-inventory-open",
     label: "Inventory",
-    operation: "inventory.open",
     enabled: true,
     patterns: ["inventory", "inv"],
     slots: [],
-    targetSlot: "",
+    action: { type: "application", operation: "inventory.open" },
   },
 ];

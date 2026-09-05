@@ -1,5 +1,4 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
-import { STATE_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
 import {
   clearFlagEffectAdapter,
   decrementEffectAdapter,
@@ -46,7 +45,6 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
     const kind = route.data?.resourceKind;
     return kind ? `New ${kind.replaceAll("-", " ")}` : "State";
   },
-  commandReferences: STATE_COMMAND_REFERENCE_SOURCES,
   commandTargets: [
     {
       sourceKind: "state.variable",

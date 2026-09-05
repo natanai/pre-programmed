@@ -4,7 +4,12 @@ import {
   LEGACY_COMMAND_STARTER_REVISION,
   starterCommandsAfter,
 } from "./defaultCatalog";
-import type { CommandProjectSettings } from "./model";
+import type {
+  CommandAction,
+  CommandDefinition,
+  CommandProjectSettings,
+  CommandResponseAction,
+} from "./model";
 
 export type CommandsProjectSettingsSlice = {
   commands: CommandProjectSettings;
@@ -18,14 +23,63 @@ function stringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
+function responseAction(value: Record<string, unknown>): CommandResponseAction {
+  const performance = value.responsePerformance && typeof value.responsePerformance === "object"
+    ? value.responsePerformance as Record<string, unknown>
+    : {};
+  return {
+    type: "response",
+    responseText: typeof value.responseText === "string" ? value.responseText : "",
+    responsePerformance: {
+      charactersPerSecond: typeof performance.charactersPerSecond === "number" && Number.isFinite(performance.charactersPerSecond)
+        ? performance.charactersPerSecond
+        : 18,
+      cues: Array.isArray(performance.cues)
+        ? performance.cues as CommandResponseAction["responsePerformance"]["cues"]
+        : [],
+    },
+    speakerId: typeof value.speakerId === "string" ? value.speakerId : null,
+    effects: Array.isArray(value.effects) ? value.effects as CommandResponseAction["effects"] : [],
+  };
+}
+
+function normalizeAction(item: Record<string, unknown>): CommandAction | null {
+  if (item.action && typeof item.action === "object") {
+    const action = item.action as Record<string, unknown>;
+    if (action.type === "response") return responseAction(action);
+    if (action.type === "application" && typeof action.operation === "string") {
+      return { type: "application", operation: action.operation };
+    }
+    if (action.type === "target-operation" && typeof action.operation === "string") {
+      return {
+        type: "target-operation",
+        operation: action.operation,
+        targetSlot: typeof action.targetSlot === "string" ? action.targetSlot : "",
+      };
+    }
+  }
+
+  // One-way compatibility for the original command model. Once the project is
+  // saved again only the action union is written.
+  if (typeof item.operation !== "string") return null;
+  const targetSlot = typeof item.targetSlot === "string" ? item.targetSlot : "";
+  return targetSlot
+    ? { type: "target-operation", operation: item.operation, targetSlot }
+    : { type: "application", operation: item.operation };
+}
+
+function actionOperation(action: CommandAction) {
+  return action.type === "response" ? "" : action.operation;
+}
+
 /**
  * Normalize the Commands-owned settings slice while preserving authored empty
  * command configuration as intentional data rather than silently repairing it.
  *
  * Starter command releases are the one exception: a release newer than the
  * project's recorded starter revision is installed once, then the revision is
- * advanced. From that point the installed command is ordinary author data and
- * may be changed or deleted permanently.
+ * advanced. Legacy command payloads are converted one-way into the current
+ * action/slot contracts at this same read boundary.
  */
 export function normalizeCommandsProjectSettings(root: Record<string, unknown>): CommandsProjectSettingsSlice {
   const hasCommands = Boolean(root.commands && typeof root.commands === "object");
@@ -50,29 +104,35 @@ export function normalizeCommandsProjectSettings(root: Record<string, unknown>):
     })
     : [];
 
-  const commands = Array.isArray(commandsValue.commands)
+  const commands: CommandDefinition[] = Array.isArray(commandsValue.commands)
     ? commandsValue.commands.flatMap((candidate) => {
       if (!candidate || typeof candidate !== "object") return [];
       const item = candidate as Record<string, unknown>;
-      if (typeof item.id !== "string" || typeof item.operation !== "string") return [];
+      if (typeof item.id !== "string") return [];
+      const action = normalizeAction(item);
+      if (!action) return [];
       const slots = Array.isArray(item.slots)
         ? item.slots.flatMap((candidateSlot) => {
           if (!candidateSlot || typeof candidateSlot !== "object") return [];
           const slot = candidateSlot as Record<string, unknown>;
-          return typeof slot.name === "string" && typeof slot.sourceKind === "string"
-            ? [{ name: slot.name, sourceKind: slot.sourceKind }]
-            : [];
+          if (typeof slot.name !== "string") return [];
+          const sourceKinds = stringArray(slot.sourceKinds).filter((kind) => kind !== "text");
+          const legacyKind = typeof slot.sourceKind === "string" && slot.sourceKind !== "text"
+            ? slot.sourceKind
+            : "";
+          return [{ name: slot.name, sourceKinds: sourceKinds.length ? sourceKinds : legacyKind ? [legacyKind] : [] }];
         })
         : [];
       return [{
         id: item.id,
-        label: typeof item.label === "string" ? item.label : item.operation,
-        operation: item.operation,
+        label: typeof item.label === "string"
+          ? item.label
+          : action.type === "response" ? "Response" : action.operation,
         enabled: item.enabled !== false,
         patterns: stringArray(item.patterns),
         slots,
-        targetSlot: typeof item.targetSlot === "string" ? item.targetSlot : "",
-      }];
+        action,
+      } satisfies CommandDefinition];
     })
     : [];
 
@@ -86,9 +146,10 @@ export function normalizeCommandsProjectSettings(root: Record<string, unknown>):
     ? commandsValue.starterRevision
     : LEGACY_COMMAND_STARTER_REVISION;
   const existingIds = new Set(commands.map((command) => command.id));
-  const existingOperations = new Set(commands.map((command) => command.operation));
+  const existingOperations = new Set(commands.map((command) => actionOperation(command.action)).filter(Boolean));
   const newStarters = starterCommandsAfter(storedRevision)
-    .filter((command) => !existingIds.has(command.id) && !existingOperations.has(command.operation));
+    .filter((command) => !existingIds.has(command.id)
+      && (!actionOperation(command.action) || !existingOperations.has(actionOperation(command.action))));
 
   return {
     commands: {

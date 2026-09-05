@@ -16,7 +16,6 @@ import type { AuthorSearchContributor } from "../search/types";
 import type { SearchDocumentContribution } from "../search/types";
 import type { AuthorTaskCompletion, AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorToolContributor } from "../tools/types";
-import type { CommandReferenceSource } from "../../features/commands/referenceSource";
 import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
 import type { TextCueAuthorAdapter } from "../textCues/types";
 import type { AuthorCommandTargetAdapter } from "../commands/types";
@@ -99,9 +98,7 @@ export type AuthorFeatureManifest = {
   search?: AuthorSearchContributor;
   /** Resources this feature owns and can create/edit from reference fields. */
   resources?: readonly AuthorResourceProvider[];
-  /** Player-command target vocabularies owned by this feature. */
-  commandReferences?: readonly CommandReferenceSource[];
-  /** Feature-owned destinations for authoring behavior on command targets. */
+  /** Feature-owned destinations for authoring behavior on semantic command targets. */
   commandTargets?: readonly AuthorCommandTargetAdapter[];
   /** Operations this feature exposes on semantic target kinds. */
   operations?: readonly AuthorOperationDefinition[];

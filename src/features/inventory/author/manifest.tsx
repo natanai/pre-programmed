@@ -1,6 +1,5 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
-import { INVENTORY_COMMAND_REFERENCE_SOURCES } from "../commandReferences";
 import { INVENTORY_OPERATION_DEFINITIONS } from "../operationAdapter";
 import {
   giveItemEffectAdapter,
@@ -38,7 +37,6 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "body-slot") return route.data?.slotName || "Body slot";
     return null;
   },
-  commandReferences: INVENTORY_COMMAND_REFERENCE_SOURCES,
   commandTargets: [{
     sourceKind: "inventory.item",
     label: "item",

@@ -3,24 +3,23 @@ import type { AuthorOperationDefinition } from "../../features/operations/target
 import { getAuthorOperationDefinitions } from "../features/registry";
 
 /**
- * Compose module-provided operation capabilities with project-authored,
- * targeted command operation IDs. Targetless application commands and
- * commands aimed at another semantic target never leak into this catalog.
- * The hook editor therefore needs neither a central verb list nor UI-level
- * exclusions for particular commands.
+ * Compose module-provided operation capabilities with project-authored targeted
+ * Player Command operation IDs. Commands that respond with text or open a
+ * player application surface never leak into target operation authoring.
  */
 export function authorOperationDefinitions(
   snapshot: ProjectSnapshot,
   targetKind: string,
 ): readonly AuthorOperationDefinition[] {
   const authoredCommandDefinitions = snapshot.settings.commands.commands.flatMap((command) => {
-    if (!command.targetSlot) return [];
-    const targetSlot = command.slots.find((slot) => slot.name === command.targetSlot);
-    if (!targetSlot || targetSlot.sourceKind !== targetKind) return [];
+    const action = command.action;
+    if (action.type !== "target-operation") return [];
+    const targetSlot = command.slots.find((slot) => slot.name === action.targetSlot);
+    if (!targetSlot || !targetSlot.sourceKinds.includes(targetKind)) return [];
     return [{
-      value: command.operation,
-      label: command.label || command.operation,
-      targetKinds: [targetSlot.sourceKind],
+      value: action.operation,
+      label: command.label || action.operation,
+      targetKinds: [...targetSlot.sourceKinds],
     } satisfies AuthorOperationDefinition];
   });
   const definitions: AuthorOperationDefinition[] = [
