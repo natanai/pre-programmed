@@ -1,0 +1,81 @@
+name: Sync installation text App with latest main
+
+on:
+  push:
+    branches:
+      - feature/installation-universe-text
+
+permissions:
+  contents: write
+
+jobs:
+  sync-and-verify:
+    if: ${{ !contains(github.event.head_commit.message, '[sync-installation-app]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/installation-universe-text
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Rebase App content on current main
+        shell: bash
+        run: |
+          git fetch origin main
+          git show origin/main:src/App.tsx > src/App.tsx
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/App.tsx')
+          s = p.read_text()
+          def one(old, new):
+              global s
+              if s.count(old) != 1:
+                  raise SystemExit(f'Expected exactly one App pattern, found {s.count(old)}: {old[:120]}')
+              s = s.replace(old, new)
+          one(
+              'import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";',
+              'import { loadInstallationPublicSettings } from "./platform/installation/publicSettings";\nimport { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";',
+          )
+          one(
+              '  const [activeRadix, setActiveRadix] = useState<ActiveRadixPresentation | null>(null);',
+              '  const [activeRadix, setActiveRadix] = useState<ActiveRadixPresentation | null>(null);\n  const [installationText, setInstallationText] = useState({ ready: false, initializeUniverseText: "initialize universe" });',
+          )
+          one(
+              '  useTerminalViewport();\n\n  const currentNode = snapshot && playState',
+              '  useTerminalViewport();\n\n  useEffect(() => {\n    let cancelled = false;\n    void loadInstallationPublicSettings().then((settings) => {\n      if (!cancelled) setInstallationText({ ready: true, initializeUniverseText: settings.initializeUniverseText });\n    });\n    return () => { cancelled = true; };\n  }, []);\n\n  const currentNode = snapshot && playState',
+          )
+          one(
+              '    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || startupRunRef.current) return;',
+              '    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || !installationText.ready || startupRunRef.current) return;',
+          )
+          one(
+              '  }, [snapshot, playState, playSessionReady, pendingPlaySession]);',
+              '  }, [snapshot, playState, playSessionReady, pendingPlaySession, installationText.ready]);',
+          )
+          one(
+              '        sequence={activeRadixSequence}\n        synth={activeRadixSynth}\n        runKey={activeRadix.runKey}',
+              '        sequence={activeRadixSequence}\n        synth={activeRadixSynth}\n        captionOverride={activeRadix.startup ? installationText.initializeUniverseText : undefined}\n        runKey={activeRadix.runKey}',
+          )
+          p.write_text(s)
+          PY
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify integrated engine
+        run: npm run verify
+      - name: Verify local runtime
+        run: npm run verify:local
+      - name: Commit integrated App
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/App.tsx
+          if git diff --cached --quiet; then
+            echo "App already matches current main plus installation text integration."
+            exit 0
+          fi
+          git commit -m "Sync installation text integration with latest main [sync-installation-app]"
+          git push origin HEAD:feature/installation-universe-text
