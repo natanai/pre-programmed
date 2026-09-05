@@ -1,0 +1,213 @@
+name: Release candidate audit
+
+on:
+  push:
+    branches:
+      - stability/release-candidate-pass
+
+permissions:
+  contents: read
+
+jobs:
+  engine-integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked engine dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Verify engine contracts
+        run: npm run verify
+
+      - name: Verify persistent no-cloud runtime
+        run: npm run verify:local
+
+      - name: Verify runtime dependency tree
+        run: |
+          npm ls --omit=dev --all
+          npm audit --omit=dev --audit-level=high
+
+      - name: Reject retired startup-caption ownership
+        shell: bash
+        run: |
+          if git grep -n -E 'INITIALIZE_UNIVERSE_TEXT|engine-text\.txt|loadInstallationPublicSettings|installationText' -- \
+            ':!.github/workflows/release-candidate-audit.yml'; then
+            echo 'Retired installation-owned startup-caption path is still referenced.' >&2
+            exit 1
+          fi
+
+      - name: Reject hard-coded upstream runtime identity
+        shell: bash
+        run: |
+          if git grep -n -E 'natanai|https?://[^ ]*workers\.dev' -- src worker desktop; then
+            echo 'Reusable runtime contains an upstream-owner or workers.dev identity.' >&2
+            exit 1
+          fi
+
+      - name: Report prototype markers and override surfaces
+        shell: bash
+        run: |
+          echo '--- TODO / FIXME / HACK / XXX ---'
+          git grep -n -E '\b(TODO|FIXME|HACK|XXX)\b' -- src worker desktop scripts || true
+          echo '--- Override-like feature/runtime surfaces ---'
+          git grep -n -Ei '\boverride\b|[A-Za-z0-9_]+Override' -- src/features src/engine src/App.tsx || true
+          echo '--- Legacy/deprecated mentions in executable source ---'
+          git grep -n -Ei '\blegacy\b|\bdeprecated\b' -- src worker desktop scripts || true
+
+      - name: Verify tests did not mutate tracked source
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            git status --short
+            git diff --check
+            echo 'Verification mutated the checkout.' >&2
+            exit 1
+          fi
+
+  portable-integrity:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install locked engine dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Remove installation Media from portable workspace
+        shell: pwsh
+        run: |
+          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
+          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+
+      - name: Build clean same-origin client
+        run: npm run build
+        env:
+          VITE_API_ORIGIN: ""
+
+      - name: Install desktop host dependencies
+        working-directory: desktop
+        run: npm install --no-audit --no-fund
+
+      - name: Audit desktop runtime dependencies
+        working-directory: desktop
+        shell: pwsh
+        run: |
+          npm ls --omit=dev --all
+          npm audit --omit=dev --audit-level=high
+
+      - name: Bundle Worker through Wrangler
+        shell: pwsh
+        run: |
+          $bundle = "desktop/build/wrangler"
+          New-Item -ItemType Directory -Path $bundle -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outdir $bundle
+          $javascript = @(Get-ChildItem $bundle -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($javascript.Count -ne 1) { throw "Expected exactly one bundled Worker module; found $($javascript.Count)." }
+          Copy-Item $javascript[0].FullName "desktop/build/worker.mjs" -Force
+
+      - name: Reject installation-specific client/runtime references
+        shell: pwsh
+        run: |
+          $patterns = @('workers\.dev','CLOUDFLARE_ACCOUNT_ID','CLOUDFLARE_API_TOKEN','PRE_PROGRAMMED_API_ORIGIN','INITIALIZE_UNIVERSE_TEXT','engine-text\.txt','natanai')
+          $matches = Get-ChildItem dist, desktop/build -Recurse -File | Select-String -Pattern $patterns -ErrorAction SilentlyContinue
+          if ($matches) {
+            $matches | ForEach-Object { Write-Error "$($_.Path):$($_.LineNumber): $($_.Line)" }
+            throw "Portable runtime contains installation-specific or retired references."
+          }
+
+      - name: Build pre-extracted Windows runtime
+        working-directory: desktop
+        shell: pwsh
+        run: npx electron-builder --config electron-builder.yml --win --x64 --dir "--config.extraMetadata.version=0.0.0-rc-audit"
+
+      - name: Stage friend-facing folder
+        id: stage
+        shell: pwsh
+        run: |
+          $stageRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-rc-audit"
+          $appRoot = Join-Path $stageRoot "Pre-Programmed"
+          if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
+          New-Item -ItemType Directory -Path $appRoot -Force | Out-Null
+          Copy-Item "desktop/release/win-unpacked/*" $appRoot -Recurse -Force
+          Copy-Item "desktop/portable-readme.txt" (Join-Path $appRoot "README.txt")
+          Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
+          foreach ($folder in @("assets", "data", "exports")) { New-Item -ItemType Directory -Path (Join-Path $appRoot $folder) -Force | Out-Null }
+          "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
+          "app_root=$appRoot" >> $env:GITHUB_OUTPUT
+
+      - name: Smoke-test extracted runtime in place
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          $exe = Join-Path $env:APP_ROOT "Pre-Programmed.exe"
+          $installation = Join-Path $env:APP_ROOT "installation.txt"
+          $config = Get-Content $installation -Raw
+          $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=release-candidate-audit-key'
+          Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
+          $stdout = Join-Path $env:APP_ROOT "self-test-stdout.txt"
+          $stderr = Join-Path $env:APP_ROOT "self-test-stderr.txt"
+          $process = Start-Process -FilePath $exe -ArgumentList "--self-test" -WorkingDirectory $env:APP_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($process.ExitCode -ne 0) { throw "Extracted runtime self-test failed with exit code $($process.ExitCode)." }
+          Copy-Item "desktop/installation-template.txt" $installation -Force
+          Remove-Item $stdout, $stderr -Force -ErrorAction SilentlyContinue
+          foreach ($folder in @("data", "exports")) {
+            $target = Join-Path $env:APP_ROOT $folder
+            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
+            New-Item -ItemType Directory -Path $target -Force | Out-Null
+          }
+
+      - name: Verify friend-facing folder integrity
+        shell: pwsh
+        env:
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          foreach ($required in @("Pre-Programmed.exe", "README.txt", "installation.txt", "assets", "data", "exports", "resources")) {
+            if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) { throw "Missing portable entry: $required" }
+          }
+          foreach ($forbidden in @("docs", "src", "tests", "worker", "scripts", ".github", "AGENTS.md", "FOUNDATION.md", "DOS-VISUAL-TARGET.md", "CODEX-HANDOFF.md")) {
+            if (Test-Path (Join-Path $env:APP_ROOT $forbidden)) { throw "Developer material leaked into portable folder: $forbidden" }
+          }
+          $installation = Get-Content (Join-Path $env:APP_ROOT "installation.txt") -Raw
+          if ($installation -notmatch '(?m)^AUTHOR_KEY=local\s*$') { throw "Friend-facing Author key default is missing." }
+          if ($installation -match 'INITIALIZE_UNIVERSE_TEXT|engine-text') { throw "Retired startup-caption configuration leaked into installation.txt." }
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "assets") -Force).Count -ne 0) { throw "Portable assets folder must ship empty." }
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "data") -Force).Count -ne 0) { throw "Portable data folder must ship empty." }
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "exports") -Force).Count -ne 0) { throw "Portable exports folder must ship empty." }
+
+      - name: Assemble and inspect single distribution ZIP
+        shell: pwsh
+        env:
+          STAGE_ROOT: ${{ steps.stage.outputs.stage_root }}
+          APP_ROOT: ${{ steps.stage.outputs.app_root }}
+        run: |
+          $zip = Join-Path $env:RUNNER_TEMP "Pre-Programmed-release-candidate-audit.zip"
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
+          try {
+            foreach ($emptyFolder in @("assets", "data", "exports")) { [void]$archive.CreateEntry("Pre-Programmed/$emptyFolder/") }
+            Get-ChildItem $env:APP_ROOT -Recurse -File | ForEach-Object {
+              $relative = [System.IO.Path]::GetRelativePath($env:STAGE_ROOT, $_.FullName).Replace('\', '/')
+              [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile($archive, $_.FullName, $relative, [System.IO.Compression.CompressionLevel]::Optimal) | Out-Null
+            }
+          } finally { $archive.Dispose() }
+          $reader = [System.IO.Compression.ZipFile]::OpenRead($zip)
+          try { $entries = @($reader.Entries | ForEach-Object FullName) } finally { $reader.Dispose() }
+          foreach ($required in @("Pre-Programmed/Pre-Programmed.exe","Pre-Programmed/README.txt","Pre-Programmed/installation.txt","Pre-Programmed/assets/","Pre-Programmed/data/","Pre-Programmed/exports/")) {
+            if ($entries -notcontains $required) { throw "ZIP missing required entry: $required" }
+          }
+          if ($entries | Where-Object { $_ -match '\.zip$' }) { throw "Nested ZIP detected inside friend-facing distribution." }
+          if ($entries | Where-Object { $_ -match '(^|/)(src|tests|worker|scripts|\.github)/' }) { throw "Repository source leaked into friend-facing ZIP." }
+          Write-Host "Portable ZIP entries: $($entries.Count)"
