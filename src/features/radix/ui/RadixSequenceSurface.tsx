@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { AuthoredSourceIdentity } from "../../../engine/presentation/authoredSource";
 import type { SynthSound } from "../../media/model";
 import {
@@ -44,14 +44,23 @@ export function RadixSequenceSurface({
   onCompleteRef.current = onComplete;
   const [stats, setStats] = useState({ accesses: 0, digit: 0, complete: false });
 
+  // Project snapshots are routinely re-created after synchronization. Keep one
+  // presentation run tied to authored content rather than object identity so a
+  // random-seeded sequence cannot silently restart when an equivalent snapshot
+  // arrives. Real authored sequence/synth changes still restart the live run.
+  const sequenceSignature = JSON.stringify(sequence);
+  const synthSignature = JSON.stringify(synth ?? null);
+  const stableSequence = useMemo(() => sequence, [sequenceSignature]);
+  const stableSynth = useMemo(() => synth, [synthSignature]);
+
   useEffect(() => {
     let cancelled = false;
     let frame = 0;
     let holdTimer = 0;
     let resizeObserver: ResizeObserver | null = null;
-    const seed = resolveRadixSeed(sequence, runtimeSeed);
-    const values = createSeededArray(sequence.arraySize, seed);
-    const { events } = radixSortEvents(values, sequence.radix);
+    const seed = resolveRadixSeed(stableSequence, runtimeSeed);
+    const values = createSeededArray(stableSequence.arraySize, seed);
+    const { events } = radixSortEvents(values, stableSequence.radix);
     const working = [...values];
     let activeIndex = -1;
     let markers: number[] = [];
@@ -64,8 +73,8 @@ export function RadixSequenceSurface({
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const ensureTone = async () => {
-      if (!sequence.soundEnabled || toneRef.current || cancelled) return;
-      toneRef.current = await createProceduralToneSession(synth, sequence.volume);
+      if (!stableSequence.soundEnabled || toneRef.current || cancelled) return;
+      toneRef.current = await createProceduralToneSession(stableSynth, stableSequence.volume);
     };
     void ensureTone();
 
@@ -81,7 +90,7 @@ export function RadixSequenceSurface({
       if (canvas.height !== height) canvas.height = height;
       const context = canvas.getContext("2d");
       if (!context) return;
-      context.fillStyle = sequence.backgroundColor;
+      context.fillStyle = stableSequence.backgroundColor;
       context.fillRect(0, 0, width, height);
       const barWidth = width / Math.max(1, working.length);
       const markerSet = new Set(markers);
@@ -89,10 +98,10 @@ export function RadixSequenceSurface({
         const value = working[index];
         const barHeight = Math.max(1, Math.round((value / working.length) * height));
         context.fillStyle = index === activeIndex
-          ? sequence.accessColor
+          ? stableSequence.accessColor
           : markerSet.has(index)
-            ? sequence.markerColor
-            : sequence.barColor;
+            ? stableSequence.markerColor
+            : stableSequence.barColor;
         const left = Math.floor(index * barWidth);
         const right = Math.max(left + 1, Math.ceil((index + 1) * barWidth));
         context.fillRect(left, height - barHeight, right - left, barHeight);
@@ -103,23 +112,23 @@ export function RadixSequenceSurface({
       accesses = event.accesses;
       if (event.type === "access") {
         activeIndex = event.index;
-        if (!reducedMotion && sequence.soundEnabled && toneCount++ % sequence.toneStride === 0) {
+        if (!reducedMotion && stableSequence.soundEnabled && toneCount++ % stableSequence.toneStride === 0) {
           toneRef.current?.tone(frequencyForValue(
             event.value,
             working.length,
-            sequence.minFrequency,
-            sequence.maxFrequency,
+            stableSequence.minFrequency,
+            stableSequence.maxFrequency,
           ));
         }
       } else if (event.type === "write") {
         working[event.index] = event.value;
         activeIndex = event.index;
-        if (!reducedMotion && sequence.soundEnabled && toneCount++ % sequence.toneStride === 0) {
+        if (!reducedMotion && stableSequence.soundEnabled && toneCount++ % stableSequence.toneStride === 0) {
           toneRef.current?.tone(frequencyForValue(
             event.value,
             working.length,
-            sequence.minFrequency,
-            sequence.maxFrequency,
+            stableSequence.minFrequency,
+            stableSequence.maxFrequency,
           ));
         }
       } else if (event.type === "markers") {
@@ -141,7 +150,7 @@ export function RadixSequenceSurface({
       draw();
       holdTimer = window.setTimeout(() => {
         if (!cancelled) onCompleteRef.current();
-      }, sequence.finishHoldMs);
+      }, stableSequence.finishHoldMs);
     };
 
     const tick = (time: number) => {
@@ -149,7 +158,7 @@ export function RadixSequenceSurface({
       const elapsed = Math.max(0, time - lastTime);
       lastTime = time;
       budget += elapsed;
-      const delay = Math.max(0, sequence.delayMs);
+      const delay = Math.max(0, stableSequence.delayMs);
       let changed = false;
       let processed = 0;
       const maxPerFrame = reducedMotion ? 4096 : 512;
@@ -195,7 +204,7 @@ export function RadixSequenceSurface({
       toneRef.current?.stop();
       toneRef.current = null;
     };
-  }, [runKey, runtimeSeed, sequence, synth]);
+  }, [runKey, runtimeSeed, stableSequence, stableSynth]);
 
   return <section
     className={`radix-sequence-surface radix-width-${sequence.widthMode}`}
