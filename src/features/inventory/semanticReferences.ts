@@ -6,6 +6,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     label: "Items",
     description: "Authored item definitions; command targets resolve to a carried instance when present.",
     authorResourceKind: "item",
+    defaultProjection: "name",
     targetable: true,
     candidates: ({ snapshot, state }) => snapshot.items.map((definition) => {
       const entries = state.inventory.filter((entry) => entry.itemId === definition.id);
@@ -37,6 +38,7 @@ export const INVENTORY_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     label: "Body types",
     description: "Authored body/equipment layouts and the body type active in the current run.",
     authorResourceKind: "body-type",
+    defaultProjection: "name",
     candidates: ({ snapshot, state }) => {
       const active = snapshot.bodyBackgrounds.find((bodyType) => bodyType.id === state.bodyBackgroundId);
       return [
