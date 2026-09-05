@@ -1,10 +1,45 @@
-import type { SynthSound } from "../model";
+import type { SynthSound, SynthVoice } from "../model";
 
 let sharedContext: AudioContext | null = null;
 
 function audioContext() {
   if (!sharedContext || sharedContext.state === "closed") sharedContext = new AudioContext();
   return sharedContext;
+}
+
+export function scheduleSynthVoice(
+  context: AudioContext,
+  destination: AudioNode,
+  voice: SynthVoice,
+  start: number,
+  duration: number,
+  volume: number,
+  frequency?: number,
+) {
+  const gain = context.createGain();
+  gain.gain.setValueAtTime(0, start);
+  gain.gain.linearRampToValueAtTime(volume, start + voice.attack);
+  gain.gain.setValueAtTime(volume, Math.max(start + voice.attack, start + duration - voice.release));
+  gain.gain.linearRampToValueAtTime(0, start + duration);
+
+  if (voice.waveform === "noise") {
+    const buffer = context.createBuffer(1, Math.ceil(context.sampleRate * duration), context.sampleRate);
+    const channel = buffer.getChannelData(0);
+    for (let index = 0; index < channel.length; index += 1) channel[index] = Math.random() * 2 - 1;
+    const source = context.createBufferSource();
+    source.buffer = buffer;
+    source.connect(gain).connect(destination);
+    source.start(start);
+    return;
+  }
+
+  if (!frequency || !Number.isFinite(frequency) || frequency <= 0) return;
+  const oscillator = context.createOscillator();
+  oscillator.type = voice.waveform;
+  oscillator.frequency.value = frequency;
+  oscillator.connect(gain).connect(destination);
+  oscillator.start(start);
+  oscillator.stop(start + duration + 0.01);
 }
 
 export async function unlockProceduralAudio() {
@@ -21,7 +56,7 @@ export type ProceduralToneSession = {
 
 /**
  * Procedural consumers share Media's synth vocabulary instead of owning another
- * oscillator implementation. The first non-noise synth voice acts as the patch;
+ * sound system. The first pitched synth voice acts as the procedural patch;
  * sequence notes remain the responsibility of Tiny Synth playback.
  */
 export async function createProceduralToneSession(
