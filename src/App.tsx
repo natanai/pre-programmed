@@ -77,6 +77,7 @@ import { executeInteraction } from "./features/narrative/runtime";
 import { compileTextNotation } from "./features/narrative/textNotation";
 import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
 import { RadixSequenceSurface } from "./features/radix/ui/RadixSequenceSurface";
+import { loadInstallationPublicSettings } from "./platform/installation/publicSettings";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -174,6 +175,7 @@ export default function App() {
   const [eventArtAssetId, setEventArtAssetId] = useState("");
   const [eventArtSource, setEventArtSource] = useState<AuthoredSourceIdentity | undefined>();
   const [activeRadix, setActiveRadix] = useState<ActiveRadixPresentation | null>(null);
+  const [installationText, setInstallationText] = useState({ ready: false, initializeUniverseText: "initialize universe" });
   const terminalComposerRef = useRef<TerminalCommandComposerHandle>(null);
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
@@ -185,6 +187,14 @@ export default function App() {
   const startupActiveRef = useRef(false);
   const typewriter = useTypewriter(activeText, activePerformance, textSpeedMultiplier);
   useTerminalViewport();
+
+  useEffect(() => {
+    let cancelled = false;
+    void loadInstallationPublicSettings().then((settings) => {
+      if (!cancelled) setInstallationText({ ready: true, initializeUniverseText: settings.initializeUniverseText });
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const currentNode = snapshot && playState
     ? snapshot.nodes.find((node) => node.id === playState.currentNodeId) ?? null
@@ -322,7 +332,7 @@ export default function App() {
   }, [typewriter.complete, nodeDialoguePending, snapshot, playState, activeNodePresentation, activeText, activeSpeakerId, activeSource]);
 
   useEffect(() => {
-    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || startupRunRef.current) return;
+    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || !installationText.ready || startupRunRef.current) return;
     startupRunRef.current = true;
     const startup = snapshot.settings.radix.startup;
     const sequence = startup.enabled
@@ -341,7 +351,7 @@ export default function App() {
       runKey: crypto.randomUUID(),
       startup: true,
     });
-  }, [snapshot, playState, playSessionReady, pendingPlaySession]);
+  }, [snapshot, playState, playSessionReady, pendingPlaySession, installationText.ready]);
 
   useEffect(() => {
     if (!snapshot || !playState || !activeRadix) return;
@@ -985,6 +995,7 @@ export default function App() {
       {activeRadix && activeRadixSequence ? <RadixSequenceSurface
         sequence={activeRadixSequence}
         synth={activeRadixSynth}
+        captionOverride={activeRadix.startup ? installationText.initializeUniverseText : undefined}
         runKey={activeRadix.runKey}
         source={activeRadix.source}
         authorMode={authorExperience}

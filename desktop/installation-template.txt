@@ -1,5 +1,8 @@
 # Pre-Programmed local installation settings
-# Change the value after AUTHOR_KEY= to choose the password used for Author mode.
+# Change the values below before starting the portable engine.
+# AUTHOR_KEY is the password used for Author mode in this extracted folder.
+# INITIALIZE_UNIVERSE_TEXT is filled from repository public/engine-text.txt when the ZIP is built; after extraction edit it here directly.
 # This file belongs to this local installation. It is not part of .ppgame project exports.
-# If you later host the engine with GitHub/Cloudflare, you may reuse this value for the ADMIN_KEY secret or choose a new one.
+# If you later host the engine with GitHub/Cloudflare, you may reuse AUTHOR_KEY for the ADMIN_KEY secret or choose a new one.
 AUTHOR_KEY=local
+INITIALIZE_UNIVERSE_TEXT=

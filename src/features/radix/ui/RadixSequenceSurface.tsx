@@ -18,6 +18,7 @@ import "./radixSequence.css";
 export type RadixSequenceSurfaceProps = {
   sequence: RadixSequenceDefinition;
   synth?: SynthSound;
+  captionOverride?: string;
   runtimeSeed?: number;
   runKey: string;
   source?: AuthoredSourceIdentity;
@@ -30,6 +31,7 @@ export type RadixSequenceSurfaceProps = {
 export function RadixSequenceSurface({
   sequence,
   synth,
+  captionOverride,
   runtimeSeed,
   runKey,
   source,
@@ -44,6 +46,7 @@ export function RadixSequenceSurface({
   onCompleteRef.current = onComplete;
   const [stats, setStats] = useState({ accesses: 0, digit: 0, complete: false });
   const [awaitingAudioGesture, setAwaitingAudioGesture] = useState(false);
+  const caption = captionOverride ?? sequence.caption;
 
   // Synchronization can recreate equivalent project objects. Keep an active run
   // tied to authored content, not object identity, so random seeds stay stable.
@@ -223,7 +226,7 @@ export function RadixSequenceSurface({
         {sequence.showStats ? <span>{stats.accesses} ARRAY ACCESSES · PASS {stats.digit}{stats.complete ? " · COMPLETE" : ""}</span> : null}
       </div> : null}
     </div>
-    {sequence.caption ? <div className="radix-caption">{sequence.caption}</div> : null}
+    {caption ? <div className="radix-caption">{caption}</div> : null}
     {awaitingAudioGesture ? <div className="radix-audio-gate" role="status">[TAP / PRESS ANY KEY TO START WITH SOUND]</div> : null}
     {authorMode && (onEditSequence || onEditSource) ? <div className="radix-author-actions">
       {onEditSequence ? <button type="button" onClick={(event) => { event.stopPropagation(); onEditSequence(); }}>[EDIT SEQUENCE]</button> : null}
