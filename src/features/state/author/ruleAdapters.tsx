@@ -3,6 +3,7 @@ import { isRuntimeBinding, PLAYER_INPUT_BINDING, runtimeBinding } from "../../..
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
 import { ComparisonSelect } from "../../../author/rules/controls";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import type { FlagScope } from "../ruleTypes";
 
 function parseValue(value: string, sample: Value): Value {
   if (typeof sample === "number") return Number(value);
@@ -14,15 +15,61 @@ function variableLabel(snapshot: Parameters<NonNullable<EffectAuthorAdapter["sum
   return snapshot.variables.find((item) => item.key === key)?.label || key || "choose value";
 }
 
+function flagScope(scope: FlagScope | undefined): FlagScope {
+  return scope === "node" ? "node" : "global";
+}
+
+function scopedFlagLabel(
+  snapshot: Parameters<NonNullable<EffectAuthorAdapter["summarize"]>>[1],
+  key: string,
+  scope: FlagScope | undefined,
+) {
+  return flagScope(scope) === "node" ? `local ${key || "flag"}` : variableLabel(snapshot, key);
+}
+
+function flagScopeControl(
+  scope: FlagScope | undefined,
+  onChange: (scope: FlagScope) => void,
+) {
+  return <label>SCOPE
+    <select value={flagScope(scope)} onChange={(event) => onChange(event.target.value as FlagScope)}>
+      <option value="global">project / global</option>
+      <option value="node">current node only</option>
+    </select>
+  </label>;
+}
+
+function localFlagKeyField(key: string, onChange: (key: string) => void) {
+  return <>
+    <label>LOCAL FLAG
+      <input
+        value={key}
+        placeholder="lookedaround"
+        autoCapitalize="none"
+        autoCorrect="off"
+        spellCheck={false}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </label>
+    <small>Private to this Node in the current run. The same name can be reused independently in other Nodes.</small>
+  </>;
+}
+
 export const flagConditionAdapter: ConditionAuthorAdapter = {
   type: "flag",
   label: "flag",
-  create: () => ({ type: "flag", key: "", value: true }),
-  references: (condition) => condition.type === "flag" && condition.key ? [{ resourceKind: "flag", resourceId: condition.key, detail: "flag condition" }] : [],
+  create: () => ({ type: "flag", key: "", value: true, scope: "global" }),
+  references: (condition) => condition.type === "flag" && condition.key && flagScope(condition.scope) === "global"
+    ? [{ resourceKind: "flag", resourceId: condition.key, detail: "flag condition" }]
+    : [],
   render: ({ condition, onChange }) => {
     if (condition.type !== "flag") return null;
+    const scope = flagScope(condition.scope);
     return <>
-      <ReferenceField kind="flag" value={condition.key} onChange={(key) => onChange({ ...condition, key })} />
+      {flagScopeControl(scope, (nextScope) => onChange({ ...condition, scope: nextScope, key: "" }))}
+      {scope === "node"
+        ? localFlagKeyField(condition.key, (key) => onChange({ ...condition, key }))
+        : <ReferenceField kind="flag" value={condition.key} onChange={(key) => onChange({ ...condition, key })} />}
       <select value={String(condition.value)} onChange={(event) => onChange({ ...condition, value: event.target.value === "true" })}>
         <option value="true">is true</option><option value="false">is false</option>
       </select>
@@ -59,26 +106,48 @@ export const setFlagEffectAdapter: EffectAuthorAdapter = {
   type: "set_flag",
   label: "set flag",
   category: "state",
-  description: "Turn an authored boolean flag on.",
-  create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "" }),
-  references: (effect) => effect.type === "set_flag" && effect.key ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }] : [],
-  summarize: (effect, snapshot) => effect.type === "set_flag" ? `Set ${variableLabel(snapshot, effect.key)} true` : "Set flag",
-  render: ({ effect, onChange }) => effect.type === "set_flag"
-    ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
-    : null,
+  description: "Turn a project or Node-local boolean flag on.",
+  create: () => ({ id: crypto.randomUUID(), type: "set_flag", key: "", scope: "global" }),
+  references: (effect) => effect.type === "set_flag" && effect.key && flagScope(effect.scope) === "global"
+    ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }]
+    : [],
+  summarize: (effect, snapshot) => effect.type === "set_flag"
+    ? `Set ${scopedFlagLabel(snapshot, effect.key, effect.scope)} true`
+    : "Set flag",
+  render: ({ effect, onChange }) => {
+    if (effect.type !== "set_flag") return null;
+    const scope = flagScope(effect.scope);
+    return <>
+      {flagScopeControl(scope, (nextScope) => onChange({ ...effect, scope: nextScope, key: "" }))}
+      {scope === "node"
+        ? localFlagKeyField(effect.key, (key) => onChange({ ...effect, key }))
+        : <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />}
+    </>;
+  },
 };
 
 export const clearFlagEffectAdapter: EffectAuthorAdapter = {
   type: "clear_flag",
   label: "clear flag",
   category: "state",
-  description: "Turn an authored boolean flag off.",
-  create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "" }),
-  references: (effect) => effect.type === "clear_flag" && effect.key ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }] : [],
-  summarize: (effect, snapshot) => effect.type === "clear_flag" ? `Set ${variableLabel(snapshot, effect.key)} false` : "Clear flag",
-  render: ({ effect, onChange }) => effect.type === "clear_flag"
-    ? <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />
-    : null,
+  description: "Turn a project or Node-local boolean flag off.",
+  create: () => ({ id: crypto.randomUUID(), type: "clear_flag", key: "", scope: "global" }),
+  references: (effect) => effect.type === "clear_flag" && effect.key && flagScope(effect.scope) === "global"
+    ? [{ resourceKind: "flag", resourceId: effect.key, detail: "flag effect" }]
+    : [],
+  summarize: (effect, snapshot) => effect.type === "clear_flag"
+    ? `Set ${scopedFlagLabel(snapshot, effect.key, effect.scope)} false`
+    : "Clear flag",
+  render: ({ effect, onChange }) => {
+    if (effect.type !== "clear_flag") return null;
+    const scope = flagScope(effect.scope);
+    return <>
+      {flagScopeControl(scope, (nextScope) => onChange({ ...effect, scope: nextScope, key: "" }))}
+      {scope === "node"
+        ? localFlagKeyField(effect.key, (key) => onChange({ ...effect, key }))
+        : <ReferenceField kind="flag" value={effect.key} onChange={(key) => onChange({ ...effect, key })} />}
+    </>;
+  },
 };
 
 export const setValueEffectAdapter: EffectAuthorAdapter = {

@@ -9,8 +9,21 @@ import type { Value } from "./primitives";
  */
 export type RuntimeBindings = Readonly<Record<string, Value>>;
 
+/**
+ * Lexical runtime scope supplied by the feature that owns the authored rule.
+ *
+ * Node scope is intentionally an execution contract rather than part of a
+ * State flag's key, so authors can reuse a small local name such as
+ * `lookedaround` in many Nodes without manufacturing global namespaces.
+ */
+export type RuleScope = {
+  kind: "node";
+  id: string;
+};
+
 export type RuleRuntimeContext = {
   bindings?: RuntimeBindings;
+  scope?: RuleScope;
 };
 
 /**

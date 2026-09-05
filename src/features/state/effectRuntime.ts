@@ -27,13 +27,40 @@ function coerceBoundValue(value: Value, definition: VariableDefinition | undefin
   }
 }
 
-const setFlag: EffectHandler = (effect, _snapshot, state) => {
+function nodeScopeId(state: Parameters<EffectHandler>[2], context: Parameters<EffectHandler>[3]) {
+  return context.scope?.kind === "node" ? context.scope.id : state.currentNodeId;
+}
+
+function setNodeScopedFlag(state: Parameters<EffectHandler>[2], nodeId: string, key: string, value: boolean) {
+  if (!nodeId || !key) return state;
+  const nodeValues = state.scopedValues?.node ?? {};
+  return {
+    ...state,
+    scopedValues: {
+      node: {
+        ...nodeValues,
+        [nodeId]: {
+          ...(nodeValues[nodeId] ?? {}),
+          [key]: value,
+        },
+      },
+    },
+  };
+}
+
+const setFlag: EffectHandler = (effect, _snapshot, state, context) => {
   if (effect.type !== "set_flag") return unchangedEffect(state);
+  if (effect.scope === "node") {
+    return { state: setNodeScopedFlag(state, nodeScopeId(state, context), effect.key, true), events: [] };
+  }
   return { state: { ...state, values: { ...state.values, [effect.key]: true } }, events: [] };
 };
 
-const clearFlag: EffectHandler = (effect, _snapshot, state) => {
+const clearFlag: EffectHandler = (effect, _snapshot, state, context) => {
   if (effect.type !== "clear_flag") return unchangedEffect(state);
+  if (effect.scope === "node") {
+    return { state: setNodeScopedFlag(state, nodeScopeId(state, context), effect.key, false), events: [] };
+  }
   return { state: { ...state, values: { ...state.values, [effect.key]: false } }, events: [] };
 };
 

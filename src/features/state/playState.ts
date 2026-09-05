@@ -5,6 +5,7 @@ export function initializeStatePlayState(snapshot: ProjectSnapshot, state: PlayS
     ...state,
     values: Object.fromEntries(snapshot.variables.map((definition) => [definition.key, definition.initialValue])),
     variableTimeUpdatedAt: now,
+    scopedValues: { node: {} },
   };
 }
 
@@ -15,6 +16,9 @@ export function reconcileStatePlayState(snapshot: ProjectSnapshot, state: PlaySt
     values: {
       ...Object.fromEntries(snapshot.variables.map((definition) => [definition.key, definition.initialValue])),
       ...state.values,
+    },
+    scopedValues: {
+      node: state.scopedValues?.node ?? {},
     },
   };
 }

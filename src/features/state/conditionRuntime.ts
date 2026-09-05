@@ -1,8 +1,16 @@
 import { compareValues, type ConditionHandler, type ConditionValidator } from "../../engine/rules/conditionRuntime";
 
+function nodeScopedValue(context: Parameters<ConditionHandler>[1], key: string) {
+  const nodeId = context.scope?.kind === "node" ? context.scope.id : context.state.currentNodeId;
+  return context.state.scopedValues?.node?.[nodeId]?.[key];
+}
+
 const flag: ConditionHandler = (condition, context) => {
   if (condition.type !== "flag") return false;
-  return context.state.values[condition.key] === condition.value;
+  const value = condition.scope === "node"
+    ? (nodeScopedValue(context, condition.key) ?? false)
+    : context.state.values[condition.key];
+  return value === condition.value;
 };
 
 const variable: ConditionHandler = (condition, context) => {

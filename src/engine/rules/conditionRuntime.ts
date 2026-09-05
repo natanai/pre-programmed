@@ -1,10 +1,12 @@
 import type { Condition, ComparisonOperator, Value } from "./model";
 import type { PlayState, ProjectSnapshot } from "../project/model";
+import type { RuleScope } from "./runtimeBindings";
 
 export type ConditionContext = {
   snapshot: ProjectSnapshot;
   state: PlayState;
   eventKey?: string;
+  scope?: RuleScope;
 };
 
 export type ConditionHandler = (condition: Condition, context: ConditionContext) => boolean;

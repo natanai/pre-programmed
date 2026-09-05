@@ -46,7 +46,9 @@ export function executeNodeEntryEffects(
     const node = snapshot.nodes.find((candidate) => candidate.id === currentNodeId);
     if (!node) break;
     const source = authoredSource("node", node.id, { section: "entry-effects" });
-    const execution = executeEffects(snapshot, state, node.entryEffects ?? []);
+    const execution = executeEffects(snapshot, state, node.entryEffects ?? [], {
+      scope: { kind: "node", id: node.id },
+    });
     state = execution.state;
     events.push(...execution.events.map((event) => {
       const next = event.type === "notification"
@@ -72,9 +74,10 @@ export function executeInteraction(
     ...initialState,
     attempts: { ...initialState.attempts, [eventKey]: attempt },
   };
+  const scope = { kind: "node" as const, id: interaction.sourceNodeId };
   const outcome = [...interaction.outcomes]
     .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
-    .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey })) ?? null;
+    .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey, scope })) ?? null;
 
   if (!outcome) return {
     state, outcome, responseText: "", dialogueText: "", dialogueSpeakerId: null, events: [], attempt, eventKey,
@@ -84,6 +87,7 @@ export function executeInteraction(
   const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
   const execution = executeEffects(snapshot, state, outcome.effects, {
     bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
+    scope,
   });
   state = execution.state;
 

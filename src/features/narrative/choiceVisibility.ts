@@ -20,5 +20,6 @@ export function isInteractionChoiceVisible(
     snapshot,
     state,
     eventKey: `interaction:${interaction.id}`,
+    scope: { kind: "node", id: interaction.sourceNodeId },
   });
 }
