@@ -117,7 +117,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
         importance: "primary",
         children: [
           { type: "field", id: "radix-label", label: "LABEL", value: draft.label, onChange: (label) => setDraft({ ...draft, label }) },
-          { type: "field", id: "radix-caption", label: "CAPTION", control: "textarea", rows: 2, value: draft.caption, onChange: (caption) => setDraft({ ...draft, caption }), help: "Player-facing text shown below ordinary sequence runs. App launch uses installation-owned INITIALIZE_UNIVERSE_TEXT instead." },
+          { type: "field", id: "radix-caption", label: "CAPTION", control: "textarea", rows: 2, value: draft.caption, onChange: (caption) => setDraft({ ...draft, caption }), help: "Player-facing text shown below every run of this sequence, including when this sequence is selected for app launch." },
           { type: "choice", id: "radix-width", label: "WIDTH", value: draft.widthMode, onChange: (widthMode) => setDraft({ ...draft, widthMode: widthMode === "terminal" ? "terminal" : "viewport" }), presentation: "segmented", options: [
             { value: "viewport", label: "VIEWPORT", help: "Use the full screen width." },
             { value: "terminal", label: "TERMINAL", help: "Lock to the player terminal content width." },
@@ -212,7 +212,7 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
 
   return <div className="project-setting-card">
     <h3>PLAYER LAUNCH</h3>
-    <p className="project-settings-description">Run one reusable sort sequence once whenever the player app opens, before the saved-game choice or normal play is revealed. It does not count as entering a node. Launch caption text comes from public/engine-text.txt in a repository build, or installation.txt in a portable build.</p>
+    <p className="project-settings-description">Run one reusable sort sequence once whenever the player app opens, before the saved-game choice or normal play is revealed. It does not count as entering a node. The selected sequence's own CAPTION is shown beneath it.</p>
     <label className="check-label"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /> enabled on app launch</label>
     <ReferenceField kind="radix-sequence" value={sequenceId} onChange={setSequenceId} placeholder="Choose launch sequence" />
     <div className="project-setting-actions">
