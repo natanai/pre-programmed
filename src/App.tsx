@@ -920,16 +920,22 @@ export default function App() {
         </div>
       </div>
 
-      {typewriter.complete && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession ? <TerminalCommandComposer
+      {!panel && !playerWorkspace && !pendingPlaySession ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
         value={command}
         onChange={setCommand}
-        onSubmit={(value) => { void handleTerminalValue(value); }}
+        onSubmit={(value) => {
+          if (!typewriter.complete || pendingDestinationNodeId) {
+            typewriter.completeImmediately();
+            return;
+          }
+          void handleTerminalValue(value);
+        }}
         secret={requestingKey}
-        immediateChoices={requestingKey ? [] : immediateTerminalChoices}
-        menuChoices={requestingKey ? [] : promptTerminalChoices}
-        anchor={!requestingKey && activeNodeAnchor ? {
+        immediateChoices={requestingKey || !typewriter.complete || Boolean(pendingDestinationNodeId) ? [] : immediateTerminalChoices}
+        menuChoices={requestingKey || !typewriter.complete || Boolean(pendingDestinationNodeId) ? [] : promptTerminalChoices}
+        anchor={!requestingKey && !pendingDestinationNodeId && activeNodeAnchor ? {
           text: activeNodeAnchor.text,
           onEdit: authorExperience ? () => openAuthorResource("node", activeNodeAnchor.sourceNodeId) : undefined,
         } : null}
