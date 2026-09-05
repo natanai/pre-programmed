@@ -16,49 +16,42 @@ export type TextPerformance = {
   cues: TextCue[];
 };
 
-/** Shared authored traversal behavior for persistent Node context. */
+/** Shared authored traversal behavior for lightweight persistent Node context. */
 export type NodeContextMode = "set" | "continue" | "clear";
 export type NodeAnchorMode = NodeContextMode;
 export type NodeLocationMode = NodeContextMode;
+export type NodeConversationMode = NodeContextMode;
 
 export type NodeAnchor = {
   mode: NodeAnchorMode;
   text: string;
 };
 
-/**
- * A hand-authored set of characters established by one Node. Missing legacy
- * values mean Continue, so branching Nodes inherit the path that reached them.
- */
-export type NodeCharacterContext = {
-  mode: NodeContextMode;
-  characterIds: string[];
-};
-
 export type GameNode = {
   id: string;
   nodeNumber: number;
+  /** Optional narration shown before this Node's conversation character speaks. */
   text: string;
+  /** Optional line spoken by the traversal-derived conversation character. */
+  dialogueText?: string;
   ending: boolean;
   tags: string[];
-  /** Character whose voice presents this node text; null means unattributed/narration. */
-  characterId: string | null;
   /** Location selected when `locationMode` is `set`. */
   locationId: string | null;
-  /**
-   * Persistent scene context authored by this Node. Missing legacy values mean
-   * Set when a locationId exists, otherwise Continue.
-   */
+  /** Missing legacy values mean Set when a locationId exists, otherwise Continue. */
   locationMode?: NodeLocationMode;
-  /** Characters available in this authored moment. Missing legacy values mean Continue. */
-  presentCharacters?: NodeCharacterContext;
-  /** Characters the player is currently engaged in conversation with. Missing legacy values mean Continue. */
-  conversation?: NodeCharacterContext;
+  /** Character selected when `conversationMode` is `set`. */
+  conversationCharacterId?: string | null;
+  /** Missing values mean Continue, so branching Nodes inherit the path that reached them. */
+  conversationMode?: NodeConversationMode;
   /** Persistent player-facing anchor context. Missing legacy values mean Continue. */
   anchor?: NodeAnchor;
   /** Effects executed once whenever runtime traversal enters this Node. */
   entryEffects?: Effect[];
+  /** Narration delivery. */
   performance: TextPerformance;
+  /** Dialogue delivery; missing legacy values use the normal default performance. */
+  dialoguePerformance?: TextPerformance;
 };
 
 export type InteractionDisposition = "stay" | "transition";
@@ -77,9 +70,9 @@ export type InteractionOutcome = {
   authorStatus: "draft" | "configured";
   condition: Condition;
   responseText: string;
-  /** Optional character voice for this response; missing/null means unattributed narration. */
+  /** Optional voice for this immediate response; destination Node dialogue is owned by the Node. */
   speakerId?: string | null;
-  /** The same authored-text performance contract used by node prose. */
+  /** The same authored-text performance contract used by Node prose. */
   responsePerformance: TextPerformance;
   effects: Effect[];
   disposition: InteractionDisposition;
