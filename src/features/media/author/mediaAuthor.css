@@ -36,6 +36,20 @@
 .synth-noise-step { color: var(--dos-muted); text-align: center; }
 .synth-quick-start > span { width: 100%; color: var(--dos-muted); font-size: .9em; }
 
+.asset-explorer {
+  container-type: inline-size;
+}
+.asset-explorer .asset-list > button {
+  align-items: start;
+  justify-content: stretch;
+}
+.asset-explorer .asset-list > button > * {
+  min-width: 0;
+}
+.asset-explorer .asset-list code {
+  overflow-wrap: anywhere;
+}
+
 .media-asset-editor .author-panel-body,
 .vector-editor-body { display: grid; align-content: start; gap: .75em; }
 .media-asset-editor label,
@@ -110,6 +124,7 @@
 .vector-tool-row button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; text-underline-offset: .2em; }
 
 @container (max-width: 42rem) {
+  .asset-explorer .asset-list > button { grid-template-columns: minmax(0, 1fr); gap: .25em; }
   .vector-editor-layout { grid-template-columns: 1fr; }
   .vector-canvas-viewport { max-height: min(56dvh, 36rem); }
 }
