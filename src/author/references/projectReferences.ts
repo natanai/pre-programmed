@@ -1,6 +1,8 @@
 import type { Condition, Effect } from "../../engine/rules/model";
 import { scanInlineTextCommands } from "../../engine/presentation/inlineTextCommandCatalog";
 import type { ProjectSnapshot } from "../../engine/project/model";
+import { semanticReferenceProvider } from "../../engine/references/catalog";
+import { findSemanticReferenceTokens } from "../../engine/references/runtime";
 import {
   getAuthorConditionAdapters,
   getAuthorEffectAdapters,
@@ -24,8 +26,18 @@ function effectReferences(effects: readonly Effect[]): readonly ResourceReferenc
 }
 
 function textReferences(text: string, snapshot: ProjectSnapshot): readonly ResourceReference[] {
-  return scanInlineTextCommands(text).flatMap((command) => getAuthorTextCueAdapters()
+  const cueReferences = scanInlineTextCommands(text).flatMap((command) => getAuthorTextCueAdapters()
     .find((adapter) => adapter.inlineCode === command.definition.code)?.references?.(command.value, snapshot) ?? []);
+  const semanticReferences = findSemanticReferenceTokens(text).flatMap((token) => {
+    const provider = semanticReferenceProvider(token.kind);
+    const resource = provider?.projectResource?.(token.id, snapshot);
+    return resource ? [{
+      resourceKind: resource.resourceKind,
+      resourceId: resource.resourceId,
+      detail: `text reference · ${provider?.label ?? token.kind}`,
+    }] : [];
+  });
+  return [...cueReferences, ...semanticReferences];
 }
 
 function referenceContext(snapshot: ProjectSnapshot): ProjectReferenceContext {
