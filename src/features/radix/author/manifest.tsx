@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { radixEffectAdapter } from "./ruleAdapters";
+import { RADIX_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 import {
   RADIX_PROJECT_SETTINGS,
   radixSequenceEditorWorkspace,
@@ -18,6 +19,7 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
     return null;
   },
   effects: [radixEffectAdapter],
+  textCues: RADIX_TEXT_CUE_AUTHOR_ADAPTERS,
   projectSettings: RADIX_PROJECT_SETTINGS,
   resources: [{
     kind: "radix-sequence",
