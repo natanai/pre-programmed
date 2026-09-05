@@ -19,3 +19,5 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
       - run: npm run verify:local
+
+# Temporary branch-only checkpoint; remove before merge.
