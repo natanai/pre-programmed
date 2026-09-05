@@ -312,12 +312,7 @@ export function InteractionEditor({
         notationForOutcome={notationForOutcome}
         autoFocusWording={!initial}
         onWording={(wording) => setDraft({ ...draft, wording })}
-        onMatchMode={(matchMode) => setDraft({
-          ...draft,
-          matchMode,
-          wording: matchMode === "capture" ? "" : draft.wording,
-          aliases: matchMode === "capture" ? [] : draft.aliases,
-        })}
+        onMatchMode={(matchMode) => setDraft({ ...draft, matchMode })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
         onAddResponse={addResponseDraft}
         onOpenSettings={() => setScreen({ type: "input-settings" })}
