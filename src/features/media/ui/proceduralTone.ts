@@ -42,11 +42,16 @@ export function scheduleSynthVoice(
   oscillator.stop(start + duration + 0.01);
 }
 
+export function proceduralAudioReady() {
+  return sharedContext?.state === "running";
+}
+
 export async function unlockProceduralAudio() {
   const context = audioContext();
   if (context.state === "suspended") {
     try { await context.resume(); } catch { /* browser gesture policy: a later gesture may resume it */ }
   }
+  return context.state === "running";
 }
 
 export type ProceduralToneSession = {
