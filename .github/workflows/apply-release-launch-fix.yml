@@ -1,0 +1,52 @@
+name: Apply release and launch fix
+
+on:
+  push:
+    branches:
+      - fix/release-and-launch-sequence
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/release-and-launch-sequence
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Apply targeted source changes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-release-launch-fix.mjs')
+          source = path.read_text()
+          source = source.replace('$' + '{{', '\\' + '$' + '{{')
+          path.write_text(source)
+          PY
+          node scripts/apply-release-launch-fix.mjs
+
+      - name: Verify engine
+        run: npm run verify
+
+      - name: Verify local persistence runtime
+        run: npm run verify:local
+
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Publish portable releases and run launch sequence on app open"
+          git push origin HEAD:fix/release-and-launch-sequence
