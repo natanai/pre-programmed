@@ -1,5 +1,0 @@
-# Pre-Programmed installation-owned player text
-# Edit this plain-text file to change wording that belongs to an installation rather than a .ppgame project.
-# The Windows portable build copies this value into installation.txt beside the local Author password.
-# Leave the value empty to hide the new-game startup caption.
-INITIALIZE_UNIVERSE_TEXT=initialize universe
