@@ -67,7 +67,9 @@ export function commandsProjectSettingsValid(value: unknown) {
     if (!stringArray(command.patterns, 32, 180) || !Array.isArray(command.slots) || command.slots.length > 12) return false;
     for (const slot of command.slots) {
       if (!object(slot) || typeof slot.name !== "string" || !SLOT_NAME_PATTERN.test(slot.name)) return false;
-      if (!stringArray(slot.sourceKinds, 16, 64) || !slot.sourceKinds.every(operationIdValid)) return false;
+      const sourceKinds = slot.sourceKinds;
+      if (!Array.isArray(sourceKinds) || sourceKinds.length > 16) return false;
+      if (!sourceKinds.every((kind) => typeof kind === "string" && kind.length <= 64 && operationIdValid(kind))) return false;
     }
     if (!actionValid(command.action, command.slots)) return false;
   }
