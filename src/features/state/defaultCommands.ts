@@ -4,9 +4,8 @@ import type { CommandDefinition } from "../commands/model";
 export const STATE_STARTER_COMMANDS: readonly CommandDefinition[] = [{
   id: "starter-state-status-open",
   label: "Status",
-  operation: "state.status.open",
   enabled: true,
   patterns: ["status", "stats"],
   slots: [],
-  targetSlot: "",
+  action: { type: "application", operation: "state.status.open" },
 }];
