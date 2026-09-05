@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   apply-and-verify:
+    if: github.event.head_commit.message == 'Retry verified source fix without workflow push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -41,12 +42,13 @@ jobs:
       - name: Verify local persistence runtime
         run: npm run verify:local
 
-      - name: Commit verified fix
+      - name: Commit verified source fix
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add src/App.tsx src/features/radix/author/workspaces.tsx src/features/radix/ui/RadixSequenceSurface.tsx README.md
+          git add -u scripts/apply-release-launch-fix.mjs
           git diff --cached --check
-          git commit -m "Publish portable releases and run launch sequence on app open"
+          git commit -m "Run launch sequence on app open and document direct releases"
           git push origin HEAD:fix/release-and-launch-sequence
