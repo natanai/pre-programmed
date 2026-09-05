@@ -1,6 +1,7 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
 import { normalizeCommand } from "../../features/narrative/parser";
+import { nodeConversation, nodePresentCharacters } from "../../features/narrative/sceneContext";
 import { getAuthorSearchDocumentContributions } from "../features/registry";
 import type { SearchDocument, SearchKind } from "./types";
 
@@ -16,8 +17,12 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
   return [
     ...snapshot.nodes.map((node) => {
       const interactions = snapshot.interactions.filter((interaction) => interaction.sourceNodeId === node.id);
+      const sceneCharacterIds = new Set([
+        ...nodePresentCharacters(node).characterIds,
+        ...nodeConversation(node).characterIds,
+      ]);
       const context = snapshot.entities.filter((entity) =>
-        entity.id === node.characterId || entity.id === node.locationId,
+        entity.id === node.characterId || entity.id === node.locationId || sceneCharacterIds.has(entity.id),
       );
       const referencedItemIds = new Set(interactions.flatMap((interaction) =>
         interaction.outcomes.flatMap((outcome) => outcome.effects.flatMap((effect) =>
