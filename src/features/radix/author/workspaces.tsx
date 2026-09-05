@@ -117,7 +117,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
         importance: "primary",
         children: [
           { type: "field", id: "radix-label", label: "LABEL", value: draft.label, onChange: (label) => setDraft({ ...draft, label }) },
-          { type: "field", id: "radix-caption", label: "CAPTION", control: "textarea", rows: 2, value: draft.caption, onChange: (caption) => setDraft({ ...draft, caption }), help: "Player-facing text shown below ordinary sequence runs. New-game startup uses installation-owned INITIALIZE_UNIVERSE_TEXT instead." },
+          { type: "field", id: "radix-caption", label: "CAPTION", control: "textarea", rows: 2, value: draft.caption, onChange: (caption) => setDraft({ ...draft, caption }), help: "Player-facing text shown below ordinary sequence runs. App launch uses installation-owned INITIALIZE_UNIVERSE_TEXT instead." },
           { type: "choice", id: "radix-width", label: "WIDTH", value: draft.widthMode, onChange: (widthMode) => setDraft({ ...draft, widthMode: widthMode === "terminal" ? "terminal" : "viewport" }), presentation: "segmented", options: [
             { value: "viewport", label: "VIEWPORT", help: "Use the full screen width." },
             { value: "terminal", label: "TERMINAL", help: "Lock to the player terminal content width." },
@@ -203,7 +203,7 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
           startup: { enabled, sequenceId },
         },
       };
-      const result = await context.persist([{ type: "project.settings", settings }], "Changed player startup sort sequence");
+      const result = await context.persist([{ type: "project.settings", settings }], "Changed player launch sort sequence");
       if (result.status === "saved" || result.status === "queued") context.setWorkspaceDirty(false);
     } finally {
       setSaving(false);
@@ -211,21 +211,22 @@ function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSe
   };
 
   return <div className="project-setting-card">
-    <h3>PLAYER STARTUP</h3>
-    <p className="project-settings-description">Run one reusable sort sequence before the opening node on a genuinely new game. Continuing a saved game does not replay it. Startup caption text comes from public/engine-text.txt in a repository build, or installation.txt in a portable build.</p>
-    <label className="check-label"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /> enabled on new game</label>
-    <ReferenceField kind="radix-sequence" value={sequenceId} onChange={setSequenceId} placeholder="Choose startup sequence" />
+    <h3>PLAYER LAUNCH</h3>
+    <p className="project-settings-description">Run one reusable sort sequence once whenever the player app opens, before the saved-game choice or normal play is revealed. It does not count as entering a node. Launch caption text comes from public/engine-text.txt in a repository build, or installation.txt in a portable build.</p>
+    <label className="check-label"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /> enabled on app launch</label>
+    <ReferenceField kind="radix-sequence" value={sequenceId} onChange={setSequenceId} placeholder="Choose launch sequence" />
     <div className="project-setting-actions">
       <button type="button" disabled={!dirty || saving || (enabled && !sequenceId)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
       {sequenceId ? <button type="button" onClick={() => context.runtime.events([{ type: "radix", sequenceId }])}>[PREVIEW]</button> : null}
+      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "radix", workspace: "sequences" })}>[OPEN SORT SEQUENCES]</button>
     </div>
   </div>;
 }
 
 export const RADIX_PROJECT_SETTINGS: readonly AuthorProjectSettingsSection[] = [{
   id: "radix-startup",
-  label: "STARTUP SEQUENCE",
-  description: "Choose whether a reusable sort presentation runs before the opening node.",
+  label: "LAUNCH SEQUENCE",
+  description: "Choose whether a reusable sort presentation runs once when the player app opens.",
   order: 20,
   render: (context) => <RadixStartupSettings context={context} />,
 }];

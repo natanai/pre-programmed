@@ -61,6 +61,8 @@ export function RadixSequenceSurface({
     let holdTimer = 0;
     let resizeObserver: ResizeObserver | null = null;
     let started = false;
+    let finished = false;
+    let audioStarting = false;
     const seed = resolveRadixSeed(stableSequence, runtimeSeed);
     const values = createSeededArray(stableSequence.arraySize, seed);
     const { events } = sortEvents(values, stableSequence.algorithm, stableSequence.radix);
@@ -132,6 +134,7 @@ export function RadixSequenceSurface({
 
     const finish = () => {
       if (cancelled) return;
+      finished = true;
       toneRef.current?.stop();
       toneRef.current = null;
       setStats({ accesses, digit, complete: true });
@@ -171,29 +174,39 @@ export function RadixSequenceSurface({
       frame = window.requestAnimationFrame(tick);
     };
 
-    const begin = async () => {
-      if (started || cancelled) return;
-      if (stableSequence.soundEnabled) {
-        const unlocked = await unlockProceduralAudio();
-        if (!unlocked || cancelled) {
-          if (!cancelled) setAwaitingAudioGesture(true);
-          return;
-        }
-        toneRef.current = await createProceduralToneSession(stableSynth, stableSequence.volume);
+    const ensureAudio = async () => {
+      if (!stableSequence.soundEnabled || toneRef.current || audioStarting || cancelled || finished) return;
+      audioStarting = true;
+      const unlocked = await unlockProceduralAudio();
+      if (!unlocked || cancelled || finished) {
+        audioStarting = false;
+        if (!cancelled && !finished) setAwaitingAudioGesture(true);
+        return;
       }
-      if (cancelled) return;
-      started = true;
+      const tone = await createProceduralToneSession(stableSynth, stableSequence.volume);
+      audioStarting = false;
+      if (cancelled || finished) {
+        tone?.stop();
+        return;
+      }
+      toneRef.current = tone;
       setAwaitingAudioGesture(false);
+    };
+
+    const begin = () => {
+      if (started || cancelled) return;
+      started = true;
       lastTime = performance.now();
       frame = window.requestAnimationFrame(tick);
+      void ensureAudio();
     };
 
     draw();
     resizeObserver = new ResizeObserver(draw);
     resizeObserver.observe(canvas);
-    void begin();
+    begin();
 
-    const unlock = () => { void begin(); };
+    const unlock = () => { void ensureAudio(); };
     window.addEventListener("pointerdown", unlock, { passive: true, capture: true });
     window.addEventListener("keydown", unlock, true);
 
@@ -227,7 +240,7 @@ export function RadixSequenceSurface({
       </div> : null}
     </div>
     {caption ? <div className="radix-caption">{caption}</div> : null}
-    {awaitingAudioGesture ? <div className="radix-audio-gate" role="status">[TAP / PRESS ANY KEY TO START WITH SOUND]</div> : null}
+    {awaitingAudioGesture ? <div className="radix-audio-gate" role="status">[TAP / PRESS ANY KEY FOR SOUND]</div> : null}
     {authorMode && (onEditSequence || onEditSource) ? <div className="radix-author-actions">
       {onEditSequence ? <button type="button" onClick={(event) => { event.stopPropagation(); onEditSequence(); }}>[EDIT SEQUENCE]</button> : null}
       {onEditSource ? <button type="button" onClick={(event) => { event.stopPropagation(); onEditSource(); }}>[EDIT SOURCE]</button> : null}

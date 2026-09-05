@@ -376,7 +376,7 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || !installationText.ready || startupRunRef.current) return;
+    if (!snapshot || !playState || !installationText.ready || startupRunRef.current) return;
     startupRunRef.current = true;
     const startup = snapshot.settings.radix.startup;
     const sequence = startup.enabled
@@ -395,7 +395,7 @@ export default function App() {
       runKey: crypto.randomUUID(),
       startup: true,
     });
-  }, [snapshot, playState, playSessionReady, pendingPlaySession, installationText.ready]);
+  }, [snapshot, playState, installationText.ready]);
 
   useEffect(() => {
     if (!snapshot || !playState || !activeRadix) return;
@@ -455,7 +455,7 @@ export default function App() {
   const startNewGame = () => {
     if (!snapshot) return;
     playSessionDecisionRef.current = "new";
-    startupRunRef.current = false;
+    startupRunRef.current = true;
     startupActiveRef.current = false;
     setActiveRadix(null);
     const state = createEmptyPlayState(snapshot);
@@ -1254,7 +1254,7 @@ export default function App() {
         setEventArtSource(undefined);
       }}
     /> : null}
-    {pendingPlaySession ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
+    {pendingPlaySession && !activeRadix ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
   </main>;
 }
 
