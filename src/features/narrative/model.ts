@@ -16,14 +16,24 @@ export type TextPerformance = {
   cues: TextCue[];
 };
 
-export type NodeAnchorMode = "set" | "continue" | "clear";
+/** Shared authored traversal behavior for persistent Node context. */
+export type NodeContextMode = "set" | "continue" | "clear";
+export type NodeAnchorMode = NodeContextMode;
+export type NodeLocationMode = NodeContextMode;
 
 export type NodeAnchor = {
   mode: NodeAnchorMode;
   text: string;
 };
 
-export type NodeLocationMode = "set" | "continue" | "clear";
+/**
+ * A hand-authored set of characters established by one Node. Missing legacy
+ * values mean Continue, so branching Nodes inherit the path that reached them.
+ */
+export type NodeCharacterContext = {
+  mode: NodeContextMode;
+  characterIds: string[];
+};
 
 export type GameNode = {
   id: string;
@@ -36,11 +46,15 @@ export type GameNode = {
   /** Location selected when `locationMode` is `set`. */
   locationId: string | null;
   /**
-   * Persistent World context authored by this Node. Missing legacy values mean
+   * Persistent scene context authored by this Node. Missing legacy values mean
    * Set when a locationId exists, otherwise Continue.
    */
   locationMode?: NodeLocationMode;
-  /** Persistent player context. Missing legacy values behave as Continue. */
+  /** Characters available in this authored moment. Missing legacy values mean Continue. */
+  presentCharacters?: NodeCharacterContext;
+  /** Characters the player is currently engaged in conversation with. Missing legacy values mean Continue. */
+  conversation?: NodeCharacterContext;
+  /** Persistent player-facing anchor context. Missing legacy values mean Continue. */
   anchor?: NodeAnchor;
   performance: TextPerformance;
 };

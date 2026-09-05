@@ -1,5 +1,5 @@
 import type { SemanticReferenceCandidate, SemanticReferenceProvider } from "../../engine/references/types";
-import { resolveActiveNodeLocationContext } from "../narrative/locationContext";
+import { resolveActiveNodeLocationContext } from "../narrative/sceneContext";
 import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
 import type { EntityDefinition } from "./model";
 

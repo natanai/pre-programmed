@@ -1,6 +1,22 @@
 import { conditionValid, effectsValid, object } from "./validationHelpers";
 import type { WorkerMutationValidator } from "./validationTypes";
 
+function characterContextError(value: unknown, label: string) {
+  if (value === undefined) return null;
+  if (!object(value) || !["set", "continue", "clear"].includes(String(value.mode))) {
+    return `Node ${label} behavior is invalid.`;
+  }
+  if (!Array.isArray(value.characterIds)) return `Node ${label} characters are invalid.`;
+  const ids = value.characterIds;
+  if (ids.some((id) => typeof id !== "string" || !id || id.length > 128)) {
+    return `Node ${label} characters are invalid.`;
+  }
+  if (new Set(ids).size !== ids.length) return `Node ${label} cannot contain the same character twice.`;
+  if (value.mode === "set" && ids.length === 0) return `Set Node ${label} needs at least one character.`;
+  if (value.mode !== "set" && ids.length > 0) return `Continue and Clear Node ${label} cannot store character ids.`;
+  return null;
+}
+
 export const narrativeMutationValidator: WorkerMutationValidator = {
   types: ["node.upsert", "interaction.upsert", "interaction.delete"],
   validate(operation) {
@@ -20,6 +36,11 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
           return "Continue and Clear Node locations cannot store a Location id.";
         }
       }
+
+      const presentError = characterContextError(operation.node.presentCharacters, "characters-present");
+      if (presentError) return presentError;
+      const conversationError = characterContextError(operation.node.conversation, "conversation");
+      if (conversationError) return conversationError;
 
       const anchor = operation.node.anchor;
       if (anchor === undefined) return null;
