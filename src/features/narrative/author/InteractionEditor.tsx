@@ -161,6 +161,7 @@ export function InteractionEditor({
   const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const draftSignature = JSON.stringify(draft);
+  const captureMode = !fallbackMode && draft.matchMode === "capture";
   const sourcePlayState = draft.sourceNodeId === playState.currentNodeId
     ? playState
     : { ...playState, currentNodeId: draft.sourceNodeId };
@@ -218,8 +219,16 @@ export function InteractionEditor({
 
   const save = async (): Promise<boolean> => {
     const userInputText = draft.wording.trim();
-    if (!fallbackMode && !userInputText) {
-      setError("Enter user-input-text.");
+    if (!fallbackMode && !captureMode && !userInputText) {
+      setError("Enter user-input-text or choose Capture player input.");
+      setScreen({ type: "overview" });
+      return false;
+    }
+    if (captureMode && snapshot.interactions.some((interaction) =>
+      interaction.id !== draft.id
+      && interaction.sourceNodeId === draft.sourceNodeId
+      && interaction.matchMode === "capture")) {
+      setError("This node already has a Capture player input interaction. Edit that interaction instead.");
       setScreen({ type: "overview" });
       return false;
     }
@@ -240,18 +249,20 @@ export function InteractionEditor({
     try {
       const interaction: Interaction = {
         ...draft,
-        wording: fallbackMode ? "" : userInputText,
-        matchMode: fallbackMode ? "fallback" : "command",
-        choiceVisibility: fallbackMode ? "typed" : draft.choiceVisibility,
-        choiceVisibleWhen: fallbackMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
-        aliases: fallbackMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
+        wording: fallbackMode || captureMode ? "" : userInputText,
+        matchMode: fallbackMode ? "fallback" : captureMode ? "capture" : "command",
+        choiceVisibility: fallbackMode || captureMode ? "typed" : draft.choiceVisibility,
+        choiceVisibleWhen: fallbackMode || captureMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
+        aliases: fallbackMode || captureMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
         outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
       };
       const result = await onSave(
         [{ type: "interaction.upsert", interaction }],
         fallbackMode
           ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
-          : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
+          : captureMode
+            ? `${initial ? "Changed" : "Created"} player-input capture for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
+            : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
       );
       if (result.status === "saved" || result.status === "queued") {
         setDraft(interaction);
@@ -281,7 +292,7 @@ export function InteractionEditor({
   };
 
   const title = screen.type === "overview"
-    ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
+    ? fallbackMode ? "INVALID INPUT" : captureMode ? "CAPTURE PLAYER INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
@@ -296,10 +307,12 @@ export function InteractionEditor({
       {screen.type === "overview" ? <InteractionOverview
         draft={draft}
         fallbackMode={fallbackMode}
+        captureMode={captureMode}
         snapshot={snapshot}
         notationForOutcome={notationForOutcome}
         autoFocusWording={!initial}
         onWording={(wording) => setDraft({ ...draft, wording })}
+        onMatchMode={(matchMode) => setDraft({ ...draft, matchMode })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
         onAddResponse={addResponseDraft}
         onOpenSettings={() => setScreen({ type: "input-settings" })}
@@ -308,6 +321,7 @@ export function InteractionEditor({
       {screen.type === "input-settings" ? <InputSettings
         draft={draft}
         fallbackMode={fallbackMode}
+        captureMode={captureMode}
         snapshot={snapshot}
         onChange={setDraft}
       /> : null}
@@ -342,8 +356,8 @@ export function InteractionEditor({
       <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
       {onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}
       {screen.type === "overview" && initial ? confirmDelete ? <>
-        <span>Delete this {fallbackMode ? "invalid-input response" : "user input"}?</span>
-        <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
+        <span>Delete this {fallbackMode ? "invalid-input response" : captureMode ? "player-input capture" : "user input"}?</span>
+        <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : captureMode ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
         <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
       </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
     </div>
@@ -353,28 +367,45 @@ export function InteractionEditor({
 function InteractionOverview({
   draft,
   fallbackMode,
+  captureMode,
   snapshot,
   notationForOutcome,
   autoFocusWording,
   onWording,
+  onMatchMode,
   onOpenResponse,
   onAddResponse,
   onOpenSettings,
 }: {
   draft: Interaction;
   fallbackMode: boolean;
+  captureMode: boolean;
   snapshot: ProjectSnapshot;
   notationForOutcome: (outcome: InteractionOutcome) => string;
   autoFocusWording: boolean;
   onWording: (wording: string) => void;
+  onMatchMode: (matchMode: "command" | "capture") => void;
   onOpenResponse: (outcomeId: string) => void;
   onAddResponse: () => void;
   onOpenSettings: () => void;
 }) {
   return <div className="interaction-overview">
-    {!fallbackMode ? <label className="user-input-field">PLAYER ENTERS
-      <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
-    </label> : <div className="guided-context-copy">This is what can happen when the player's text does not match any valid input at this node.</div>}
+    {!fallbackMode ? <section className="guided-section">
+      <h3>WHAT DOES THE PLAYER ENTER?</h3>
+      <div className="guided-option-list">
+        <button type="button" className="guided-option-row" aria-pressed={!captureMode} onClick={() => onMatchMode("command")}>
+          <span>{!captureMode ? "[X]" : "[ ]"} SPECIFIC INPUT</span>
+          <small>Match authored wording and aliases.</small>
+        </button>
+        <button type="button" className="guided-option-row" aria-pressed={captureMode} onClick={() => onMatchMode("capture")}>
+          <span>{captureMode ? "[X]" : "[ ]"} CAPTURE PLAYER INPUT</span>
+          <small>Accept otherwise-unmatched text at this node and make it available to response effects.</small>
+        </button>
+      </div>
+      {!captureMode ? <label className="user-input-field">PLAYER ENTERS
+        <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
+      </label> : <div className="guided-context-copy">Specific interactions and player commands still take priority. Any other submitted text uses this interaction before Invalid Input.</div>}
+    </section> : <div className="guided-context-copy">This is what can happen when the player's text does not match any valid input at this node.</div>}
 
     <section className="guided-section">
       <h3>WHAT CAN HAPPEN?</h3>
@@ -394,23 +425,24 @@ function InteractionOverview({
     <section className="guided-section">
       <h3>INPUT SETTINGS</h3>
       <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
-        <span>{fallbackMode ? "Author details" : "Aliases, visibility rules, author details"}</span>
+        <span>{fallbackMode || captureMode ? "Author details" : "Aliases, visibility rules, author details"}</span>
         <span aria-hidden="true">›</span>
       </button>
     </section>
   </div>;
 }
 
-function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
+function InputSettings({ draft, fallbackMode, captureMode, snapshot, onChange }: {
   draft: Interaction;
   fallbackMode: boolean;
+  captureMode: boolean;
   snapshot: ProjectSnapshot;
   onChange: (interaction: Interaction) => void;
 }) {
   const aliases = secondaryAliases(draft.wording, draft.aliases);
   const choiceVisibleWhen = draft.choiceVisibleWhen ?? ALWAYS;
   return <div className="guided-subworkspace">
-    {!fallbackMode ? <>
+    {!fallbackMode && !captureMode ? <>
       <section className="guided-section">
         <h3>PLAYER VISIBILITY</h3>
         <OutcomeComposerSection title="SHOW CHOICE WHEN" summary={conditionSummary(choiceVisibleWhen)}>

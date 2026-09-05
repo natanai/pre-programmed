@@ -44,8 +44,11 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
     if (interaction.choiceVisibleWhen !== undefined && !conditionValid(interaction.choiceVisibleWhen)) {
       return "Interaction choice visibility condition is invalid.";
     }
-    if (interaction.matchMode !== undefined && !["command", "fallback"].includes(String(interaction.matchMode))) {
+    if (interaction.matchMode !== undefined && !["command", "capture", "fallback"].includes(String(interaction.matchMode))) {
       return "Interaction match mode is invalid.";
+    }
+    if (interaction.matchMode === "capture" && typeof interaction.wording === "string" && interaction.wording.trim()) {
+      return "Capture interactions cannot store fixed player wording.";
     }
 
     const outcomes = Array.isArray(interaction.outcomes) ? interaction.outcomes : [];

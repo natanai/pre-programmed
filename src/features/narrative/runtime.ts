@@ -3,6 +3,7 @@ import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { evaluateCondition } from "../../engine/rules/conditions";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
+import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
 import { transitionState } from "./effectRuntime";
 import { interpolateText } from "./interpolation";
 import type { Interaction, InteractionOutcome } from "./model";
@@ -34,7 +35,9 @@ export function executeInteraction(
 
   if (!outcome) return { state, outcome, responseText: "", events: [], attempt, eventKey };
   const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
-  const execution = executeEffects(snapshot, state, outcome.effects);
+  const execution = executeEffects(snapshot, state, outcome.effects, {
+    bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
+  });
   state = execution.state;
 
   if (outcome.disposition === "transition" && outcome.destinationNodeId) {

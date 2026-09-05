@@ -1,4 +1,5 @@
 import type { Value } from "../../../engine/rules/model";
+import { isRuntimeBinding, PLAYER_INPUT_BINDING, runtimeBinding } from "../../../engine/rules/runtimeBindings";
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
 import { ComparisonSelect } from "../../../author/rules/controls";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
@@ -87,18 +88,43 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
   description: "Replace an authored variable's value.",
   create: () => ({ id: crypto.randomUUID(), type: "set_value", key: "", value: 0 }),
   references: (effect) => effect.type === "set_value" && effect.key ? [{ resourceKind: "variable", resourceId: effect.key, detail: "variable effect" }] : [],
-  summarize: (effect, snapshot) => effect.type === "set_value" ? `${variableLabel(snapshot, effect.key)} = ${String(effect.value)}` : "Set value",
+  summarize: (effect, snapshot) => {
+    if (effect.type !== "set_value") return "Set value";
+    const source = isRuntimeBinding(effect.value)
+      ? effect.value.key === PLAYER_INPUT_BINDING ? "player input" : `runtime ${effect.value.key}`
+      : String(effect.value);
+    return `${variableLabel(snapshot, effect.key)} = ${source}`;
+  },
   render: ({ effect, onChange, snapshot }) => {
     if (effect.type !== "set_value") return null;
     const definition = snapshot.variables.find((item) => item.key === effect.key);
+    const binding = isRuntimeBinding(effect.value) ? effect.value : null;
+    const sourceMode = binding?.key === PLAYER_INPUT_BINDING ? "player-input" : binding ? "runtime-binding" : "literal";
+    const resetLiteral = definition?.initialValue ?? "";
     return <>
       <ReferenceField kind="variable" value={effect.key} onChange={(key) => {
         const next = snapshot.variables.find((item) => item.key === key);
-        onChange({ ...effect, key, value: next?.initialValue ?? "" });
+        onChange({ ...effect, key, value: binding ?? next?.initialValue ?? "" });
       }} />
-      {definition?.valueType === "boolean"
+      <label>VALUE FROM
+        <select value={sourceMode} onChange={(event) => {
+          const mode = event.target.value;
+          if (mode === "player-input") onChange({ ...effect, value: runtimeBinding(PLAYER_INPUT_BINDING) });
+          else if (mode === "runtime-binding") onChange({ ...effect, value: runtimeBinding(binding?.key ?? "") });
+          else onChange({ ...effect, value: resetLiteral });
+        }}>
+          <option value="literal">authored value</option>
+          <option value="player-input">player input</option>
+          {sourceMode === "runtime-binding" ? <option value="runtime-binding">runtime binding</option> : null}
+        </select>
+      </label>
+      {sourceMode === "runtime-binding" ? <label>RUNTIME BINDING
+        <input value={binding?.key ?? ""} onChange={(event) => onChange({ ...effect, value: runtimeBinding(event.target.value) })} />
+      </label> : null}
+      {sourceMode === "player-input" ? <small>The submitted player text is converted to this variable's type when the effect runs.</small> : null}
+      {sourceMode === "literal" ? definition?.valueType === "boolean"
         ? <select value={String(effect.value)} onChange={(event) => onChange({ ...effect, value: event.target.value === "true" })}><option value="true">true</option><option value="false">false</option></select>
-        : <input type={definition?.valueType === "number" ? "number" : "text"} value={String(effect.value ?? "")} onChange={(event) => onChange({ ...effect, value: definition?.valueType === "number" ? Number(event.target.value) : event.target.value })} />}
+        : <input type={definition?.valueType === "number" ? "number" : "text"} value={String(effect.value ?? "")} onChange={(event) => onChange({ ...effect, value: definition?.valueType === "number" ? Number(event.target.value) : event.target.value })} /> : null}
     </>;
   },
 };

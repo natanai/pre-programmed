@@ -4,6 +4,7 @@ import { evaluateCondition } from "../../engine/rules/conditions";
 import type { Effect } from "../../engine/rules/model";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
+import { OPERATION_ARGUMENT_BINDING_PREFIX, PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
 import { interpolateText } from "../narrative/interpolation";
 import type { OperationArguments, OperationId, OperationTarget } from "./model";
 import type { OperationPlacement } from "./targetAdapter";
@@ -47,6 +48,14 @@ export function operationEventKey(target: OperationTarget, operation: OperationI
 
 function operationTargetLabel(snapshot: ProjectSnapshot, state: PlayState, target: OperationTarget) {
   return resolveTarget(snapshot, state, target)?.label ?? target.id;
+}
+
+function operationRuntimeBindings(state: PlayState, args: OperationArguments | undefined) {
+  const bindings: Record<string, string> = { [PLAYER_INPUT_BINDING]: state.lastCommand };
+  for (const [name, argument] of Object.entries(args ?? {})) {
+    bindings[`${OPERATION_ARGUMENT_BINDING_PREFIX}${name}`] = argument.kind === "text" ? argument.value : argument.label;
+  }
+  return bindings;
 }
 
 function sourceForOperation(
@@ -154,7 +163,9 @@ export function executeOperation(
   };
   const attempt = attemptOperation(snapshot, state, request);
   const source = sourceForOperation(target?.authorSource, request.operation, attempt.hookId);
-  const execution = executeEffects(snapshot, attempt.state, attempt.effects);
+  const execution = executeEffects(snapshot, attempt.state, attempt.effects, {
+    bindings: operationRuntimeBindings(state, request.arguments),
+  });
   const context = { snapshot, state: execution.state, now };
   return {
     eventKey: attempt.eventKey,

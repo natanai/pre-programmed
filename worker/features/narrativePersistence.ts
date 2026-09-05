@@ -29,7 +29,8 @@ type InteractionRow = {
   id: string;
   source_node_id: string;
   wording: string;
-  match_mode: Interaction["matchMode"];
+  match_mode: "command" | "fallback";
+  capture_input: number;
   choice_visibility: Interaction["choiceVisibility"];
   tags_json: string;
   notes: string;
@@ -142,6 +143,21 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 35 WHERE id = 1;
       `,
     },
+    {
+      id: 36,
+      name: "narrative-player-input-capture",
+      sql: `
+        ALTER TABLE interactions
+        ADD COLUMN capture_input INTEGER NOT NULL DEFAULT 0
+        CHECK (capture_input IN (0, 1));
+
+        CREATE UNIQUE INDEX interactions_one_capture_per_node
+        ON interactions(source_node_id)
+        WHERE capture_input = 1;
+
+        UPDATE project_meta SET schema_version = 36 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -156,7 +172,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, wording, match_mode, capture_input, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
         .all<InteractionChoiceVisibilityRow>(),
@@ -207,7 +223,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         id: row.id,
         sourceNodeId: row.source_node_id,
         wording: row.wording,
-        matchMode: row.match_mode ?? "command",
+        matchMode: row.capture_input ? "capture" : row.match_mode ?? "command",
         choiceVisibility: row.choice_visibility,
         choiceVisibleWhen: parseJson(choiceVisibilityByInteraction.get(row.id), { type: "always" }),
         tags: parseJson(row.tags_json, []),
@@ -270,18 +286,20 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
 
     if (operation.type === "interaction.upsert") {
       const value = operation.interaction;
+      const captureInput = value.matchMode === "capture";
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, match_mode, choice_visibility, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions (id, source_node_id, wording, match_mode, capture_input, choice_visibility, tags_json, notes, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             match_mode=excluded.match_mode, choice_visibility=excluded.choice_visibility, tags_json=excluded.tags_json,
-             notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
+             match_mode=excluded.match_mode, capture_input=excluded.capture_input, choice_visibility=excluded.choice_visibility,
+             tags_json=excluded.tags_json, notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
           value.sourceNodeId,
           value.wording,
-          value.matchMode ?? "command",
+          captureInput ? "command" : value.matchMode ?? "command",
+          Number(captureInput),
           value.choiceVisibility ?? "prompt",
           JSON.stringify(value.tags),
           value.notes,

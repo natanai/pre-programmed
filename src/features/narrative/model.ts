@@ -47,7 +47,12 @@ export type GameNode = {
 
 export type InteractionDisposition = "stay" | "transition";
 export type InteractionChoiceVisibility = "immediate" | "prompt" | "typed";
-export type InteractionMatchMode = "command" | "fallback";
+/**
+ * command: match authored wording/aliases.
+ * capture: accept otherwise-unmatched player text at this node.
+ * fallback: invalid-input response after every valid input mechanism declines it.
+ */
+export type InteractionMatchMode = "command" | "capture" | "fallback";
 
 export type InteractionOutcome = {
   id: string;

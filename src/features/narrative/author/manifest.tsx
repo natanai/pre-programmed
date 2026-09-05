@@ -3,6 +3,7 @@ import { previewEventsForEffects } from "../../../author/rules/catalog";
 import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { buildGraphIndex } from "../graph";
 import { createDraftInteraction } from "../drafts";
+import type { Interaction } from "../model";
 import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
 import { nodeWorkspace } from "./nodeWorkspace";
@@ -13,6 +14,12 @@ import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedCon
 import { narrativeProjectReferences } from "./references";
 
 const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "structure" } as const;
+
+function interactionLabel(interaction: Interaction) {
+  if (interaction.matchMode === "fallback") return "Invalid input response";
+  if (interaction.matchMode === "capture") return "Capture player input";
+  return interaction.wording || interaction.aliases[0] || "New scene input";
+}
 
 export const narrativeAuthorFeature: AuthorFeatureManifest = {
   id: "narrative",
@@ -26,7 +33,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "interaction") {
       const interaction = snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId);
       if (route.data?.fallback === "true" || interaction?.matchMode === "fallback") return "Invalid input response";
-      return interaction?.wording || interaction?.aliases[0] || route.data?.command || "New scene input";
+      return interaction ? interactionLabel(interaction) : route.data?.command || "New scene input";
     }
     return null;
   },
@@ -69,7 +76,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         return {
           id: interaction.id,
           value: interaction.id,
-          label: interaction.wording || interaction.aliases[0] || "Invalid input response",
+          label: interactionLabel(interaction),
           detail: source ? `Node #${source.nodeNumber}` : "Unknown source node",
         };
       }),
@@ -176,7 +183,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
                 kind: "interaction",
                 id: operation.interaction.id,
                 value: operation.interaction.id,
-                label: operation.interaction.wording || operation.interaction.aliases[0] || "Invalid input response",
+                label: interactionLabel(operation.interaction),
               });
             }
             return result;
