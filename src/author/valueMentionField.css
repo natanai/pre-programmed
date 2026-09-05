@@ -4,15 +4,91 @@
 }
 
 .value-mention-menu {
-  position: absolute;
-  z-index: 12;
-  left: 0;
-  right: 0;
-  display: grid;
-  max-height: 18em;
-  overflow-y: auto;
+  position: fixed;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  min-width: min(30rem, calc(100vw - 1.5rem));
+  overflow: hidden;
   border: 1px solid var(--dos-line);
   background: #000;
+  color: inherit;
+}
+
+.value-mention-header {
+  flex: 0 0 auto;
+  display: grid;
+  gap: .45em;
+  padding: .55em;
+  border-bottom: 1px solid var(--dos-line);
+  background: #000;
+}
+
+.value-mention-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+}
+
+.value-mention-title-row strong {
+  font-weight: normal;
+  color: var(--dos-bright);
+}
+
+.value-mention-close {
+  min-width: 2.5em;
+  min-height: 2.25em;
+  padding: 0 .4em;
+  border: 0;
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+.value-mention-search {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.6em;
+  box-sizing: border-box;
+  padding: .45em .55em;
+  border: 1px solid var(--dos-line);
+  border-radius: 0;
+  outline: 0;
+  background: #000;
+  color: inherit;
+  font: inherit;
+}
+
+.value-mention-search:focus {
+  border-color: var(--dos-bright);
+}
+
+.value-mention-search::placeholder {
+  color: var(--dos-muted);
+  opacity: 1;
+}
+
+.value-mention-results {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.value-mention-group + .value-mention-group {
+  border-top: 1px solid var(--dos-line);
+}
+
+.value-mention-group-label {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: .35em .55em;
+  border-bottom: 1px dotted var(--dos-line);
+  background: #000;
+  color: var(--dos-muted);
 }
 
 .value-mention-option {
@@ -21,10 +97,13 @@
   border-bottom: 1px dotted var(--dos-line);
 }
 
+.value-mention-option:last-child {
+  border-bottom: 0;
+}
+
 .value-mention-insert,
 .value-mention-edit,
 .value-mention-create {
-  min-height: 2.5em;
   border: 0;
   background: transparent;
   color: inherit;
@@ -33,39 +112,48 @@
 }
 
 .value-mention-insert {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: .75em;
+  gap: 1em;
   min-width: 0;
-  padding: .4em .55em;
+  min-height: 3.15em;
+  padding: .48em .6em;
   text-align: left;
 }
 
-.value-mention-insert > span:first-child {
+.value-mention-option-copy {
   display: grid;
   min-width: 0;
-  gap: .1em;
-  overflow: hidden;
+  gap: .15em;
 }
 
-.value-mention-insert strong,
-.value-mention-insert small {
+.value-mention-option-copy strong,
+.value-mention-option-copy small,
+.value-mention-type {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.value-mention-insert small,
-.value-mention-insert > span:last-child {
+.value-mention-option-copy strong {
+  font-weight: normal;
+}
+
+.value-mention-option-copy small,
+.value-mention-type {
   color: var(--dos-muted);
 }
 
 .value-mention-insert[aria-selected="true"] {
   color: var(--dos-bright);
+  outline: 1px dotted var(--dos-bright);
+  outline-offset: -2px;
 }
 
 .value-mention-edit {
+  min-width: 4.25em;
+  min-height: 3.15em;
   padding: .35em .5em;
   border-left: 1px dotted var(--dos-line);
   color: var(--dos-bright);
@@ -73,30 +161,78 @@
 
 .value-mention-create-list {
   display: grid;
-  border-top: 1px solid var(--dos-line);
+  grid-template-columns: repeat(auto-fit, minmax(10em, 1fr));
 }
 
 .value-mention-create {
-  padding: .45em .55em;
+  min-height: 2.75em;
+  padding: .45em .6em;
+  border-right: 1px dotted var(--dos-line);
   border-bottom: 1px dotted var(--dos-line);
   text-align: left;
   color: var(--dos-bright);
 }
 
-.value-mention-create:last-child {
-  border-bottom: 0;
-}
-
 .value-mention-empty {
-  padding: .55em;
+  padding: .8em .6em;
   color: var(--dos-muted);
 }
 
-@media (pointer: coarse), (max-width: 700px) {
+@media (max-width: 700px), (pointer: coarse) {
+  .value-mention-menu {
+    left: .5rem !important;
+    right: .5rem !important;
+    top: auto !important;
+    bottom: max(.5rem, env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    min-width: 0;
+    max-height: min(62dvh, 34rem) !important;
+  }
+
+  .value-mention-header {
+    gap: .5em;
+    padding: .65em;
+  }
+
+  .value-mention-search {
+    min-height: 44px;
+    font-size: max(16px, 1em);
+  }
+
+  .value-mention-close {
+    min-width: 44px;
+    min-height: 44px;
+    font-size: max(16px, 1em);
+  }
+
   .value-mention-insert,
   .value-mention-edit,
   .value-mention-create {
-    min-height: 2.75em;
     font-size: max(16px, 1em);
+  }
+
+  .value-mention-insert {
+    grid-template-columns: minmax(0, 1fr);
+    gap: .12em;
+    min-height: 50px;
+    padding: .55em .65em;
+  }
+
+  .value-mention-type {
+    font-size: .9em;
+  }
+
+  .value-mention-edit {
+    min-width: 4.75em;
+    min-height: 50px;
+  }
+
+  .value-mention-create-list {
+    grid-template-columns: 1fr;
+  }
+
+  .value-mention-create {
+    min-height: 48px;
+    border-right: 0;
   }
 }
