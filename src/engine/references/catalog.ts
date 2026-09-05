@@ -1,3 +1,4 @@
+import { COMMAND_SEMANTIC_REFERENCE_PROVIDERS } from "../../features/commands/semanticReferences";
 import { INVENTORY_SEMANTIC_REFERENCE_PROVIDERS } from "../../features/inventory/semanticReferences";
 import { MEDIA_SEMANTIC_REFERENCE_PROVIDERS } from "../../features/media/semanticReferences";
 import { NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS } from "../../features/narrative/semanticReferences";
@@ -17,6 +18,7 @@ export const SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvider[] 
   ...STATE_SEMANTIC_REFERENCE_PROVIDERS,
   ...INVENTORY_SEMANTIC_REFERENCE_PROVIDERS,
   ...MEDIA_SEMANTIC_REFERENCE_PROVIDERS,
+  ...COMMAND_SEMANTIC_REFERENCE_PROVIDERS,
 ];
 
 export function semanticReferenceProvider(kind: string) {
