@@ -7,6 +7,7 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     label: "Variables",
     description: "Authored mutable values, including flags and numeric player state.",
     authorResourceKind: "variable",
+    defaultProjection: "value",
     targetable: true,
     candidates: ({ snapshot, state }) => snapshot.variables.map((definition) => ({
       id: definition.id,
@@ -32,6 +33,7 @@ export const STATE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     label: "Computed values",
     description: "Authored read-only values calculated from the current run.",
     authorResourceKind: "computed",
+    defaultProjection: "value",
     targetable: true,
     candidates: ({ snapshot, state, now }) => snapshot.computedValues.map((definition) => ({
       id: definition.id,
