@@ -1,5 +1,5 @@
 import type { ProjectReferenceContribution, ResourceReference } from "../../../author/references/types";
-import { nodeLocationMode } from "../locationContext";
+import { nodeConversation, nodeLocationMode, nodePresentCharacters } from "../sceneContext";
 
 function fromTargets(
   targets: readonly ResourceReference[],
@@ -16,10 +16,18 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
       ownerLabel: `Node #${node.nodeNumber}`,
       route: { type: "feature" as const, feature: "narrative", workspace: "node", data: { nodeId: node.id } },
     };
+    const presentCharacters = nodePresentCharacters(node);
+    const conversation = nodeConversation(node);
     return [
       ...(node.characterId ? [{ ...owner, resourceKind: "character", resourceId: node.characterId, detail: "node speaker" }] : []),
       ...(nodeLocationMode(node) === "set" && node.locationId
         ? [{ ...owner, resourceKind: "location", resourceId: node.locationId, detail: "node location" }]
+        : []),
+      ...(presentCharacters.mode === "set"
+        ? presentCharacters.characterIds.map((characterId) => ({ ...owner, resourceKind: "character" as const, resourceId: characterId, detail: "character present in node scene" }))
+        : []),
+      ...(conversation.mode === "set"
+        ? conversation.characterIds.map((characterId) => ({ ...owner, resourceKind: "character" as const, resourceId: characterId, detail: "node conversation participant" }))
         : []),
       ...fromTargets(context.text(node.text), owner),
     ];
