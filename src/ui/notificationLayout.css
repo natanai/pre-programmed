@@ -40,6 +40,18 @@
   justify-items: center;
 }
 
+/* Wide pointer-based layouts use the real terminal command geometry as their
+   notification origin. The mobile centered/fixed placement above remains intact. */
+@media (min-width: 701px) and (pointer: fine) {
+  .floating-notifications {
+    left: var(--terminal-command-right, calc(50% + 16em));
+    bottom: var(--terminal-command-float-bottom, max(3.5em, env(safe-area-inset-bottom)));
+    width: min(32em, calc(100vw - 16px), calc(var(--terminal-command-right, 100vw) - 8px));
+    transform: translateX(-100%);
+    justify-items: end;
+  }
+}
+
 .floating-notifications > div,
 .floating-notifications > .notification-edit-target {
   width: max-content;
