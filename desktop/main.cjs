@@ -91,16 +91,20 @@ async function existingFile(candidate) {
   }
 }
 
-async function readAuthorKey(root) {
+async function readInstallationSettings(root) {
   const filename = path.join(root, INSTALLATION_FILE);
   let text;
   try {
     text = await readFile(filename, "utf8");
   } catch (error) {
-    if (error?.code === "ENOENT") return DEFAULT_AUTHOR_KEY;
+    if (error?.code === "ENOENT") {
+      return { authorKey: DEFAULT_AUTHOR_KEY, initializeUniverseText: undefined };
+    }
     throw error;
   }
 
+  let authorKey = "";
+  let initializeUniverseText;
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
@@ -110,10 +114,13 @@ async function readAuthorKey(root) {
     const value = line.slice(separator + 1).trim();
     if (name === "AUTHOR_KEY") {
       if (!value) throw new Error(`${INSTALLATION_FILE} has an empty AUTHOR_KEY.`);
-      return value;
+      authorKey = value;
+    } else if (name === "INITIALIZE_UNIVERSE_TEXT") {
+      initializeUniverseText = value;
     }
   }
-  throw new Error(`${INSTALLATION_FILE} must contain an AUTHOR_KEY=... line.`);
+  if (!authorKey) throw new Error(`${INSTALLATION_FILE} must contain an AUTHOR_KEY=... line.`);
+  return { authorKey, initializeUniverseText };
 }
 
 function sendFile(response, filename) {
@@ -157,7 +164,8 @@ async function startLocalHost() {
     mkdir(assetRoot, { recursive: true }),
     mkdir(exportRoot, { recursive: true }),
   ]);
-  const authorKey = await readAuthorKey(root);
+  const installation = await readInstallationSettings(root);
+  const authorKey = installation.authorKey;
 
   const workerScript = await readFile(resourcePath("worker.mjs"), "utf8");
   const { Miniflare, convertV4MiniflareOptions } = await import("miniflare");
@@ -198,6 +206,18 @@ async function startLocalHost() {
       const url = new URL(request.url ?? "/", "http://127.0.0.1");
       if (url.pathname.startsWith("/api/")) {
         await proxyApi(request, response);
+        return;
+      }
+
+      if (url.pathname === "/engine-text.txt" && typeof installation.initializeUniverseText === "string") {
+        const text = `# Pre-Programmed portable installation-owned player text\nINITIALIZE_UNIVERSE_TEXT=${installation.initializeUniverseText}\n`;
+        const bytes = Buffer.from(text, "utf8");
+        response.writeHead(200, {
+          "content-type": "text/plain; charset=utf-8",
+          "content-length": String(bytes.length),
+          "cache-control": "no-store",
+        });
+        response.end(bytes);
         return;
       }
 
@@ -245,6 +265,7 @@ async function startLocalHost() {
     url: `http://127.0.0.1:${address.port}/`,
     assetWarning,
     authorKey,
+    initializeUniverseText: installation.initializeUniverseText,
   };
 }
 
@@ -263,13 +284,20 @@ async function shutdown() {
 
 async function runSelfTest() {
   assertPortableElectronPaths(configuredPortableRoot);
-  const { url, assetWarning, authorKey } = await startLocalHost();
+  const { url, assetWarning, authorKey, initializeUniverseText } = await startLocalHost();
   if (assetWarning) throw new Error(`Portable asset scan failed: ${assetWarning}`);
 
   const indexResponse = await fetch(url, { cache: "no-store" });
   const indexText = await indexResponse.text();
   if (!indexResponse.ok || !indexText.includes("__PRE_PROGRAMMED_PORTABLE_ASSETS__")) {
     throw new Error("Portable client did not load through the local host.");
+  }
+
+  const engineTextResponse = await fetch(new URL("engine-text.txt", url), { cache: "no-store" });
+  const engineText = await engineTextResponse.text();
+  if (!engineTextResponse.ok || (typeof initializeUniverseText === "string"
+    && !engineText.split(/\r?\n/).includes(`INITIALIZE_UNIVERSE_TEXT=${initializeUniverseText}`))) {
+    throw new Error("Portable installation startup text contract failed.");
   }
 
   const healthResponse = await fetch(new URL("api/health", url), { cache: "no-store" });
