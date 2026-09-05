@@ -1,11 +1,12 @@
 import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "./catalog";
+import { makeSemanticReferenceToken, semanticReferenceTokenPattern } from "./syntax";
 import type {
   SemanticReferenceCandidate,
   SemanticReferenceContext,
   SemanticReferenceProvider,
 } from "./types";
 
-const TOKEN_PATTERN = /\{\{ref:([^:|}]+):([^|}]+)(?:\|([^|}]+))?(?:\|([^}]+))?\}\}/g;
+export { makeSemanticReferenceToken } from "./syntax";
 
 export type SemanticReferenceToken = {
   token: string;
@@ -35,15 +36,6 @@ export function semanticReferenceCandidate(
   return semanticReferenceProvider(kind)?.candidates(context).find((candidate) => candidate.id === id) ?? null;
 }
 
-export function makeSemanticReferenceToken(
-  kind: string,
-  id: string,
-  projection?: string,
-  format?: string,
-) {
-  return `{{ref:${kind}:${id}${projection ? `|${projection}` : ""}${format ? `|${format}` : ""}}}`;
-}
-
 export function tokenForSemanticReference(
   provider: SemanticReferenceProvider,
   candidate: SemanticReferenceCandidate,
@@ -57,7 +49,7 @@ export function tokenForSemanticReference(
 }
 
 export function findSemanticReferenceTokens(template: string): SemanticReferenceToken[] {
-  return Array.from(template.matchAll(TOKEN_PATTERN), (match) => ({
+  return Array.from(template.matchAll(semanticReferenceTokenPattern()), (match) => ({
     token: match[0],
     kind: match[1],
     id: match[2],
@@ -86,7 +78,7 @@ export function renderSemanticReferenceToken(
 }
 
 export function interpolateSemanticReferences(template: string, context: SemanticReferenceContext) {
-  return template.replace(TOKEN_PATTERN, (_raw, kind: string, id: string, projection?: string, format?: string) =>
+  return template.replace(semanticReferenceTokenPattern(), (_raw, kind: string, id: string, projection?: string, format?: string) =>
     renderSemanticReferenceToken({
       kind,
       id,
