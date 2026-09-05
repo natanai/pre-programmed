@@ -4,6 +4,12 @@ import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { Interaction } from "../model";
 import "./structureNavigator.css";
 
+function interactionLabel(interaction: Interaction) {
+  if (interaction.matchMode === "fallback") return "INVALID INPUT";
+  if (interaction.matchMode === "capture") return "CAPTURE PLAYER INPUT";
+  return interaction.wording || interaction.aliases[0] || "UNTITLED INPUT";
+}
+
 export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInteraction, onClose: _onClose }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -19,7 +25,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
     const interactionText = new Map<string, string[]>();
     for (const interaction of snapshot.interactions) {
       const values = interactionText.get(interaction.sourceNodeId) ?? [];
-      values.push(interaction.wording, ...interaction.aliases);
+      values.push(interactionLabel(interaction), interaction.wording, ...interaction.aliases);
       interactionText.set(interaction.sourceNodeId, values);
     }
     return snapshot.nodes.map((node) => ({
@@ -121,7 +127,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
           const active = columnIndex === path.length - 1;
           const rootLabel = node.id === playState.currentNodeId ? "CURRENT NODE" : "BROWSED NODE";
           return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
-            <small className="structure-arrival">{arrivedBy ? `VIA ${arrivedBy.matchMode === "fallback" ? "INVALID INPUT" : arrivedBy.wording || arrivedBy.aliases[0]}` : columnIndex === 0 ? rootLabel : "HERE"}</small>
+            <small className="structure-arrival">{arrivedBy ? `VIA ${interactionLabel(arrivedBy)}` : columnIndex === 0 ? rootLabel : "HERE"}</small>
             <button type="button" className="structure-node" onClick={() => onOpenNode(node.id)}>
               <span>#{node.nodeNumber} {node.text.slice(0, 70)}</span>
               <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</strong>
@@ -133,7 +139,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
             <div className="structure-branches">
               {outgoing.map((interaction) => <div className="structure-branch" key={interaction.id}>
                 <div className="structure-branch-head">
-                  <span className="structure-input-name">{interaction.matchMode === "fallback" ? "INVALID INPUT" : interaction.wording || interaction.aliases[0]}</span>
+                  <span className="structure-input-name">{interactionLabel(interaction)}</span>
                   <button type="button" className="branch-edit" onClick={() => onEditInteraction(interaction)}>[EDIT]</button>
                 </div>
                 <div className="structure-outcomes">
