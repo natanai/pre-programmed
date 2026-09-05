@@ -18,6 +18,45 @@ export type InteractionExecution = {
   source?: AuthoredSourceIdentity;
 };
 
+export type NodeEntryExecution = {
+  state: PlayState;
+  events: EffectEvent[];
+};
+
+/**
+ * Executes the effects owned by a Node after runtime traversal enters it.
+ * Entry effects may themselves transition, so follow that chain while keeping
+ * each emitted presentation event attributed to the Node that produced it.
+ */
+export function executeNodeEntryEffects(
+  snapshot: ProjectSnapshot,
+  initialState: PlayState,
+  nodeId = initialState.currentNodeId,
+  maxDepth = 16,
+): NodeEntryExecution {
+  let state = initialState;
+  const events: EffectEvent[] = [];
+  let currentNodeId = nodeId;
+
+  for (let depth = 0; depth < maxDepth; depth += 1) {
+    const node = snapshot.nodes.find((candidate) => candidate.id === currentNodeId);
+    if (!node) break;
+    const source = authoredSource("node", node.id, { section: "entry-effects" });
+    const execution = executeEffects(snapshot, state, node.entryEffects ?? []);
+    state = execution.state;
+    events.push(...execution.events.map((event) => {
+      const next = event.type === "notification"
+        ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
+        : event;
+      return { ...next, source };
+    }));
+    if (state.currentNodeId === currentNodeId) break;
+    currentNodeId = state.currentNodeId;
+  }
+
+  return { state, events };
+}
+
 export function executeInteraction(
   snapshot: ProjectSnapshot,
   initialState: PlayState,
@@ -44,16 +83,24 @@ export function executeInteraction(
     state = transitionState(state, outcome.destinationNodeId);
   }
 
+  const interactionEvents = execution.events.map((event) => {
+    const next = event.type === "notification"
+      ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
+      : event;
+    return { ...next, source };
+  });
+  const enteredNode = state.currentNodeId !== initialState.currentNodeId
+    || state.traversal.length > initialState.traversal.length;
+  const entry = enteredNode
+    ? executeNodeEntryEffects(snapshot, state, state.currentNodeId)
+    : { state, events: [] };
+  state = entry.state;
+
   return {
     state,
     outcome,
     responseText: interpolateText(outcome.responseText, { snapshot, state }),
-    events: execution.events.map((event) => {
-      const next = event.type === "notification"
-        ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
-        : event;
-      return { ...next, source };
-    }),
+    events: [...interactionEvents, ...entry.events],
     attempt,
     eventKey,
     source,
