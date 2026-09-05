@@ -13,6 +13,8 @@
 .terminal-command-stack {
   position: relative;
   grid-row: 2;
+  width: fit-content;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -27,6 +29,8 @@
 
 .terminal-command-stack > .prompt-line {
   grid-row: auto;
+  width: fit-content;
+  max-width: 100%;
 }
 
 .terminal-lower {
@@ -63,6 +67,7 @@
 
 .terminal-command-control {
   flex: 0 1 calc(clamp(12em, 52vw, 30em) + 2.1em);
+  width: calc(clamp(12em, 52vw, 30em) + 2.1em);
   display: flex;
   align-items: flex-start;
   gap: .2em;
@@ -316,6 +321,7 @@ button.terminal-node-anchor:active {
 @media (max-width: 700px), (pointer: coarse) {
   .terminal-command-control {
     flex-basis: calc(clamp(11em, 52vw, 24em) + 2.1em);
+    width: calc(clamp(11em, 52vw, 24em) + 2.1em);
   }
 
   .terminal-command-label {
