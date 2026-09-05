@@ -1,0 +1,49 @@
+name: Temporary interaction conversation prose patch
+
+on:
+  push:
+    branches: [interaction-conversation-prose]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-interaction-conversation-prose
+  cancel-in-progress: true
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: interaction-conversation-prose
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply patch when present
+        shell: bash
+        run: |
+          if [ ! -f .github/interaction-conversation.patch ]; then
+            echo "Patch not staged yet."
+            exit 0
+          fi
+          git apply --check .github/interaction-conversation.patch
+          git apply .github/interaction-conversation.patch
+      - name: Verify
+        if: ${{ hashFiles('.github/interaction-conversation.patch') != '' }}
+        run: |
+          npm ci --no-audit --no-fund
+          npm run verify
+      - name: Commit clean result
+        if: ${{ hashFiles('.github/interaction-conversation.patch') != '' }}
+        shell: bash
+        run: |
+          git rm .github/interaction-conversation.patch .github/workflows/temp-apply-interaction-conversation.yml
+          git config user.name "natanai"
+          git config user.email "109430106+natanai@users.noreply.github.com"
+          git add -A
+          git commit -m "Share Node conversation prose format with responses"
+          git push origin HEAD:interaction-conversation-prose
