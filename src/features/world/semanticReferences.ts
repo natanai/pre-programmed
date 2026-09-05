@@ -47,8 +47,6 @@ function currentEntityCandidate(
         description: entity?.description ?? "",
       },
       ...(entity ? { target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id } } : {}),
-      // The selector itself has no fake editor. Edit the resolved World resource;
-      // if unresolved, edit the Node that owns the relationship.
       author: entity
         ? { resourceKind: kind, resourceId: entity.id }
         : node ? { resourceKind: "node", resourceId: node.id } : undefined,
@@ -63,6 +61,7 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     label: "Locations",
     description: "Authored places and the location belonging to the current Node.",
     authorResourceKind: "location",
+    defaultProjection: "name",
     targetable: true,
     candidates: (context) => [
       ...currentEntityCandidate("location", "current-location", "Current location", ["here", "current location", "this place"])(context),
@@ -77,6 +76,7 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     label: "Characters",
     description: "Authored people and the speaker assigned to the current Node.",
     authorResourceKind: "character",
+    defaultProjection: "name",
     targetable: true,
     candidates: (context) => [
       ...currentEntityCandidate("character", "current-speaker", "Current speaker", ["current speaker", "speaker", "this speaker"])(context),
