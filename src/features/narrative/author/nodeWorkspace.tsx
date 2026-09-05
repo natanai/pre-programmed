@@ -1,5 +1,6 @@
 import type { AuthorWorkspaceContext } from "../../../author/features/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
@@ -123,6 +124,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           content: <AuthoredTextEditor
             value={{ text: draft.node.text, performance: draft.node.performance }}
             snapshot={context.snapshot}
+            playState={context.playState}
             label="NODE TEXT"
             rows={7}
             autoFocus={!data?.nodeId}
@@ -180,13 +182,16 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
                 </select>
               </label>
               {anchor.mode === "set" ? <label>ANCHOR TEXT
-                <textarea
+                <ValueMentionField
+                  snapshot={context.snapshot}
+                  playState={context.playState}
+                  multiline
                   rows={3}
                   value={anchor.text}
                   placeholder="Persistent context shown beneath the player input"
-                  onChange={(event) => setDraft((current) => ({
+                  onValueChange={(text) => setDraft((current) => ({
                     ...current,
-                    node: { ...current.node, anchor: { mode: "set", text: event.target.value } },
+                    node: { ...current.node, anchor: { mode: "set", text } },
                   }))}
                 />
               </label> : <small>{anchor.mode === "continue"
