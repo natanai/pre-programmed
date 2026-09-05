@@ -68,26 +68,26 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
         ],
       },
-      {
-        type: "disclosure",
+      ...(draft.type === "location" ? [{
+        type: "disclosure" as const,
         id: "world-entity-behavior",
         label: "Player interactions",
         summary: draft.interactable ? `${draft.operations?.length ?? 0} operations` : "Not directly interactable",
         defaultOpen: Boolean(route.data?.preferredOperation),
         children: [{
-          type: "custom",
+          type: "custom" as const,
           id: "world-entity-operations",
-          role: "specialized-control",
+          role: "specialized-control" as const,
           content: <OperationHooksEditor
             capability={{ interactable: draft.interactable ?? false, operations: draft.operations ?? [], hooks: draft.hooks ?? [] }}
             snapshot={context.snapshot}
-            targetKind={`world.${draft.type}`}
+            targetKind="world.location"
             defaultOpen={Boolean(route.data?.preferredOperation)}
             preferredOperation={route.data?.preferredOperation}
             onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
           />,
         }],
-      },
+      }] : []),
     ],
   }),
   async save({ route, context, draft }) {
@@ -98,7 +98,9 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
       existingKeys: context.snapshot.entities.filter((entity) => entity.id !== draft.id).map((entity) => entity.key),
       fallback: draft.type,
     });
-    const saved = { ...draft, key };
+    const saved = draft.type === "character"
+      ? { ...draft, key, interactable: false, operations: [], hooks: [] }
+      : { ...draft, key };
     const result = await context.persist([{ type: "entity.upsert", entity: saved }], `Save ${saved.type} ${saved.name || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
