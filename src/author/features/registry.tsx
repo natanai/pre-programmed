@@ -3,6 +3,7 @@ import { commandsAuthorFeature } from "../../features/commands/author/manifest";
 import { inventoryAuthorFeature } from "../../features/inventory/author/manifest";
 import { mediaAuthorFeature } from "../../features/media/author/manifest";
 import { narrativeAuthorFeature } from "../../features/narrative/author/manifest";
+import { radixAuthorFeature } from "../../features/radix/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { worldAuthorFeature } from "../../features/world/author/manifest";
 import type { AuthorResourceProvider } from "../resources/types";
@@ -41,6 +42,7 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   stateAuthorFeature,
   inventoryAuthorFeature,
   mediaAuthorFeature,
+  radixAuthorFeature,
   commandsAuthorFeature,
   projectAuthorFeature,
 ];
