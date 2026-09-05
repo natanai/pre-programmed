@@ -1,4 +1,4 @@
-import type { RadixSequenceDefinition } from "./model";
+import type { RadixSequenceDefinition, SortAlgorithm } from "./model";
 
 export type RadixSortEvent =
   | { type: "access"; index: number; value: number; accesses: number }
@@ -53,10 +53,42 @@ export function createSeededArray(size: number, seed: number) {
   return values;
 }
 
-/**
- * Independently implemented stable LSD radix sort. The algorithm emits semantic
- * operations; browser rendering and sound remain separate consumers.
- */
+function eventRuntime(initial: readonly number[]) {
+  const array = [...initial];
+  const events: RadixSortEvent[] = [];
+  let accesses = 0;
+  let passes = 0;
+
+  const access = (index: number) => {
+    const value = array[index];
+    accesses += 1;
+    events.push({ type: "access", index, value, accesses });
+    return value;
+  };
+  const write = (index: number, value: number) => {
+    array[index] = value;
+    accesses += 1;
+    events.push({ type: "write", index, value, accesses });
+  };
+  const markers = (indexes: number[]) => events.push({ type: "markers", indexes, accesses });
+  const pass = () => events.push({ type: "pass", digit: passes++, accesses });
+  const swap = (left: number, right: number) => {
+    if (left === right) return;
+    const leftValue = access(left);
+    const rightValue = access(right);
+    write(left, rightValue);
+    write(right, leftValue);
+  };
+  const complete = () => {
+    markers([]);
+    events.push({ type: "complete", accesses });
+    return { array, events };
+  };
+
+  return { array, events, access, write, markers, pass, swap, complete };
+}
+
+/** Independently implemented stable LSD radix sort. */
 export function radixSortEvents(initial: readonly number[], radix: number) {
   const array = [...initial];
   const events: RadixSortEvent[] = [];
@@ -67,13 +99,11 @@ export function radixSortEvents(initial: readonly number[], radix: number) {
 
   while (Math.floor(maximum / divisor) > 0) {
     const buckets = Array.from({ length: radix }, () => [] as number[]);
-
     for (let index = 0; index < array.length; index += 1) {
       const value = array[index];
       accesses += 1;
       events.push({ type: "access", index, value, accesses });
-      const bucket = Math.floor(value / divisor) % radix;
-      buckets[bucket].push(value);
+      buckets[Math.floor(value / divisor) % radix].push(value);
     }
 
     let cursor = 0;
@@ -96,6 +126,117 @@ export function radixSortEvents(initial: readonly number[], radix: number) {
   events.push({ type: "markers", indexes: [], accesses });
   events.push({ type: "complete", accesses });
   return { array, events };
+}
+
+export function quickSortEvents(initial: readonly number[]) {
+  const runtime = eventRuntime(initial);
+  const stack: Array<[number, number]> = [[0, runtime.array.length - 1]];
+  while (stack.length) {
+    const [low, high] = stack.pop()!;
+    if (low >= high) continue;
+    const pivot = runtime.access(high);
+    let partition = low;
+    for (let cursor = low; cursor < high; cursor += 1) {
+      runtime.markers([low, partition, cursor, high]);
+      if (runtime.access(cursor) <= pivot) {
+        runtime.swap(partition, cursor);
+        partition += 1;
+      }
+    }
+    runtime.swap(partition, high);
+    runtime.pass();
+    const left: [number, number] = [low, partition - 1];
+    const right: [number, number] = [partition + 1, high];
+    if (left[1] - left[0] > right[1] - right[0]) {
+      stack.push(left, right);
+    } else {
+      stack.push(right, left);
+    }
+  }
+  return runtime.complete();
+}
+
+export function mergeSortEvents(initial: readonly number[]) {
+  const runtime = eventRuntime(initial);
+  const length = runtime.array.length;
+  for (let width = 1; width < length; width *= 2) {
+    for (let left = 0; left < length; left += width * 2) {
+      const middle = Math.min(left + width, length);
+      const right = Math.min(left + width * 2, length);
+      if (middle >= right) continue;
+      runtime.markers([left, middle, right - 1]);
+      const leftValues: number[] = [];
+      const rightValues: number[] = [];
+      for (let index = left; index < middle; index += 1) leftValues.push(runtime.access(index));
+      for (let index = middle; index < right; index += 1) rightValues.push(runtime.access(index));
+      let li = 0;
+      let ri = 0;
+      let target = left;
+      while (li < leftValues.length || ri < rightValues.length) {
+        const useLeft = ri >= rightValues.length || (li < leftValues.length && leftValues[li] <= rightValues[ri]);
+        runtime.write(target++, useLeft ? leftValues[li++] : rightValues[ri++]);
+      }
+    }
+    runtime.pass();
+  }
+  return runtime.complete();
+}
+
+export function heapSortEvents(initial: readonly number[]) {
+  const runtime = eventRuntime(initial);
+  const siftDown = (start: number, end: number) => {
+    let root = start;
+    while (root * 2 + 1 <= end) {
+      let child = root * 2 + 1;
+      let swapIndex = root;
+      runtime.markers([root, child, end]);
+      if (runtime.access(swapIndex) < runtime.access(child)) swapIndex = child;
+      if (child + 1 <= end && runtime.access(swapIndex) < runtime.access(child + 1)) swapIndex = child + 1;
+      if (swapIndex === root) return;
+      runtime.swap(root, swapIndex);
+      root = swapIndex;
+    }
+  };
+
+  for (let start = Math.floor((runtime.array.length - 2) / 2); start >= 0; start -= 1) siftDown(start, runtime.array.length - 1);
+  for (let end = runtime.array.length - 1; end > 0; end -= 1) {
+    runtime.swap(0, end);
+    siftDown(0, end - 1);
+    runtime.pass();
+  }
+  return runtime.complete();
+}
+
+export function shellSortEvents(initial: readonly number[]) {
+  const runtime = eventRuntime(initial);
+  for (let gap = Math.floor(runtime.array.length / 2); gap > 0; gap = Math.floor(gap / 2)) {
+    for (let index = gap; index < runtime.array.length; index += 1) {
+      const value = runtime.access(index);
+      let cursor = index;
+      runtime.markers([Math.max(0, cursor - gap), cursor]);
+      while (cursor >= gap) {
+        const previous = runtime.access(cursor - gap);
+        if (previous <= value) break;
+        runtime.write(cursor, previous);
+        cursor -= gap;
+        runtime.markers([Math.max(0, cursor - gap), cursor]);
+      }
+      runtime.write(cursor, value);
+    }
+    runtime.pass();
+  }
+  return runtime.complete();
+}
+
+export function sortEvents(initial: readonly number[], algorithm: SortAlgorithm, radix: number) {
+  switch (algorithm) {
+    case "quick": return quickSortEvents(initial);
+    case "merge": return mergeSortEvents(initial);
+    case "heap": return heapSortEvents(initial);
+    case "shell": return shellSortEvents(initial);
+    case "radix-lsd":
+    default: return radixSortEvents(initial, radix);
+  }
 }
 
 export function frequencyForValue(value: number, arraySize: number, minFrequency: number, maxFrequency: number) {
