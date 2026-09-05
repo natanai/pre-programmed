@@ -37,6 +37,14 @@ function mentionAt(value: string, cursor: number): Mention | null {
   return { start: cursor - query.length - 1, end: cursor, query };
 }
 
+function projectionLabel(projection: string) {
+  return projection
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .toUpperCase();
+}
+
 function searchableReferenceText(entry: ReturnType<typeof semanticReferenceEntries>[number]) {
   return [
     entry.candidate.key,
@@ -46,6 +54,7 @@ function searchableReferenceText(entry: ReturnType<typeof semanticReferenceEntri
     entry.provider.kind,
     entry.provider.authorSyntax ?? "",
     ...entry.candidate.aliases,
+    ...Object.keys(entry.candidate.projections),
     ...Object.values(entry.candidate.projections)
       .filter((value): value is string | number | boolean => ["string", "number", "boolean"].includes(typeof value))
       .map(String),
@@ -163,9 +172,9 @@ export function ValueMentionField({
     });
   };
 
-  const insertMatch = (match: (typeof matches)[number]) => {
+  const insertMatch = (match: (typeof matches)[number], projection?: string) => {
     if (!mention) return;
-    const syntax = authorSyntaxForSemanticReference(match.provider, match.candidate);
+    const syntax = authorSyntaxForSemanticReference(match.provider, match.candidate, projection);
     const nextDisplay = `${authorView.text.slice(0, mention.start)}${syntax}${authorView.text.slice(mention.end)}`;
     applyDisplayValue(nextDisplay, mention.start + syntax.length);
   };
@@ -203,12 +212,21 @@ export function ValueMentionField({
       const owner = match.candidate.author;
       const editable = Boolean(owner && resources.canEdit(owner.resourceKind, owner.resourceId));
       const syntax = authorSyntaxForSemanticReference(match.provider, match.candidate);
+      const projections = Object.keys(match.candidate.projections);
       return {
         id: `${match.provider.kind}:${match.candidate.id}`,
         label: match.candidate.label,
         detail: [match.candidate.detail, syntax].filter(Boolean).join(" · "),
         meta: match.provider.label,
         onSelect: () => insertMatch(match),
+        ...(projections.length > 1 ? {
+          choices: projections.map((projection) => ({
+            id: projection,
+            label: projectionLabel(projection),
+            ariaLabel: `Insert ${match.candidate.label} as ${projectionLabel(projection)}`,
+            onSelect: () => insertMatch(match, projection),
+          })),
+        } : {}),
         ...(editable && owner ? {
           secondary: {
             label: "[EDIT]",

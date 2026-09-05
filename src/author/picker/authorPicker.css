@@ -39,6 +39,7 @@
 .author-picker-close,
 .author-picker-primary,
 .author-picker-secondary,
+.author-picker-choices button,
 .author-picker-actions button {
   border: 0;
   background: transparent;
@@ -129,6 +130,11 @@
 .author-picker-copy small,
 .author-picker-meta { color: var(--dos-muted); }
 
+.author-picker-row-actions {
+  display: flex;
+  align-self: stretch;
+}
+
 .author-picker-secondary {
   min-width: 4.25em;
   min-height: 3.15em;
@@ -136,6 +142,24 @@
   border-left: 1px dotted var(--dos-line);
   color: var(--dos-bright);
 }
+
+.author-picker-choices {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25em .65em;
+  padding: .4em .6em .5em;
+  border-top: 1px dotted var(--dos-line);
+  color: var(--dos-muted);
+}
+.author-picker-choices button {
+  padding: .25em 0;
+  color: var(--dos-bright);
+  text-align: left;
+}
+.author-picker-choices button:hover,
+.author-picker-choices button:focus-visible { text-decoration: underline; }
 
 .author-picker-actions {
   flex: 0 0 auto;
@@ -169,6 +193,7 @@
   .author-picker-close,
   .author-picker-primary,
   .author-picker-secondary,
+  .author-picker-choices button,
   .author-picker-actions button { font-size: max(16px, 1em); }
   .author-picker-search,
   .author-picker-close { min-height: 44px; }
@@ -180,7 +205,10 @@
     padding: .55em .65em;
   }
   .author-picker-meta { font-size: .9em; }
+  .author-picker-row-actions { flex-direction: column; }
   .author-picker-secondary { min-width: 4.75em; min-height: 50px; }
+  .author-picker-choices { gap: .3em .8em; padding: .45em .65em .6em; }
+  .author-picker-choices button { min-height: 44px; }
   .author-picker-actions { grid-template-columns: 1fr; }
   .author-picker-actions button { min-height: 48px; border-right: 0; }
 }
