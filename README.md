@@ -168,6 +168,7 @@ Cloudflare is a bundled platform implementation, not the definition of the engin
 ## Repository layout
 
 ```text
+public/engine-text.txt     human-editable installation-owned player text
 public/assets/             version-controlled file Media
 src/App.tsx                application/session composition shell
 src/engine/                shared contracts and composition roots
@@ -229,7 +230,7 @@ The workflow verifies the engine, persistent no-cloud runtime, and hosted deploy
 
 Recipients extract the whole `Pre-Programmed` folder and run `Pre-Programmed.exe` in place. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine. Runtime state, D1 data, cache, exports, and local installation configuration stay beneath that extracted folder.
 
-`installation.txt` owns that local installation's Author key. `.ppgame` owns portable authored project data. The Author key is not part of `.ppgame`; a future hosted installation may reuse the same value for its `ADMIN_KEY` secret or choose a different one.
+`public/engine-text.txt` is the repository-facing plain-text home for installation-owned player wording such as `INITIALIZE_UNIVERSE_TEXT`. The portable workflow copies that value into the extracted `installation.txt`, beside `AUTHOR_KEY`, so a portable author can change the startup phrase and local Author password in one place. `.ppgame` remains the owner of portable authored project data; neither installation setting is stored in the project export. A future hosted installation may reuse the portable `AUTHOR_KEY` value for its `ADMIN_KEY` secret or choose a different one.
 
 ## Production workflow
 
