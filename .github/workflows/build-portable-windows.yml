@@ -135,20 +135,6 @@ jobs:
             throw "Portable runtime contains installation-specific references."
           }
 
-      - name: Prepare portable installation text
-        shell: pwsh
-        run: |
-          $sourceLine = @(Get-Content "public/engine-text.txt" | Where-Object { $_ -match '^INITIALIZE_UNIVERSE_TEXT=' }) | Select-Object -First 1
-          if ($null -eq $sourceLine) { throw "public/engine-text.txt must contain INITIALIZE_UNIVERSE_TEXT=..." }
-          $templatePath = "desktop/installation-template.txt"
-          $templateLines = @(Get-Content $templatePath)
-          $found = $false
-          $templateLines = $templateLines | ForEach-Object {
-            if ($_ -match '^INITIALIZE_UNIVERSE_TEXT=') { $found = $true; $sourceLine } else { $_ }
-          }
-          if (-not $found) { throw "Portable installation template must contain INITIALIZE_UNIVERSE_TEXT=." }
-          Set-Content -Path $templatePath -Value $templateLines -Encoding UTF8
-
       - name: Build pre-extracted Windows runtime
         working-directory: desktop
         shell: pwsh
@@ -230,11 +216,6 @@ jobs:
           $installationText = Get-Content (Join-Path $env:APP_ROOT "installation.txt") -Raw
           if ($installationText -notmatch '(?m)^AUTHOR_KEY=local\s*$') {
             throw "Portable installation.txt did not reset to its friend-facing Author-key default."
-          }
-          $expectedInitializeLine = @(Get-Content "public/engine-text.txt" | Where-Object { $_ -match '^INITIALIZE_UNIVERSE_TEXT=' }) | Select-Object -First 1
-          $actualInitializeLine = @(Get-Content (Join-Path $env:APP_ROOT "installation.txt") | Where-Object { $_ -match '^INITIALIZE_UNIVERSE_TEXT=' }) | Select-Object -First 1
-          if ($null -eq $expectedInitializeLine -or $actualInitializeLine -ne $expectedInitializeLine) {
-            throw "Portable installation.txt did not inherit INITIALIZE_UNIVERSE_TEXT from public/engine-text.txt."
           }
 
           if (@(Get-ChildItem (Join-Path $env:APP_ROOT "data") -Force).Count -ne 0) {
