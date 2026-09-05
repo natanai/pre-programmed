@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   apply-and-verify:
-    if: github.event.head_commit.message == 'Run Radix caption ownership cleanup'
+    if: github.event.head_commit.message == 'Retry Radix caption ownership cleanup'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,7 +33,7 @@ jobs:
       - name: Reject old caption override outside packaging workflow
         shell: bash
         run: |
-          if git grep -n -E 'INITIALIZE_UNIVERSE_TEXT|loadInstallationPublicSettings|installationText' -- ':!.github/workflows/build-portable-windows.yml'; then
+          if git grep -n -E 'INITIALIZE_UNIVERSE_TEXT|loadInstallationPublicSettings|installationText' -- ':!.github/workflows/build-portable-windows.yml' ':!.github/workflows/apply-radix-caption-owner-fix.yml'; then
             echo 'Legacy startup-caption ownership remains outside the packaging workflow.' >&2
             exit 1
           fi
