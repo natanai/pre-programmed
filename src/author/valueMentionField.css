@@ -3,12 +3,18 @@
   min-width: 0;
 }
 
-.value-mention-menu {
+/*
+ * The picker is portaled directly to <body>. Keep this selector more specific
+ * than legacy global Author styles so the transient picker cannot be collapsed
+ * back into an inline 3.5em menu by unrelated workspace CSS.
+ */
+body > .value-mention-menu {
   position: fixed;
-  z-index: 1200;
+  z-index: 5000;
   display: flex;
   flex-direction: column;
   min-width: min(30rem, calc(100vw - 1.5rem));
+  margin: 0;
   overflow: hidden;
   border: 1px solid var(--dos-line);
   background: #000;
@@ -75,6 +81,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
+  -webkit-overflow-scrolling: touch;
 }
 
 .value-mention-group + .value-mention-group {
@@ -179,14 +186,21 @@
 }
 
 @media (max-width: 700px), (pointer: coarse) {
-  .value-mention-menu {
+  /*
+   * Mobile Safari keeps a layout viewport behind the software keyboard. The
+   * terminal shell already publishes the true visual viewport in these CSS
+   * variables, so anchor the sheet to that same canonical viewport instead of
+   * `bottom: 0`, which can place it underneath the keyboard.
+   */
+  body > .value-mention-menu {
     left: .5rem !important;
     right: .5rem !important;
-    top: auto !important;
-    bottom: max(.5rem, env(safe-area-inset-bottom)) !important;
+    top: calc(var(--terminal-viewport-top, 0px) + .5rem) !important;
+    bottom: auto !important;
     width: auto !important;
+    height: calc(var(--terminal-viewport-height, 100dvh) - 1rem) !important;
     min-width: 0;
-    max-height: min(62dvh, 34rem) !important;
+    max-height: calc(var(--terminal-viewport-height, 100dvh) - 1rem) !important;
   }
 
   .value-mention-header {
