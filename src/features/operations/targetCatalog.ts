@@ -1,3 +1,4 @@
+import { PLAYER_COMMAND_OPERATION_TARGET_ADAPTER } from "../commands/operationAdapter";
 import { ITEM_OPERATION_TARGET_ADAPTER } from "../inventory/operationAdapter";
 import {
   COMPUTED_OPERATION_TARGET_ADAPTER,
@@ -13,6 +14,7 @@ import type { OperationTargetAdapter } from "./targetAdapter";
  * does not gain feature-specific switch branches.
  */
 export const OPERATION_TARGET_ADAPTERS: Readonly<Record<string, OperationTargetAdapter>> = Object.fromEntries([
+  PLAYER_COMMAND_OPERATION_TARGET_ADAPTER,
   ITEM_OPERATION_TARGET_ADAPTER,
   VARIABLE_OPERATION_TARGET_ADAPTER,
   COMPUTED_OPERATION_TARGET_ADAPTER,
