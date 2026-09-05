@@ -4,7 +4,8 @@ import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
-import type { GameNode, NodeAnchor } from "../model";
+import { nodeLocationMode, normalizeNodeLocationContext } from "../locationContext";
+import type { GameNode, NodeAnchor, NodeLocationMode } from "../model";
 import { nextNodeNumber } from "../nodeNumber";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
 import "./nodeWorkspace.css";
@@ -35,6 +36,7 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     tags: [],
     characterId: null,
     locationId: null,
+    locationMode: "continue",
     anchor: { ...CONTINUE_ANCHOR },
     performance: { charactersPerSecond: 18, cues: [] },
   } satisfies GameNode;
@@ -68,12 +70,23 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   createDraft(route, context) {
     const node = nodeForRoute(route, context);
     if (!node) throw new Error("Node workspace opened without a node or create-resource task.");
-    return { node: { ...node, anchor: { ...nodeAnchor(node) } } };
+    return {
+      node: {
+        ...normalizeNodeLocationContext(node),
+        anchor: { ...nodeAnchor(node) },
+      },
+    };
   },
   buildSpec({ draft, setDraft, context, route }) {
     const data = routeData(route);
     const speaker = context.snapshot.entities.find((entity) => entity.id === draft.node.characterId)?.name ?? "Narration";
-    const location = context.snapshot.entities.find((entity) => entity.id === draft.node.locationId)?.name ?? "No location";
+    const locationMode = nodeLocationMode(draft.node);
+    const selectedLocation = draft.node.locationId
+      ? context.snapshot.entities.find((entity) => entity.id === draft.node.locationId && entity.type === "location")
+      : undefined;
+    const locationSummary = locationMode === "set"
+      ? `Set ${selectedLocation?.name || selectedLocation?.key || "location needed"}`
+      : locationMode === "clear" ? "Clear location" : "Continue location";
     const anchor = nodeAnchor(draft.node);
     const anchorSummary = anchor.mode === "set"
       ? (anchor.text.trim() || "Set — text needed")
@@ -143,14 +156,37 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           type: "disclosure",
           id: "node-context",
           label: "CONTEXT",
-          summary: `${speaker} · ${location}${draft.node.tags.length ? ` · ${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : ""}`,
+          summary: `${speaker} · ${locationSummary}${draft.node.tags.length ? ` · ${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : ""}`,
           children: [{
             type: "custom",
             id: "node-context-fields",
             role: "resource-picker",
             content: <div className="node-focused-form">
               <label>CHARACTER / SPEAKER <ReferenceField kind="character" value={draft.node.characterId ?? ""} onChange={(characterId) => setDraft((current) => ({ ...current, node: { ...current.node, characterId: characterId || null } }))} placeholder="none / narration" /></label>
-              <label>LOCATION <ReferenceField kind="location" value={draft.node.locationId ?? ""} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationId: locationId || null } }))} placeholder="none" /></label>
+              <label>LOCATION BEHAVIOR
+                <select
+                  value={locationMode}
+                  onChange={(event) => {
+                    const mode = event.target.value as NodeLocationMode;
+                    setDraft((current) => ({
+                      ...current,
+                      node: {
+                        ...current.node,
+                        locationMode: mode,
+                        locationId: mode === "set" ? current.node.locationId : null,
+                      },
+                    }));
+                  }}
+                >
+                  <option value="continue">CONTINUE</option>
+                  <option value="set">SET</option>
+                  <option value="clear">CLEAR</option>
+                </select>
+              </label>
+              {locationMode === "set" ? <label>LOCATION <ReferenceField kind="location" value={draft.node.locationId ?? ""} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "set", locationId: locationId || null } }))} placeholder="choose location" /></label>
+                : <small>{locationMode === "continue"
+                  ? "Keeps the active location from earlier in this run. This is the default for new Nodes."
+                  : "Clears the active location when the player reaches this Node."}</small>}
               <label>TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
             </div>,
           }],
@@ -234,19 +270,22 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   },
   canSave({ draft }) {
     const anchor = nodeAnchor(draft.node);
-    return anchor.mode !== "set" || Boolean(anchor.text.trim());
+    const locationMode = nodeLocationMode(draft.node);
+    return (anchor.mode !== "set" || Boolean(anchor.text.trim()))
+      && (locationMode !== "set" || Boolean(draft.node.locationId));
   },
   async save({ draft, context, route }) {
     const data = routeData(route);
     const anchor = nodeAnchor(draft.node);
+    const node = { ...normalizeNodeLocationContext(draft.node), anchor };
     const result = await context.persist(
-      [{ type: "node.upsert", node: { ...draft.node, anchor } }],
+      [{ type: "node.upsert", node }],
       `${data?.nodeId ? "Changed" : "Created"} node #${draft.node.nodeNumber}`,
     );
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
       accepted: true,
-      draft: { node: { ...draft.node, anchor } },
+      draft: { node },
       completion: data?.resourceTask === "node" ? {
         type: "resource",
         kind: "node",
