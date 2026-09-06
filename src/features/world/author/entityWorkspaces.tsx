@@ -1,5 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { referencesTo } from "../../../author/references/projectReferences";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { EntityDefinition } from "../model";
@@ -52,60 +53,111 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
   id: "world-entity",
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
   createDraft: (route, context) => structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId) ?? newEntity(route.data?.entityType === "location" ? "location" : "character")),
-  buildSpec: ({ route, context, draft, setDraft }) => ({
-    id: "world-entity",
-    title: draft.name || `New ${draft.type}`,
-    context: draft.type === "character" ? "Character" : "Location",
-    blocks: [
-      {
-        type: "section",
-        id: "world-entity-identity",
-        label: draft.type === "character" ? "Character" : "Location",
-        importance: "primary",
-        children: [
-          { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !context.snapshot.entities.some((item) => item.id === draft.id), onChange: (name) => setDraft((current) => ({ ...current, name })) },
-          ...(draft.type === "character" ? [{
+  buildSpec: ({ route, context, draft, setDraft }) => {
+    const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);
+    const usages = persisted
+      ? referencesTo(context.snapshot, draft.type, draft.id).filter((reference) =>
+          reference.ownerId !== draft.id || reference.ownerKind !== draft.type)
+      : [];
+
+    const deleteEntity = async () => {
+      if (!persisted || usages.length) return;
+      const label = draft.name || draft.key || draft.type;
+      if (!window.confirm(`Delete ${draft.type} “${label}”? This cannot be undone.`)) return;
+      const result = await context.persist(
+        [{ type: "entity.delete", id: draft.id }],
+        `Delete ${draft.type} ${label}`,
+      );
+      if (result.status !== "saved" && result.status !== "queued") return;
+      context.setWorkspaceDirty(false);
+      if (context.hasParentTask) context.completeTask();
+    };
+
+    return {
+      id: "world-entity",
+      title: draft.name || `New ${draft.type}`,
+      context: draft.type === "character" ? "Character" : "Location",
+      blocks: [
+        {
+          type: "section",
+          id: "world-entity-identity",
+          label: draft.type === "character" ? "Character" : "Location",
+          importance: "primary",
+          children: [
+            { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
+            ...(draft.type === "character" ? [{
+              type: "custom" as const,
+              id: "world-character-portrait",
+              role: "resource-picker" as const,
+              content: <div className="world-character-portrait-field">
+                <span>Portrait</span>
+                <ReferenceField
+                  kind="media-image"
+                  value={draft.portraitAssetId ?? ""}
+                  placeholder="No portrait"
+                  showPreview
+                  onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
+                />
+              </div>,
+            }] : []),
+            { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
+            { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
+            { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
+          ],
+        },
+        {
+          type: "disclosure" as const,
+          id: "world-entity-behavior",
+          label: "Player interactions",
+          summary: draft.interactable ? `${draft.operations?.length ?? 0} operations` : "Not directly interactable",
+          defaultOpen: Boolean(route.data?.preferredOperation),
+          children: [{
             type: "custom" as const,
-            id: "world-character-portrait",
-            role: "resource-picker" as const,
-            content: <div className="world-character-portrait-field">
-              <span>Portrait</span>
-              <ReferenceField
-                kind="media-image"
-                value={draft.portraitAssetId ?? ""}
-                placeholder="No portrait"
-                showPreview
-                onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
-              />
+            id: "world-entity-operations",
+            role: "specialized-control" as const,
+            content: <OperationHooksEditor
+              capability={{ interactable: draft.interactable ?? false, operations: draft.operations ?? [], hooks: draft.hooks ?? [] }}
+              snapshot={context.snapshot}
+              targetKind={draft.type === "character" ? "world.character" : "world.location"}
+              defaultOpen={Boolean(route.data?.preferredOperation)}
+              preferredOperation={route.data?.preferredOperation}
+              onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
+            />,
+          }],
+        },
+        ...(usages.length ? [{
+          type: "section" as const,
+          id: "world-entity-references",
+          label: "Used by",
+          summary: `${usages.length} reference${usages.length === 1 ? "" : "s"} must be cleared before deletion`,
+          importance: "secondary" as const,
+          children: [{
+            type: "custom" as const,
+            id: "world-entity-reference-list",
+            role: "results" as const,
+            content: <div className="world-author-reference-list">
+              {usages.map((reference, index) => reference.route
+                ? <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.detail}:${index}`} onClick={() => context.pushTask(reference.route!)}>
+                    <span>{reference.ownerLabel}</span><small>{reference.detail}</small>
+                  </button>
+                : <div key={`${reference.ownerKind}:${reference.ownerId}:${reference.detail}:${index}`}>
+                    <span>{reference.ownerLabel}</span><small>{reference.detail}</small>
+                  </div>)}
             </div>,
-          }] : []),
-          { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
-          { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
-          { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
-        ],
-      },
-      {
-        type: "disclosure" as const,
-        id: "world-entity-behavior",
-        label: "Player interactions",
-        summary: draft.interactable ? `${draft.operations?.length ?? 0} operations` : "Not directly interactable",
-        defaultOpen: Boolean(route.data?.preferredOperation),
-        children: [{
-          type: "custom" as const,
-          id: "world-entity-operations",
-          role: "specialized-control" as const,
-          content: <OperationHooksEditor
-            capability={{ interactable: draft.interactable ?? false, operations: draft.operations ?? [], hooks: draft.hooks ?? [] }}
-            snapshot={context.snapshot}
-            targetKind={draft.type === "character" ? "world.character" : "world.location"}
-            defaultOpen={Boolean(route.data?.preferredOperation)}
-            preferredOperation={route.data?.preferredOperation}
-            onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
-          />,
-        }],
-      },
-    ],
-  }),
+          }],
+        }] : []),
+      ],
+      actions: persisted ? [{
+        id: "world-entity-delete",
+        label: usages.length
+          ? `DELETE ${draft.type.toUpperCase()} · ${usages.length} USE${usages.length === 1 ? "" : "S"}`
+          : `DELETE ${draft.type.toUpperCase()}`,
+        disabled: usages.length > 0,
+        tone: "danger" as const,
+        onAction: () => { void deleteEntity(); },
+      }] : [],
+    };
+  },
   async save({ route, context, draft }) {
     if (!draft.name.trim()) return { accepted: false };
     const key = resolveAuthorKey({
