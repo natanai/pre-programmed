@@ -79,7 +79,7 @@ describe("deterministic parser", () => {
     expect(result.invocation?.arguments.target).toMatchObject({ sourceKind: "world.location", candidateId: "current" });
   });
 
-  it("keeps Character identities out of project-wide target operations", () => {
+  it("does not resolve authored Characters that are absent from the active conversation", () => {
     const snapshot = project({
       entities: [
         { id: "kitchen", key: "kitchen", type: "location", name: "Kitchen", description: "", tags: [] },
@@ -96,6 +96,40 @@ describe("deterministic parser", () => {
     });
     const state = createEmptyPlayState(snapshot);
     expect(parseCommand("inspect kitchen", snapshot, state).invocation?.target?.id).toBe("kitchen");
+    expect(parseCommand("inspect guard", snapshot, state).invocation).toBeNull();
+  });
+
+  it("resolves the active conversation Character and supports target-first wording", () => {
+    const snapshot = project({
+      nodes: [{
+        ...node("a", 1),
+        conversationMode: "set",
+        conversationCharacterId: "poiyo",
+      }],
+      entities: [
+        { id: "poiyo", key: "poiyo", type: "character", name: "Poiyo", description: "A strange friend.", tags: ["friend"] },
+        { id: "guard", key: "guard", type: "character", name: "Guard", description: "Not here.", tags: [] },
+      ],
+      settings: commandSettings([{
+        id: "inspect",
+        label: "Inspect",
+        enabled: true,
+        patterns: ["inspect {target}", "{target} looks like what?!"],
+        slots: [{ name: "target", sourceKinds: ["world.character"] }],
+        action: { type: "target-operation", operation: "inspect", targetSlot: "target" },
+      }], ["world.character"]),
+    });
+    const state = createEmptyPlayState(snapshot);
+
+    const result = parseCommand("Poiyo looks like what?!", snapshot, state);
+    expect(result.reason).toBe("command-grammar");
+    expect(result.matchedPattern).toBe("{target} looks like what?!");
+    expect(result.invocation?.target).toEqual({ kind: "world.entity", id: "poiyo" });
+    expect(result.invocation?.arguments.target).toMatchObject({
+      kind: "target",
+      sourceKind: "world.character",
+      candidateId: "poiyo",
+    });
     expect(parseCommand("inspect guard", snapshot, state).invocation).toBeNull();
   });
 
