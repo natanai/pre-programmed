@@ -229,7 +229,7 @@ The workflow only publishes versioned releases from `main`, and an existing rele
 
 Recipients extract the whole `Pre-Programmed` folder and run `Pre-Programmed.exe` in place. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine. Runtime state, D1 data, cache, exports, and local installation configuration stay beneath that extracted folder.
 
-`installation.txt` owns local installation settings such as `AUTHOR_KEY`. Player-visible launch-sequence text is authored on the Sort Sequence itself, so it uses the same canonical editor and travels with the `.ppgame` project across hosted, local, and portable builds. A future hosted installation may reuse the portable `AUTHOR_KEY` value for its `ADMIN_KEY` secret or choose a different one.
+`installation.txt` intentionally contains only `AUTHOR_KEY` and `START_BUTTON_TEXT`. `START_BUTTON_TEXT` owns the pre-terminal bootstrap button that exists before the authored player runtime. Sort Sequence captions remain project-owned and travel with the `.ppgame` across hosted, local, and portable builds. A future hosted installation may reuse the portable `AUTHOR_KEY` value for its `ADMIN_KEY` secret or choose a different one.
 
 ## Production workflow
 

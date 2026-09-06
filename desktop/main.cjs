@@ -23,6 +23,7 @@ const CONTENT_TYPES = {
 };
 
 const DEFAULT_AUTHOR_KEY = "local";
+const DEFAULT_START_BUTTON_TEXT = "INITIALIZE UNIVERSE";
 const INSTALLATION_FILE = "installation.txt";
 let miniflare = null;
 let hostServer = null;
@@ -98,12 +99,13 @@ async function readInstallationSettings(root) {
     text = await readFile(filename, "utf8");
   } catch (error) {
     if (error?.code === "ENOENT") {
-      return { authorKey: DEFAULT_AUTHOR_KEY };
+      return { authorKey: DEFAULT_AUTHOR_KEY, startButtonText: DEFAULT_START_BUTTON_TEXT };
     }
     throw error;
   }
 
   let authorKey = "";
+  let startButtonText = DEFAULT_START_BUTTON_TEXT;
   for (const rawLine of text.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line || line.startsWith("#")) continue;
@@ -114,10 +116,13 @@ async function readInstallationSettings(root) {
     if (name === "AUTHOR_KEY") {
       if (!value) throw new Error(`${INSTALLATION_FILE} has an empty AUTHOR_KEY.`);
       authorKey = value;
+    } else if (name === "START_BUTTON_TEXT") {
+      if (!value) throw new Error(`${INSTALLATION_FILE} has an empty START_BUTTON_TEXT.`);
+      startButtonText = value;
     }
   }
   if (!authorKey) throw new Error(`${INSTALLATION_FILE} must contain an AUTHOR_KEY=... line.`);
-  return { authorKey };
+  return { authorKey, startButtonText };
 }
 
 function sendFile(response, filename) {
@@ -194,9 +199,11 @@ async function startLocalHost() {
   const indexPath = path.join(clientRoot, "index.html");
   const indexTemplate = await readFile(indexPath, "utf8");
   const manifestScript = `<script>window.__PRE_PROGRAMMED_PORTABLE_ASSETS__=${JSON.stringify(portableAssets).replace(/</g, "\\u003c")};</script>`;
+  const installationScript = `<script>window.__PRE_PROGRAMMED_INSTALLATION__=${JSON.stringify({ startButtonText: installation.startButtonText }).replace(/</g, "\\u003c")};</script>`;
+  const injectedScripts = `${manifestScript}${installationScript}`;
   const indexHtml = indexTemplate.includes("</head>")
-    ? indexTemplate.replace("</head>", `${manifestScript}</head>`)
-    : `${manifestScript}${indexTemplate}`;
+    ? indexTemplate.replace("</head>", `${injectedScripts}</head>`)
+    : `${injectedScripts}${indexTemplate}`;
 
   hostServer = createServer(async (request, response) => {
     try {
@@ -250,6 +257,7 @@ async function startLocalHost() {
     url: `http://127.0.0.1:${address.port}/`,
     assetWarning,
     authorKey,
+    startButtonText: installation.startButtonText,
   };
 }
 
@@ -268,13 +276,17 @@ async function shutdown() {
 
 async function runSelfTest() {
   assertPortableElectronPaths(configuredPortableRoot);
-  const { url, assetWarning, authorKey } = await startLocalHost();
+  const { url, assetWarning, authorKey, startButtonText } = await startLocalHost();
   if (assetWarning) throw new Error(`Portable asset scan failed: ${assetWarning}`);
 
   const indexResponse = await fetch(url, { cache: "no-store" });
   const indexText = await indexResponse.text();
   if (!indexResponse.ok || !indexText.includes("__PRE_PROGRAMMED_PORTABLE_ASSETS__")) {
     throw new Error("Portable client did not load through the local host.");
+  }
+  const expectedInstallationScript = `window.__PRE_PROGRAMMED_INSTALLATION__=${JSON.stringify({ startButtonText }).replace(/</g, "\\u003c")};`;
+  if (!indexText.includes(expectedInstallationScript)) {
+    throw new Error("Portable installation start-button text contract failed.");
   }
 
   const healthResponse = await fetch(new URL("api/health", url), { cache: "no-store" });
