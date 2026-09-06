@@ -42,6 +42,7 @@ type NodeRow = {
 type InteractionRow = {
   id: string;
   source_node_id: string;
+  order_index: number;
   wording: string;
   match_mode: "command" | "fallback";
   capture_input: number;
@@ -302,6 +303,33 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 40 WHERE id = 1;
       `,
     },
+    {
+      id: 41,
+      name: "narrative-durable-interaction-order",
+      sql: `
+        ALTER TABLE interactions
+        ADD COLUMN order_index INTEGER NOT NULL DEFAULT 0;
+
+        UPDATE interactions
+        SET order_index = (
+          SELECT COUNT(*)
+          FROM interactions AS earlier
+          WHERE earlier.source_node_id = interactions.source_node_id
+            AND (
+              COALESCE(earlier.created_at, '') < COALESCE(interactions.created_at, '')
+              OR (
+                COALESCE(earlier.created_at, '') = COALESCE(interactions.created_at, '')
+                AND earlier.id < interactions.id
+              )
+            )
+        );
+
+        CREATE INDEX IF NOT EXISTS interactions_source_order
+        ON interactions(source_node_id, order_index, id);
+
+        UPDATE project_meta SET schema_version = 41 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -317,7 +345,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
-      db.prepare("SELECT id, source_node_id, wording, match_mode, capture_input, choice_visibility, tags_json, notes FROM interactions ORDER BY created_at, id")
+      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
         .all<InteractionChoiceVisibilityRow>(),
@@ -379,6 +407,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       interactions: interactions.results.map((row): Interaction => ({
         id: row.id,
         sourceNodeId: row.source_node_id,
+        order: row.order_index,
         wording: row.wording,
         matchMode: row.capture_input ? "capture" : row.match_mode ?? "command",
         choiceVisibility: row.choice_visibility,
@@ -468,13 +497,19 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       const captureInput = value.matchMode === "capture";
       return [
         db.prepare(
-          `INSERT INTO interactions (id, source_node_id, wording, match_mode, capture_input, choice_visibility, tags_json, notes, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+          `INSERT INTO interactions
+             (id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes, updated_at)
+           VALUES (
+             ?, ?,
+             COALESCE((SELECT MAX(order_index) + 1 FROM interactions WHERE source_node_id = ? AND match_mode <> 'fallback'), 0),
+             ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+           )
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
              match_mode=excluded.match_mode, capture_input=excluded.capture_input, choice_visibility=excluded.choice_visibility,
              tags_json=excluded.tags_json, notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
+          value.sourceNodeId,
           value.sourceNodeId,
           value.wording,
           captureInput ? "command" : value.matchMode ?? "command",
@@ -519,6 +554,14 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           );
         }),
       ];
+    }
+
+    if (operation.type === "interaction.reorder") {
+      return operation.interactionIds.map((interactionId, order) => db.prepare(
+        `UPDATE interactions
+         SET order_index = ?, updated_at = CURRENT_TIMESTAMP
+         WHERE id = ? AND source_node_id = ? AND match_mode <> 'fallback'`,
+      ).bind(order, interactionId, operation.sourceNodeId));
     }
 
     if (operation.type === "interaction.delete") {

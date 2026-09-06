@@ -23,6 +23,7 @@ export function createDraftInteraction(sourceNodeId: string, command = "", fallb
   return {
     id: crypto.randomUUID(),
     sourceNodeId,
+    order: 0,
     wording: fallback ? "" : command,
     matchMode: fallback ? "fallback" : "command",
     choiceVisibility: fallback ? "typed" : "prompt",

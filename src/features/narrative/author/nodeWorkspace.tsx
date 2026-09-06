@@ -16,6 +16,7 @@ import {
   resolveActiveNodeContext,
 } from "../sceneContext";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
+import { NodeInputList } from "./NodeInputList";
 import "./nodeWorkspace.css";
 
 type NodeWorkspaceDraft = {
@@ -174,35 +175,15 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
     const invalidInput = nodeInteractions.find((interaction) => interaction.matchMode === "fallback");
     const inputSummary = `${validInputs.length} valid input${validInputs.length === 1 ? "" : "s"} · ${invalidInput ? "invalid response set" : "no invalid response"}`;
-    const inputRows = nodeExists ? <div className="node-input-list">
-      {validInputs.map((interaction) => <button
-        type="button"
-        className="node-input-link"
-        key={interaction.id}
-        onClick={() => context.pushTask(inputRoute(draft.node.id, interaction.id))}
-      >
-        <span>
-          <strong>{interaction.matchMode === "capture" ? "CAPTURE PLAYER INPUT" : interaction.wording || interaction.aliases[0] || "UNTITLED INPUT"}</strong>
-          <small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"} · Node #{draft.node.nodeNumber}</small>
-        </span>
-        <span aria-hidden="true">›</span>
-      </button>)}
-      <button type="button" className="node-input-link" onClick={() => context.pushTask(inputRoute(draft.node.id))}>
-        <span><strong>+ VALID INPUT</strong><small>Add player wording that works only at Node #{draft.node.nodeNumber}.</small></span>
-        <span aria-hidden="true">›</span>
-      </button>
-      <button
-        type="button"
-        className="node-input-link"
-        onClick={() => context.pushTask(inputRoute(draft.node.id, invalidInput?.id, true))}
-      >
-        <span>
-          <strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong>
-          <small>Only for Node #{draft.node.nodeNumber}: what happens when player text matches nothing here.</small>
-        </span>
-        <span aria-hidden="true">›</span>
-      </button>
-    </div> : null;
+    const inputRows = nodeExists ? <NodeInputList
+      snapshot={context.snapshot}
+      nodeId={draft.node.id}
+      nodeNumber={draft.node.nodeNumber}
+      persist={context.persist}
+      invalidInput={invalidInput}
+      onOpenInput={(interactionId) => context.pushTask(inputRoute(draft.node.id, interactionId))}
+      onOpenInvalid={() => context.pushTask(inputRoute(draft.node.id, invalidInput?.id, true))}
+    /> : null;
 
     return {
       id: "narrative.node",

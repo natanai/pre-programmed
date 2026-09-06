@@ -3,6 +3,34 @@
   gap: .45em;
 }
 
+.node-input-order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: .35em;
+  align-items: stretch;
+}
+
+.node-input-order-controls {
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  gap: .2em;
+}
+
+.node-input-order-controls button {
+  min-width: 2.25em;
+  padding: 0 .45em;
+  border: 1px solid var(--dos-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.node-input-order-controls button:disabled {
+  opacity: .28;
+  cursor: default;
+}
+
 .node-input-link {
   width: 100%;
   display: flex;
@@ -107,6 +135,11 @@
   .node-context-strip > summary,
   .node-anchor-strip > summary {
     min-height: 3em;
+  }
+
+  .node-input-order-controls button {
+    min-width: 2.75em;
+    min-height: 2.25em;
   }
 
   .node-context-actions button {

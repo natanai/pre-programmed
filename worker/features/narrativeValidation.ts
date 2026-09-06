@@ -10,7 +10,7 @@ function textPerformanceValid(value: unknown) {
 }
 
 export const narrativeMutationValidator: WorkerMutationValidator = {
-  types: ["node.upsert", "interaction.upsert", "interaction.delete"],
+  types: ["node.upsert", "interaction.upsert", "interaction.reorder", "interaction.delete"],
   validate(operation) {
     if (operation.type === "node.upsert") {
       if (!object(operation.node)) return "Node is invalid.";
@@ -74,9 +74,26 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       return null;
     }
 
+    if (operation.type === "interaction.reorder") {
+      if (typeof operation.sourceNodeId !== "string" || !operation.sourceNodeId || operation.sourceNodeId.length > 128) {
+        return "Interaction order needs a source Node.";
+      }
+      if (!Array.isArray(operation.interactionIds)
+        || operation.interactionIds.some((id) => typeof id !== "string" || !id || id.length > 128)) {
+        return "Interaction order is invalid.";
+      }
+      if (new Set(operation.interactionIds).size !== operation.interactionIds.length) {
+        return "Interaction order cannot contain duplicate inputs.";
+      }
+      return null;
+    }
+
     if (operation.type !== "interaction.upsert" || !object(operation.interaction)) return null;
     const interaction = operation.interaction;
 
+    if (interaction.order !== undefined && (!Number.isInteger(interaction.order) || (interaction.order as number) < 0)) {
+      return "Interaction order is invalid.";
+    }
     if (interaction.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(interaction.choiceVisibility))) {
       return "Interaction choice visibility is invalid.";
     }
