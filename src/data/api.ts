@@ -1,4 +1,4 @@
-import type { ProjectMutation, ProjectSnapshot } from "../engine/project/model";
+import type { AuthorBookmark, ProjectMutation, ProjectSnapshot } from "../engine/project/model";
 import { configuredAuthorPlatform } from "../platform/author/configuredAuthorPlatform";
 import { ApiError } from "../platform/cloudflare/http";
 import { configuredProjectPersistence } from "../platform/persistence/configuredProjectPersistence";
@@ -116,6 +116,14 @@ export async function submitProjectMutation(token: string, mutation: ProjectMuta
 
 export async function fetchAuthorWorkspace(token: string) {
   return configuredAuthorPlatform.readWorkspace(token);
+}
+
+export async function saveAuthorRunBookmark(token: string, bookmark: AuthorBookmark) {
+  return configuredAuthorPlatform.saveRunBookmark(token, bookmark);
+}
+
+export async function deleteAuthorRunBookmark(token: string, id: string) {
+  return configuredAuthorPlatform.deleteRunBookmark(token, id);
 }
 
 export async function undoLastRevision(token: string, expectedRevision: number) {

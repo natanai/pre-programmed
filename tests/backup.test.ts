@@ -53,7 +53,7 @@ describe("canonical project backup", () => {
     expect(backup.database.tables.nodes).toEqual([{ id: "a" }]);
   });
 
-  it("keeps the portable project document platform-neutral for desktop, local, and hosted imports", () => {
+  it("keeps the portable project document platform-neutral and strips legacy run bookmarks", () => {
     const snapshot = project({ revision: 42 });
     const { revision: _revision, ...portableSnapshot } = snapshot;
     const document = migratePortableProject({
@@ -66,7 +66,9 @@ describe("canonical project backup", () => {
       featureData: {},
     });
 
+    expect(document.version).toBe(2);
     expect(document.project).toEqual(portableSnapshot);
+    expect(document).not.toHaveProperty("bookmarks");
     expect(JSON.stringify(document)).not.toMatch(/workers\.dev|cloudflare|PORTABLE_EXECUTABLE_DIR|database_id|account_id|natanai/i);
   });
 });

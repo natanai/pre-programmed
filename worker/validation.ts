@@ -6,8 +6,6 @@ import { object } from "./features/validationHelpers";
 
 const CORE_OPERATION_TYPES = new Set([
   "project.settings",
-  "bookmark.upsert",
-  "bookmark.delete",
 ]);
 
 function projectSettingsValid(value: unknown) {

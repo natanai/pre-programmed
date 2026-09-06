@@ -16,11 +16,21 @@ import {
 export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
   describeTask(route) {
-    if (route.type === "workspace") return route.view === "history" ? "History" : "Locations";
+    if (route.type === "workspace") return route.view === "history" ? "History" : "Run navigation";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "transfer") return "Project file";
     return null;
   },
+  terminalShortcuts: [
+    {
+      commands: ["/run", "run", "/navigation", "navigation", "/bookmark", "bookmarks"],
+      route: { type: "workspace", view: "navigation" },
+    },
+    {
+      commands: ["/history", "history"],
+      route: { type: "workspace", view: "history" },
+    },
+  ],
   resources: [{
     kind: "project-terminal",
     label: "Terminal Prompt",
@@ -57,10 +67,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
       token={context.authorToken}
       snapshot={context.snapshot}
       playState={context.playState}
-      initialView={route.view}
-      onSave={async (operations, description) => {
-        await context.persist(operations, description);
-      }}
+      initialView={route.view === "history" ? "history" : "navigation"}
       onSnapshot={context.onSnapshot}
       onRestore={context.onRestore}
       onEditNode={(nodeId) => context.resources.edit("node", nodeId)}

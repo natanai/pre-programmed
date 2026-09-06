@@ -1,4 +1,4 @@
-import type { ProjectMutation } from "../src/engine/project/model";
+import type { AuthorBookmark, ProjectMutation } from "../src/engine/project/model";
 import { createAuthorToken, isAuthor } from "./auth";
 import { collectProjectBackup } from "./backup";
 import { ensureSchema } from "./db/schema";
@@ -6,6 +6,7 @@ import { json, withCors } from "./http";
 import { getMediaContent, mediaContentKey } from "./mediaContent";
 import { collectPortableProject, restorePortableProject } from "./portableProject";
 import { applyMutation, getProjectSnapshot, getWorkspace, undo } from "./projectStore";
+import { deleteRunBookmark, runBookmarkError, saveRunBookmark } from "./runBookmarkStore";
 import { validateMutationBody } from "./validation";
 
 export type Env = {
@@ -111,6 +112,21 @@ export async function handleApi(request: Request, env: Env) {
   if (url.pathname === "/api/author/project/export" && request.method === "GET") return downloadPortableProject(env);
   if (url.pathname === "/api/author/project/import" && request.method === "POST") return importPortableProject(request, env);
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
+
+  if (url.pathname === "/api/author/run-bookmarks" && request.method === "POST") {
+    const body = await request.json<{ bookmark?: unknown }>().catch(() => ({}));
+    const error = runBookmarkError(body.bookmark);
+    if (error) return json({ error }, { status: 400 });
+    const bookmark = await saveRunBookmark(env.DB, body.bookmark as AuthorBookmark);
+    return json({ bookmark });
+  }
+  const runBookmarkPrefix = "/api/author/run-bookmarks/";
+  if (url.pathname.startsWith(runBookmarkPrefix) && request.method === "DELETE") {
+    const id = decodeURIComponent(url.pathname.slice(runBookmarkPrefix.length));
+    if (!id) return json({ error: "Run bookmark id is required." }, { status: 400 });
+    await deleteRunBookmark(env.DB, id);
+    return json({ ok: true });
+  }
 
   if (url.pathname === "/api/author/mutate" && request.method === "POST") {
     let body: unknown;

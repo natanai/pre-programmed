@@ -30,12 +30,7 @@ export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
   "project",
 ]);
 
-/**
- * Single composition registry for Author-capable feature modules.
- *
- * New workspaces should contribute semantic workspace definitions. Legacy
- * renderers remain temporarily available only to the explicit migration set.
- */
+/** Single composition registry for Author-capable feature modules. */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   narrativeAuthorFeature,
   worldAuthorFeature,
@@ -128,13 +123,10 @@ export function renderAuthorFeatureWorkspace(
   return null;
 }
 
-/**
- * Describe a task without teaching the shell any feature-specific routes.
- * Feature manifests own their vocabulary; the shell only composes the trail.
- */
+/** Describe a task without teaching the shell feature-specific resource routes. */
 export function describeAuthorTask(route: AuthorTaskRoute, snapshot: AuthorWorkspaceContext["snapshot"]): string {
   if (route.type === "tools") return "Author tools";
-  if (route.type === "workspace") return route.view === "history" ? "History" : "Locations";
+  if (route.type === "workspace") return route.view === "history" ? "History" : "Run navigation";
   for (const feature of AUTHOR_FEATURES) {
     const label = feature.describeTask?.(route, snapshot);
     if (label) return label;

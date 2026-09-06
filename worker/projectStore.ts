@@ -1,5 +1,4 @@
 import type {
-  AuthorBookmark,
   MutationOperation,
   ProjectMutation,
   ProjectSnapshot,
@@ -16,6 +15,7 @@ import {
 } from "./features/catalog";
 import { json } from "./http";
 import { loadProjectSettings, projectSettingsStatements } from "./projectSettingsStore";
+import { getRunBookmarks } from "./runBookmarkStore";
 import { WORKER_PROJECT_INTEGRITY_VALIDATORS } from "./features/validationCatalog";
 
 export async function currentRevision(db: D1Database) {
@@ -45,27 +45,6 @@ export async function getProjectSnapshot(db: D1Database): Promise<ProjectSnapsho
   } as ProjectSnapshot;
 }
 
-export async function getBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
-  const result = await db.prepare(
-    "SELECT id, node_id, traversal_json, play_state_json, note, created_at FROM bookmarks ORDER BY created_at DESC",
-  ).all<{
-    id: string;
-    node_id: string;
-    traversal_json: string;
-    play_state_json: string;
-    note: string;
-    created_at: string;
-  }>();
-  return result.results.map((row) => ({
-    id: row.id,
-    nodeId: row.node_id,
-    traversal: parseJson(row.traversal_json, []),
-    playState: parseJson(row.play_state_json, {} as AuthorBookmark["playState"]),
-    note: row.note,
-    createdAt: row.created_at,
-  }));
-}
-
 function operationStatements(db: D1Database, operation: MutationOperation): D1PreparedStatement[] {
   for (const feature of WORKER_FEATURE_PERSISTENCE) {
     const statements = feature.mutationStatements(db, operation);
@@ -75,17 +54,6 @@ function operationStatements(db: D1Database, operation: MutationOperation): D1Pr
   switch (operation.type) {
     case "project.settings":
       return projectSettingsStatements(db, operation.settings);
-    case "bookmark.upsert": {
-      const bookmark = operation.bookmark;
-      return [db.prepare(
-        `INSERT INTO bookmarks (id, node_id, traversal_json, play_state_json, note, created_at)
-         VALUES (?, ?, ?, ?, ?, ?)
-         ON CONFLICT(id) DO UPDATE SET node_id=excluded.node_id, traversal_json=excluded.traversal_json,
-           play_state_json=excluded.play_state_json, note=excluded.note`,
-      ).bind(bookmark.id, bookmark.nodeId, JSON.stringify(bookmark.traversal), JSON.stringify(bookmark.playState), bookmark.note, bookmark.createdAt)];
-    }
-    case "bookmark.delete":
-      return [db.prepare("DELETE FROM bookmarks WHERE id = ?").bind(operation.id)];
     default:
       return [];
   }
@@ -104,13 +72,12 @@ export async function applyMutation(db: D1Database, mutation: ProjectMutation) {
     const error = validate(before, projected);
     if (error) return json({ error }, { status: 400 });
   }
-  const beforeBookmarks = await getBookmarks(db);
   const statements = mutation.operations.flatMap((operation) => operationStatements(db, operation));
   statements.push(
     db.prepare("INSERT INTO revisions (kind, entity_id, payload) VALUES (?, ?, ?)").bind(
       mutation.operations.length === 1 ? mutation.operations[0].type : "mutation.batch",
       "project",
-      JSON.stringify({ description: mutation.description, beforeSnapshot: before, beforeBookmarks }),
+      JSON.stringify({ description: mutation.description, beforeSnapshot: before }),
     ),
   );
   await db.batch(statements);
@@ -118,19 +85,17 @@ export async function applyMutation(db: D1Database, mutation: ProjectMutation) {
 }
 
 /**
- * Canonical whole-project restore path. Undo and portable project import both
- * compose feature-owned reset/restore contributions through this function;
- * neither reimplements individual feature persistence.
+ * Canonical authored-project restore path. Undo and portable project import both
+ * compose feature-owned reset/restore contributions through this function.
+ * Author run bookmarks are intentionally outside this boundary.
  */
-export function projectRestoreStatements(db: D1Database, snapshot: ProjectSnapshot, bookmarks: AuthorBookmark[]): D1PreparedStatement[] {
-  const coreDeletes = [db.prepare("DELETE FROM bookmarks")];
+export function projectRestoreStatements(db: D1Database, snapshot: ProjectSnapshot): D1PreparedStatement[] {
   const featureDeletes = workerFeaturesForReset().flatMap((feature) => feature.resetStatements(db));
   const operations: MutationOperation[] = [
     { type: "project.settings", settings: snapshot.settings },
     ...workerFeaturesForRestore().flatMap((feature) => feature.restoreOperations(snapshot)),
-    ...bookmarks.map((bookmark) => ({ type: "bookmark.upsert" as const, bookmark })),
   ];
-  return [...coreDeletes, ...featureDeletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
+  return [...featureDeletes, ...operations.flatMap((operation) => operationStatements(db, operation))];
 }
 
 export async function undo(db: D1Database, expectedRevision: number) {
@@ -141,19 +106,20 @@ export async function undo(db: D1Database, expectedRevision: number) {
   const target = await db.prepare(
     `SELECT r.revision, r.payload
        FROM revisions r LEFT JOIN revision_undo u ON u.revision = r.revision
-      WHERE r.kind <> 'undo' AND u.revision IS NULL
+      WHERE r.kind <> 'undo'
+        AND r.kind NOT IN ('bookmark.upsert', 'bookmark.delete')
+        AND u.revision IS NULL
       ORDER BY r.revision DESC LIMIT 1`,
   ).first<{ revision: number; payload: string }>();
   if (!target) return json({ error: "Nothing to undo." }, { status: 404 });
   const payload = parseJson<{
     description?: string;
     beforeSnapshot?: ProjectSnapshot;
-    beforeBookmarks?: AuthorBookmark[];
     beforeFeatureData?: Record<string, unknown>;
   }>(target.payload, {});
   if (!payload.beforeSnapshot) return json({ error: "This revision cannot be undone." }, { status: 409 });
   const current = await getProjectSnapshot(db);
-  const statements = projectRestoreStatements(db, payload.beforeSnapshot, payload.beforeBookmarks ?? []);
+  const statements = projectRestoreStatements(db, payload.beforeSnapshot);
   if (payload.beforeFeatureData) {
     statements.push(...workerPortableFeatureRestoreStatements(db, payload.beforeFeatureData));
   }
@@ -171,9 +137,13 @@ export async function undo(db: D1Database, expectedRevision: number) {
 
 export async function getWorkspace(db: D1Database) {
   const [rows, bookmarks] = await Promise.all([
-    db.prepare("SELECT revision, kind, entity_id, payload, created_at FROM revisions ORDER BY revision DESC LIMIT 50")
-      .all<{ revision: number; kind: string; entity_id: string; payload: string; created_at: string }>(),
-    getBookmarks(db),
+    db.prepare(
+      `SELECT revision, kind, entity_id, payload, created_at
+         FROM revisions
+        WHERE kind NOT IN ('bookmark.upsert', 'bookmark.delete')
+        ORDER BY revision DESC LIMIT 50`,
+    ).all<{ revision: number; kind: string; entity_id: string; payload: string; created_at: string }>(),
+    getRunBookmarks(db),
   ]);
   const revisions: RevisionSummary[] = rows.results.map((row) => ({
     revision: row.revision,
