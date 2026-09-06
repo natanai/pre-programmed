@@ -60,6 +60,12 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
   },
 
   mutationStatements(db, operation) {
+    if (operation.type === "entity.delete") {
+      return [
+        db.prepare("DELETE FROM operation_hooks WHERE target_kind = ? AND target_id = ?").bind("world.entity", operation.id),
+        db.prepare("DELETE FROM entity_definitions WHERE id = ?").bind(operation.id),
+      ];
+    }
     if (operation.type !== "entity.upsert") return null;
     const entity = canonicalEntity(operation.entity);
     return [
