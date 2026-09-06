@@ -1,13 +1,13 @@
 export type OrderedSibling = {
   id: string;
-  /** Durable authored position within one owner-defined sibling collection. */
-  order: number;
+  /** Durable authored position within one owner-defined sibling collection. Legacy snapshots may omit it. */
+  order?: number;
 };
 
 export type SiblingMoveDirection = -1 | 1;
 
 function authoredOrder(value: OrderedSibling, fallback: number) {
-  return Number.isInteger(value.order) ? value.order : fallback;
+  return Number.isInteger(value.order) ? value.order as number : fallback;
 }
 
 /**
