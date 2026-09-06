@@ -5,8 +5,6 @@ import type { ProjectSnapshot } from "../project/model";
 /** UI capabilities the application shell offers to feature effect presenters. */
 export type EffectPresentationSurface = {
   notify(text: string, anchorLineId?: string, source?: AuthoredSourceIdentity): void;
-  /** Append ordinary persistent player-visible text to the terminal history. */
-  appendTranscript(text: string, source?: AuthoredSourceIdentity): void;
   /** Append stable media identity; the rendering feature resolves current content. */
   appendInlineAsset(assetId: string, source?: AuthoredSourceIdentity): void;
   /** Open stable media identity; the rendering feature resolves current content. */
