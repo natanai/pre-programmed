@@ -34,6 +34,10 @@ jobs:
       - name: Generate repository Media manifest
         run: npm run generate:assets
 
+      - name: Read GitHub Pages configuration
+        id: pages
+        uses: actions/configure-pages@v5
+
       - name: Prepare deployment configuration
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -41,7 +45,7 @@ jobs:
           PRE_PROGRAMMED_WORKER_NAME: ${{ vars.PRE_PROGRAMMED_WORKER_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_NAME: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_NAME }}
           PRE_PROGRAMMED_D1_DATABASE_ID: ${{ vars.PRE_PROGRAMMED_D1_DATABASE_ID }}
-          PRE_PROGRAMMED_CLIENT_ORIGIN: ${{ vars.PRE_PROGRAMMED_CLIENT_ORIGIN }}
+          PRE_PROGRAMMED_CLIENT_ORIGIN: ${{ vars.PRE_PROGRAMMED_CLIENT_ORIGIN || steps.pages.outputs.origin }}
         run: node scripts/prepare-deployment-wrangler.mjs .wrangler.deploy.jsonc
 
       - name: Deploy API Worker
@@ -79,7 +83,7 @@ jobs:
         run: npm run build:pages
         env:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN || steps.deploy-worker.outputs.api_origin }}
-          VITE_BASE_PATH: /${{ github.event.repository.name }}/
+          VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
 
       - name: Verify deployed API
         env:
@@ -118,7 +122,6 @@ jobs:
           }
           NODE
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
