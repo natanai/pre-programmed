@@ -1,9 +1,6 @@
 .inventory-play-workspace {
+  min-width: 0;
   min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
 }
 
 /* Inventory remains one player-domain unit; BODY is its equipment sibling. */
@@ -16,15 +13,66 @@
 
 .inventory-primary-area {
   display: grid;
-  grid-template-areas: "grid inspector";
-  grid-template-columns: minmax(300px, 1fr) minmax(13em, .45fr);
-  gap: .75em;
+  gap: .5em;
   min-width: 0;
-  align-items: stretch;
+  align-items: start;
 }
 
-.inventory-primary-area .inventory-grid { grid-area: grid; }
-.inventory-primary-area .inventory-inspector { grid-area: inspector; }
+.inventory-interactions {
+  min-width: 0;
+  padding: .45em 0 .1em;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.inventory-interaction-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75em;
+}
+
+.inventory-interaction-heading strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--dos-bright);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inventory-interaction-heading button {
+  flex: none;
+  min-height: 2.5em;
+  padding: .25em .4em !important;
+}
+
+.inventory-interactions .operation-buttons {
+  gap: .4em .65em;
+  margin-top: .35em;
+}
+
+.inventory-equipped-status {
+  margin-top: .35em;
+  color: var(--dos-warn);
+}
+
+.inventory-equip-choices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .4em .65em;
+  margin: .35em 0 0;
+  padding-top: .35em;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.inventory-equip-choices > span,
+.inventory-equip-choices > small { color: var(--dos-muted); }
+.inventory-equip-choices button[aria-pressed="true"] {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
 
 .inventory-body-area {
   display: grid;
@@ -178,45 +226,6 @@
   font-style: normal;
   text-shadow: 1px 1px #000;
 }
-.inventory-equipped-status { color: var(--dos-warn); }
-.inventory-equip-choices {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: .4em .65em;
-  margin: .65em 0;
-  padding-top: .5em;
-  border-top: 1px dotted var(--dos-line);
-}
-.inventory-equip-choices > span,
-.inventory-equip-choices > small { color: var(--dos-muted); }
-.inventory-equip-choices button[aria-pressed="true"] {
-  color: var(--dos-bright);
-  text-decoration: underline;
-  text-underline-offset: .2em;
-}
-.inventory-inspector-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75em;
-  padding-bottom: .4em;
-  border-bottom: 1px dotted var(--dos-line);
-}
-.inventory-inspector-heading strong {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--dos-bright);
-  font-weight: 400;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.inventory-inspector-heading button {
-  flex: none;
-  min-height: 2.5em;
-  padding: .25em .4em !important;
-}
-.inventory-inspector-help { margin: 0; color: var(--dos-muted); }
 
 /* Specialized Body Type spatial control inside the shared Author grammar. */
 .body-type-layout-control {
@@ -317,18 +326,8 @@
 
 @media (max-width: 700px), (pointer: coarse) {
   .inventory-play-workspace .inventory-layout { grid-template-columns: minmax(0, 1fr); }
-  .inventory-primary-area {
-    grid-template-areas: "inspector" "grid";
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .inventory-play-workspace .inventory-inspector {
-    min-height: 0;
-    padding: .55em .65em;
-    border-width: 1px;
-  }
-  .inventory-play-workspace .inventory-inspector.has-selection { border-color: var(--dos-bright); }
   .inventory-body-area { width: 100%; }
-  .inventory-inspector-heading button,
+  .inventory-interaction-heading button,
   .inventory-equip-choices button,
   .body-slot-editor-toolbar button,
   .body-slot-definition-row button { min-height: 2.75em; font-size: max(16px, 1em); }
