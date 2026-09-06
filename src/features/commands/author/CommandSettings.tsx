@@ -225,11 +225,13 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   const [patternsText, setPatternsText] = useState(initial.patterns.join("\n"));
   const [baseline, setBaseline] = useState(JSON.stringify(initial));
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
   const patterns = patternLines(patternsText);
   const slotNames = placeholderNames(patterns);
   const slots: CommandSlotDefinition[] = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
   const dirty = JSON.stringify({ ...draft, patterns, slots }) !== baseline;
+  const persistedCommand = context.snapshot.settings.commands.commands.find((command) => command.id === draft.id);
   const providers = targetProviders();
   const targetAction = draft.action.type === "target-operation" ? draft.action : null;
   const targetActionKinds = targetAction
@@ -260,6 +262,10 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
+  useEffect(() => {
+    if (saveError) setSaveError("");
+  }, [draft, patternsText]);
+
   const setSlotKinds = (name: string, sourceKinds: string[]) => setDraft((current) => {
     const nextSlots = slotNames.map((slotName) => slotName === name
       ? { name, sourceKinds }
@@ -289,8 +295,10 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
             : [...existingSlot.sourceKinds, sourceKind],
         };
       });
+      const operationLabel = current.action.type === "target-operation" ? current.action.operation : "";
       return {
         ...current,
+        label: current.label.trim() ? current.label : operationLabel,
         slots: nextSlots,
         action: current.action.type === "target-operation"
           ? { ...current.action, targetSlot: slotName }
@@ -316,14 +324,21 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     setDraft((current) => ({ ...current, action: { type: "application", operation: value.replace(/^application:/, "") } }));
   };
 
-  const save = async (): Promise<boolean> => {
-    if (commandProblem) return false;
+  const save = async ({ completeResourceTask = true }: { completeResourceTask?: boolean } = {}): Promise<boolean> => {
+    setSaveError("");
+    if (commandProblem) {
+      setSaveError(commandProblem);
+      return false;
+    }
     const normalizedSlots = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
     const action = draft.action;
     if (action.type === "target-operation" && (
       !OPERATION_ID_PATTERN.test(action.operation)
       || !normalizedSlots.some((slot) => slot.name === action.targetSlot && slot.sourceKinds.length)
-    )) return false;
+    )) {
+      setSaveError("Finish the target setup before saving this command.");
+      return false;
+    }
     const command: CommandDefinition = { ...draft, label: draft.label.trim(), patterns, slots: normalizedSlots };
     let commands: CommandProjectSettings = {
       ...context.snapshot.settings.commands,
@@ -337,32 +352,52 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     }
     setSaving(true);
     try {
-      const result = await persistCommands(context, commands, `${existing ? "Changed" : "Created"} command ${command.label}`);
-      if (result.status !== "saved" && result.status !== "queued") return false;
+      const result = await persistCommands(context, commands, `${persistedCommand ? "Changed" : "Created"} command ${command.label}`);
+      if (result.status !== "saved" && result.status !== "queued") {
+        setSaveError(result.status === "conflict"
+          ? "The project changed while this command was saving. Your draft is still here; save it again."
+          : result.message ?? "This command could not be saved. Your draft is still here.");
+        return false;
+      }
       setDraft(command);
       setPatternsText(command.patterns.join("\n"));
       setBaseline(JSON.stringify(command));
       context.setWorkspaceDirty(false);
-      if (resourceTask === "player-command") context.completeTask({ type: "resource", kind: "player-command", id: command.id, value: command.id, label: command.label });
+      if (completeResourceTask && resourceTask === "player-command") context.completeTask({ type: "resource", kind: "player-command", id: command.id, value: command.id, label: command.label });
       return true;
     } finally {
       setSaving(false);
     }
   };
 
+  const openTargetBehaviors = async (sourceKind: string) => {
+    if (saving) return;
+    const needsSave = dirty || !context.snapshot.settings.commands.commands.some((command) => command.id === draft.id);
+    if (needsSave && !await save({ completeResourceTask: false })) return;
+    context.pushTask({
+      type: "feature",
+      feature: "commands",
+      workspace: "target-behaviors",
+      data: { sourceKind, operation: targetOperation, commandLabel: draft.label },
+    });
+  };
+
   useEffect(() => {
-    context.registerWorkspaceSave(save);
+    context.registerWorkspaceSave(() => save());
     return () => context.registerWorkspaceSave(null);
   });
 
   const remove = async () => {
-    if (!existing) return;
+    if (!persistedCommand) return;
     const commands = {
       ...context.snapshot.settings.commands,
-      commands: context.snapshot.settings.commands.commands.filter((command) => command.id !== existing.id),
+      commands: context.snapshot.settings.commands.commands.filter((command) => command.id !== persistedCommand.id),
     };
-    const result = await persistCommands(context, commands, `Deleted command ${existing.label}`);
+    const result = await persistCommands(context, commands, `Deleted command ${persistedCommand.label}`);
     if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
+    else setSaveError(result.status === "conflict"
+      ? "The project changed while this command was being deleted. Try again."
+      : result.message ?? "This command could not be deleted.");
   };
 
   return <section className="author-panel author-panel-frame command-settings-workspace">
@@ -413,7 +448,7 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
         <small>The operation each resolved target will attempt.</small>
         {!targetActionKinds.length ? <div className="command-target-setup">
           <strong>CHOOSE A TARGET TYPE</strong>
-          <small>This connects a real player-supplied value to an authored target. If you have not typed a value yet, the editor will add <code>{`${normalizePlayerInput(draft.label || draft.action.operation || "inspect") || "inspect"} {target}`}</code> for you.</small>
+          <small>For the common case, choose what the player is targeting and this editor will generate the target input and command name for you. You can still edit either afterward.</small>
           <div>
             {providers.map((provider) => <button type="button" key={provider.kind} onClick={() => configureTarget(provider.kind)}>[TARGET {provider.label.toUpperCase()}]</button>)}
           </div>
@@ -422,14 +457,15 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
           <option value="">CHOOSE…</option>
           {slots.map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}${slot.sourceKinds.length ? ` · ${slot.sourceKinds.map((kind) => semanticReferenceProvider(kind)?.label ?? kind).join(" + ")}` : " · choose target type"}`}</option>)}
         </select></label>
-        {targetActionKinds.map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: targetOperation, commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>)}
+        {targetActionKinds.map((kind) => <button key={kind} type="button" disabled={saving} onClick={() => void openTargetBehaviors(kind)}>[{saving ? "SAVING COMMAND..." : `CONTINUE TO ${semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR`}]</button>)}
       </section> : null}
 
-      {showProblem ? <div className="command-author-warning" role="status">{commandProblem}</div> : null}
+      {saveError ? <div className="command-author-warning" role="alert">{saveError}</div>
+        : showProblem ? <div className="command-author-warning" role="status">{commandProblem}</div> : null}
     </div>
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={!dirty || saving || Boolean(commandProblem)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {existing ? confirmDelete
+      {persistedCommand ? confirmDelete
         ? <><button type="button" onClick={() => void remove()}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></>
         : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button>
         : null}
