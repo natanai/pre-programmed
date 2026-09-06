@@ -18,7 +18,7 @@ const targetDescription: EffectHandler = (effect, snapshot, state, context) => {
   if (effect.type !== "world_target_description") return unchangedEffect(state);
   const entity = operationTargetEntity(snapshot, context);
   const text = entity?.description?.trim();
-  return text ? { state, events: [{ type: "transcript", text }] } : unchangedEffect(state);
+  return text ? { state, events: [], outputText: text } : unchangedEffect(state);
 };
 
 const targetPortrait: EffectHandler = (effect, snapshot, state, context) => {
