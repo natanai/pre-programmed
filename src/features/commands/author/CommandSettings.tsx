@@ -405,8 +405,9 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     <div className="author-panel-body command-editor-form">
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enabled</label>
       <label>NAME<input value={draft.label} placeholder="Command name" onChange={(event) => setDraft({ ...draft, label: event.target.value })} /></label>
+      <small>The Author-facing name used to find this command. It does not have to match every phrase the player can type.</small>
       <label>PLAYER INPUTS<textarea rows={4} value={patternsText} placeholder="TYPE ONE PLAYER INPUT PER LINE" onChange={(event) => setPatternsText(event.target.value)} /></label>
-      <small>These are literal player inputs, not examples. Use a value in braces when part of the input varies, for example <code>inspect {"{target}"}</code>.</small>
+      <small>Write one accepted sentence shape per line. Braces mark a player-supplied value and can appear anywhere: <code>inspect {"{target}"}</code> · <code>{"{target} looks like what?!"}</code>. Different brace names create separate values.</small>
 
       {slots.length ? <section className="command-slot-editor">
         <h3>PLAYER-SUPPLIED VALUES</h3>
@@ -420,6 +421,12 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
               ? <button type="button" onClick={() => context.resources.openList(provider.authorResourceKind!)}>[OPEN]</button>
               : null}
           </div>)}
+          {slot.sourceKinds.map((kind) => {
+            const provider = semanticReferenceProvider(kind);
+            return provider?.targetAvailabilityDescription
+              ? <small key={`availability:${kind}`}>PLAY-TIME AVAILABILITY · {provider.targetAvailabilityDescription}</small>
+              : null;
+          })}
         </div>)}
       </section> : null}
 
@@ -444,11 +451,11 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
       </section> : null}
 
       {draft.action.type === "target-operation" ? <section className="command-target-action">
-        <label>OPERATION<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, operation: event.target.value } } : current)} /></label>
-        <small>The operation each resolved target will attempt.</small>
+        <label>OPERATION ID<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, operation: event.target.value } } : current)} /></label>
+        <small>The stable behavior invoked after a target resolves. This is not player wording: several different Player Inputs can all invoke the same <code>inspect</code> operation.</small>
         {!targetActionKinds.length ? <div className="command-target-setup">
           <strong>CHOOSE A TARGET TYPE</strong>
-          <small>For the common case, choose what the player is targeting and this editor will generate the target input and command name for you. You can still edit either afterward.</small>
+          <small>Choose what the brace value names. For the common case, this editor can generate a {"{target}"} input and command name for you; both remain editable.</small>
           <div>
             {providers.map((provider) => <button type="button" key={provider.kind} onClick={() => configureTarget(provider.kind)}>[TARGET {provider.label.toUpperCase()}]</button>)}
           </div>
@@ -457,7 +464,14 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
           <option value="">CHOOSE…</option>
           {slots.map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}${slot.sourceKinds.length ? ` · ${slot.sourceKinds.map((kind) => semanticReferenceProvider(kind)?.label ?? kind).join(" + ")}` : " · choose target type"}`}</option>)}
         </select></label>
-        {targetActionKinds.map((kind) => <button key={kind} type="button" disabled={saving} onClick={() => void openTargetBehaviors(kind)}>[{saving ? "SAVING COMMAND..." : `CONTINUE TO ${semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR`}]</button>)}
+        {targetActionKinds.length ? <>
+          <small>OPTIONAL · You can save this command now and configure each target later in its own Player interactions. This shortcut opens those same canonical owner editors.</small>
+          {targetActionKinds.map((kind) => {
+            const provider = semanticReferenceProvider(kind);
+            const ownerLabel = (provider?.authorSyntax ?? provider?.label ?? kind).toUpperCase();
+            return <button key={kind} type="button" disabled={saving} onClick={() => void openTargetBehaviors(kind)}>[{saving ? "SAVING COMMAND..." : `EDIT ${ownerLabel} ${targetOperation.toUpperCase()} BEHAVIOR`}]</button>;
+          })}
+        </> : null}
       </section> : null}
 
       {saveError ? <div className="command-author-warning" role="alert">{saveError}</div>
