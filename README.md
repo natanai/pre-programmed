@@ -135,21 +135,39 @@ Repository-managed files live under:
 public/assets/
 ```
 
-A repository file is identified by a neighboring `.asset.json` sidecar containing its stable Media ID. Authored rules reference that ID rather than the path, so files can be reorganized without rewriting gameplay data.
+Drop any supported image or audio file anywhere under that folder. A neighboring `.asset.json` file is **not required**. The shared Media scanner infers file facts such as MIME type, dimensions, byte length, hash, and runtime path, then gives a bare file a deterministic ID based on its relative asset path:
 
-Example:
+```text
+repo:/assets/<relative-path>
+```
+
+For example, this file works by itself:
 
 ```text
 public/assets/audio/door-creak.ogg
+```
+
+and initially resolves as:
+
+```text
+repo:/assets/audio/door-creak.ogg
+```
+
+When the asset folder is writable, the scanner also creates a neighboring identity receipt automatically:
+
+```text
 public/assets/audio/door-creak.ogg.asset.json
 ```
 
 ```json
 {
-  "id": "your-stable-media-id",
-  "name": "Door creak"
+  "id": "repo:/assets/audio/door-creak.ogg"
 }
 ```
+
+The receipt owns **only file identity**. Keep it with the file if you later move or rename the file and want existing authored references to keep pointing to the same Media resource. A read-only or ephemeral build can still use the same deterministic path-derived ID even when it cannot persist the receipt.
+
+Name, presentation, and editor mode are authored Media metadata and persist through the project's canonical Media mutation/save path rather than through filesystem JSON. Older sidecars that contain those fields remain readable as migration defaults, but new engine-generated/exported receipts contain only `id`.
 
 The build generates the repository Media manifest. Broken project metadata remains visible in Author mode as missing content so an author can restore a repository file using the same stable ID instead of being shown a false playable asset.
 
@@ -213,7 +231,7 @@ For the standard hosted fork path, the production workflow now derives installat
 
 Local-only use does not require a Cloudflare account. Hosted deployment currently ships with Cloudflare Worker/D1 adapters. File Media remains ordinary repository content rather than requiring a separate object-storage service.
 
-Author mode can export/import a `.ppgame` project file, allowing authored project data to move between portable desktop, local repository, and hosted installations without moving another installation's database itself. Ordinary image/audio files remain separate repository/external Media with stable sidecars.
+Author mode can export/import a `.ppgame` project file, allowing authored project data to move between portable desktop, local repository, and hosted installations without moving another installation's database itself. Ordinary image/audio files remain separate repository/external Media; their optional identity receipts are generated automatically when possible and should travel with files that have been moved away from their original path.
 
 ## Windows portable build
 
