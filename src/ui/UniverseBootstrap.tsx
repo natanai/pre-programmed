@@ -4,9 +4,11 @@ import "./universeBootstrap.css";
 
 export function UniverseBootstrap({
   projectReady,
+  startButtonText,
   children,
 }: {
   projectReady: Promise<unknown>;
+  startButtonText: string;
   children: ReactNode;
 }) {
   const [initialized, setInitialized] = useState(false);
@@ -35,13 +37,13 @@ export function UniverseBootstrap({
 
   if (initialized) return <>{children}</>;
 
-  return <main className="universe-bootstrap" aria-label="Initialize universe">
+  return <main className="universe-bootstrap" aria-label={startButtonText}>
     <button
       type="button"
       className="universe-bootstrap-action"
       disabled={initializing}
       onClick={() => void initialize()}
-    >[{initializing ? "INITIALIZING UNIVERSE..." : "INITIALIZE UNIVERSE"}]</button>
+    >[{startButtonText}{initializing ? "..." : ""}]</button>
     {audioRetry ? <div className="universe-bootstrap-note" role="status">AUDIO START REQUIRES ANOTHER TAP.</div> : null}
   </main>;
 }
