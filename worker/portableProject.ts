@@ -53,7 +53,7 @@ function parseCurrent(value: Record<string, unknown>): PortableProjectDocument {
 }
 
 function parseVersionOne(value: Record<string, unknown>) {
-  if (!Array.isArray(value.bookmarks)) throw new Error("Portable project has invalid saved author locations.");
+  if (!Array.isArray(value.bookmarks)) throw new Error("Portable project has invalid legacy run bookmark data.");
   return parseCurrent(value);
 }
 

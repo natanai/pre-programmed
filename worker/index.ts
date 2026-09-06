@@ -114,7 +114,7 @@ export async function handleApi(request: Request, env: Env) {
   if (url.pathname === "/api/author/workspace" && request.method === "GET") return json(await getWorkspace(env.DB));
 
   if (url.pathname === "/api/author/run-bookmarks" && request.method === "POST") {
-    const body = await request.json<{ bookmark?: unknown }>().catch(() => ({}));
+    const body: { bookmark?: unknown } = await request.json<{ bookmark?: unknown }>().catch(() => ({}));
     const error = runBookmarkError(body.bookmark);
     if (error) return json({ error }, { status: 400 });
     const bookmark = await saveRunBookmark(env.DB, body.bookmark as AuthorBookmark);
