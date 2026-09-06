@@ -131,4 +131,45 @@ describe("Author project persistence", () => {
     expect(queue.queued()).toEqual([]);
     expect(queue.cached.at(-1)).toEqual(before);
   });
+
+  it("persists a Player Command project-settings mutation through a reload", async () => {
+    const before = project({ revision: 9 });
+    const inspectCommand = {
+      id: "inspect-character",
+      label: "Inspect",
+      enabled: true,
+      patterns: ["inspect {target}", "{target} looks like what?!"],
+      slots: [{ name: "target", sourceKinds: ["world.character"] }],
+      action: { type: "target-operation" as const, operation: "inspect", targetSlot: "target" },
+    };
+    const settings = {
+      ...before.settings,
+      commands: {
+        ...before.settings.commands,
+        referenceSources: [{ sourceKind: "world.character", enabled: true, includeDefaults: true, aliases: {} }],
+        commands: [inspectCommand],
+      },
+    };
+    const operation = { type: "project.settings" as const, settings };
+    const optimistic = applyOperations(before, [operation]);
+    const queue = localStore();
+    const remote = memoryPersistence(before);
+
+    const result = await persistAuthorMutation({
+      persistence: remote.persistence,
+      authorization: "token",
+      mutation: mutation("Created command Inspect", 9, [operation]),
+      optimisticSnapshot: optimistic,
+      previousSnapshot: before,
+      local: queue.local,
+    });
+
+    expect(result.status).toBe("saved");
+    const reloaded = await remote.persistence.readProject();
+    expect(reloaded.settings.commands.commands).toEqual([inspectCommand]);
+    expect(reloaded.settings.commands.referenceSources).toEqual([
+      { sourceKind: "world.character", enabled: true, includeDefaults: true, aliases: {} },
+    ]);
+    expect(queue.queued()).toEqual([]);
+  });
 });
