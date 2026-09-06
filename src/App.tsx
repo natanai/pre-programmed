@@ -315,6 +315,29 @@ export default function App() {
     setActivePerformance(compiled.performance);
   };
 
+  const beginLaunchPresentation = (project: ProjectSnapshot) => {
+    if (startupRunRef.current) return startupActiveRef.current;
+    startupRunRef.current = true;
+    const startup = project.settings.radix.startup;
+    const sequence = startup.enabled
+      ? project.settings.radix.sequences.find((candidate) => candidate.id === startup.sequenceId)
+      : undefined;
+    if (!sequence) return false;
+    startupActiveRef.current = true;
+    setActiveText("");
+    setActiveNodeId(undefined);
+    setActiveSpeakerId(null);
+    setActiveSource(undefined);
+    setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
+    setPendingDestinationNodeId(null);
+    setActiveRadix({
+      sequenceId: sequence.id,
+      runKey: crypto.randomUUID(),
+      startup: true,
+    });
+    return true;
+  };
+
   useEffect(() => {
     if (!typewriter.complete || !nodeDialoguePending || !snapshot || !playState || !activeNodePresentation) return;
     const dialogue = interpolateText(activeNodePresentation.dialogueText ?? "", { snapshot, state: playState });
@@ -366,37 +389,16 @@ export default function App() {
   ]);
 
   useEffect(() => {
-    if (!snapshot || !playState || startupRunRef.current) return;
-    startupRunRef.current = true;
-    const startup = snapshot.settings.radix.startup;
-    const sequence = startup.enabled
-      ? snapshot.settings.radix.sequences.find((candidate) => candidate.id === startup.sequenceId)
-      : undefined;
-    if (!sequence) return;
-    startupActiveRef.current = true;
-    setActiveText("");
-    setActiveNodeId(undefined);
-    setActiveSpeakerId(null);
-    setActiveSource(undefined);
-    setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
-    setPendingDestinationNodeId(null);
-    setActiveRadix({
-      sequenceId: sequence.id,
-      runKey: crypto.randomUUID(),
-      startup: true,
-    });
-  }, [snapshot, playState]);
-
-  useEffect(() => {
     if (!snapshot || !playState || !activeRadix) return;
     if (snapshot.settings.radix.sequences.some((sequence) => sequence.id === activeRadix.sequenceId)) return;
     const wasStartup = activeRadix.startup;
     setActiveRadix(null);
     if (!wasStartup) return;
     startupActiveRef.current = false;
+    if (pendingPlaySession) return;
     const node = snapshot.nodes.find((candidate) => candidate.id === playState.currentNodeId);
     if (node) showNode(snapshot, node, playState);
-  }, [snapshot, playState, activeRadix]);
+  }, [snapshot, playState, activeRadix, pendingPlaySession]);
 
   const continuePlaySession = () => {
     if (!snapshot || !pendingPlaySession) return;
@@ -505,10 +507,11 @@ export default function App() {
       if (cached && !cancelled) {
         setConnectionState("ready");
         const state = createEmptyPlayState(cached);
+        const launchOwnsPresentation = beginLaunchPresentation(cached);
         setSnapshot(cached);
         setPlayState(state);
         const node = cached.nodes.find((item) => item.id === cached.startNodeId);
-        if (node) showNode(cached, node, state);
+        if (!launchOwnsPresentation && node) showNode(cached, node, state);
         offerSession(cached);
       }
       try {
@@ -520,6 +523,7 @@ export default function App() {
         });
         if (cancelled) return;
         setConnectionState("ready");
+        const launchOwnsPresentation = beginLaunchPresentation(project);
         setSnapshot(project);
         setPlayState((existing) => {
           const existingCompatible = Boolean(existing && project.nodes.some((node) => node.id === existing.currentNodeId));
@@ -530,7 +534,7 @@ export default function App() {
           const shouldRefreshPresentation = !decision
             || !existingCompatible
             || (decision === "continue" && Boolean(savedSession) && savedSession!.projectRevision !== project.revision);
-          if (shouldRefreshPresentation) {
+          if (shouldRefreshPresentation && !launchOwnsPresentation) {
             const node = project.nodes.find((item) => item.id === state.currentNodeId);
             if (node) showNode(project, node, state);
           }
@@ -1033,6 +1037,7 @@ export default function App() {
     setActiveRadix(null);
     if (!wasStartup) return;
     startupActiveRef.current = false;
+    if (pendingPlaySession) return;
     const node = snapshot.nodes.find((candidate) => candidate.id === playState.currentNodeId);
     if (node) showNode(snapshot, node, playState);
   };
