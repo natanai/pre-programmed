@@ -116,41 +116,6 @@ export function Inventory({
   return <div className="inventory-play-workspace" aria-label="Inventory">
     <div className="inventory-layout">
       <div className="inventory-primary-area">
-        <aside className={`inventory-inspector${selected ? " has-selection" : ""}`} aria-label="Selected inventory details">
-          {selectedEntry && selectedItem ? <>
-            <div className="inventory-inspector-heading">
-              <strong>{selectedItem.name}</strong>
-              <div className="inventory-inspector-heading-actions">
-                <button type="button" onClick={() => setSelected(null)}>[DONE]</button>
-              </div>
-            </div>
-            <p>{selectedItem.description}</p>
-            {equippedAnchor ? <p className="inventory-equipped-status">
-              EQUIPPED · {equippedAnchor.name}{selectedOccupiedNames.length > 1 ? ` · OCCUPIES ${selectedOccupiedNames.join(" + ")}` : ""}
-            </p> : null}
-            {operationButtons(
-              { kind: "item", id: selectedEntry.instanceId },
-              selectedItemOperations.filter((operation) => operation !== "equip" && operation !== "unequip"),
-              onEditItem ? () => onEditItem(selectedItem.id) : undefined,
-            )}
-            {selectedItemOperations.includes("equip") ? <div className="inventory-equip-choices">
-              <span>EQUIP PLACEMENT</span>
-              {compatibleSlots.map((slot) => {
-                const assignment = equipmentAssignmentForSlot(snapshot, state, selectedItem, slot.key);
-                const additional = assignment?.occupiedSlotKeys.filter((key) => key !== slot.key).map(bodySlotName) ?? [];
-                return <button
-                  type="button"
-                  key={slot.id}
-                  aria-pressed={selectedEntry.equipment?.anchorSlotKey === slot.key}
-                  onClick={() => equipToSlot(selectedEntry.instanceId, slot.key)}
-                >[{slot.name.toUpperCase()}{additional.length ? ` + ${additional.map((name) => name.toUpperCase()).join(" + ")}` : ""}]</button>;
-              })}
-              {!compatibleSlots.length ? <small>NO COMPLETE PLACEMENT FITS THIS BODY TYPE.</small> : null}
-            </div> : null}
-            {selectedItemOperations.includes("unequip") && selectedEntry.equipment ? <button type="button" onClick={() => operate({ operation: "unequip", target: { kind: "item", id: selectedEntry.instanceId } })}>[UNEQUIP]</button> : null}
-          </> : <p className="inventory-inspector-help">Tap an item for details. Tap a grid cell to move a selected item; desktop also supports drag.</p>}
-        </aside>
-
         <div className="inventory-grid" style={{ "--columns": INVENTORY_COLUMNS, "--rows": INVENTORY_ROWS } as CSSProperties}
           onDragOver={(event) => event.preventDefault()}
           onDrop={(event) => {
@@ -181,6 +146,35 @@ export function Inventory({
             </button>;
           })}
         </div>
+
+        {selectedEntry && selectedItem ? <section className="inventory-interactions" aria-label="Selected inventory item">
+          <div className="inventory-interaction-heading">
+            <strong>{selectedItem.name}</strong>
+            <button type="button" onClick={() => setSelected(null)}>[DONE]</button>
+          </div>
+          {equippedAnchor ? <div className="inventory-equipped-status">
+            EQUIPPED · {equippedAnchor.name}{selectedOccupiedNames.length > 1 ? ` · OCCUPIES ${selectedOccupiedNames.join(" + ")}` : ""}
+          </div> : null}
+          {operationButtons(
+            { kind: "item", id: selectedEntry.instanceId },
+            selectedItemOperations.filter((operation) => operation !== "equip" && (operation !== "unequip" || Boolean(selectedEntry.equipment))),
+            onEditItem ? () => onEditItem(selectedItem.id) : undefined,
+          )}
+          {selectedItemOperations.includes("equip") ? <div className="inventory-equip-choices">
+            <span>EQUIP:</span>
+            {compatibleSlots.map((slot) => {
+              const assignment = equipmentAssignmentForSlot(snapshot, state, selectedItem, slot.key);
+              const additional = assignment?.occupiedSlotKeys.filter((key) => key !== slot.key).map(bodySlotName) ?? [];
+              return <button
+                type="button"
+                key={slot.id}
+                aria-pressed={selectedEntry.equipment?.anchorSlotKey === slot.key}
+                onClick={() => equipToSlot(selectedEntry.instanceId, slot.key)}
+              >[{slot.name.toUpperCase()}{additional.length ? ` + ${additional.map((name) => name.toUpperCase()).join(" + ")}` : ""}]</button>;
+            })}
+            {!compatibleSlots.length ? <small>NO COMPLETE PLACEMENT FITS THIS BODY TYPE.</small> : null}
+          </div> : null}
+        </section> : null}
       </div>
 
       <section className="inventory-body-area" aria-label="Body equipment area">
