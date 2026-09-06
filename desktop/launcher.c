@@ -60,13 +60,25 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
   }
   *separator = L'\0';
 
+  wchar_t runtime_dir[32768];
+  if (_snwprintf_s(
+        runtime_dir,
+        sizeof(runtime_dir) / sizeof(runtime_dir[0]),
+        _TRUNCATE,
+        L"%s\\_engine",
+        launcher_path
+      ) < 0) {
+    show_launch_error(ERROR_BUFFER_OVERFLOW);
+    return 1;
+  }
+
   wchar_t runtime_path[32768];
   if (_snwprintf_s(
         runtime_path,
         sizeof(runtime_path) / sizeof(runtime_path[0]),
         _TRUNCATE,
-        L"%s\\_engine\\Pre-Programmed.exe",
-        launcher_path
+        L"%s\\Pre-Programmed.exe",
+        runtime_dir
       ) < 0) {
     show_launch_error(ERROR_BUFFER_OVERFLOW);
     return 1;
@@ -99,7 +111,7 @@ int WINAPI wWinMain(HINSTANCE instance, HINSTANCE previous, PWSTR command_line, 
     TRUE,
     0,
     NULL,
-    launcher_path,
+    runtime_dir,
     &startup,
     &process
   );
