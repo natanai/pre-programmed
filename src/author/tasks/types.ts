@@ -10,7 +10,7 @@ export type AuthorTaskData = Record<string, AuthorTaskValue>;
 
 export type AuthorTaskRoute =
   | { type: "tools" }
-  | { type: "workspace"; view?: "navigation" | "locations" | "history" }
+  | { type: "workspace"; view?: "navigation" | "history" }
   | { type: "feature"; feature: string; workspace: string; data?: Record<string, string> };
 
 export type AuthorResourceResult = {
