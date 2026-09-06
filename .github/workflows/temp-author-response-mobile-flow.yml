@@ -1,0 +1,41 @@
+name: Temporary Author response mobile flow verify
+
+on:
+  push:
+    branches: [author-response-mobile-flow]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: temp-author-response-mobile-flow
+  cancel-in-progress: true
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: author-response-mobile-flow
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply scripted changes
+        shell: bash
+        run: python .github/apply_author_response_mobile_flow.py
+      - name: Verify
+        run: |
+          npm ci --no-audit --no-fund
+          npm run verify
+      - name: Commit clean result
+        shell: bash
+        run: |
+          git rm .github/apply_author_response_mobile_flow.py .github/workflows/temp-author-response-mobile-flow.yml
+          git config user.name "natanai"
+          git config user.email "109430106+natanai@users.noreply.github.com"
+          git add -A
+          git commit -m "Streamline Author response editing flow"
+          git push origin HEAD:author-response-mobile-flow
