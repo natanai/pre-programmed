@@ -74,6 +74,7 @@ export type BodySlotDefinition = {
   /** Logical coordinates within the owning Body Type's canvas. */
   x: number;
   y: number;
+  /** Persisted separately for compatibility, but canonical Body slots are square and these values must match. */
   width: number;
   height: number;
 };
