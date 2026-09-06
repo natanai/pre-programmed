@@ -107,7 +107,8 @@ function referenceMatches(snapshot: ProjectSnapshot, state: PlayState, sourceKin
     const sourceSetting = snapshot.settings.commands.referenceSources.find((setting) => setting.sourceKind === sourceKind && setting.enabled);
     const provider = semanticReferenceProvider(sourceKind);
     if (!sourceSetting || !provider?.targetable) return [];
-    return provider.candidates({ snapshot, state }).flatMap((candidate) => {
+    const candidates = provider.targetCandidates?.({ snapshot, state }) ?? provider.candidates({ snapshot, state });
+    return candidates.flatMap((candidate) => {
       if (!candidate.target) return [];
       const defaults = sourceSetting.includeDefaults ? [candidate.key, ...candidate.aliases] : [];
       const aliases = [...defaults, ...(sourceSetting.aliases[candidate.id] ?? [])].map(normalizeCommand).filter(Boolean);
