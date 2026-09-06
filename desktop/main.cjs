@@ -1,7 +1,7 @@
 const { app, BrowserWindow, dialog } = require("electron");
 const { createServer } = require("node:http");
 const { mkdir, readFile, stat } = require("node:fs/promises");
-const { createReadStream, mkdirSync } = require("node:fs");
+const { createReadStream, existsSync, mkdirSync, renameSync } = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
@@ -32,13 +32,26 @@ let quitting = false;
 
 function portableRoot() {
   if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);
-  if (app.isPackaged) return path.dirname(process.execPath);
+  if (app.isPackaged) {
+    const executableDir = path.dirname(process.execPath);
+    if (path.basename(executableDir).toLowerCase() === "_engine") return path.dirname(executableDir);
+    return executableDir;
+  }
   return path.resolve(__dirname, "portable-dev");
+}
+
+function migrateLegacyPortableData(root) {
+  const legacyData = path.join(root, "data");
+  const containedData = path.join(root, "_engine", "data");
+  if (!existsSync(legacyData) || existsSync(containedData)) return;
+  mkdirSync(path.dirname(containedData), { recursive: true });
+  renameSync(legacyData, containedData);
 }
 
 function configurePortableElectronPaths() {
   const root = portableRoot();
-  const electronRoot = path.join(root, "data", "electron");
+  migrateLegacyPortableData(root);
+  const electronRoot = path.join(root, "_engine", "data", "electron");
   const paths = {
     userData: path.join(electronRoot, "user-data"),
     sessionData: path.join(electronRoot, "session-data"),
@@ -46,7 +59,6 @@ function configurePortableElectronPaths() {
     crashDumps: path.join(electronRoot, "crash-dumps"),
     logs: path.join(electronRoot, "logs"),
     temp: path.join(electronRoot, "temp"),
-    downloads: path.join(root, "exports"),
   };
   for (const target of Object.values(paths)) mkdirSync(target, { recursive: true });
   for (const [name, target] of Object.entries(paths)) app.setPath(name, target);
@@ -57,7 +69,7 @@ const configuredPortableRoot = configurePortableElectronPaths();
 
 function assertPortableElectronPaths(root) {
   const resolvedRoot = path.resolve(root);
-  for (const name of ["userData", "sessionData", "cache", "crashDumps", "logs", "temp", "downloads"]) {
+  for (const name of ["userData", "sessionData", "cache", "crashDumps", "logs", "temp"]) {
     const configured = path.resolve(app.getPath(name));
     if (configured !== resolvedRoot && !configured.startsWith(`${resolvedRoot}${path.sep}`)) {
       throw new Error(`Electron path ${name} escaped the portable folder: ${configured}`);
@@ -158,13 +170,11 @@ async function proxyApi(request, response) {
 
 async function startLocalHost() {
   const root = configuredPortableRoot;
-  const dataRoot = path.join(root, "data");
+  const dataRoot = path.join(root, "_engine", "data");
   const assetRoot = path.join(root, "assets");
-  const exportRoot = path.join(root, "exports");
   await Promise.all([
     mkdir(dataRoot, { recursive: true }),
     mkdir(assetRoot, { recursive: true }),
-    mkdir(exportRoot, { recursive: true }),
   ]);
   const installation = await readInstallationSettings(root);
   const authorKey = installation.authorKey;
@@ -346,6 +356,25 @@ async function runSelfTest() {
   await shutdown();
 }
 
+function installSaveAsDownloads(window) {
+  window.webContents.session.on("will-download", (_event, item) => {
+    item.pause();
+    const suggestedName = item.getFilename() || "pre-programmed-export";
+    void dialog.showSaveDialog(window, {
+      title: "Save file",
+      defaultPath: path.join(app.getPath("downloads"), suggestedName),
+      buttonLabel: "Save",
+    }).then(({ canceled, filePath }) => {
+      if (canceled || !filePath) {
+        item.cancel();
+        return;
+      }
+      item.setSavePath(filePath);
+      item.resume();
+    }).catch(() => item.cancel());
+  });
+}
+
 async function createWindow() {
   const { url, assetWarning } = await startLocalHost();
   mainWindow = new BrowserWindow({
@@ -361,6 +390,7 @@ async function createWindow() {
       sandbox: true,
     },
   });
+  installSaveAsDownloads(mainWindow);
   await mainWindow.loadURL(url);
   if (assetWarning) {
     dialog.showMessageBox(mainWindow, {

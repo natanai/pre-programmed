@@ -1,7 +1,7 @@
 PRE-PROGRAMMED — WINDOWS PORTABLE ENGINE
 
 1. Extract the entire Pre-Programmed folder from the ZIP.
-2. Keep everything inside that folder together. Do not move only Pre-Programmed.exe.
+2. Keep Pre-Programmed.exe, installation.txt, assets, and _engine together. You normally never need to open _engine.
 3. Open installation.txt. Set AUTHOR_KEY= for your Author password and START_BUTTON_TEXT= for the first button shown before the terminal.
 4. Double-click Pre-Programmed.exe.
 5. Type: admin
@@ -24,7 +24,7 @@ assets\audio\door.ogg.asset.json
 Media exported from Author mode includes the matching identity receipt automatically. Name, presentation, and editor settings remain in authored project data; the receipt is only file identity.
 
 LOCAL DATA
-The data folder contains this installation's local database and Electron runtime state. The exports folder is the default destination for project-file downloads. installation.txt owns this extracted installation's Author password and pre-terminal start button text. The engine keeps its writable runtime state inside this extracted Pre-Programmed folder.
+The _engine folder contains the bundled runtime plus this installation's local database, Electron state, cache, and logs. installation.txt owns this extracted installation's Author password and pre-terminal start button text. Downloads use a normal Windows Save As dialog, so there is no engine-owned exports folder.
 
 MOVING TO GITHUB / CLOUDFLARE
 Export your game as a .ppgame file and bring your assets folder with it. A hosted installation uses a GitHub/Cloudflare ADMIN_KEY secret. You may reuse the AUTHOR_KEY value from installation.txt or choose a different password; the game does not depend on it.
