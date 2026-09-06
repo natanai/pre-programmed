@@ -62,7 +62,19 @@ export type SemanticReferenceProvider = {
   defaultProjection?: string;
   /** Whether this provider may be selected for a Player Command target slot. */
   targetable?: boolean;
+  /**
+   * Full semantic candidate set used for authored discovery, aliases and readable references.
+   * Runtime target eligibility may be narrower through targetCandidates.
+   */
   candidates: (context: SemanticReferenceContext) => SemanticReferenceCandidate[];
+  /**
+   * Optional runtime target set for Player Commands. When omitted, Commands falls back to
+   * candidates(). Features use this to express run-state availability without duplicating
+   * their resource definitions inside Commands.
+   */
+  targetCandidates?: (context: SemanticReferenceContext) => SemanticReferenceCandidate[];
+  /** Optional author-facing explanation of this feature's runtime target-availability rule. */
+  targetAvailabilityDescription?: string;
   /** Static authored dependency represented by a stored candidate id. Contextual selectors return null. */
   projectResource?: (
     referenceId: string,
