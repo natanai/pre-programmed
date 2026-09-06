@@ -303,7 +303,7 @@ export function InteractionEditor({
 
   return <section className="author-panel author-panel-frame interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="guided-editor-header">
-      {screen.type !== "overview" ? <button type="button" className="guided-back" onClick={back} aria-label="Back">[‹]</button> : null}
+      {screen.type !== "overview" ? <button type="button" className="guided-back" onClick={back} aria-label="Back to input">[‹ INPUT]</button> : null}
       <span>{title}</span>
       <small>#{snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}</small>
     </header>
@@ -396,31 +396,26 @@ function InteractionOverview({
   onOpenSettings: () => void;
 }) {
   return <div className="interaction-overview">
-    {!fallbackMode ? <section className="guided-section">
-      <h3>WHAT DOES THE PLAYER ENTER?</h3>
-      <div className="guided-option-list">
-        <button type="button" className="guided-option-row" aria-pressed={!captureMode} onClick={() => onMatchMode("command")}>
-          <span>{!captureMode ? "[X]" : "[ ]"} SPECIFIC INPUT</span>
-          <small>Match authored wording and aliases.</small>
-        </button>
-        <button type="button" className="guided-option-row" aria-pressed={captureMode} onClick={() => onMatchMode("capture")}>
-          <span>{captureMode ? "[X]" : "[ ]"} CAPTURE PLAYER INPUT</span>
-          <small>Accept otherwise-unmatched text at this node and make it available to response effects.</small>
-        </button>
-      </div>
+    {!fallbackMode ? <section className="guided-section interaction-primary-section">
+      <h3>PLAYER INPUT</h3>
       {!captureMode ? <label className="user-input-field">PLAYER ENTERS
         <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
-      </label> : <div className="guided-context-copy">Specific interactions and player commands still take priority. Any other submitted text uses this interaction before Invalid Input.</div>}
-    </section> : <div className="guided-context-copy">This is what can happen when the player's text does not match any valid input at this node.</div>}
+      </label> : <div className="guided-context-copy compact-copy">Accept otherwise-unmatched text at this Node and make it available to response effects.</div>}
+      <div className="interaction-mode-row" aria-label="Player input mode">
+        <span>MODE</span>
+        <button type="button" aria-pressed={!captureMode} onClick={() => onMatchMode("command")}>{!captureMode ? "[X]" : "[ ]"} SPECIFIC</button>
+        <button type="button" aria-pressed={captureMode} onClick={() => onMatchMode("capture")}>{captureMode ? "[X]" : "[ ]"} CAPTURE</button>
+      </div>
+    </section> : <div className="guided-context-copy compact-copy">Response used when player text does not match another valid input at this Node.</div>}
 
-    <section className="guided-section">
-      <h3>WHAT CAN HAPPEN?</h3>
+    <section className="guided-section interaction-response-section">
+      <h3>RESPONSES</h3>
       <div className="response-summary-list">
         {draft.outcomes.map((outcome, index) => <button type="button" className="response-summary-row" key={outcome.id} onClick={() => onOpenResponse(outcome.id)}>
           <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
           <span className="response-summary-content">
             <strong>{index + 1}. {responseSnippet(outcome)}</strong>
-            <small>SPEAKER: {responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · WHEN: {conditionSummary(outcome.condition)} · AFTER: {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
+            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
           </span>
           <span aria-hidden="true">›</span>
         </button>)}
@@ -428,10 +423,10 @@ function InteractionOverview({
       <button type="button" className="guided-add" onClick={onAddResponse}>[+ ADD RESPONSE]</button>
     </section>
 
-    <section className="guided-section">
-      <h3>INPUT SETTINGS</h3>
+    <section className="guided-section interaction-settings-summary">
       <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
-        <span>{fallbackMode || captureMode ? "Author details" : "Aliases, visibility rules, author details"}</span>
+        <span>INPUT SETTINGS</span>
+        <span className="guided-row-value">{fallbackMode || captureMode ? "Author details" : "Aliases · visibility · details"}</span>
         <span aria-hidden="true">›</span>
       </button>
     </section>
@@ -517,8 +512,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
 
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
-    <section className="guided-section response-writing-section">
-      <h3>RESPONSE</h3>
+    <section className="response-writing-section">
       {!conversationCharacterId ? <label>SPEAKER
         <ReferenceField
           kind="character"
@@ -534,7 +528,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
           snapshot={snapshot}
           playState={playState}
           label="NARRATION"
-          rows={5}
+          rows={4}
           autoFocus={autoFocusText && !dialogueSpeakerId}
           onChange={(value) => onChange((current) => ({
             ...current,
@@ -548,7 +542,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
           snapshot={snapshot}
           playState={playState}
           label={dialogueLabel}
-          rows={5}
+          rows={4}
           autoFocus={autoFocusText && Boolean(dialogueSpeakerId)}
           onChange={(value) => onChange((current) => ({
             ...current,

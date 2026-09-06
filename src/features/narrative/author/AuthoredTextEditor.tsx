@@ -9,8 +9,7 @@ import { scanInlineTextCommands } from "../../../engine/presentation/inlineTextC
 import { createEmptyPlayState } from "../../../engine/project/playState";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { TextPerformance } from "../model";
-import { interpolateText } from "../interpolation";
-import { compileTextNotation, validateTextNotation } from "../textNotation";
+import { validateTextNotation } from "../textNotation";
 import { TextRulesReference, type InlineTextRule } from "./TextRulesReference";
 import "./authoredTextEditor.css";
 
@@ -43,14 +42,6 @@ export function AuthoredTextEditor({
   const referenceState = useMemo(() => playState ?? createEmptyPlayState(snapshot), [playState, snapshot]);
   const referenceContext = useMemo(() => ({ snapshot, state: referenceState }), [snapshot, referenceState]);
   const issues = useMemo(() => validateTextNotation(value.text), [value.text]);
-  const renderedText = useMemo(
-    () => playState ? interpolateText(value.text, { snapshot, state: playState }) : value.text,
-    [value.text, snapshot, playState],
-  );
-  const compiled = useMemo(
-    () => compileTextNotation(renderedText, value.performance),
-    [renderedText, value.performance],
-  );
   const featureCommands = featureTextCueAuthorAdapters();
   const configuredCommands = scanInlineTextCommands(value.text)
     .map((command) => ({ command, adapter: featureTextCueAuthorAdapterForCode(command.definition.code) }))
@@ -130,7 +121,25 @@ export function AuthoredTextEditor({
   };
 
   return <div className="authored-text-editor">
-    <label className="authored-text-field">{label}
+    <div className="authored-text-heading">
+      <span>{label}</span>
+      <label className="authored-text-speed">
+        <span>SPEED</span>
+        <input
+          type="number"
+          min={1}
+          max={120}
+          value={value.performance.charactersPerSecond}
+          aria-label={`${label} speed in characters per second`}
+          onChange={(event) => emit({
+            ...value,
+            performance: { ...value.performance, charactersPerSecond: Math.max(1, Math.min(120, Number(event.target.value) || 1)) },
+          })}
+        />
+        <span>cps</span>
+      </label>
+    </div>
+    <label className="authored-text-field">
       <ValueMentionField
         snapshot={snapshot}
         playState={playState}
@@ -144,29 +153,23 @@ export function AuthoredTextEditor({
         ariaLabel={label}
       />
     </label>
-    <div className="authored-text-meta">
-      <span>{value.text.length} character{value.text.length === 1 ? "" : "s"}</span>
-      <label>SPEED <input
-        type="number"
-        min={1}
-        max={120}
-        value={value.performance.charactersPerSecond}
-        onChange={(event) => emit({
-          ...value,
-          performance: { ...value.performance, charactersPerSecond: Math.max(1, Math.min(120, Number(event.target.value) || 1)) },
-        })}
-      /> chars/sec</label>
+    <div className="authored-text-tools">
+      <span className="authored-text-count">{value.text.length} char{value.text.length === 1 ? "" : "s"}</span>
+      <TextRulesReference
+        onApply={applyInlineRule}
+        featureCommands={featureCommands.map((adapter) => ({
+          code: adapter.inlineCode,
+          label: adapter.label,
+          category: adapter.category,
+          description: adapter.description,
+        }))}
+        onApplyFeatureCommand={applyFeatureCommand}
+      />
+      {onPreview ? <button type="button" className="authored-text-preview" disabled={Boolean(issues.length)} onClick={() => onPreview({
+        ...value,
+        performance: { ...value.performance, cues: [] },
+      })}>[PREVIEW]</button> : null}
     </div>
-    <TextRulesReference
-      onApply={applyInlineRule}
-      featureCommands={featureCommands.map((adapter) => ({
-        code: adapter.inlineCode,
-        label: adapter.label,
-        category: adapter.category,
-        description: adapter.description,
-      }))}
-      onApplyFeatureCommand={applyFeatureCommand}
-    />
     {configuredCommands.length ? <section className="inline-command-configs" aria-label="Inline command details">
       <strong>COMMAND DETAILS</strong>
       {configuredCommands.map(({ command, adapter }, index) => adapter ? <div
@@ -187,25 +190,5 @@ export function AuthoredTextEditor({
     {issues.length ? <div className="authored-text-errors" role="alert">
       {issues.map((issue) => <span key={`${issue.index}:${issue.message}`}>{issue.message}</span>)}
     </div> : null}
-    <div className="authored-text-actions">
-      {onPreview ? <button type="button" disabled={Boolean(issues.length)} onClick={() => onPreview({
-        ...value,
-        performance: { ...value.performance, cues: [] },
-      })}>[PREVIEW IN PLAY]</button> : null}
-    </div>
-    <div className="performance-preview" aria-label={`${label} preview`}><PerformanceText text={compiled.text} performance={compiled.performance} /></div>
   </div>;
-}
-
-function PerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {
-  const segments: Array<{ text: string; classes: string[] }> = [];
-  for (let index = 0; index < text.length; index += 1) {
-    const classes = performance.cues
-      .filter((cue) => ["wave", "shake", "blink"].includes(cue.type) && cue.start <= index && cue.end > index)
-      .map((cue) => `cue-${cue.type}`);
-    const previous = segments.at(-1);
-    if (previous && previous.classes.join(" ") === classes.join(" ")) previous.text += text[index];
-    else segments.push({ text: text[index], classes });
-  }
-  return <>{segments.map((segment, index) => <span className={segment.classes.join(" ")} key={index}>{segment.text}</span>)}</>;
 }

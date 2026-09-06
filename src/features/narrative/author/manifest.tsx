@@ -140,12 +140,24 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         interaction,
         graph,
       )}
-      onEdit={(interaction) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { interactionId: interaction.id },
-      })}
+      onEdit={(interaction) => {
+        context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "node",
+          data: { nodeId: interaction.sourceNodeId },
+        });
+        const directOutcomeId = interaction.outcomes.length === 1 ? interaction.outcomes[0]?.id : undefined;
+        context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "interaction",
+          data: {
+            interactionId: interaction.id,
+            ...(directOutcomeId ? { outcomeId: directOutcomeId } : {}),
+          },
+        });
+      }}
     />;
   },
   renderWorkspace(route, context) {
