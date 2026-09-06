@@ -100,25 +100,37 @@ Audio, conventional images, and other file Media belong under:
 public/assets/
 ```
 
-Each file should have a neighboring `.asset.json` identity sidecar. For example:
+A bare supported file is enough. For example:
 
 ```text
 public/assets/audio/door-creak.ogg
+```
+
+`npm run generate:assets` scans the assets folder and derives the file's MIME type, dimensions where available, byte length, hash, and runtime path. If there is no neighboring identity receipt, the scanner gives the file a deterministic stable Media ID from its relative path:
+
+```text
+repo:/assets/audio/door-creak.ogg
+```
+
+When the assets folder is writable, the scanner also creates this identity receipt automatically:
+
+```text
 public/assets/audio/door-creak.ogg.asset.json
 ```
 
 ```json
 {
-  "id": "your-stable-media-id",
-  "name": "Door creak"
+  "id": "repo:/assets/audio/door-creak.ogg"
 }
 ```
 
-`npm run generate:assets` indexes these files into the generated Media manifest. The production build runs that step automatically.
+The `.asset.json` file is therefore **not setup that an author must create**. It is an engine-owned identity receipt. Keep it with the file when moving or renaming that file if you want existing authored references to keep the same ID. If a build environment is read-only or ephemeral, the build still uses the same deterministic path-derived ID even if it cannot persist the receipt.
 
-Authored rules reference the stable Media ID, never the repository path. This keeps gameplay data portable even when a file is renamed or reorganized.
+The production build runs asset generation automatically. The Windows portable runtime uses the same scanner against the visible `assets/` folder beside the executable, so dropping the same bare file into either distribution follows the same identity rules.
 
-Synths and the small SVG/vector tools created inside Author mode do **not** need repository files: their authored definitions/content remain D1-backed.
+Authored rules reference stable Media IDs rather than file URLs. File facts stay derived from the file itself, while author-editable name, presentation, and vector-grid editor identity stay in Media project data and travel with `.ppgame`. Older sidecars containing those fields remain readable as migration defaults; new engine-generated and exported receipts contain only `id`.
+
+Synths and the small SVG/vector tools created inside Author mode do **not** need repository files: their authored definitions/content remain D1-backed. If an Author-created vector SVG is exported into file Media, its stable ID receipt preserves the file identity while its vector-grid editability remains part of project Media metadata.
 
 ## API and client origins
 
@@ -199,7 +211,7 @@ That makes the same project portable between, for example:
 - a local repository checkout;
 - a newly forked Cloudflare/GitHub Pages installation.
 
-Ordinary image/audio files remain repository/external Media and should accompany the project separately with their stable `.asset.json` sidecars.
+Ordinary image/audio files remain repository/external Media and should accompany the project separately. Bare files work at their original relative paths; when a file has an identity receipt, move that receipt with it so the same stable ID survives path changes.
 
 Project-file import is a forward-migration boundary for deliberate engine releases; it is not a promise to keep removed legacy feature implementations running forever.
 
@@ -221,7 +233,7 @@ A hosted installation should also satisfy:
 3. Author login succeeds with the installation's key;
 4. an Author edit survives reload;
 5. Author-created SVG content can be saved/fetched through D1;
-6. a repository audio file with a stable sidecar ID can be selected by `play sound` and survives redeploy without any database binary upload.
+6. a bare repository image/audio file can be selected after asset generation without a hand-authored sidecar, and a generated identity receipt can preserve that Media ID when the file is later moved.
 
 ## What belongs to an installation
 
@@ -233,6 +245,6 @@ Installation-specific state includes:
 - hosted API origin;
 - client/CORS origin;
 - hosting/base-path configuration;
-- repository Media files and their stable identity sidecars.
+- repository Media files and any engine-generated identity receipts that accompany them.
 
 These details are platform configuration or game content, not feature behavior. A developer should be able to replace platform adapters without rewriting authored game references or feature logic.
