@@ -74,6 +74,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
                 kind="media-image"
                 value={draft.portraitAssetId ?? ""}
                 placeholder="No portrait"
+                showPreview
                 onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
               />
             </div>,
