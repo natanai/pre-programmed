@@ -19,7 +19,7 @@ function entityCandidate(entity: EntityDefinition): SemanticReferenceCandidate {
       key: entity.key,
       description: entity.description,
     },
-    ...(entity.type === "location" ? { target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id } } : {}),
+    target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id },
     author: { resourceKind: entity.type, resourceId: entity.id },
   };
 }
@@ -72,6 +72,7 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
       key: entity?.key ?? "",
       description: entity?.description ?? "",
     },
+    ...(entity ? { target: { kind: WORLD_ENTITY_OPERATION_TARGET_KIND, id: entity.id } } : {}),
     author: entity
       ? { resourceKind: "character", resourceId: entity.id }
       : node ? { resourceKind: "node", resourceId: node.id } : undefined,
@@ -105,6 +106,7 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     authorContextKeys: ["current-conversation-character", "current-character", "current-speaker"],
     authorResourceKind: "character",
     defaultProjection: "name",
+    targetable: true,
     candidates: (context) => [
       ...currentConversationCharacterCandidates(context),
       ...context.snapshot.entities.filter((entity) => entity.type === "character").map(entityCandidate),
