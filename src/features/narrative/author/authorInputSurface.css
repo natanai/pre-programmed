@@ -20,7 +20,8 @@
 
 .author-input-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: .25em;
   min-height: 2.5em;
   border-bottom: 1px dotted var(--dos-line);
 }
@@ -38,9 +39,8 @@
 }
 
 .author-input-edit {
-  min-width: 3.35em;
-  padding-inline: .55em;
-  border-right: 1px dotted var(--dos-line) !important;
+  min-width: 2.75em;
+  padding-inline: .35em;
   color: var(--dos-muted);
   text-align: center;
 }

@@ -37,7 +37,7 @@
 
 .guided-section {
   margin: 0;
-  padding: .8em 0;
+  padding: .65em 0;
   border-top: 1px solid var(--dos-line);
 }
 
@@ -50,6 +50,44 @@
   font-size: 1em;
   font-weight: 400;
   color: var(--dos-muted);
+}
+
+.compact-copy {
+  margin-bottom: .55em;
+}
+
+.interaction-mode-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .3em .7em;
+  margin-top: .55em;
+  color: var(--dos-muted);
+}
+
+.interaction-mode-row button {
+  min-height: 2.35em;
+  padding: .25em .1em !important;
+}
+
+.interaction-mode-row button[aria-pressed="true"] {
+  color: var(--dos-bright) !important;
+}
+
+.interaction-response-section h3 {
+  color: var(--dos-bright);
+}
+
+.interaction-settings-summary {
+  padding-top: .45em;
+}
+
+.interaction-settings-summary .guided-drill-row {
+  border: 1px solid var(--dos-line) !important;
+}
+
+.response-writing-section {
+  padding: .1em 0 .65em;
 }
 
 .response-summary-list,
@@ -82,12 +120,12 @@
 }
 
 .response-summary-row {
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: max-content minmax(0, 1fr) auto;
 }
 
 .response-summary-notation {
-  min-width: 2.8em;
   color: var(--dos-muted);
+  padding-right: .15em;
 }
 
 .response-summary-notation.draft-input,
@@ -254,6 +292,19 @@
     position: sticky;
     top: 0;
     z-index: 2;
+  }
+
+  .guided-editor-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 7;
+    padding-bottom: max(.35em, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--dos-line);
+    background: #000;
+  }
+
+  .interaction-mode-row {
+    gap: .25em .55em;
   }
 
   .response-summary-row,
