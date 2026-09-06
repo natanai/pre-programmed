@@ -31,7 +31,11 @@ export function movedInteractionIds(
   return moveSibling(validInteractionsForNode(snapshot, nodeId), interactionId, direction).map((interaction) => interaction.id);
 }
 
-/** Apply the durable valid-input sequence while leaving fallback handling outside the ordered choice collection. */
+/**
+ * Apply the durable valid-input sequence and also realign the flat snapshot array.
+ * Existing consumers that filter the snapshot therefore inherit canonical order
+ * without learning Narrative's ordering implementation.
+ */
 export function applyInteractionOrder(
   interactions: readonly Interaction[],
   nodeId: string,
@@ -39,9 +43,12 @@ export function applyInteractionOrder(
 ): Interaction[] {
   const siblings = interactions.filter((interaction) => interaction.sourceNodeId === nodeId && interaction.matchMode !== "fallback");
   const ordered = applySiblingOrder(siblings, orderedIds);
-  const orderById = new Map(ordered.map((interaction) => [interaction.id, interaction.order]));
+  let siblingIndex = 0;
+
   return interactions.map((interaction) => {
-    const order = orderById.get(interaction.id);
-    return order === undefined ? interaction : { ...interaction, order };
+    if (interaction.sourceNodeId !== nodeId || interaction.matchMode === "fallback") return interaction;
+    const next = ordered[siblingIndex];
+    siblingIndex += 1;
+    return next ?? interaction;
   });
 }
