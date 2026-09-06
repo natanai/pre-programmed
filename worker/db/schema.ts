@@ -1,4 +1,5 @@
 import { WORKER_FEATURE_PERSISTENCE } from "../features/catalog";
+import { CORE_PLATFORM_MIGRATIONS } from "./coreMigrations";
 import type { WorkerMigration } from "./migrationContract";
 import { executeSqlScript, MIGRATION_SCRIPTS as HISTORICAL_MIGRATIONS } from "./migrations";
 import {
@@ -11,12 +12,14 @@ import {
  * Canonical runtime migration owner.
  *
  * Migrations 1-12 predate the feature-persistence architecture and are retained
- * unchanged as historical schema facts. New feature schema changes belong to
- * the owning Worker feature contribution and are composed here.
+ * unchanged as historical schema facts. Feature schema changes belong to the
+ * owning Worker feature contribution; shared engine/platform schema changes use
+ * the explicit core migration catalog.
  */
 function migrationPlan(): WorkerMigration[] {
   const contributed = WORKER_FEATURE_PERSISTENCE.flatMap((feature) => feature.migrations ?? []);
-  const plan = [...HISTORICAL_MIGRATIONS, ...contributed].sort((left, right) => left.id - right.id);
+  const plan = [...HISTORICAL_MIGRATIONS, ...contributed, ...CORE_PLATFORM_MIGRATIONS]
+    .sort((left, right) => left.id - right.id);
   const ids = new Set<number>();
   for (const migration of plan) {
     if (ids.has(migration.id)) throw new Error(`Duplicate schema migration id ${migration.id}.`);

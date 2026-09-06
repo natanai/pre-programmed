@@ -34,7 +34,7 @@ function upsertRunBookmarkStatement(db: D1Database, bookmark: AuthorBookmark) {
   );
 }
 
-async function getRunBookmarksRaw(db: D1Database): Promise<AuthorBookmark[]> {
+export async function getRunBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
   const result = await db.prepare(
     "SELECT id, node_id, traversal_json, play_state_json, note, created_at FROM bookmarks ORDER BY created_at DESC",
   ).all<{
@@ -53,64 +53,6 @@ async function getRunBookmarksRaw(db: D1Database): Promise<AuthorBookmark[]> {
     note: row.note,
     createdAt: row.created_at,
   }));
-}
-
-type LegacyRevisionPayload = {
-  description?: string;
-  beforeBookmarks?: unknown[];
-};
-
-/**
- * Earlier prototypes made run bookmarks part of project mutation/restore state.
- * Whole-project import or Undo could therefore erase them without a bookmark
- * delete revision. Recover named bookmarks that revision snapshots prove were
- * live and that were not explicitly deleted afterward. This is idempotent and
- * deliberately conservative for unnamed bookmarks, whose delete intent cannot
- * be reconstructed safely from old descriptions.
- */
-async function repairLegacyRunBookmarkLosses(db: D1Database) {
-  const current = await getRunBookmarksRaw(db);
-  const liveIds = new Set(current.map((bookmark) => bookmark.id));
-  const rows = await db.prepare(
-    "SELECT revision, kind, payload FROM revisions WHERE payload LIKE '%beforeBookmarks%' ORDER BY revision ASC",
-  ).all<{ revision: number; kind: string; payload: string }>();
-  const candidates = new Map<string, { bookmark: AuthorBookmark; lastSeenRevision: number }>();
-  const deletedAt = new Map<string, number>();
-
-  for (const row of rows.results) {
-    const payload = parseJson<LegacyRevisionPayload>(row.payload, {});
-    const before = Array.isArray(payload.beforeBookmarks)
-      ? payload.beforeBookmarks.filter((bookmark): bookmark is AuthorBookmark => !runBookmarkError(bookmark))
-      : [];
-    for (const bookmark of before) {
-      candidates.set(bookmark.id, { bookmark, lastSeenRevision: row.revision });
-    }
-    if (row.kind !== "bookmark.delete") continue;
-    const description = payload.description ?? "";
-    for (const bookmark of before) {
-      if (!bookmark.note.trim()) continue;
-      if (
-        description === `Deleted saved location: ${bookmark.note}`
-        || description === `Deleted run bookmark: ${bookmark.note}`
-      ) {
-        deletedAt.set(bookmark.id, row.revision);
-      }
-    }
-  }
-
-  const recoverable = [...candidates.values()].filter(({ bookmark, lastSeenRevision }) =>
-    !liveIds.has(bookmark.id)
-    && Boolean(bookmark.note.trim())
-    && (deletedAt.get(bookmark.id) ?? -1) < lastSeenRevision,
-  );
-  if (!recoverable.length) return 0;
-  await db.batch(recoverable.map(({ bookmark }) => upsertRunBookmarkStatement(db, bookmark)));
-  return recoverable.length;
-}
-
-export async function getRunBookmarks(db: D1Database): Promise<AuthorBookmark[]> {
-  await repairLegacyRunBookmarkLosses(db);
-  return getRunBookmarksRaw(db);
 }
 
 export async function saveRunBookmark(db: D1Database, bookmark: AuthorBookmark) {
