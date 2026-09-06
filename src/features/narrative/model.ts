@@ -92,6 +92,8 @@ export type InteractionOutcome = {
 export type Interaction = {
   id: string;
   sourceNodeId: string;
+  /** Durable authored position among the source Node's valid-input siblings. */
+  order: number;
   wording: string;
   matchMode?: InteractionMatchMode;
   /** Where an otherwise visible choice is presented. Typed matching never depends on this field. */
