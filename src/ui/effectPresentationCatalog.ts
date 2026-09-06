@@ -5,15 +5,9 @@ import { presentRadixEffectEvent } from "../features/radix/ui/effectPresentation
 import { presentWorldEffectEvent } from "../features/world/ui/effectPresentation";
 
 const presentCoreEffectEvent: EffectEventPresenter = (event, context) => {
-  if (event.type === "notification") {
-    context.surface.notify(event.text, context.anchorLineId, event.source);
-    return true;
-  }
-  if (event.type === "transcript") {
-    context.surface.appendTranscript(event.text, event.source);
-    return true;
-  }
-  return false;
+  if (event.type !== "notification") return false;
+  context.surface.notify(event.text, context.anchorLineId, event.source);
+  return true;
 };
 
 /** Explicit browser-only composition root for core and installed feature presenters. */
