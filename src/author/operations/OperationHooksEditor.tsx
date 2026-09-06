@@ -267,6 +267,7 @@ function HookWorkspace({ hook, snapshot, targetKind, shadowed, onChange, onOpera
         <OutcomeEffectsEditor
           effects={hook.effects}
           snapshot={snapshot}
+          targetKind={targetKind}
           onChange={(effects) => onChange({ ...hook, effects })}
         />
       </OutcomeComposerSection>
