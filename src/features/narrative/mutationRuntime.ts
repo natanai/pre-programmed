@@ -1,6 +1,6 @@
 import { upsertById } from "../../engine/project/mutationHelpers";
 import type { MutationHandler } from "../../engine/project/mutationRuntime";
-import { applyInteractionOrder, nextInteractionOrder } from "./interactionOrdering";
+import { applyInteractionOrder, nextInteractionOrder, validInteractionsForNode } from "./interactionOrdering";
 
 const upsertNode: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "node.upsert") return;
@@ -10,9 +10,15 @@ const upsertNode: MutationHandler = (snapshot, operation) => {
 const upsertInteraction: MutationHandler = (snapshot, operation) => {
   if (operation.type !== "interaction.upsert") return;
   const existing = snapshot.interactions.find((interaction) => interaction.id === operation.interaction.id);
+  const legacyExistingOrder = existing && existing.order === undefined
+    ? validInteractionsForNode(snapshot, operation.interaction.sourceNodeId)
+      .findIndex((interaction) => interaction.id === existing.id)
+    : undefined;
   const interaction = {
     ...operation.interaction,
-    order: existing?.order ?? nextInteractionOrder(snapshot, operation.interaction.sourceNodeId),
+    order: existing?.order
+      ?? (legacyExistingOrder !== undefined && legacyExistingOrder >= 0 ? legacyExistingOrder : undefined)
+      ?? nextInteractionOrder(snapshot, operation.interaction.sourceNodeId),
   };
   snapshot.interactions = upsertById(snapshot.interactions, interaction);
 };
