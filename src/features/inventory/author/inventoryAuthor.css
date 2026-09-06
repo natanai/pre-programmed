@@ -226,44 +226,56 @@
   container-type: inline-size;
 }
 .body-type-layout-control > .body-diagram { width: min(100%, 32rem); }
+.body-layout-editor-guides {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+.body-layout-editor-guides line {
+  stroke: #555;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+.body-layout-editor-guides line.major {
+  stroke: #888;
+  stroke-dasharray: 5 4;
+}
 .body-layout-editor-hit-layer { z-index: 4; pointer-events: none; }
 .body-slot-editor-hit {
   position: absolute;
   min-width: 0;
   min-height: 0;
-  cursor: move;
   pointer-events: auto;
   touch-action: none;
   user-select: none;
+  -webkit-user-select: none;
 }
+.body-layout-editor-hit-layer.mode-move .body-slot-editor-hit { cursor: move; }
+.body-layout-editor-hit-layer.mode-resize .body-slot-editor-hit { cursor: nwse-resize; }
 .body-slot-editor-hit.active {
   outline: 1px dotted var(--dos-bright);
   outline-offset: 2px;
-}
-.body-slot-resize-handle {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  display: grid !important;
-  place-items: center;
-  width: 2em;
-  height: 2em;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  padding: 0 !important;
-  border: 0 !important;
-  appearance: none;
-  -webkit-appearance: none;
-  background: #000 !important;
-  color: var(--dos-bright) !important;
-  cursor: nwse-resize !important;
-  touch-action: none;
 }
 .body-slot-editor-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: .5em .8em;
+}
+.body-slot-editor-tool-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: .35em;
+}
+.body-slot-editor-toolbar button[aria-pressed="true"] {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .2em;
 }
 .body-slot-editor-toolbar small {
   max-width: 48em;
@@ -321,5 +333,8 @@
   .body-slot-editor-toolbar button,
   .body-slot-definition-row button { min-height: 2.75em; font-size: max(16px, 1em); }
   .body-type-layout-control > .body-diagram { width: 100%; }
-  .body-slot-resize-handle { width: 2.75em; height: 2.75em; }
+  .body-slot-editor-toolbar { align-items: stretch; }
+  .body-slot-editor-tool-group { flex: 1 1 auto; }
+  .body-slot-editor-tool-group > button { flex: 1 1 0; }
+  .body-slot-editor-toolbar > small { flex-basis: 100%; }
 }
