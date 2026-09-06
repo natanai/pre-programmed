@@ -8,8 +8,27 @@ import type { WorkerMigration } from "./migrationContract";
 export const CORE_PLATFORM_MIGRATIONS: readonly WorkerMigration[] = [
   {
     id: 41,
-    name: "repair-legacy-author-run-bookmarks",
+    name: "separate-and-repair-author-run-bookmarks",
     sql: `
+      DROP TABLE IF EXISTS bookmarks_v41;
+
+      CREATE TABLE bookmarks_v41 (
+        id TEXT PRIMARY KEY,
+        node_id TEXT NOT NULL,
+        traversal_json TEXT NOT NULL,
+        play_state_json TEXT NOT NULL,
+        note TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+      );
+
+      INSERT INTO bookmarks_v41
+        (id, node_id, traversal_json, play_state_json, note, created_at)
+      SELECT id, node_id, traversal_json, play_state_json, note, created_at
+      FROM bookmarks;
+
+      DROP TABLE bookmarks;
+      ALTER TABLE bookmarks_v41 RENAME TO bookmarks;
+
       WITH historical_bookmarks AS (
         SELECT
           r.revision,
@@ -20,9 +39,15 @@ export const CORE_PLATFORM_MIGRATIONS: readonly WorkerMigration[] = [
           COALESCE(json_extract(bookmark.value, '$.note'), '') AS note,
           json_extract(bookmark.value, '$.createdAt') AS created_at
         FROM revisions r,
-             json_each(r.payload, '$.beforeBookmarks') AS bookmark
+             json_each(
+               CASE WHEN json_valid(r.payload) THEN r.payload ELSE '{}' END,
+               '$.beforeBookmarks'
+             ) AS bookmark
         WHERE json_valid(r.payload)
-          AND json_type(r.payload, '$.beforeBookmarks') = 'array'
+          AND json_type(
+            CASE WHEN json_valid(r.payload) THEN r.payload ELSE '{}' END,
+            '$.beforeBookmarks'
+          ) = 'array'
           AND trim(COALESCE(json_extract(bookmark.value, '$.note'), '')) <> ''
           AND json_extract(bookmark.value, '$.id') IS NOT NULL
           AND json_extract(bookmark.value, '$.nodeId') IS NOT NULL
@@ -60,7 +85,6 @@ export const CORE_PLATFORM_MIGRATIONS: readonly WorkerMigration[] = [
         latest.note,
         latest.created_at
       FROM latest_bookmarks latest
-      JOIN nodes node ON node.id = latest.node_id
       LEFT JOIN explicit_deletes deleted ON deleted.id = latest.id
       WHERE deleted.deleted_revision IS NULL
          OR deleted.deleted_revision < latest.revision;

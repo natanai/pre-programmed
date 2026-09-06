@@ -218,11 +218,11 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
               return <article className="workspace-native-row workspace-bookmark-row" key={bookmark.id}>
                 <span className="workspace-row-copy">
                   <strong>{bookmark.note || `Node #${node?.nodeNumber ?? "?"}`}</strong>
-                  <small>#{node?.nodeNumber ?? "?"} · {node?.text.slice(0, 90) || "Saved run state"}</small>
+                  <small>{node ? `#${node.nodeNumber} · ${node.text.slice(0, 90) || "Saved run state"}` : "SAVED NODE IS NOT PRESENT IN THIS PROJECT."}</small>
                   <small>{new Date(bookmark.createdAt).toLocaleString()}</small>
                 </span>
                 <span className="workspace-row-actions">
-                  <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => onRestore(bookmark)}>[LOAD]</button>
+                  <button type="button" disabled={Boolean(deletingBookmarkId) || !node} onClick={() => onRestore(bookmark)}>[{node ? "LOAD" : "UNAVAILABLE"}]</button>
                   {node ? <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => onEditNode(node.id)}>[EDIT NODE]</button> : null}
                   <button type="button" disabled={Boolean(deletingBookmarkId)} onClick={() => void deleteBookmark(bookmark)}>[{deleting ? "DELETING..." : "DELETE"}]</button>
                 </span>
