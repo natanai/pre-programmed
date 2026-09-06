@@ -7,14 +7,18 @@ import "./effectsEditor.css";
 
 type EffectsScreen = "list" | "choose" | "edit";
 
-export function EffectsEditor({ effects, onChange, snapshot }: {
+export function EffectsEditor({ effects, onChange, snapshot, targetKind }: {
   effects: Effect[];
   onChange: (effects: Effect[]) => void;
   snapshot: ProjectSnapshot;
+  /** Optional semantic operation target; target-bound effects stay out of unrelated authoring surfaces. */
+  targetKind?: string;
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
-  const adapters = effectAuthorAdapters();
+  const adapters = effectAuthorAdapters().filter((adapter) =>
+    !adapter.targetKinds?.length || Boolean(targetKind && adapter.targetKinds.includes(targetKind)),
+  );
   const categories = [...new Set(adapters.map((adapter) => adapter.category))];
   const selectedIndex = selectedEffectId ? effects.findIndex((effect) => effect.id === selectedEffectId) : -1;
   const selectedEffect = selectedIndex >= 0 ? effects[selectedIndex] : undefined;
