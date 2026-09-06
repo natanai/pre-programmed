@@ -44,6 +44,7 @@ export type PlayState =
   & InventoryPlayStateSlice
   & CommandsPlayStateSlice;
 
+/** Author-only checkpoint of one real running play state. Not project definition data. */
 export type AuthorBookmark = {
   id: string;
   nodeId: string;
@@ -61,11 +62,9 @@ export type RevisionSummary = {
   createdAt: string;
 };
 
-/** Core-owned project mutation payloads. Feature payloads live beside features. */
+/** Core-owned project mutation payloads. Author run bookmarks use AuthorPlatform instead. */
 export type CoreProjectMutationOperation =
-  | { type: "project.settings"; settings: ProjectSettings }
-  | { type: "bookmark.upsert"; bookmark: AuthorBookmark }
-  | { type: "bookmark.delete"; id: string };
+  | { type: "project.settings"; settings: ProjectSettings };
 
 /**
  * Explicit mutation composition root.

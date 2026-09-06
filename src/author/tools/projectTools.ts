@@ -2,16 +2,16 @@ import type { AuthorToolContributor } from "./types";
 
 export const projectAuthorTools: AuthorToolContributor = (context) => [
   {
-    groupId: "media",
-    groupLabel: "WORLD + MEDIA",
-    groupOrder: 30,
+    groupId: "run",
+    groupLabel: "RUN",
+    groupOrder: 15,
     toolOrder: 10,
     tool: {
-      id: "locations",
-      label: "LOCATIONS",
-      description: "Navigate the current run or manage saved author locations.",
-      searchText: "location locations back previous bookmark bookmarks position current scene checkpoint resume load",
-      onSelect: () => context.pushTask({ type: "workspace", view: "locations" }),
+      id: "run-navigation",
+      label: "RUN NAVIGATION",
+      description: "Move through the current run or manage Author run bookmarks.",
+      searchText: "run navigation back previous bookmark bookmarks checkpoint resume load current node play state",
+      onSelect: () => context.pushTask({ type: "workspace", view: "navigation" }),
     },
   },
   {
@@ -35,7 +35,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "history",
       label: "HISTORY",
-      description: "Review revisions and project history.",
+      description: "Review authored project revisions and undo the latest project change.",
       searchText: "revision revisions undo change changes restore timeline",
       onSelect: () => context.pushTask({ type: "workspace", view: "history" }),
     },

@@ -16,6 +16,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
     }
     return null;
   },
+  terminalShortcuts: [{ commands: ["/locations", "locations"], route: WORLD_LIBRARY_ROUTE }],
   operations: WORLD_AUTHOR_OPERATION_DEFINITIONS,
   references: [worldProjectReferences],
   workspaces: [...WORLD_WORKSPACES],

@@ -1,5 +1,5 @@
 import type { AuthorPlatform, AuthorWorkspaceSnapshot } from "../author/authorPlatform";
-import type { ProjectSnapshot } from "../../engine/project/model";
+import type { AuthorBookmark, ProjectSnapshot } from "../../engine/project/model";
 import { ApiError, apiUrl, readJson } from "./http";
 
 function filenameFrom(response: Response, fallback: string) {
@@ -61,6 +61,22 @@ export const cloudflareAuthorPlatform: AuthorPlatform = {
 
   async readWorkspace(authorization) {
     return readJson<AuthorWorkspaceSnapshot>(await fetch(apiUrl("/api/author/workspace"), {
+      headers: { Authorization: `Bearer ${authorization}` },
+    }));
+  },
+
+  async saveRunBookmark(authorization, bookmark) {
+    const result = await readJson<{ bookmark: AuthorBookmark }>(await fetch(apiUrl("/api/author/run-bookmarks"), {
+      method: "POST",
+      headers: { Authorization: `Bearer ${authorization}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ bookmark }),
+    }));
+    return result.bookmark;
+  },
+
+  async deleteRunBookmark(authorization, id) {
+    await readJson<{ ok: boolean }>(await fetch(apiUrl(`/api/author/run-bookmarks/${encodeURIComponent(id)}`), {
+      method: "DELETE",
       headers: { Authorization: `Bearer ${authorization}` },
     }));
   },
