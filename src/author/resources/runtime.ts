@@ -35,6 +35,14 @@ export function buildAuthorResourceTools(
   return {
     options,
     label: (kind) => getAuthorResourceProvider(kind)?.label ?? kind,
+    preview(kind, value) {
+      const provider = getAuthorResourceProvider(kind);
+      if (!provider?.preview) return null;
+      const resource = provider.list(snapshot).find((option) => option.id === value || option.value === value);
+      if (!resource) return null;
+      const route = authorRouteForResource(snapshot, kind, value);
+      return provider.preview(resource, snapshot, route ? () => pushTask(route) : undefined);
+    },
     canOpenList: (kind) => Boolean(getAuthorResourceProvider(kind)?.listRoute),
     canCreate: (kind) => Boolean(getAuthorResourceProvider(kind)?.createRoute),
     canEdit: (kind, value) => Boolean(authorRouteForResource(snapshot, kind, value)),
