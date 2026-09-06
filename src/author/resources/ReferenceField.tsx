@@ -8,12 +8,14 @@ export function ReferenceField({
   onChange,
   placeholder,
   allowEmpty = true,
+  showPreview = false,
 }: {
   kind: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   allowEmpty?: boolean;
+  showPreview?: boolean;
 }) {
   const resources = useAuthorResourceTools();
   const chooserId = useId();
@@ -28,6 +30,7 @@ export function ReferenceField({
   const filtered = useMemo(() => options.filter((option) => !normalizedQuery
     || `${option.label} ${option.detail ?? ""} ${option.value}`.toLocaleLowerCase().includes(normalizedQuery)), [normalizedQuery, options]);
   const selectedLabel = selected?.label ?? (value ? `Missing: ${value}` : (placeholder ?? `Choose ${label.toLowerCase()}`));
+  const preview = showPreview && selected ? resources.preview(kind, value) : null;
 
   const closeChooser = () => {
     setOpen(false);
@@ -71,6 +74,8 @@ export function ReferenceField({
       <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
       <span className="author-reference-chevron" aria-hidden="true">{open ? "⌄" : "›"}</span>
     </button>
+
+    {preview ? <div className="author-reference-preview">{preview}</div> : null}
 
     {open ? <section id={chooserId} className="author-reference-chooser" aria-label={`Choose ${label}`}>
       <header>CHOOSE {label.toUpperCase()}</header>

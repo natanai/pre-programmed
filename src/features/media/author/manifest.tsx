@@ -5,6 +5,7 @@ import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
+import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
 import { VectorAssetEditor } from "./VectorAssetEditor";
 import { SynthEditor, SynthPanel } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
@@ -140,6 +141,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
           label: asset.name,
           detail: `${asset.mimeType} · ${asset.contentSource === "database" ? "D1 generated" : "repository file"}`,
         })),
+      preview: (resource, snapshot, onEdit) => <MediaImageReferencePreview snapshot={snapshot} assetId={resource.id} onEdit={onEdit} />,
       createRoute: () => ({
         type: "feature",
         feature: "media",
