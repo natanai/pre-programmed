@@ -1,7 +1,8 @@
 .command-settings-overview,
 .command-settings-list,
 .command-reference-editor,
-.command-editor-body {
+.command-editor-body,
+.command-editor-form {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -38,7 +39,8 @@
 
 .command-settings-overview small,
 .command-settings-list small,
-.command-editor-body small {
+.command-editor-body small,
+.command-editor-form small {
   color: var(--dos-muted);
   white-space: normal;
   line-height: 1.35;
@@ -63,7 +65,8 @@
   overflow-wrap: anywhere;
 }
 
-.command-settings-note code {
+.command-settings-note code,
+.command-editor-form code {
   color: inherit;
 }
 
@@ -89,12 +92,15 @@
 }
 
 .command-reference-candidates,
-.command-slot-editor {
+.command-slot-editor,
+.command-target-action,
+.command-target-setup {
   display: grid;
   gap: .7rem;
 }
 
-.command-reference-candidate {
+.command-reference-candidate,
+.command-slot-row {
   display: grid;
   gap: .45rem;
   padding: .6rem;
@@ -128,7 +134,9 @@
 
 .command-reference-candidate > label,
 .command-slot-editor > label,
-.command-editor-body > label {
+.command-editor-body > label,
+.command-editor-form > label,
+.command-target-action > label {
   display: grid;
   gap: .35rem;
 }
@@ -137,14 +145,61 @@
 .command-editor-body textarea,
 .command-editor-body input,
 .command-editor-body select,
+.command-editor-form textarea,
+.command-editor-form input,
+.command-editor-form select,
 .command-slot-editor select {
   width: 100%;
   box-sizing: border-box;
 }
 
+.command-editor-form textarea::placeholder,
+.command-editor-form input::placeholder {
+  color: var(--dos-muted);
+  opacity: .5;
+}
+
 .command-slot-editor {
   border-top: 1px solid var(--dos-line);
   padding-top: .8rem;
+}
+
+.command-slot-source-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .45rem .8rem;
+}
+
+.command-slot-source-row > button,
+.command-target-setup button,
+.command-target-action > button {
+  min-height: 2.5em;
+  padding: .3em .5em;
+  border: 1px solid var(--dos-line);
+  background: transparent;
+  color: var(--dos-bright);
+  font: inherit;
+  cursor: pointer;
+}
+
+.command-target-setup {
+  padding: .65rem;
+  border: 1px dashed var(--dos-line);
+}
+
+.command-target-setup > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.command-author-warning {
+  padding: .6rem .7rem;
+  border: 1px solid var(--dos-line);
+  color: var(--dos-bright);
+  line-height: 1.4;
 }
 
 .command-slot-editor > label:not(:last-child) {
@@ -249,5 +304,15 @@
 
   .command-slot-editor > label:not(:last-child) {
     grid-template-columns: 1fr;
+  }
+
+  .command-slot-source-row {
+    align-items: flex-start;
+  }
+
+  .command-slot-source-row > button,
+  .command-target-setup button,
+  .command-target-action > button {
+    min-height: 2.75em;
   }
 }
