@@ -143,68 +143,117 @@ jobs:
         run: |
           npx electron-builder --config electron-builder.yml --win --x64 --dir --publish never "--config.extraMetadata.version=$env:VERSION"
 
-      - name: Stage extracted portable folder
+      - name: Stage contained portable folder
         id: stage
         shell: pwsh
         run: |
           $stageRoot = Join-Path $env:RUNNER_TEMP "pre-programmed-portable-folder"
           $appRoot = Join-Path $stageRoot "Pre-Programmed"
+          $engineRoot = Join-Path $appRoot "_engine"
           if (Test-Path $stageRoot) { Remove-Item $stageRoot -Recurse -Force }
-          New-Item -ItemType Directory -Path $appRoot -Force | Out-Null
+          New-Item -ItemType Directory -Path $engineRoot -Force | Out-Null
 
-          Copy-Item "desktop/release/win-unpacked/*" $appRoot -Recurse -Force
-          Copy-Item "desktop/portable-readme.txt" (Join-Path $appRoot "README.txt")
+          Copy-Item "desktop/release/win-unpacked/*" $engineRoot -Recurse -Force
+          Copy-Item "desktop/portable-readme.txt" (Join-Path $engineRoot "README.txt")
           Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
-          foreach ($folder in @("assets", "data", "exports")) {
-            New-Item -ItemType Directory -Path (Join-Path $appRoot $folder) -Force | Out-Null
+          New-Item -ItemType Directory -Path (Join-Path $appRoot "assets") -Force | Out-Null
+
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          if (-not (Test-Path $vswhere)) { throw "Visual Studio locator was not available on the Windows runner." }
+          $vsInstall = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+          if (-not $vsInstall) { throw "A Visual C++ toolchain was not available to build the portable launcher." }
+          $vcvars = Join-Path $vsInstall "VC\Auxiliary\Build\vcvars64.bat"
+          $launcherSource = (Resolve-Path "desktop/launcher.c").Path
+          $launcherOut = Join-Path $appRoot "Pre-Programmed.exe"
+          $launcherObj = Join-Path $env:RUNNER_TEMP "pre-programmed-launcher.obj"
+          $compile = "call `"$vcvars`" && cl.exe /nologo /O2 /MT /DUNICODE /D_UNICODE `"$launcherSource`" /Fo`"$launcherObj`" /link /SUBSYSTEM:WINDOWS /OUT:`"$launcherOut`""
+          & cmd.exe /d /c $compile
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $launcherOut)) {
+            throw "Portable root launcher compilation failed."
           }
 
-          if (-not (Test-Path (Join-Path $appRoot "Pre-Programmed.exe"))) {
-            throw "Pre-extracted runtime did not contain Pre-Programmed.exe."
+          if (-not (Test-Path (Join-Path $engineRoot "Pre-Programmed.exe"))) {
+            throw "Contained Electron runtime did not contain its executable."
           }
           "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
           "app_root=$appRoot" >> $env:GITHUB_OUTPUT
+          "engine_root=$engineRoot" >> $env:GITHUB_OUTPUT
 
-      - name: Smoke-test extracted folder in place
+      - name: Smoke-test contained folder through root launcher
         shell: pwsh
         env:
           APP_ROOT: ${{ steps.stage.outputs.app_root }}
+          ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
         run: |
-          $exe = Join-Path $env:APP_ROOT "Pre-Programmed.exe"
+          $launcher = Join-Path $env:APP_ROOT "Pre-Programmed.exe"
           $installation = Join-Path $env:APP_ROOT "installation.txt"
           $config = Get-Content $installation -Raw
           $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=folder-self-test-key'
+          $config = $config -replace '(?m)^START_BUTTON_TEXT=.*$', 'START_BUTTON_TEXT=FRIEND TEST'
           Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
 
           $stdout = Join-Path $env:APP_ROOT "self-test-stdout.txt"
           $stderr = Join-Path $env:APP_ROOT "self-test-stderr.txt"
-          $process = Start-Process -FilePath $exe -ArgumentList "--self-test" -WorkingDirectory $env:APP_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $process = Start-Process -FilePath $launcher -ArgumentList "--self-test" -WorkingDirectory $env:APP_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           if (Test-Path $stdout) { Get-Content $stdout }
           if (Test-Path $stderr) { Get-Content $stderr }
           if ($process.ExitCode -ne 0) {
             Get-ChildItem $env:APP_ROOT -Recurse -Force | ForEach-Object { Write-Host $_.FullName }
-            throw "Extracted-folder runtime self-test failed with exit code $($process.ExitCode)."
+            throw "Contained portable runtime self-test failed with exit code $($process.ExitCode)."
+          }
+
+          if (-not (Test-Path (Join-Path $env:ENGINE_ROOT "data"))) {
+            throw "Portable runtime did not keep generated state beneath _engine."
+          }
+          if (Test-Path (Join-Path $env:APP_ROOT "data")) {
+            throw "Portable runtime recreated legacy root data."
+          }
+          if (Test-Path (Join-Path $env:APP_ROOT "exports")) {
+            throw "Portable runtime recreated a root exports folder."
           }
 
           Copy-Item "desktop/installation-template.txt" $installation -Force
           Remove-Item $stdout, $stderr -Force -ErrorAction SilentlyContinue
-          foreach ($folder in @("data", "exports")) {
-            $target = Join-Path $env:APP_ROOT $folder
-            if (Test-Path $target) { Remove-Item $target -Recurse -Force }
-            New-Item -ItemType Directory -Path $target -Force | Out-Null
-          }
+          $containedData = Join-Path $env:ENGINE_ROOT "data"
+          if (Test-Path $containedData) { Remove-Item $containedData -Recurse -Force }
           $wranglerState = Join-Path $env:APP_ROOT ".wrangler"
           if (Test-Path $wranglerState) { Remove-Item $wranglerState -Recurse -Force }
 
-      - name: Verify friend-facing extracted folder
+      - name: Verify friend-facing contained folder
         shell: pwsh
         env:
           APP_ROOT: ${{ steps.stage.outputs.app_root }}
+          ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
         run: |
-          foreach ($required in @("Pre-Programmed.exe", "README.txt", "installation.txt", "assets", "data", "exports", "resources")) {
+          foreach ($required in @("Pre-Programmed.exe", "installation.txt", "assets", "_engine")) {
             if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) {
               throw "Portable folder is missing required entry: $required"
             }
+          }
+          foreach ($requiredInternal in @("Pre-Programmed.exe", "README.txt", "resources")) {
+            if (-not (Test-Path (Join-Path $env:ENGINE_ROOT $requiredInternal))) {
+              throw "Portable _engine folder is missing required entry: $requiredInternal"
+            }
+          }
+
+          $rootEntries = @(Get-ChildItem $env:APP_ROOT -Force | ForEach-Object Name | Sort-Object)
+          $expectedRoot = @("_engine", "assets", "installation.txt", "Pre-Programmed.exe") | Sort-Object
+          if (($rootEntries -join "`n") -ne ($expectedRoot -join "`n")) {
+            Write-Host "Unexpected portable root entries:"
+            $rootEntries | ForEach-Object { Write-Host $_ }
+            throw "Portable root must expose only the launcher, installation.txt, assets, and _engine."
+          }
+
+          $installationLines = @(Get-Content (Join-Path $env:APP_ROOT "installation.txt"))
+          if ($installationLines.Count -ne 2 -or $installationLines[0] -ne "AUTHOR_KEY=local" -or $installationLines[1] -ne "START_BUTTON_TEXT=INITIALIZE UNIVERSE") {
+            throw "Portable installation.txt must contain exactly the two friend-facing settings."
+          }
+
+          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "assets") -Force).Count -ne 0) {
+            throw "Portable assets folder must be empty before distribution."
+          }
+          if (Test-Path (Join-Path $env:ENGINE_ROOT "data")) {
+            throw "Portable internal data must be clean before distribution."
           }
 
           foreach ($forbidden in @("docs", "src", "tests", "worker", "scripts", ".github", "AGENTS.md", "FOUNDATION.md", "DOS-VISUAL-TARGET.md", "CODEX-HANDOFF.md")) {
@@ -213,22 +262,7 @@ jobs:
             }
           }
 
-          $installationText = Get-Content (Join-Path $env:APP_ROOT "installation.txt") -Raw
-          if ($installationText -notmatch '(?m)^AUTHOR_KEY=local\s*$') {
-            throw "Portable installation.txt did not reset to its friend-facing Author-key default."
-          }
-
-          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "assets") -Force).Count -ne 0) {
-            throw "Portable assets folder must be empty before distribution."
-          }
-          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "data") -Force).Count -ne 0) {
-            throw "Portable data folder must be empty before distribution."
-          }
-          if (@(Get-ChildItem (Join-Path $env:APP_ROOT "exports") -Force).Count -ne 0) {
-            throw "Portable exports folder must be empty before distribution."
-          }
-
-      - name: Assemble extracted-folder ZIP
+      - name: Assemble contained-folder ZIP
         shell: pwsh
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -240,9 +274,7 @@ jobs:
           Add-Type -AssemblyName System.IO.Compression.FileSystem
           $archive = [System.IO.Compression.ZipFile]::Open($zip, [System.IO.Compression.ZipArchiveMode]::Create)
           try {
-            foreach ($emptyFolder in @("assets", "data", "exports")) {
-              [void]$archive.CreateEntry("Pre-Programmed/$emptyFolder/")
-            }
+            [void]$archive.CreateEntry("Pre-Programmed/assets/")
             Get-ChildItem $env:APP_ROOT -Recurse -File | ForEach-Object {
               $relative = [System.IO.Path]::GetRelativePath($env:STAGE_ROOT, $_.FullName).Replace('\', '/')
               [System.IO.Compression.ZipFileExtensions]::CreateEntryFromFile(
@@ -265,13 +297,15 @@ jobs:
           }
           foreach ($required in @(
             "Pre-Programmed/Pre-Programmed.exe",
-            "Pre-Programmed/README.txt",
             "Pre-Programmed/installation.txt",
             "Pre-Programmed/assets/",
-            "Pre-Programmed/data/",
-            "Pre-Programmed/exports/"
+            "Pre-Programmed/_engine/Pre-Programmed.exe",
+            "Pre-Programmed/_engine/README.txt"
           )) {
             if ($entries -notcontains $required) { throw "Portable ZIP is missing required entry: $required" }
+          }
+          if ($entries -contains "Pre-Programmed/data/" -or $entries -contains "Pre-Programmed/exports/") {
+            throw "Legacy root state folders leaked into portable ZIP."
           }
           if ($entries | Where-Object { $_ -match '(^|/)(AGENTS\.md|FOUNDATION\.md|DOS-VISUAL-TARGET\.md|CODEX-HANDOFF\.md)$' }) {
             throw "Agent-facing documentation leaked into portable ZIP."
