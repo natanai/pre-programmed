@@ -33,7 +33,7 @@ export function AuthorToolIndex({ groups, searchEntries }: { groups: AuthorToolG
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="anything you want to find"
+          placeholder="find"
           autoCapitalize="none"
           autoComplete="off"
           spellCheck={false}
