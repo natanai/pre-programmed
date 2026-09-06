@@ -9,6 +9,7 @@ import "./author/authorDesktopSuite.css";
 import { installAuthorNumberInputScrubbing } from "./author/ui/authorNumberInputScrubbing";
 import { primeProjectSnapshot } from "./data/api";
 import { saveCachedSnapshot } from "./data/localProject";
+import { installationSettings } from "./platform/installation/settings";
 import { UniverseBootstrap } from "./ui/UniverseBootstrap";
 
 installAuthorNumberInputScrubbing();
@@ -17,10 +18,11 @@ const projectReady = primeProjectSnapshot().then(async (project) => {
   await saveCachedSnapshot(project);
   return project;
 });
+const installation = installationSettings();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <UniverseBootstrap projectReady={projectReady}>
+    <UniverseBootstrap projectReady={projectReady} startButtonText={installation.startButtonText}>
       <App />
     </UniverseBootstrap>
   </StrictMode>,
