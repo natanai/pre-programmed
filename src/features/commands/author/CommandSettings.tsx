@@ -4,6 +4,7 @@ import { OutcomeEffectsEditor } from "../../../author/outcomes/OutcomeComposer";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
+import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "../../../engine/references/catalog";
 import { AuthoredTextEditor } from "../../narrative/author/AuthoredTextEditor";
 import type { CommandAction, CommandDefinition, CommandProjectSettings, CommandSlotDefinition, ReferenceSourceSetting } from "../model";
@@ -24,6 +25,10 @@ function placeholderNames(patterns: string[]) {
     for (const match of pattern.matchAll(PLACEHOLDER_PATTERN)) seen.add(match[1].toLowerCase());
   }
   return [...seen];
+}
+
+function patternHasSlot(pattern: string, slotName: string) {
+  return placeholderNames([pattern]).includes(slotName.toLowerCase());
 }
 
 function targetProviders() {
@@ -231,18 +236,68 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     ? slots.find((slot) => slot.name === targetAction.targetSlot)?.sourceKinds ?? []
     : [];
   const targetOperation = targetAction?.operation ?? "";
+  const targetSlot = targetAction ? slots.find((slot) => slot.name === targetAction.targetSlot) : undefined;
+  const targetPatternsWithoutSlot = targetAction?.targetSlot
+    ? patterns.filter((pattern) => !patternHasSlot(pattern, targetAction.targetSlot))
+    : [];
+  const commandProblem = !draft.label.trim()
+    ? "Give this command a name."
+    : !patterns.length
+      ? "Add at least one real player input. Placeholder text is not part of the command."
+      : targetAction && !OPERATION_ID_PATTERN.test(targetAction.operation)
+        ? "Target operations need a valid operation id."
+        : targetAction && !targetAction.targetSlot
+          ? "Choose which player-supplied value is the target."
+          : targetAction && !targetSlot?.sourceKinds.length
+            ? `Choose what {${targetAction.targetSlot}} can name.`
+            : targetAction && targetPatternsWithoutSlot.length
+              ? `Every input for this target operation must include {${targetAction.targetSlot}}. Put targetless wording in a separate Player Command.`
+              : "";
+  const showProblem = Boolean(commandProblem && (dirty || draft.label.trim() || patternsText.trim()));
 
   useEffect(() => {
     context.setWorkspaceDirty(dirty);
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
-  const setSlotKinds = (name: string, sourceKinds: string[]) => setDraft((current) => ({
-    ...current,
-    slots: slotNames.map((slotName) => slotName === name
+  const setSlotKinds = (name: string, sourceKinds: string[]) => setDraft((current) => {
+    const nextSlots = slotNames.map((slotName) => slotName === name
       ? { name, sourceKinds }
-      : current.slots.find((slot) => slot.name === slotName) ?? { name: slotName, sourceKinds: [] }),
-  }));
+      : current.slots.find((slot) => slot.name === slotName) ?? { name: slotName, sourceKinds: [] });
+    const action = current.action.type === "target-operation" && sourceKinds.length && !current.action.targetSlot
+      ? { ...current.action, targetSlot: name }
+      : current.action;
+    return { ...current, slots: nextSlots, action };
+  });
+
+  const configureTarget = (sourceKind: string) => {
+    const slotName = targetAction?.targetSlot || slots[0]?.name || "target";
+    if (!slotNames.includes(slotName)) {
+      const verb = normalizePlayerInput(draft.label || targetOperation || "inspect") || "inspect";
+      const nextPatterns = patternLines(patternsText);
+      setPatternsText([...nextPatterns, `${verb} {${slotName}}`].join("\n"));
+    }
+    setDraft((current) => {
+      const names = slotNames.includes(slotName) ? slotNames : [...slotNames, slotName];
+      const nextSlots = names.map((name) => {
+        const existingSlot = current.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] };
+        if (name !== slotName) return existingSlot;
+        return {
+          ...existingSlot,
+          sourceKinds: existingSlot.sourceKinds.includes(sourceKind)
+            ? existingSlot.sourceKinds
+            : [...existingSlot.sourceKinds, sourceKind],
+        };
+      });
+      return {
+        ...current,
+        slots: nextSlots,
+        action: current.action.type === "target-operation"
+          ? { ...current.action, targetSlot: slotName }
+          : current.action,
+      };
+    });
+  };
 
   const chooseAction = (value: string) => {
     if (value === RESPONSE_ACTION) {
@@ -254,7 +309,7 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
         ...current,
         action: current.action.type === "target-operation"
           ? current.action
-          : { type: "target-operation", operation: "inspect", targetSlot: slots.find((slot) => slot.sourceKinds.length)?.name ?? "" },
+          : { type: "target-operation", operation: "inspect", targetSlot: slots.find((slot) => slot.sourceKinds.length)?.name ?? slots[0]?.name ?? "" },
       }));
       return;
     }
@@ -262,7 +317,7 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   };
 
   const save = async (): Promise<boolean> => {
-    if (!draft.label.trim() || !patterns.length) return false;
+    if (commandProblem) return false;
     const normalizedSlots = slotNames.map((name) => draft.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
     const action = draft.action;
     if (action.type === "target-operation" && (
@@ -314,14 +369,15 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
     <header><span>PLAYER COMMAND · {draft.label || "NEW"}</span></header>
     <div className="author-panel-body command-editor-form">
       <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> enabled</label>
-      <label>NAME<input value={draft.label} placeholder="Where am I?" onChange={(event) => setDraft({ ...draft, label: event.target.value })} /></label>
-      <label>PLAYER INPUTS<textarea rows={4} value={patternsText} placeholder={'where\nwhere am i\ninspect {target}'} onChange={(event) => setPatternsText(event.target.value)} /></label>
-      <small>One pattern per line. Use {'{name}'} for a value the player supplies.</small>
+      <label>NAME<input value={draft.label} placeholder="Command name" onChange={(event) => setDraft({ ...draft, label: event.target.value })} /></label>
+      <label>PLAYER INPUTS<textarea rows={4} value={patternsText} placeholder="TYPE ONE PLAYER INPUT PER LINE" onChange={(event) => setPatternsText(event.target.value)} /></label>
+      <small>These are literal player inputs, not examples. Use a value in braces when part of the input varies, for example <code>inspect {"{target}"}</code>.</small>
 
       {slots.length ? <section className="command-slot-editor">
-        <h3>INPUT VALUES</h3>
+        <h3>PLAYER-SUPPLIED VALUES</h3>
         {slots.map((slot) => <div className="command-slot-row" key={slot.name}>
           <strong>{`{${slot.name}}`}</strong>
+          <small>What can this value name?</small>
           <label className="check-label"><input type="checkbox" checked={!slot.sourceKinds.length} onChange={() => setSlotKinds(slot.name, [])} /> FREE TEXT</label>
           {providers.map((provider) => <div key={provider.kind} className="command-slot-source-row">
             <label className="check-label"><input type="checkbox" checked={slot.sourceKinds.includes(provider.kind)} onChange={(event) => setSlotKinds(slot.name, event.target.checked ? [...slot.sourceKinds, provider.kind] : slot.sourceKinds.filter((kind) => kind !== provider.kind))} /> {provider.label.toUpperCase()}</label>
@@ -353,16 +409,26 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
       </section> : null}
 
       {draft.action.type === "target-operation" ? <section className="command-target-action">
-        <label>ACTION ID<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, operation: event.target.value } } : current)} /></label>
-        <label>TARGET VALUE<select value={draft.action.targetSlot} onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, targetSlot: event.target.value } } : current)}>
+        <label>OPERATION<input value={draft.action.operation} placeholder="inspect" onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, operation: event.target.value } } : current)} /></label>
+        <small>The operation each resolved target will attempt.</small>
+        {!targetActionKinds.length ? <div className="command-target-setup">
+          <strong>CHOOSE A TARGET TYPE</strong>
+          <small>This connects a real player-supplied value to an authored target. If you have not typed a value yet, the editor will add <code>{`${normalizePlayerInput(draft.label || draft.action.operation || "inspect") || "inspect"} {target}`}</code> for you.</small>
+          <div>
+            {providers.map((provider) => <button type="button" key={provider.kind} onClick={() => configureTarget(provider.kind)}>[TARGET {provider.label.toUpperCase()}]</button>)}
+          </div>
+        </div> : null}
+        <label>TARGET INPUT<select value={draft.action.targetSlot} onChange={(event) => setDraft((current) => current.action.type === "target-operation" ? { ...current, action: { ...current.action, targetSlot: event.target.value } } : current)}>
           <option value="">CHOOSE…</option>
-          {slots.filter((slot) => slot.sourceKinds.length).map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}`}</option>)}
+          {slots.map((slot) => <option key={slot.name} value={slot.name}>{`{${slot.name}}${slot.sourceKinds.length ? ` · ${slot.sourceKinds.map((kind) => semanticReferenceProvider(kind)?.label ?? kind).join(" + ")}` : " · choose target type"}`}</option>)}
         </select></label>
         {targetActionKinds.map((kind) => <button key={kind} type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "target-behaviors", data: { sourceKind: kind, operation: targetOperation, commandLabel: draft.label } })}>[DEFINE {semanticReferenceProvider(kind)?.label.toUpperCase() ?? kind} BEHAVIOR]</button>)}
       </section> : null}
+
+      {showProblem ? <div className="command-author-warning" role="status">{commandProblem}</div> : null}
     </div>
     <div className="author-actions author-panel-footer">
-      <button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
+      <button type="button" disabled={!dirty || saving || Boolean(commandProblem)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
       {existing ? confirmDelete
         ? <><button type="button" onClick={() => void remove()}>[CONFIRM DELETE]</button><button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button></>
         : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE]</button>
