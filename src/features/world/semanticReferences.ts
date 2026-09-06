@@ -80,6 +80,18 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
   }];
 };
 
+const availableConversationCharacterTargets: SemanticReferenceProvider["candidates"] = (context) => {
+  const active = resolveActiveNodeConversationContext(context.snapshot, context.state);
+  if (!active) return [];
+  const entity = context.snapshot.entities.find((candidate) =>
+    candidate.id === active.characterId && candidate.type === "character");
+  if (!entity) return [];
+  return [
+    entityCandidate(entity),
+    ...currentConversationCharacterCandidates(context),
+  ];
+};
+
 export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvider[] = [
   {
     kind: "world.location",
@@ -107,6 +119,8 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     authorResourceKind: "character",
     defaultProjection: "name",
     targetable: true,
+    targetAvailabilityDescription: "At play time, Character targets match only the Character currently active in the Node conversation.",
+    targetCandidates: availableConversationCharacterTargets,
     candidates: (context) => [
       ...currentConversationCharacterCandidates(context),
       ...context.snapshot.entities.filter((entity) => entity.type === "character").map(entityCandidate),
