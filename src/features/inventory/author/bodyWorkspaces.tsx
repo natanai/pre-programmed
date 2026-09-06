@@ -4,6 +4,7 @@ import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
 import {
   DEFAULT_BODY_CANVAS,
+  normalizeBodySlotDefinition,
   normalizeBodyTypeDefinition,
   resizeBodyCanvas,
   slotFitsBodyCanvas,
@@ -94,21 +95,21 @@ function newSlot(bodyType: BodyBackgroundDefinition) {
   const usedKeys = new Set((bodyType.slots ?? []).map((slot) => slot.key));
   let number = (bodyType.slots ?? []).length + 1;
   while (usedKeys.has(`slot_${number}`)) number += 1;
-  const width = Math.max(1, bodyType.canvas.width * .2);
-  const height = Math.max(1, bodyType.canvas.height * .12);
+  const minimumCanvasSide = Math.min(bodyType.canvas.width, bodyType.canvas.height);
+  const side = Math.max(Math.min(1, minimumCanvasSide), minimumCanvasSide * .15);
   return {
     id: crypto.randomUUID(),
     key: `slot_${number}`,
     name: "",
-    x: (bodyType.canvas.width - width) / 2,
-    y: (bodyType.canvas.height - height) / 2,
-    width,
-    height,
+    x: (bodyType.canvas.width - side) / 2,
+    y: (bodyType.canvas.height - side) / 2,
+    width: side,
+    height: side,
   } satisfies BodySlotDefinition;
 }
 
 function bodySlotRoute(bodyType: BodyBackgroundDefinition, slot?: BodySlotDefinition) {
-  const nextSlot = slot ?? newSlot(bodyType);
+  const nextSlot = normalizeBodySlotDefinition(slot ?? newSlot(bodyType), bodyType.canvas);
   const startingItemId = (bodyType.startingEquipment ?? []).find((assignment) => assignment.slotKey === nextSlot.key)?.itemId ?? "";
   const payload: BodySlotTaskDraft = {
     ownerId: bodyType.id,
@@ -133,7 +134,7 @@ function readSlotTask(routeData: Record<string, string> | undefined): BodySlotTa
       return {
         ownerId: value.ownerId,
         canvas: value.canvas,
-        slot: value.slot,
+        slot: normalizeBodySlotDefinition(value.slot, value.canvas),
         reservedKeys: Array.isArray(value.reservedKeys) ? value.reservedKeys.filter((key): key is string => typeof key === "string") : [],
         startingItemId: value.startingItemId ?? "",
         isNew: Boolean(value.isNew),
@@ -248,7 +249,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
         || typeof value.height !== "number"
         || typeof value.startingItemId !== "string") return;
 
-      const nextSlot: BodySlotDefinition = {
+      const returnedSlot: BodySlotDefinition = {
         id: slotId,
         key: value.key,
         name: value.name,
@@ -259,6 +260,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
       };
       const startingItemId = value.startingItemId;
       setDraft((current) => {
+        const nextSlot = normalizeBodySlotDefinition(returnedSlot, current.bodyType.canvas);
         const previous = (current.bodyType.slots ?? []).find((candidate) => candidate.id === nextSlot.id);
         const oldKey = previous?.key ?? nextSlot.key;
         return {
@@ -297,7 +299,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
           id: "inventory-body-type-canvas",
           label: "Canvas + background",
           children: [
-            { type: "field", id: "inventory-body-type-canvas-width", label: "Canvas width", control: "number", value: draft.bodyType.canvas.width, help: "Logical layout units, not image pixels. Changing the size rescales existing slot positions proportionally.", onChange: (value) => updateCanvasSize("width", value) },
+            { type: "field", id: "inventory-body-type-canvas-width", label: "Canvas width", control: "number", value: draft.bodyType.canvas.width, help: "Logical layout units, not image pixels. Changing the size preserves slot centers while keeping every slot square.", onChange: (value) => updateCanvasSize("width", value) },
             { type: "field", id: "inventory-body-type-canvas-height", label: "Canvas height", control: "number", value: draft.bodyType.canvas.height, onChange: (value) => updateCanvasSize("height", value) },
             { type: "choice", id: "inventory-body-type-fit", label: "Background fit", value: draft.bodyType.canvas.fit, presentation: "segmented", onChange: (fit) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, canvas: { ...current.bodyType.canvas, fit: fit === "cover" ? "cover" : "contain" } } })), options: [
               { value: "contain", label: "CONTAIN", help: "Show the whole image; unused canvas space may remain." },
@@ -320,7 +322,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
           />,
         },
         ...(!validity.slotKeysValid ? [{ type: "status" as const, id: "inventory-body-type-slot-error", tone: "error" as const, text: "Each body slot needs a unique, non-empty slot key." }] : []),
-        ...(!validity.slotsFitCanvas ? [{ type: "status" as const, id: "inventory-body-type-bounds-error", tone: "error" as const, text: "Every slot must remain within this Body Type's logical canvas." }] : []),
+        ...(!validity.slotsFitCanvas ? [{ type: "status" as const, id: "inventory-body-type-bounds-error", tone: "error" as const, text: "Every slot must remain square and within this Body Type's logical canvas." }] : []),
         ...(!validity.startingEquipmentValid ? [{ type: "status" as const, id: "inventory-body-type-equipment-error", tone: "error" as const, text: "Starting equipment is invalid: check item quantities, placement anchors, required body slots, and overlapping occupied slots." }] : []),
       ],
       actions: existing ? [{
@@ -414,8 +416,12 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
           children: [
             { type: "field", id: "inventory-body-slot-x", label: "X", control: "number", value: Number(slot.x.toFixed(2)), onChange: (value) => setDraft((current) => ({ ...current, slot: { ...current.slot, x: clamp(Number(value) || 0, 0, maxX) } })) },
             { type: "field", id: "inventory-body-slot-y", label: "Y", control: "number", value: Number(slot.y.toFixed(2)), onChange: (value) => setDraft((current) => ({ ...current, slot: { ...current.slot, y: clamp(Number(value) || 0, 0, maxY) } })) },
-            { type: "field", id: "inventory-body-slot-width", label: "Width", control: "number", value: Number(slot.width.toFixed(2)), onChange: (value) => setDraft((current) => ({ ...current, slot: { ...current.slot, width: clamp(Number(value) || 1, Math.min(1, current.canvas.width), current.canvas.width - current.slot.x) } })) },
-            { type: "field", id: "inventory-body-slot-height", label: "Height", control: "number", value: Number(slot.height.toFixed(2)), onChange: (value) => setDraft((current) => ({ ...current, slot: { ...current.slot, height: clamp(Number(value) || 1, Math.min(1, current.canvas.height), current.canvas.height - current.slot.y) } })) },
+            { type: "field", id: "inventory-body-slot-size", label: "Size", control: "number", value: Number(slot.width.toFixed(2)), help: "Body slots are always square; one size controls both dimensions.", onChange: (value) => setDraft((current) => {
+              const minimumSide = Math.min(1, current.canvas.width, current.canvas.height);
+              const maximumSide = Math.min(current.canvas.width - current.slot.x, current.canvas.height - current.slot.y);
+              const side = clamp(Number(value) || minimumSide, minimumSide, maximumSide);
+              return { ...current, slot: { ...current.slot, width: side, height: side } };
+            }) },
           ],
         },
         {
@@ -431,7 +437,7 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
           ],
         },
         ...(!uniqueKey ? [{ type: "status" as const, id: "inventory-body-slot-key-error", tone: "error" as const, text: "Use a unique, non-empty slot key within this Body Type." }] : []),
-        ...(!slotValid && uniqueKey ? [{ type: "status" as const, id: "inventory-body-slot-error", tone: "error" as const, text: "Give the slot a name and keep its geometry inside the Body canvas." }] : []),
+        ...(!slotValid && uniqueKey ? [{ type: "status" as const, id: "inventory-body-slot-error", tone: "error" as const, text: "Give the slot a name and keep its square geometry inside the Body canvas." }] : []),
       ],
       actions: !draft.isNew ? [{
         id: "inventory-body-slot-remove",
@@ -447,11 +453,11 @@ export const inventoryBodySlotWorkspace = defineAuthorWorkspace<BodySlotTaskDraf
     };
   },
   async save({ draft }) {
-    const slot = {
+    const slot = normalizeBodySlotDefinition({
       ...draft.slot,
       key: draft.slot.key.trim(),
       name: draft.slot.name.trim(),
-    };
+    }, draft.canvas);
     if (!draft.ownerId || !slot.key || draft.reservedKeys.includes(slot.key) || !slot.name || !slotFitsBodyCanvas(slot, draft.canvas)) return { accepted: false };
     return {
       accepted: true,
