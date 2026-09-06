@@ -3,6 +3,7 @@ import type { MediaEffect } from "../../features/media/ruleTypes";
 import type { NarrativeCondition, NarrativeEffect } from "../../features/narrative/ruleTypes";
 import type { RadixEffect } from "../../features/radix/ruleTypes";
 import type { StateCondition, StateEffect } from "../../features/state/ruleTypes";
+import type { WorldEffect } from "../../features/world/ruleTypes";
 import type { ComparisonOperator, Value } from "./primitives";
 
 export type { ComparisonOperator, Value } from "./primitives";
@@ -39,6 +40,7 @@ export type Effect =
   | InventoryEffect
   | NarrativeEffect
   | MediaEffect
-  | RadixEffect;
+  | RadixEffect
+  | WorldEffect;
 
 export const ALWAYS: Condition = { type: "always" };

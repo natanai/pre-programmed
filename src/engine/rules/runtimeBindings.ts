@@ -40,6 +40,8 @@ export type ValueSource = Value | {
 
 export const PLAYER_INPUT_BINDING = "input.raw";
 export const OPERATION_ARGUMENT_BINDING_PREFIX = "argument.";
+export const OPERATION_TARGET_KIND_BINDING = "operation.target.kind";
+export const OPERATION_TARGET_ID_BINDING = "operation.target.id";
 
 export function runtimeBinding(key: string): ValueSource {
   return { kind: "binding", key };

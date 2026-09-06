@@ -13,6 +13,7 @@ export function executeEffects(
 ): EffectExecution {
   let state: PlayState = initialState;
   const events: EffectEvent[] = [];
+  const output: string[] = [];
 
   for (const effect of effects) {
     const handler = EFFECT_HANDLERS[effect.type];
@@ -20,7 +21,8 @@ export function executeEffects(
     const execution = handler(effect, snapshot, state, context);
     state = execution.state;
     events.push(...execution.events);
+    if (execution.outputText?.trim()) output.push(execution.outputText.trim());
   }
 
-  return { state, events };
+  return { state, events, ...(output.length ? { outputText: output.join(" ") } : {}) };
 }

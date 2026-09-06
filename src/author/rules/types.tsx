@@ -36,6 +36,8 @@ export type EffectAuthorAdapter = {
   label: string;
   category: string;
   description: string;
+  /** When present, only offer this effect while editing a compatible operation target. */
+  targetKinds?: readonly string[];
   create: () => Effect;
   summarize?: (effect: Effect, snapshot: ProjectSnapshot) => string;
   references?: (effect: Effect) => readonly ResourceReference[];

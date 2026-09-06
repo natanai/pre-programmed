@@ -4,6 +4,7 @@ import { MEDIA_CONDITIONS, MEDIA_EFFECTS } from "../../features/media/rules";
 import { NARRATIVE_CONDITIONS, NARRATIVE_EFFECTS } from "../../features/narrative/rules";
 import { RADIX_CONDITIONS, RADIX_EFFECTS } from "../../features/radix/rules";
 import { STATE_CONDITIONS, STATE_EFFECTS } from "../../features/state/rules";
+import { WORLD_CONDITIONS, WORLD_EFFECTS } from "../../features/world/rules";
 
 export const CONDITION_RULES = [
   ...CORE_CONDITIONS,
@@ -12,6 +13,7 @@ export const CONDITION_RULES = [
   ...INVENTORY_CONDITIONS,
   ...MEDIA_CONDITIONS,
   ...RADIX_CONDITIONS,
+  ...WORLD_CONDITIONS,
 ] as const;
 
 export const EFFECT_RULES = [
@@ -21,6 +23,7 @@ export const EFFECT_RULES = [
   ...INVENTORY_EFFECTS,
   ...MEDIA_EFFECTS,
   ...RADIX_EFFECTS,
+  ...WORLD_EFFECTS,
 ] as const;
 
 export const CONDITION_TYPE_SET: ReadonlySet<string> = new Set(CONDITION_RULES.map((rule) => rule.type));

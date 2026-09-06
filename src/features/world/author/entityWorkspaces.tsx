@@ -83,7 +83,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
         ],
       },
-      ...(draft.type === "location" ? [{
+      {
         type: "disclosure" as const,
         id: "world-entity-behavior",
         label: "Player interactions",
@@ -96,13 +96,13 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           content: <OperationHooksEditor
             capability={{ interactable: draft.interactable ?? false, operations: draft.operations ?? [], hooks: draft.hooks ?? [] }}
             snapshot={context.snapshot}
-            targetKind="world.location"
+            targetKind={draft.type === "character" ? "world.character" : "world.location"}
             defaultOpen={Boolean(route.data?.preferredOperation)}
             preferredOperation={route.data?.preferredOperation}
             onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
           />,
         }],
-      }] : []),
+      },
     ],
   }),
   async save({ route, context, draft }) {
@@ -114,7 +114,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
       fallback: draft.type,
     });
     const saved = draft.type === "character"
-      ? { ...draft, key, interactable: false, operations: [], hooks: [] }
+      ? { ...draft, key }
       : { ...draft, key, portraitAssetId: null };
     const result = await context.persist([{ type: "entity.upsert", entity: saved }], `Save ${saved.type} ${saved.name || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };

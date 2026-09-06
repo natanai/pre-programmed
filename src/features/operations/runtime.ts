@@ -4,7 +4,12 @@ import { evaluateCondition } from "../../engine/rules/conditions";
 import type { Effect } from "../../engine/rules/model";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
-import { OPERATION_ARGUMENT_BINDING_PREFIX, PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
+import {
+  OPERATION_ARGUMENT_BINDING_PREFIX,
+  OPERATION_TARGET_ID_BINDING,
+  OPERATION_TARGET_KIND_BINDING,
+  PLAYER_INPUT_BINDING,
+} from "../../engine/rules/runtimeBindings";
 import { interpolateText } from "../narrative/interpolation";
 import type { OperationArguments, OperationId, OperationTarget } from "./model";
 import type { OperationPlacement } from "./targetAdapter";
@@ -50,8 +55,12 @@ function operationTargetLabel(snapshot: ProjectSnapshot, state: PlayState, targe
   return resolveTarget(snapshot, state, target)?.label ?? target.id;
 }
 
-function operationRuntimeBindings(state: PlayState, args: OperationArguments | undefined) {
-  const bindings: Record<string, string> = { [PLAYER_INPUT_BINDING]: state.lastCommand };
+function operationRuntimeBindings(state: PlayState, target: OperationTarget, args: OperationArguments | undefined) {
+  const bindings: Record<string, string> = {
+    [PLAYER_INPUT_BINDING]: state.lastCommand,
+    [OPERATION_TARGET_KIND_BINDING]: target.kind,
+    [OPERATION_TARGET_ID_BINDING]: target.id,
+  };
   for (const [name, argument] of Object.entries(args ?? {})) {
     bindings[`${OPERATION_ARGUMENT_BINDING_PREFIX}${name}`] = argument.kind === "text" ? argument.value : argument.label;
   }
@@ -164,14 +173,18 @@ export function executeOperation(
   const attempt = attemptOperation(snapshot, state, request);
   const source = sourceForOperation(target?.authorSource, request.operation, attempt.hookId);
   const execution = executeEffects(snapshot, attempt.state, attempt.effects, {
-    bindings: operationRuntimeBindings(state, request.arguments),
+    bindings: operationRuntimeBindings(state, request.target, request.arguments),
   });
   const context = { snapshot, state: execution.state, now };
+  const responseText = [attempt.responseText, execution.outputText]
+    .map((text) => text?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ");
   return {
     eventKey: attempt.eventKey,
     attempt: attempt.attempt,
     accepted: attempt.accepted,
-    responseText: interpolateText(attempt.responseText, context),
+    responseText: interpolateText(responseText, context),
     hookId: attempt.hookId,
     provenance,
     source,

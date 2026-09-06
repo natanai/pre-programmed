@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { WORLD_AUTHOR_OPERATION_DEFINITIONS } from "../operationAdapter";
+import { targetDescriptionEffectAdapter, targetPortraitEffectAdapter } from "./ruleAdapters";
 import { WORLD_WORKSPACES, worldEntityRoute } from "./entityWorkspaces";
 import { worldProjectReferences } from "./references";
 
@@ -18,6 +19,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
   },
   terminalShortcuts: [{ commands: ["/locations", "locations"], route: WORLD_LIBRARY_ROUTE }],
   operations: WORLD_AUTHOR_OPERATION_DEFINITIONS,
+  effects: [targetDescriptionEffectAdapter, targetPortraitEffectAdapter],
   references: [worldProjectReferences],
   workspaces: [...WORLD_WORKSPACES],
   commandTargets: [

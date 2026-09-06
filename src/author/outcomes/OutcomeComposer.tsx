@@ -35,13 +35,14 @@ export function OutcomeConditionEditor({ condition, snapshot, onChange, language
   </div>;
 }
 
-export function OutcomeEffectsEditor({ effects, snapshot, onChange }: {
+export function OutcomeEffectsEditor({ effects, snapshot, onChange, targetKind }: {
   effects: Effect[];
   snapshot: ProjectSnapshot;
   onChange: (effects: Effect[]) => void;
+  targetKind?: string;
 }) {
   return <div className="outcome-effects-editor">
     <p>Optional world and presentation changes. They run from top to bottom after this response is selected.</p>
-    <EffectsEditor effects={effects} snapshot={snapshot} onChange={onChange} />
+    <EffectsEditor effects={effects} snapshot={snapshot} targetKind={targetKind} onChange={onChange} />
   </div>;
 }
