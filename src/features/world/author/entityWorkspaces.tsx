@@ -1,5 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { EntityDefinition } from "../model";
 import "./worldWorkspaces.css";
@@ -44,7 +45,7 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
 });
 
 function newEntity(type: EntityDefinition["type"]): EntityDefinition {
-  return { id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [], interactable: false, operations: [], hooks: [] };
+  return { id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
 }
 
 export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
@@ -63,6 +64,20 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
         importance: "primary",
         children: [
           { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !context.snapshot.entities.some((item) => item.id === draft.id), onChange: (name) => setDraft((current) => ({ ...current, name })) },
+          ...(draft.type === "character" ? [{
+            type: "custom" as const,
+            id: "world-character-portrait",
+            role: "resource-picker" as const,
+            content: <div className="world-character-portrait-field">
+              <span>Portrait</span>
+              <ReferenceField
+                kind="media-image"
+                value={draft.portraitAssetId ?? ""}
+                placeholder="No portrait"
+                onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
+              />
+            </div>,
+          }] : []),
           { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
           { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
           { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
@@ -100,7 +115,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
     });
     const saved = draft.type === "character"
       ? { ...draft, key, interactable: false, operations: [], hooks: [] }
-      : { ...draft, key };
+      : { ...draft, key, portraitAssetId: null };
     const result = await context.persist([{ type: "entity.upsert", entity: saved }], `Save ${saved.type} ${saved.name || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {

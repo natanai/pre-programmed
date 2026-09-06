@@ -10,6 +10,7 @@ type EntityRow = {
   name: string;
   description: string;
   tags_json: string;
+  portrait_asset_id: string | null;
   operation_interactable: number;
   operations_json: string;
 };
@@ -17,16 +18,27 @@ type EntityRow = {
 function canonicalEntity(entity: EntityDefinition): EntityDefinition {
   return entity.type === "character"
     ? { ...entity, interactable: false, operations: [], hooks: [] }
-    : entity;
+    : { ...entity, portraitAssetId: null };
 }
 
 export const worldFeaturePersistence: WorkerFeaturePersistence = {
   id: "world",
+  migrations: [
+    {
+      id: 42,
+      name: "world-character-portrait-media-reference",
+      sql: `
+        ALTER TABLE entity_definitions ADD COLUMN portrait_asset_id TEXT;
+
+        UPDATE project_meta SET schema_version = 42 WHERE id = 1;
+      `,
+    },
+  ],
 
   async load(db) {
     const [entities, hookGroups] = await Promise.all([
       db.prepare(
-        "SELECT id, key, entity_type, name, description, tags_json, operation_interactable, operations_json FROM entity_definitions ORDER BY entity_type, key",
+        "SELECT id, key, entity_type, name, description, tags_json, portrait_asset_id, operation_interactable, operations_json FROM entity_definitions ORDER BY entity_type, key",
       ).all<EntityRow>(),
       loadHooksForKind(db, "world.entity"),
     ]);
@@ -39,6 +51,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
         name: row.name,
         description: row.description,
         tags: parseJson(row.tags_json, []),
+        portraitAssetId: row.portrait_asset_id,
         interactable: Boolean(row.operation_interactable),
         operations: parseJson(row.operations_json, []),
         hooks: hookGroups.get(row.id) ?? [],
@@ -52,10 +65,11 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
     return [
       db.prepare(
         `INSERT INTO entity_definitions
-         (id, key, entity_type, name, description, tags_json, operation_interactable, operations_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         (id, key, entity_type, name, description, tags_json, portrait_asset_id, operation_interactable, operations_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET key=excluded.key, entity_type=excluded.entity_type,
            name=excluded.name, description=excluded.description, tags_json=excluded.tags_json,
+           portrait_asset_id=excluded.portrait_asset_id,
            operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
            updated_at=CURRENT_TIMESTAMP`,
       ).bind(
@@ -65,6 +79,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
         entity.name,
         entity.description,
         JSON.stringify(entity.tags),
+        entity.type === "character" ? entity.portraitAssetId ?? null : null,
         Number(entity.interactable ?? false),
         JSON.stringify(entity.operations ?? []),
       ),
