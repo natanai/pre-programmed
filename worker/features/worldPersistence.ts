@@ -16,9 +16,9 @@ type EntityRow = {
 };
 
 function canonicalEntity(entity: EntityDefinition): EntityDefinition {
-  return entity.type === "character"
-    ? { ...entity, interactable: false, operations: [], hooks: [] }
-    : { ...entity, portraitAssetId: null };
+  return entity.type === "location"
+    ? { ...entity, portraitAssetId: null }
+    : entity;
 }
 
 export const worldFeaturePersistence: WorkerFeaturePersistence = {
