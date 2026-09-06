@@ -3,7 +3,9 @@
   gap: .4em;
 }
 
-.world-author-resource-list > button {
+.world-author-resource-list > button,
+.world-author-reference-list > button,
+.world-author-reference-list > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -13,7 +15,8 @@
   text-align: left;
 }
 
-.world-author-resource-list > button small {
+.world-author-resource-list > button small,
+.world-author-reference-list small {
   justify-self: end;
   color: var(--dos-muted);
 }
@@ -23,4 +26,9 @@
   flex-wrap: wrap;
   gap: .4em;
   margin-bottom: .2em;
+}
+
+.world-author-reference-list {
+  display: grid;
+  gap: .35em;
 }
