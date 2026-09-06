@@ -1,0 +1,106 @@
+name: Verify contained portable layout
+
+on:
+  push:
+    branches:
+      - fix/portable-contained-layout-v2
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
+      - name: Verify portable host contract
+        run: |
+          node --check desktop/main.cjs
+          test "$(cat desktop/installation-template.txt)" = $'AUTHOR_KEY=local\nSTART_BUTTON_TEXT=INITIALIZE UNIVERSE'
+          ! grep -q 'path.join(root, "exports")' desktop/main.cjs
+          grep -q 'path.join(root, "_engine", "data")' desktop/main.cjs
+          grep -q 'showSaveDialog' desktop/main.cjs
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build shared client
+        shell: pwsh
+        run: |
+          npm ci --no-audit --no-fund
+          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
+          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+          npm run build
+      - name: Build contained runtime
+        shell: pwsh
+        run: |
+          Push-Location desktop
+          npm ci --no-audit --no-fund
+          Pop-Location
+          New-Item -ItemType Directory -Path desktop/build/wrangler -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outdir desktop/build/wrangler
+          $javascript = @(Get-ChildItem desktop/build/wrangler -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($javascript.Count -ne 1) { throw "Expected exactly one Worker module." }
+          Copy-Item $javascript[0].FullName desktop/build/worker.mjs -Force
+          Push-Location desktop
+          npx electron-builder --config electron-builder.yml --win --x64 --dir --publish never "--config.extraMetadata.version=0.0.0-contained-audit"
+          Pop-Location
+
+          $stageRoot = Join-Path $env:RUNNER_TEMP "contained-portable"
+          $appRoot = Join-Path $stageRoot "Pre-Programmed"
+          $engineRoot = Join-Path $appRoot "_engine"
+          New-Item -ItemType Directory -Path $engineRoot -Force | Out-Null
+          Copy-Item desktop/release/win-unpacked/* $engineRoot -Recurse -Force
+          Copy-Item desktop/portable-readme.txt (Join-Path $engineRoot "README.txt")
+          Copy-Item desktop/installation-template.txt (Join-Path $appRoot "installation.txt")
+          New-Item -ItemType Directory -Path (Join-Path $appRoot "assets") -Force | Out-Null
+
+          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
+          $vsInstall = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
+          if (-not $vsInstall) { throw "Visual C++ toolchain not found." }
+          $vcvars = Join-Path $vsInstall "VC\Auxiliary\Build\vcvars64.bat"
+          $source = (Resolve-Path desktop/launcher.c).Path
+          $launcher = Join-Path $appRoot "Pre-Programmed.exe"
+          $obj = Join-Path $env:RUNNER_TEMP "pre-programmed-launcher.obj"
+          $compile = "call `"$vcvars`" && cl.exe /nologo /O2 /MT /DUNICODE /D_UNICODE `"$source`" /Fo`"$obj`" /link /SUBSYSTEM:WINDOWS /OUT:`"$launcher`""
+          & cmd.exe /d /c $compile
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $launcher)) { throw "Launcher compilation failed." }
+
+          $installation = Join-Path $appRoot "installation.txt"
+          $config = Get-Content $installation -Raw
+          $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=contained-audit-key'
+          $config = $config -replace '(?m)^START_BUTTON_TEXT=.*$', 'START_BUTTON_TEXT=CONTAINED TEST'
+          Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
+
+          $stdout = Join-Path $appRoot "self-test-stdout.txt"
+          $stderr = Join-Path $appRoot "self-test-stderr.txt"
+          $process = Start-Process -FilePath $launcher -ArgumentList "--self-test" -WorkingDirectory $appRoot -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($process.ExitCode -ne 0) { throw "Contained launcher/runtime self-test failed: $($process.ExitCode)" }
+
+          if (-not (Test-Path (Join-Path $engineRoot "data"))) { throw "Runtime state was not written beneath _engine." }
+          if (Test-Path (Join-Path $appRoot "data")) { throw "Legacy root data folder was recreated." }
+          if (Test-Path (Join-Path $appRoot "exports")) { throw "Root exports folder was recreated." }
+
+          Copy-Item desktop/installation-template.txt $installation -Force
+          Remove-Item $stdout, $stderr -Force -ErrorAction SilentlyContinue
+          Remove-Item (Join-Path $engineRoot "data") -Recurse -Force
+
+          $rootEntries = @(Get-ChildItem $appRoot -Force | ForEach-Object Name | Sort-Object)
+          $expected = @("_engine", "assets", "installation.txt", "Pre-Programmed.exe") | Sort-Object
+          if (($rootEntries -join "`n") -ne ($expected -join "`n")) {
+            $rootEntries | ForEach-Object { Write-Host $_ }
+            throw "Friend-facing root contains unexpected entries."
+          }
