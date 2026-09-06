@@ -3,7 +3,9 @@
   gap: .4em;
 }
 
-.world-author-resource-list > button {
+.world-author-resource-list > button,
+.world-author-reference-list > button,
+.world-author-reference-list > div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
@@ -13,7 +15,8 @@
   text-align: left;
 }
 
-.world-author-resource-list > button small {
+.world-author-resource-list > button small,
+.world-author-reference-list small {
   justify-self: end;
   color: var(--dos-muted);
 }
@@ -23,4 +26,36 @@
   flex-wrap: wrap;
   gap: .4em;
   margin-bottom: .2em;
+}
+
+.world-character-portrait-field {
+  display: grid;
+  gap: .55em;
+}
+
+.world-character-portrait-preview {
+  display: grid;
+  justify-items: start;
+  gap: .35em;
+  width: min(100%, 18em);
+}
+
+.world-character-portrait-preview img {
+  display: block;
+  width: min(100%, 14em);
+  max-height: 14em;
+  object-fit: contain;
+  border: 1px solid currentColor;
+  image-rendering: auto;
+}
+
+.world-character-portrait-preview small,
+.world-character-portrait-preview.is-missing {
+  color: var(--dos-muted);
+  overflow-wrap: anywhere;
+}
+
+.world-author-reference-list {
+  display: grid;
+  gap: .35em;
 }
