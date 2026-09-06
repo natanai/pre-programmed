@@ -304,7 +304,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 42,
+      id: 43,
       name: "narrative-durable-interaction-order",
       sql: `
         ALTER TABLE interactions
@@ -327,7 +327,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         CREATE INDEX IF NOT EXISTS interactions_source_order
         ON interactions(source_node_id, order_index, id);
 
-        UPDATE project_meta SET schema_version = 42 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 43 WHERE id = 1;
       `,
     },
   ],
