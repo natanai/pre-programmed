@@ -47,6 +47,7 @@ A feature semantic provider may expose:
 - readable projections for authored text;
 - aliases/keys used for discovery and Player Command vocabulary;
 - an optional generic operation target;
+- an optional runtime target-candidate view narrower than the full authored candidate set;
 - canonical Author identity for editability;
 - canonical resource kind for creation.
 
@@ -65,6 +66,8 @@ A command placeholder may accept zero or more semantic source kinds:
 - several kinds means the same placeholder can resolve several feature-owned domains.
 
 For target operations, the resolved semantic candidate supplies the generic operation target. Commands then delegates execution to the Operations contract and delegates target behavior authoring to the owning feature's canonical Author route.
+
+The provider's full `candidates()` list remains the authored/discovery vocabulary. When a provider supplies `targetCandidates()`, Player Command target resolution uses that narrower run-state view instead. This lets the resource owner answer questions such as “which Characters are actually present now?” without copying presence rules into Commands or hiding absent resources from Author vocabulary management.
 
 Contextual aliases such as `here` resolve through the same provider identity as `@current-location`; Commands does not maintain a separate concept of current location.
 
@@ -108,7 +111,8 @@ Before merging a semantic-reference or Player Command change, verify:
 4. If it is creatable, does Create use that same owner and return to the suspended parent?
 5. Is contextual state derived from existing canonical state rather than duplicated?
 6. Do Player Commands use the same semantic identity that `@` and other consumers use?
-7. Does ambiguous player wording fail explicitly rather than guess?
-8. Can the feature replace its editor/runtime implementation without rewriting `@` or Commands?
-9. Does the same contract work in hosted and portable/local builds?
-10. Has the superseded compatibility implementation been removed rather than left as a second source of truth?
+7. Does runtime target availability remain owned by the target feature rather than Commands?
+8. Does ambiguous player wording fail explicitly rather than guess?
+9. Can the feature replace its editor/runtime implementation without rewriting `@` or Commands?
+10. Does the same contract work in hosted and portable/local builds?
+11. Has the superseded compatibility implementation been removed rather than left as a second source of truth?
