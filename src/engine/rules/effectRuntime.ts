@@ -7,9 +7,7 @@ import type { PlayState, ProjectSnapshot } from "../project/model";
 import type { RuleRuntimeContext } from "./runtimeBindings";
 
 /** Presentation events that remain available without optional features. */
-export type CoreEffectEvent =
-  | { type: "notification"; text: string }
-  | { type: "transcript"; text: string };
+export type CoreEffectEvent = { type: "notification"; text: string };
 
 /**
  * Runtime events are contributed by installed features. Engine Rules owns the
@@ -24,6 +22,8 @@ export type EffectEvent = (CoreEffectEvent | MediaEffectEvent | RadixEffectEvent
 export type EffectExecution = {
   state: PlayState;
   events: EffectEvent[];
+  /** Optional player-facing response text contributed by an effect. */
+  outputText?: string;
 };
 
 export type EffectHandler = (
