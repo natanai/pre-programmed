@@ -22,6 +22,11 @@ function persistedAsset(asset: MediaAssetDescriptor): MediaAsset {
   };
 }
 
+function generatedRepositoryPath(assetId: string) {
+  const prefix = "repo:/assets/";
+  return assetId.startsWith(prefix) ? assetId.slice(prefix.length) : null;
+}
+
 export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   kind: MediaAssetKind;
@@ -43,6 +48,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
   const repositoryAvailable = initial?.contentSource === "repository";
   const missingContent = initial?.contentSource === "missing";
   const previewUrl = initial?.available ? configuredAssetContentStore.urlFor(initial) : "";
+  const expectedRepositoryPath = initial ? generatedRepositoryPath(initial.id) : null;
   const dimensions = draft ? mediaAssetDimensions(draft) : null;
   const dimensionText = dimensions
     ? dimensions.unit === "px"
@@ -60,8 +66,8 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
     setSaving(true);
     setError("");
     try {
-      // Repository bytes stay in Git. This row stores only project-specific
-      // presentation/name metadata against the same stable Media ID.
+      // Repository bytes stay in the installation assets folder. This row stores
+      // authored Media metadata against the same stable Media ID.
       const repositoryMetadata = configuredAssetContentStore.repositoryMetadata(draft.id);
       if (!repositoryMetadata) throw new Error("Repository Media metadata is unavailable.");
       const asset: MediaAsset = {
@@ -117,17 +123,18 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
   return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} FILE · {draft?.name ?? "REPOSITORY"}</span></header>
     <div className="author-panel-body">
-      <p className="field-help">File Media lives in <code>public/assets/</code> and is shipped with the repository. Author rules store only its stable Media ID. Synths and vector SVGs are created inside Author mode and stored in D1.</p>
+      <p className="field-help">File Media lives in the installation's assets folder: <code>public/assets/</code> in a repository build or <code>assets/</code> beside the portable executable. Author rules store only its stable Media ID. Synths and vector SVGs created inside Author mode use project persistence.</p>
 
       {!initial ? <div className="author-message">
-        ADD FILE MEDIA IN THE REPOSITORY<br />
-        Put the {kind === "audio" ? "audio" : "image"} file under <code>public/assets/</code> and add a neighboring <code>.asset.json</code> sidecar containing a stable <code>id</code>. The asset will appear here after the next build.
+        ADD FILE MEDIA<br />
+        Put the {kind === "audio" ? "audio" : "image"} file anywhere inside the installation's assets folder. No JSON setup is required. The engine assigns a deterministic stable Media ID from its relative path and, when that folder is writable, creates a neighboring <code>.asset.json</code> identity receipt automatically.
       </div> : null}
 
       {missingContent && initial ? <div className="asset-warning" role="alert">
-        <strong>MISSING REPOSITORY FILE</strong>
+        <strong>MISSING FILE MEDIA</strong>
         <span>This Media definition still exists, but its file content does not. It will not play or render.</span>
-        <span>To repair existing rules without changing their references, add the intended file under <code>public/assets/</code> and give its <code>.asset.json</code> sidecar this exact ID:</span>
+        {expectedRepositoryPath ? <span>Restore the intended file at the same relative path inside the installation's assets folder to recover this ID automatically: <code>{expectedRepositoryPath}</code></span> : null}
+        <span>If the file was intentionally moved, restore it with an identity receipt carrying this exact stable ID:</span>
         <code>{initial.id}</code>
         {usages.length ? <small>{usages.length} authored use{usages.length === 1 ? "" : "s"} still reference this ID.</small> : null}
       </div> : null}
@@ -146,14 +153,14 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
           <div className="media-asset-preview">
             {previewUrl ? kind === "audio" ? <audio controls src={previewUrl} /> : <img src={previewUrl} alt="Asset preview" /> : <span>REPOSITORY FILE UNAVAILABLE.</span>}
           </div>
-          <small>repository file · {draft.mimeType} · {draft.byteLength} bytes{dimensionText ? ` · ${dimensionText}` : ""}</small>
+          <small>file Media · {draft.mimeType} · {draft.byteLength} bytes{dimensionText ? ` · ${dimensionText}` : ""}</small>
         </> : null}
       </> : null}
       {error ? <div className="author-message" role="alert">{error}</div> : null}
     </div>
     <div className="author-actions author-panel-footer">
       {repositoryAvailable ? <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE METADATA"}]</button> : null}
-      {repositoryAvailable && initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
+      {repositoryAvailable && initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID RECEIPT]</button> : null}
       <button type="button" onClick={onCancel}>[CLOSE]</button>
       {initial && hasProjectMetadata ? <button
         type="button"
