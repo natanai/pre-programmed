@@ -10,6 +10,10 @@ export type LegacyBodyTypeDefinition = Omit<BodyBackgroundDefinition, "canvas"> 
   canvas?: BodyCanvasDefinition;
 };
 
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
 function positiveFinite(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value > 0;
 }
@@ -38,16 +42,45 @@ function legacyPercentageSlot(slot: BodySlotDefinition): BodySlotDefinition {
 }
 
 /**
+ * Body slots have one canonical geometry invariant: their logical width and height
+ * are identical. Equal logical units render as equal screen pixels because the
+ * Body diagram uses the owning canvas aspect ratio.
+ *
+ * Rectangular legacy slots are reduced to the largest square that fits inside the
+ * old rectangle and remain centered on the same point. This avoids silently
+ * enlarging a slot into neighboring body regions while upgrading older projects.
+ */
+export function normalizeBodySlotDefinition(slot: BodySlotDefinition, canvas: BodyCanvasDefinition): BodySlotDefinition {
+  const minimumSide = Math.min(1, canvas.width, canvas.height);
+  const sourceWidth = positiveFinite(slot.width) ? slot.width : minimumSide;
+  const sourceHeight = positiveFinite(slot.height) ? slot.height : minimumSide;
+  const sourceX = Number.isFinite(slot.x) ? slot.x : 0;
+  const sourceY = Number.isFinite(slot.y) ? slot.y : 0;
+  const maximumSide = Math.min(canvas.width, canvas.height);
+  const side = clamp(Math.min(sourceWidth, sourceHeight), minimumSide, maximumSide);
+  const centerX = sourceX + sourceWidth / 2;
+  const centerY = sourceY + sourceHeight / 2;
+  return {
+    ...slot,
+    x: clamp(centerX - side / 2, 0, canvas.width - side),
+    y: clamp(centerY - side / 2, 0, canvas.height - side),
+    width: side,
+    height: side,
+  };
+}
+
+/**
  * One-way browser-cache compatibility boundary. Durable database rows are migrated
  * separately; a body without `canvas` is therefore known to still contain the old
  * percentage slot coordinates and is converted once into the default 48×64 space.
  */
 export function normalizeBodyTypeDefinition(value: LegacyBodyTypeDefinition | BodyBackgroundDefinition): BodyBackgroundDefinition {
   const hasCanvas = validBodyCanvas(value.canvas);
+  const canvas = hasCanvas ? normalizeBodyCanvas(value.canvas) : { ...DEFAULT_BODY_CANVAS };
   return {
     ...value,
-    canvas: hasCanvas ? normalizeBodyCanvas(value.canvas) : { ...DEFAULT_BODY_CANVAS },
-    slots: (value.slots ?? []).map((slot) => hasCanvas ? { ...slot } : legacyPercentageSlot(slot)),
+    canvas,
+    slots: (value.slots ?? []).map((slot) => normalizeBodySlotDefinition(hasCanvas ? { ...slot } : legacyPercentageSlot(slot), canvas)),
     startingEquipment: [...(value.startingEquipment ?? [])],
   };
 }
@@ -66,17 +99,19 @@ export function bodySlotPercentRect(slot: BodySlotDefinition, canvas: BodyCanvas
 }
 
 export function slotFitsBodyCanvas(slot: BodySlotDefinition, canvas: BodyCanvasDefinition) {
+  const squareTolerance = Number.EPSILON * Math.max(100, Math.abs(slot.width), Math.abs(slot.height));
   return Number.isFinite(slot.x)
     && Number.isFinite(slot.y)
     && positiveFinite(slot.width)
     && positiveFinite(slot.height)
+    && Math.abs(slot.width - slot.height) <= squareTolerance
     && slot.x >= 0
     && slot.y >= 0
     && slot.x + slot.width <= canvas.width + Number.EPSILON * 100
     && slot.y + slot.height <= canvas.height + Number.EPSILON * 100;
 }
 
-/** Resize the logical coordinate system while preserving every slot's relative placement. */
+/** Resize the logical coordinate system while preserving slot centers and square geometry. */
 export function resizeBodyCanvas(
   bodyType: BodyBackgroundDefinition,
   width: number,
@@ -86,15 +121,22 @@ export function resizeBodyCanvas(
   const current = normalizeBodyCanvas(bodyType.canvas);
   const xScale = width / current.width;
   const yScale = height / current.height;
+  const sideScale = Math.min(xScale, yScale);
   return {
     ...bodyType,
     canvas: { ...current, width, height },
-    slots: (bodyType.slots ?? []).map((slot) => ({
-      ...slot,
-      x: slot.x * xScale,
-      y: slot.y * yScale,
-      width: slot.width * xScale,
-      height: slot.height * yScale,
-    })),
+    slots: (bodyType.slots ?? []).map((candidate) => {
+      const slot = normalizeBodySlotDefinition(candidate, current);
+      const centerX = (slot.x + slot.width / 2) * xScale;
+      const centerY = (slot.y + slot.height / 2) * yScale;
+      const side = Math.min(slot.width * sideScale, width, height);
+      return {
+        ...slot,
+        x: clamp(centerX - side / 2, 0, width - side),
+        y: clamp(centerY - side / 2, 0, height - side),
+        width: side,
+        height: side,
+      };
+    }),
   };
 }
