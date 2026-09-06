@@ -217,14 +217,15 @@ export function AuthorWorkspaceHost({
     try {
       const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
       for (const task of dirtyTasks) {
+        const taskLabel = describeAuthorTask(task.route, shared.snapshot);
         const save = saveHandlersRef.current.get(task.id);
         if (!save) {
-          setSaveAllError("One unsaved task has not migrated to the shared Save boundary yet. Save that task normally, then use X again.");
+          setSaveAllError(`${taskLabel} has unsaved work but no registered Save action. Nothing was discarded; keep editing and return to that task.`);
           return;
         }
         const accepted = await save();
         if (!accepted) {
-          setSaveAllError("A task could not be saved. Nothing was discarded; fix that task and try again.");
+          setSaveAllError(`${taskLabel} could not be saved. Nothing was discarded; keep editing and use Back until that task is visible.`);
           return;
         }
         shared.setTaskDirty(task.id, false);
