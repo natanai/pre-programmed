@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { ProjectSnapshot } from "../../engine/project/model";
 import type { AuthorResourceResult, AuthorTaskCompletion, AuthorTaskRoute } from "../tasks/types";
 
@@ -16,6 +17,12 @@ export type AuthorResourceProvider = {
   /** False for reference-only aliases that would duplicate a canonical resource in global search. */
   searchable?: boolean;
   list: (snapshot: ProjectSnapshot) => AuthorResourceOption[];
+  /** Optional owner-rendered preview for a selected resource reference. */
+  preview?: (
+    resource: AuthorResourceOption,
+    snapshot: ProjectSnapshot,
+    onEdit?: () => void,
+  ) => ReactNode;
   /** Canonical owner-managed collection/list task for this resource kind. */
   listRoute?: () => AuthorTaskRoute;
   createRoute?: () => AuthorTaskRoute;
@@ -26,6 +33,7 @@ export type AuthorResourceProvider = {
 export type AuthorResourceTools = {
   options: (kind: string) => AuthorResourceOption[];
   label: (kind: string) => string;
+  preview: (kind: string, value: string) => ReactNode | null;
   canOpenList: (kind: string) => boolean;
   canCreate: (kind: string) => boolean;
   canEdit: (kind: string, value: string) => boolean;
