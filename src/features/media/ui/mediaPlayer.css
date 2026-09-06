@@ -106,22 +106,31 @@
 .media-asset-viewer-scale {
   display: grid;
   place-items: center;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   transform-origin: center;
 }
 
 .media-asset-viewer-scale img {
   display: block;
-  max-width: min(88vw, 70rem);
-  max-height: 74vh;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
   object-fit: contain;
   user-select: none;
   -webkit-user-drag: none;
 }
 
+/* Vector-grid assets are SVG images too; the viewer should present them at the
+   same stage-filling scale instead of falling back to their authored grid size. */
 .media-asset-viewer-scale img.is-vector-grid {
-  width: min(70vmin, 32rem);
+  width: 100%;
+  height: 100%;
   max-width: none;
   max-height: none;
 }
@@ -162,10 +171,5 @@
 
   .media-asset-viewer-stage {
     padding: .5em;
-  }
-
-  .media-asset-viewer-scale img {
-    max-width: 92vw;
-    max-height: 72vh;
   }
 }
