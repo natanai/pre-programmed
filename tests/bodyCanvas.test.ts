@@ -14,7 +14,7 @@ import {
 } from "../src/features/inventory/projectNormalization";
 
 describe("Inventory Body logical canvas", () => {
-  it("migrates legacy percentage slots into the default 48×64 logical space", () => {
+  it("migrates legacy percentage slots into square slots on the default 48×64 logical space", () => {
     const migrated = normalizeBodyTypeDefinition({
       id: "body",
       name: "Legacy",
@@ -25,14 +25,14 @@ describe("Inventory Body logical canvas", () => {
 
     expect(migrated.canvas).toEqual(DEFAULT_BODY_CANVAS);
     const slot = migrated.slots?.[0];
-    expect(slot?.x).toBeCloseTo(12);
+    expect(slot?.x).toBeCloseTo(13.6);
     expect(slot?.y).toBeCloseTo(32);
-    expect(slot?.width).toBeCloseTo(9.6);
+    expect(slot?.width).toBeCloseTo(6.4);
     expect(slot?.height).toBeCloseTo(6.4);
     const percent = bodySlotPercentRect(migrated.slots![0], migrated.canvas);
-    expect(percent.left).toBeCloseTo(25);
+    expect(percent.left).toBeCloseTo(28.333333);
     expect(percent.top).toBeCloseTo(50);
-    expect(percent.width).toBeCloseTo(20);
+    expect(percent.width).toBeCloseTo(13.333333);
     expect(percent.height).toBeCloseTo(10);
   });
 
@@ -49,7 +49,7 @@ describe("Inventory Body logical canvas", () => {
 
     expect(normalized.startingBodyBackgroundId).toBe("cached-body");
     expect(normalized.bodyBackgrounds[0].canvas).toEqual(DEFAULT_BODY_CANVAS);
-    expect(normalized.bodyBackgrounds[0].slots?.[0]).toMatchObject({ x: 12, y: 6.4, width: 24, height: 12.8 });
+    expect(normalized.bodyBackgrounds[0].slots?.[0]).toMatchObject({ x: 17.6, y: 6.4, width: 12.8, height: 12.8 });
   });
 
   it("upgrades an offline legacy Body upsert before mutation replay", () => {
@@ -67,10 +67,10 @@ describe("Inventory Body logical canvas", () => {
     expect(normalized.type).toBe("bodyBackground.upsert");
     if (normalized.type !== "bodyBackground.upsert") throw new Error("Expected Body upsert normalization.");
     expect(normalized.background.canvas).toEqual(DEFAULT_BODY_CANVAS);
-    expect(normalized.background.slots?.[0]).toMatchObject({ x: 24, y: 32, width: 12, height: 16 });
+    expect(normalized.background.slots?.[0]).toMatchObject({ x: 24, y: 34, width: 12, height: 12 });
   });
 
-  it("does not force new bodies into the portrait default", () => {
+  it("keeps custom body canvases while normalizing their slots to squares", () => {
     const body: BodyBackgroundDefinition = {
       id: "dragon",
       name: "Dragon",
@@ -79,11 +79,14 @@ describe("Inventory Body logical canvas", () => {
       slots: [{ id: "wing", key: "wing", name: "Wing", x: 48, y: 8, width: 24, height: 20 }],
       startingEquipment: [],
     };
-    expect(normalizeBodyTypeDefinition(body)).toEqual(body);
-    expect(slotFitsBodyCanvas(body.slots![0], body.canvas)).toBe(true);
+    expect(slotFitsBodyCanvas(body.slots![0], body.canvas)).toBe(false);
+    const normalized = normalizeBodyTypeDefinition(body);
+    expect(normalized.canvas).toEqual(body.canvas);
+    expect(normalized.slots?.[0]).toMatchObject({ x: 50, y: 8, width: 20, height: 20 });
+    expect(slotFitsBodyCanvas(normalized.slots![0], normalized.canvas)).toBe(true);
   });
 
-  it("rescales existing slots when the author changes the body canvas dimensions", () => {
+  it("rescales existing slots while preserving square geometry when the author changes the body canvas dimensions", () => {
     const body: BodyBackgroundDefinition = {
       id: "body",
       name: "Body",
@@ -94,6 +97,7 @@ describe("Inventory Body logical canvas", () => {
     };
     const resized = resizeBodyCanvas(body, 96, 32);
     expect(resized.canvas).toEqual({ width: 96, height: 32, fit: "contain" });
-    expect(resized.slots?.[0]).toMatchObject({ x: 24, y: 4, width: 48, height: 8 });
+    expect(resized.slots?.[0]).toMatchObject({ x: 44, y: 4, width: 8, height: 8 });
+    expect(slotFitsBodyCanvas(resized.slots![0], resized.canvas)).toBe(true);
   });
 });
