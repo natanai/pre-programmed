@@ -48,7 +48,12 @@ function descriptor(asset: MediaAsset, editable: boolean): MediaAssetDescriptor 
  * One stable Media catalog with exactly two built-in content origins:
  * Author-generated vector SVG in D1 and repository-style files. Hosted builds
  * index public/assets at build time; the portable desktop host indexes its
- * visible assets/ directory at startup using the same sidecar contract.
+ * visible assets/ directory at startup through the same scanner.
+ *
+ * File facts (MIME type, byte length, dimensions) come from the discovered file.
+ * Authored facts (name, presentation, vector-grid editability) stay in project
+ * Media metadata when that definition exists. This keeps the filesystem from
+ * becoming a second Author save path.
  *
  * A metadata row without either origin remains visible as missing rather than
  * pretending that an unavailable blob provider will supply it.
@@ -72,7 +77,9 @@ export const configuredAssetStore: AssetStore = {
               byteLength: repository.byteLength,
               intrinsicWidth: repository.intrinsicWidth,
               intrinsicHeight: repository.intrinsicHeight,
-              authoringMode: repository.authoringMode,
+              authoringMode: project.authoringMode === "vector-grid" && repository.mimeType.toLowerCase() === "image/svg+xml"
+                ? "vector-grid"
+                : repository.authoringMode,
             }
         : repository;
       assets.set(entry.id, descriptor(merged, true));
