@@ -1,0 +1,94 @@
+name: Apply contained portable host changes
+
+on:
+  push:
+    branches:
+      - fix/portable-contained-layout-v2
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[contained-host-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/portable-contained-layout-v2
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply contained portable host changes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, expected=1):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f"{path}: expected {expected} occurrence(s), found {count}: {old!r}")
+              p.write_text(text.replace(old, new))
+
+          path = "desktop/main.cjs"
+          replace(path,
+              'const { createReadStream, mkdirSync } = require("node:fs");\n',
+              'const { createReadStream, existsSync, mkdirSync, renameSync } = require("node:fs");\n')
+
+          replace(path,
+              '''function portableRoot() {\n  if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);\n  if (app.isPackaged) return path.dirname(process.execPath);\n  return path.resolve(__dirname, "portable-dev");\n}\n\nfunction configurePortableElectronPaths() {\n  const root = portableRoot();\n  const electronRoot = path.join(root, "data", "electron");\n  const paths = {\n    userData: path.join(electronRoot, "user-data"),\n    sessionData: path.join(electronRoot, "session-data"),\n    cache: path.join(electronRoot, "cache"),\n    crashDumps: path.join(electronRoot, "crash-dumps"),\n    logs: path.join(electronRoot, "logs"),\n    temp: path.join(electronRoot, "temp"),\n    downloads: path.join(root, "exports"),\n  };\n''',
+              '''function portableRoot() {\n  if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);\n  if (app.isPackaged) {\n    const executableDir = path.dirname(process.execPath);\n    if (path.basename(executableDir).toLowerCase() === "_engine") return path.dirname(executableDir);\n    return executableDir;\n  }\n  return path.resolve(__dirname, "portable-dev");\n}\n\nfunction migrateLegacyPortableData(root) {\n  const legacyData = path.join(root, "data");\n  const containedData = path.join(root, "_engine", "data");\n  if (!existsSync(legacyData) || existsSync(containedData)) return;\n  mkdirSync(path.dirname(containedData), { recursive: true });\n  renameSync(legacyData, containedData);\n}\n\nfunction configurePortableElectronPaths() {\n  const root = portableRoot();\n  migrateLegacyPortableData(root);\n  const electronRoot = path.join(root, "_engine", "data", "electron");\n  const paths = {\n    userData: path.join(electronRoot, "user-data"),\n    sessionData: path.join(electronRoot, "session-data"),\n    cache: path.join(electronRoot, "cache"),\n    crashDumps: path.join(electronRoot, "crash-dumps"),\n    logs: path.join(electronRoot, "logs"),\n    temp: path.join(electronRoot, "temp"),\n  };\n''')
+
+          replace(path,
+              '  for (const name of ["userData", "sessionData", "cache", "crashDumps", "logs", "temp", "downloads"]) {\n',
+              '  for (const name of ["userData", "sessionData", "cache", "crashDumps", "logs", "temp"]) {\n')
+
+          replace(path,
+              '''async function startLocalHost() {\n  const root = configuredPortableRoot;\n  const dataRoot = path.join(root, "data");\n  const assetRoot = path.join(root, "assets");\n  const exportRoot = path.join(root, "exports");\n  await Promise.all([\n    mkdir(dataRoot, { recursive: true }),\n    mkdir(assetRoot, { recursive: true }),\n    mkdir(exportRoot, { recursive: true }),\n  ]);\n''',
+              '''async function startLocalHost() {\n  const root = configuredPortableRoot;\n  const dataRoot = path.join(root, "_engine", "data");\n  const assetRoot = path.join(root, "assets");\n  await Promise.all([\n    mkdir(dataRoot, { recursive: true }),\n    mkdir(assetRoot, { recursive: true }),\n  ]);\n''')
+
+          replace(path,
+              '''async function createWindow() {\n  const { url, assetWarning } = await startLocalHost();\n  mainWindow = new BrowserWindow({\n''',
+              '''function installSaveAsDownloads(window) {\n  window.webContents.session.on("will-download", (_event, item) => {\n    item.pause();\n    const suggestedName = item.getFilename() || "pre-programmed-export";\n    void dialog.showSaveDialog(window, {\n      title: "Save file",\n      defaultPath: path.join(app.getPath("downloads"), suggestedName),\n      buttonLabel: "Save",\n    }).then(({ canceled, filePath }) => {\n      if (canceled || !filePath) {\n        item.cancel();\n        return;\n      }\n      item.setSavePath(filePath);\n      item.resume();\n    }).catch(() => item.cancel());\n  });\n}\n\nasync function createWindow() {\n  const { url, assetWarning } = await startLocalHost();\n  mainWindow = new BrowserWindow({\n''')
+
+          replace(path,
+              '''      sandbox: true,\n    },\n  });\n  await mainWindow.loadURL(url);\n''',
+              '''      sandbox: true,\n    },\n  });\n  installSaveAsDownloads(mainWindow);\n  await mainWindow.loadURL(url);\n''')
+
+          readme = Path("desktop/portable-readme.txt")
+          text = readme.read_text()
+          text = text.replace(
+              "2. Keep everything inside that folder together. Do not move only Pre-Programmed.exe.\n",
+              "2. Keep Pre-Programmed.exe, installation.txt, assets, and _engine together. You normally never need to open _engine.\n")
+          text = text.replace(
+              "The data folder contains this installation's local database and Electron runtime state. The exports folder is the default destination for project-file downloads. installation.txt owns this extracted installation's Author password and pre-terminal start button text. The engine keeps its writable runtime state inside this extracted Pre-Programmed folder.\n",
+              "The _engine folder contains the bundled runtime plus this installation's local database, Electron state, cache, and logs. installation.txt owns this extracted installation's Author password and pre-terminal start button text. Downloads use a normal Windows Save As dialog, so there is no engine-owned exports folder.\n")
+          readme.write_text(text)
+
+          readme = Path("README.md")
+          text = readme.read_text()
+          text = text.replace(
+              "Recipients extract the whole `Pre-Programmed` folder and run `Pre-Programmed.exe` in place. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine. Runtime state, D1 data, cache, exports, and local installation configuration stay beneath that extracted folder.\n",
+              "Recipients extract the whole `Pre-Programmed` folder and run the root `Pre-Programmed.exe` in place. The root stays intentionally small: `Pre-Programmed.exe`, `installation.txt`, `assets/`, and `_engine/`. `_engine/` contains the bundled Electron/Worker runtime and all engine-owned local state. Downloads use the normal Windows Save As dialog instead of an engine-owned exports folder. Nothing is installed system-wide, and Node.js, npm, Git, Cloudflare, and an internet connection are not required to run the packaged engine.\n")
+          readme.write_text(text)
+          PY
+      - name: Verify source
+        run: |
+          npm ci --no-audit --no-fund
+          node --check desktop/main.cjs
+          npm run verify
+          git diff --check
+          if grep -q 'path.join(root, "exports")' desktop/main.cjs; then
+            echo "Portable host still owns a root exports folder." >&2
+            exit 1
+          fi
+      - name: Commit host changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/main.cjs desktop/portable-readme.txt README.md
+          git commit -m "Contain portable runtime and use Save As [contained-host-applied]"
+          git push origin HEAD:fix/portable-contained-layout-v2
