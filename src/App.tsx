@@ -838,8 +838,6 @@ export default function App() {
       const featureShortcut = resolveAuthorFeatureTerminalShortcut(normalized);
       if (featureShortcut) { setPanel(featureShortcut); return; }
     }
-    if (authorMode && authorView && ["/locations", "/bookmark", "locations"].includes(normalized)) { setPanel({ type: "workspace", view: "locations" }); return; }
-    if (authorMode && authorView && ["/history", "history"].includes(normalized)) { setPanel({ type: "workspace", view: "history" }); return; }
 
     const currentState = advanceProjectClocks(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
@@ -935,13 +933,13 @@ export default function App() {
     void handleTerminalValue(input);
   }, [pendingAuthorTryInput, authorTasks.hasTasks, snapshot?.revision]);
 
-  const restoreBookmark = (bookmark: AuthorBookmark) => {
+  const restoreRunBookmark = (bookmark: AuthorBookmark) => {
     if (!snapshot) return;
     const state = resumeAuthorBookmark(snapshot, bookmark);
     setPlayState(state);
     const node = snapshot?.nodes.find((candidate) => candidate.id === bookmark.nodeId);
     if (node) showNode(snapshot, node, state);
-    authorTasks.closeAll(); setAuthorMessage("LOCATION LOADED.");
+    authorTasks.closeAll(); setAuthorMessage("RUN BOOKMARK LOADED.");
   };
   const applyWorkspaceState = (state: PlayState) => {
     if (!snapshot || !playState) return;
@@ -1198,7 +1196,7 @@ export default function App() {
             },
           }}
           onSnapshot={applyCanonicalSnapshot}
-          onRestore={restoreBookmark}
+          onRestore={restoreRunBookmark}
           leaveConfirmation={authorTasks.leaveConfirmation}
           onConfirmLeave={authorTasks.confirmLeave}
           onCancelLeave={authorTasks.cancelLeave}
