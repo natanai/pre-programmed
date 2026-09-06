@@ -13,11 +13,15 @@ Author mode → PROJECT FILE can export your authored game to one .ppgame file o
 The .ppgame file contains authored project data, synths, generated vector Media, and saved Author locations. It does not contain your Author password. Ordinary image/audio files are separate.
 
 FILE MEDIA
-Put ordinary image/audio files anywhere inside the assets folder. Each file needs a neighboring .asset.json sidecar with its stable Media id. Media exported from Author mode already includes the matching sidecar.
+Put ordinary image/audio files anywhere inside the assets folder. No JSON setup is required. On startup, the engine discovers supported files and assigns each bare file a deterministic stable Media id from its relative path.
 
-Example:
+When the assets folder is writable, the engine also creates a neighboring .asset.json identity receipt automatically. New receipts contain only the stable id. Keep that receipt with the file if you later move or rename the file so authored references continue pointing to the same Media resource.
+
+Example after first launch:
 assets\audio\door.ogg
 assets\audio\door.ogg.asset.json
+
+Media exported from Author mode includes the matching identity receipt automatically. Name, presentation, and editor settings remain in authored project data; the receipt is only file identity.
 
 LOCAL DATA
 The data folder contains this installation's local database and Electron runtime state. The exports folder is the default destination for project-file downloads. installation.txt owns this extracted installation's Author password. The engine keeps its writable runtime state inside this extracted Pre-Programmed folder.
