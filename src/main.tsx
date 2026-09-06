@@ -22,7 +22,7 @@ const projectReady = primeProjectSnapshot().then(async (project) => {
   void playerSessionReady.then((session) => {
     const state = session && isPlaySessionCompatible(project, session) ? session.playState : null;
     return preloadImageAssets(project, immediatelyReachableInventoryAssetIds(project, state));
-  });
+  }).catch(() => undefined);
   await saveCachedSnapshot(project);
   return project;
 });
