@@ -1,0 +1,143 @@
+name: Apply portable start-button fix
+
+on:
+  push:
+    branches:
+      - fix/portable-start-button-setting
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ !contains(github.event.head_commit.message, '[install-fix-applied]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/portable-start-button-setting
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply installation ownership repair
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, expected=1):
+              p = Path(path)
+              text = p.read_text()
+              count = text.count(old)
+              if count != expected:
+                  raise SystemExit(f"{path}: expected {expected} occurrence(s), found {count}: {old!r}")
+              p.write_text(text.replace(old, new))
+
+          path = "desktop/main.cjs"
+          replace(path,
+              'const DEFAULT_AUTHOR_KEY = "local";\n',
+              'const DEFAULT_AUTHOR_KEY = "local";\nconst DEFAULT_START_BUTTON_TEXT = "INITIALIZE UNIVERSE";\n')
+          replace(path,
+              '      return { authorKey: DEFAULT_AUTHOR_KEY };\n',
+              '      return { authorKey: DEFAULT_AUTHOR_KEY, startButtonText: DEFAULT_START_BUTTON_TEXT };\n')
+          replace(path,
+              '  let authorKey = "";\n',
+              '  let authorKey = "";\n  let startButtonText = DEFAULT_START_BUTTON_TEXT;\n')
+          replace(path,
+              '''    if (name === "AUTHOR_KEY") {\n      if (!value) throw new Error(`${INSTALLATION_FILE} has an empty AUTHOR_KEY.`);\n      authorKey = value;\n    }\n''',
+              '''    if (name === "AUTHOR_KEY") {\n      if (!value) throw new Error(`${INSTALLATION_FILE} has an empty AUTHOR_KEY.`);\n      authorKey = value;\n    } else if (name === "START_BUTTON_TEXT") {\n      if (!value) throw new Error(`${INSTALLATION_FILE} has an empty START_BUTTON_TEXT.`);\n      startButtonText = value;\n    }\n''')
+          replace(path,
+              '  return { authorKey };\n',
+              '  return { authorKey, startButtonText };\n')
+          replace(path,
+              '''  const manifestScript = `<script>window.__PRE_PROGRAMMED_PORTABLE_ASSETS__=${JSON.stringify(portableAssets).replace(/</g, "\\\\u003c")};</script>`;\n  const indexHtml = indexTemplate.includes("</head>")\n    ? indexTemplate.replace("</head>", `${manifestScript}</head>`)\n    : `${manifestScript}${indexTemplate}`;\n''',
+              '''  const manifestScript = `<script>window.__PRE_PROGRAMMED_PORTABLE_ASSETS__=${JSON.stringify(portableAssets).replace(/</g, "\\\\u003c")};</script>`;\n  const installationScript = `<script>window.__PRE_PROGRAMMED_INSTALLATION__=${JSON.stringify({ startButtonText: installation.startButtonText }).replace(/</g, "\\\\u003c")};</script>`;\n  const injectedScripts = `${manifestScript}${installationScript}`;\n  const indexHtml = indexTemplate.includes("</head>")\n    ? indexTemplate.replace("</head>", `${injectedScripts}</head>`)\n    : `${injectedScripts}${indexTemplate}`;\n''')
+          replace(path,
+              '''    assetWarning,\n    authorKey,\n  };\n''',
+              '''    assetWarning,\n    authorKey,\n    startButtonText: installation.startButtonText,\n  };\n''')
+          replace(path,
+              '  const { url, assetWarning, authorKey } = await startLocalHost();\n',
+              '  const { url, assetWarning, authorKey, startButtonText } = await startLocalHost();\n')
+          replace(path,
+              '''  if (!indexResponse.ok || !indexText.includes("__PRE_PROGRAMMED_PORTABLE_ASSETS__")) {\n    throw new Error("Portable client did not load through the local host.");\n  }\n\n''',
+              '''  if (!indexResponse.ok || !indexText.includes("__PRE_PROGRAMMED_PORTABLE_ASSETS__")) {\n    throw new Error("Portable client did not load through the local host.");\n  }\n  const expectedInstallationScript = `window.__PRE_PROGRAMMED_INSTALLATION__=${JSON.stringify({ startButtonText }).replace(/</g, "\\\\u003c")};`;\n  if (!indexText.includes(expectedInstallationScript)) {\n    throw new Error("Portable installation start-button text contract failed.");\n  }\n\n''')
+
+          replace("desktop/portable-readme.txt",
+              "3. Open installation.txt. Set AUTHOR_KEY= for your Author password. Launch-sequence captions are authored on the Sort Sequence itself and travel with the .ppgame project.\n",
+              "3. Open installation.txt. Set AUTHOR_KEY= for your Author password and START_BUTTON_TEXT= for the first button shown before the terminal.\n")
+          replace("desktop/portable-readme.txt",
+              "installation.txt owns this extracted installation's Author password.",
+              "installation.txt owns this extracted installation's Author password and pre-terminal start button text.")
+
+          replace("README.md",
+              "`installation.txt` owns local installation settings such as `AUTHOR_KEY`. Player-visible launch-sequence text is authored on the Sort Sequence itself, so it uses the same canonical editor and travels with the `.ppgame` project across hosted, local, and portable builds. A future hosted installation may reuse the portable `AUTHOR_KEY` value for its `ADMIN_KEY` secret or choose a different one.",
+              "`installation.txt` intentionally contains only `AUTHOR_KEY` and `START_BUTTON_TEXT`. `START_BUTTON_TEXT` owns the pre-terminal bootstrap button that exists before the authored player runtime. Sort Sequence captions remain project-owned and travel with the `.ppgame` across hosted, local, and portable builds. A future hosted installation may reuse the portable `AUTHOR_KEY` value for its `ADMIN_KEY` secret or choose a different one.")
+          PY
+      - name: Verify source
+        run: |
+          npm ci --no-audit --no-fund
+          npm run verify
+          git diff --check
+      - name: Commit repaired installation contract
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/main.cjs desktop/portable-readme.txt README.md
+          git commit -m "Wire portable start button to installation.txt [install-fix-applied]"
+          git push origin HEAD:fix/portable-start-button-setting
+
+  verify-portable:
+    needs: apply
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: fix/portable-start-button-setting
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build clean client
+        shell: pwsh
+        run: |
+          npm ci --no-audit --no-fund
+          if (Test-Path public/assets) { Remove-Item public/assets -Recurse -Force }
+          New-Item -ItemType Directory -Path public/assets -Force | Out-Null
+          npm run build
+      - name: Build portable host
+        shell: pwsh
+        run: |
+          Push-Location desktop
+          npm ci --no-audit --no-fund
+          Pop-Location
+          New-Item -ItemType Directory -Path desktop/build/wrangler -Force | Out-Null
+          npx wrangler deploy --dry-run --config wrangler.local.jsonc --outdir desktop/build/wrangler
+          $javascript = @(Get-ChildItem desktop/build/wrangler -Recurse -File | Where-Object { $_.Extension -in @('.js', '.mjs') })
+          if ($javascript.Count -ne 1) { throw "Expected exactly one Worker module." }
+          Copy-Item $javascript[0].FullName desktop/build/worker.mjs -Force
+          Push-Location desktop
+          npx electron-builder --config electron-builder.yml --win --x64 --dir --publish never "--config.extraMetadata.version=0.0.0-install-audit"
+          Pop-Location
+      - name: Exercise actual extracted executable
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP "Pre-Programmed"
+          New-Item -ItemType Directory -Path $root -Force | Out-Null
+          Copy-Item desktop/release/win-unpacked/* $root -Recurse -Force
+          Copy-Item desktop/installation-template.txt (Join-Path $root "installation.txt")
+          foreach ($folder in @("assets", "data", "exports")) { New-Item -ItemType Directory -Path (Join-Path $root $folder) -Force | Out-Null }
+          $installation = Join-Path $root "installation.txt"
+          $lines = @(Get-Content $installation)
+          if ($lines.Count -ne 2 -or $lines[0] -ne "AUTHOR_KEY=local" -or $lines[1] -ne "START_BUTTON_TEXT=INITIALIZE UNIVERSE") {
+            throw "installation.txt is not the intended two-setting file."
+          }
+          $config = Get-Content $installation -Raw
+          $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=portable-audit-key'
+          $config = $config -replace '(?m)^START_BUTTON_TEXT=.*$', 'START_BUTTON_TEXT=ENTER THE TEST UNIVERSE'
+          Set-Content -Path $installation -Value $config -Encoding UTF8 -NoNewline
+          $stdout = Join-Path $root "self-test-stdout.txt"
+          $stderr = Join-Path $root "self-test-stderr.txt"
+          $process = Start-Process -FilePath (Join-Path $root "Pre-Programmed.exe") -ArgumentList "--self-test" -WorkingDirectory $root -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path $stdout) { Get-Content $stdout }
+          if (Test-Path $stderr) { Get-Content $stderr }
+          if ($process.ExitCode -ne 0) { throw "Portable executable self-test failed." }
