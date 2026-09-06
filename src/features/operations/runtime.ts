@@ -176,17 +176,21 @@ export function executeOperation(
     bindings: operationRuntimeBindings(state, request.target, request.arguments),
   });
   const context = { snapshot, state: execution.state, now };
+  const responseText = [attempt.responseText, execution.outputText]
+    .map((text) => text?.trim() ?? "")
+    .filter(Boolean)
+    .join(" ");
   return {
     eventKey: attempt.eventKey,
     attempt: attempt.attempt,
     accepted: attempt.accepted,
-    responseText: interpolateText(attempt.responseText, context),
+    responseText: interpolateText(responseText, context),
     hookId: attempt.hookId,
     provenance,
     source,
     state: execution.state,
     events: execution.events.map((event) => {
-      const next = event.type === "notification" || event.type === "transcript"
+      const next = event.type === "notification"
         ? { ...event, text: interpolateText(event.text, context) }
         : event;
       return source ? { ...next, source } : next;
