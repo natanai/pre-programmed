@@ -1,7 +1,7 @@
-#define UNICODE
-#define _UNICODE
 #include <windows.h>
 #include <wchar.h>
+
+#pragma comment(lib, "user32.lib")
 
 static const wchar_t *command_line_tail(void) {
   const wchar_t *cursor = GetCommandLineW();
