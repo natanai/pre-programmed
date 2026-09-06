@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { referencesTo } from "../src/author/references/projectReferences";
 import { applyOperations } from "../src/engine/project/mutations";
 import type { EntityDefinition } from "../src/features/world/model";
+import { validateMutationBody } from "../worker/validation";
 import { interaction, node, project } from "./fixtures";
 
 const poiyo: EntityDefinition = {
@@ -37,6 +38,20 @@ describe("World resource lifecycle", () => {
 
     expect(next.entities.map((entity) => entity.id)).toEqual(["courtyard"]);
     expect(snapshot.entities.map((entity) => entity.id)).toEqual(["poiyo", "courtyard"]);
+  });
+
+  it("accepts World deletion through the Worker mutation boundary", () => {
+    expect(validateMutationBody({
+      expectedRevision: 4,
+      description: "Delete character Poiyo",
+      operations: [{ type: "entity.delete", id: "poiyo" }],
+    })).toBeNull();
+
+    expect(validateMutationBody({
+      expectedRevision: 4,
+      description: "Delete invalid character",
+      operations: [{ type: "entity.delete", id: "" }],
+    })).toBe("World entity id is invalid.");
   });
 
   it("finds Character and Location usages that must block deletion", () => {
