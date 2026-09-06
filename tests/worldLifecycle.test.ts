@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { applyOperations } from "../src/engine/project/mutations";
 import { referencesTo } from "../src/author/references/projectReferences";
+import { applyOperations } from "../src/engine/project/mutations";
+import type { EntityDefinition } from "../src/features/world/model";
 import { interaction, node, project } from "./fixtures";
 
-const poiyo = {
+const poiyo: EntityDefinition = {
   id: "poiyo",
   key: "poiyo",
-  type: "character" as const,
+  type: "character",
   name: "Poiyo",
   description: "A small friend.",
   tags: [],
@@ -16,10 +17,10 @@ const poiyo = {
   hooks: [],
 };
 
-const courtyard = {
+const courtyard: EntityDefinition = {
   id: "courtyard",
   key: "courtyard",
-  type: "location" as const,
+  type: "location",
   name: "Courtyard",
   description: "An open courtyard.",
   tags: [],
