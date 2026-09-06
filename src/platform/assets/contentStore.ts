@@ -60,7 +60,6 @@ export const configuredAssetContentStore = {
       byteLength: entry.byteLength,
       intrinsicWidth: entry.dimensions?.width ?? null,
       intrinsicHeight: entry.dimensions?.height ?? null,
-      authoringMode: entry.authoringMode,
     };
   },
 
@@ -76,13 +75,11 @@ export const configuredAssetContentStore = {
     if (!asset.available) throw new Error("Missing Media content cannot be exported.");
     const content = await this.fetch(asset);
     downloadBlob(content, asset.name);
+    // The neighboring receipt owns only stable file identity. Name,
+    // presentation, and editor mode remain authored Media metadata and travel
+    // with project data rather than creating a second filesystem save path.
     const sidecarName = `${asset.name}.asset.json`;
-    const sidecar = new Blob([JSON.stringify({
-      id: asset.id,
-      name: asset.name,
-      defaultPresentation: asset.defaultPresentation,
-      authoringMode: asset.authoringMode,
-    }, null, 2)], { type: "application/json" });
+    const sidecar = new Blob([JSON.stringify({ id: asset.id }, null, 2)], { type: "application/json" });
     window.setTimeout(() => downloadBlob(sidecar, sidecarName), 50);
   },
 };
