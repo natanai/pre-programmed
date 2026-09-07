@@ -169,7 +169,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
         onAction: () => {
           if (usages.length || !window.confirm(`Delete item “${draft.name}”?`)) return;
           void context.persist([{ type: "item.delete", id: draft.id }], `Delete item ${draft.name}`).then((result) => {
-            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+            if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
           });
         },
       }] : [],
