@@ -7,7 +7,7 @@ import { radixAuthorFeature } from "../../features/radix/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { worldAuthorFeature } from "../../features/world/author/manifest";
 import type { AuthorResourceProvider } from "../resources/types";
-import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
+import { createProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import type { AuthorTaskRoute } from "../tasks/types";
 import { StructuredAuthorWorkspace } from "../ui/workspaceDefinition";
 import { WorkspacePanel } from "../workspace/WorkspacePanel";
@@ -29,6 +29,10 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   commandsAuthorFeature,
   projectAuthorFeature,
 ];
+
+const PROJECT_SETTINGS_WORKSPACE = createProjectSettingsWorkspace(
+  AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []),
+);
 
 export function getAuthorResourceProvider(kind: string): AuthorResourceProvider | undefined {
   for (const feature of AUTHOR_FEATURES) {
@@ -102,8 +106,7 @@ export function renderAuthorFeatureWorkspace(
   }
 
   if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") {
-    const sections = AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []);
-    return <ProjectSettingsWorkspace route={route} sections={sections} context={context} />;
+    return <StructuredAuthorWorkspace definition={PROJECT_SETTINGS_WORKSPACE} route={route} context={context} />;
   }
 
   for (const feature of AUTHOR_FEATURES) {

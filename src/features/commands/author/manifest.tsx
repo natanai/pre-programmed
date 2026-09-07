@@ -1,7 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "../../../engine/application/catalog";
 import type { CommandDefinition } from "../model";
-import { COMMAND_PROJECT_SETTINGS_SECTION } from "./CommandSettings";
+import { COMMAND_PROJECT_SETTINGS_SECTION, commandProjectSettingsWorkspace } from "./CommandSettings";
 import { COMMAND_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function commandActionLabel(command: CommandDefinition) {
@@ -14,6 +14,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
   id: "commands",
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "commands") return null;
+    if (route.workspace === "settings") return "Player language";
     if (route.workspace === "interactions") return "Player interactions";
     if (route.workspace === "grammar" || route.workspace === "capabilities") return "Player commands";
     if (route.workspace === "references") return "Target names + aliases";
@@ -52,7 +53,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
     },
   }],
   projectSettings: COMMAND_PROJECT_SETTINGS_SECTION,
-  workspaces: [...COMMAND_STRUCTURED_WORKSPACES],
+  workspaces: [commandProjectSettingsWorkspace, ...COMMAND_STRUCTURED_WORKSPACES],
   search: (context) => [
     {
       id: "commands:player-commands",

@@ -1,6 +1,3 @@
-import { useEffect, useMemo, useState } from "react";
-import { ReferenceField } from "../../../author/resources/ReferenceField";
-import type { AuthorProjectSettingsSection } from "../../../author/features/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import {
   SORT_ALGORITHM_LABELS,
@@ -180,53 +177,3 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
     ],
   }),
 });
-
-function RadixStartupSettings({ context }: { context: Parameters<AuthorProjectSettingsSection["render"]>[0] }) {
-  const [enabled, setEnabled] = useState(context.snapshot.settings.radix.startup.enabled);
-  const [sequenceId, setSequenceId] = useState(context.snapshot.settings.radix.startup.sequenceId);
-  const [saving, setSaving] = useState(false);
-  const baseline = context.snapshot.settings.radix.startup;
-  const dirty = useMemo(() => enabled !== baseline.enabled || sequenceId !== baseline.sequenceId, [baseline.enabled, baseline.sequenceId, enabled, sequenceId]);
-
-  useEffect(() => {
-    context.setWorkspaceDirty(dirty);
-    return () => context.setWorkspaceDirty(false);
-  }, [context.setWorkspaceDirty, dirty]);
-
-  const save = async () => {
-    setSaving(true);
-    try {
-      const settings = {
-        ...context.snapshot.settings,
-        radix: {
-          ...context.snapshot.settings.radix,
-          startup: { enabled, sequenceId },
-        },
-      };
-      const result = await context.persist([{ type: "project.settings", settings }], "Changed player launch sort sequence");
-      if (result.status === "saved" || result.status === "queued") context.setWorkspaceDirty(false);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return <div className="project-setting-card">
-    <h3>PLAYER LAUNCH</h3>
-    <p className="project-settings-description">Run one reusable sort sequence once whenever the player app opens, before the saved-game choice or normal play is revealed. It does not count as entering a node. The selected sequence's own CAPTION is shown beneath it.</p>
-    <label className="check-label"><input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} /> enabled on app launch</label>
-    <ReferenceField kind="radix-sequence" value={sequenceId} onChange={setSequenceId} placeholder="Choose launch sequence" />
-    <div className="project-setting-actions">
-      <button type="button" disabled={!dirty || saving || (enabled && !sequenceId)} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {sequenceId ? <button type="button" onClick={() => context.runtime.events([{ type: "radix", sequenceId }])}>[PREVIEW]</button> : null}
-      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "radix", workspace: "sequences" })}>[OPEN SORT SEQUENCES]</button>
-    </div>
-  </div>;
-}
-
-export const RADIX_PROJECT_SETTINGS: readonly AuthorProjectSettingsSection[] = [{
-  id: "radix-startup",
-  label: "LAUNCH SEQUENCE",
-  description: "Choose whether a reusable sort presentation runs once when the player app opens.",
-  order: 20,
-  render: (context) => <RadixStartupSettings context={context} />,
-}];
