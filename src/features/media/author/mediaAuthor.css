@@ -15,12 +15,29 @@
 .voice-tabs button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
 .voice-settings { display: grid; gap: .6em; }
 .synth-wave-editor,
+.synth-shape-editor,
 .synth-envelope-settings { display: grid; gap: .35em; }
-.synth-wave-editor > span { color: var(--dos-muted); font-size: .9em; }
-.synth-wave-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3em; }
-.synth-wave-options > button { min-width: 0; min-height: 2.7em; padding-inline: .25em; }
-.synth-wave-options > button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
-.synth-envelope-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6em; }
+.synth-wave-editor > span,
+.synth-shape-editor > span { color: var(--dos-muted); font-size: .9em; }
+.synth-wave-options,
+.synth-shape-options { display: grid; gap: .3em; }
+.synth-wave-options { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.synth-shape-options { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.synth-wave-options > button,
+.synth-shape-options > button { min-width: 0; min-height: 2.7em; padding-inline: .25em; }
+.synth-wave-options > button[aria-pressed="true"],
+.synth-shape-options > button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
+.synth-envelope-disclosure,
+.synth-volume-disclosure {
+  border-top: 1px dotted var(--dos-line);
+  padding-top: .45em;
+}
+.synth-envelope-disclosure > summary,
+.synth-volume-disclosure > summary {
+  cursor: pointer;
+  color: var(--dos-muted);
+}
+.synth-envelope-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6em; margin-top: .55em; }
 .synth-envelope-settings label { display: grid; gap: .25em; min-width: 0; }
 .synth-envelope-settings input { min-width: 0; width: 100%; }
 
@@ -87,6 +104,21 @@
   gap: .3em;
 }
 .synth-pitch-nudges > button { min-width: 0; min-height: 2.8em; padding-inline: .25em; }
+.synth-volume-editor { display: grid; gap: .35em; margin-top: .55em; }
+.synth-volume-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .45em;
+}
+.synth-volume-controls > button { min-height: 2.8em; }
+.synth-volume-range {
+  width: 100%;
+  min-width: 0;
+  height: 2.75em;
+  accent-color: currentColor;
+}
+.synth-volume-editor > small { color: var(--dos-muted); }
 .synth-noise-step { color: var(--dos-muted); text-align: center; }
 
 .asset-explorer {
@@ -189,10 +221,13 @@
   .synth-step-select { min-height: 3.8em; padding: .5em; }
   .synth-step-toggle { min-height: 2.55em; }
   .synth-wave-options > button,
+  .synth-shape-options > button,
   .synth-pitch-nudges > button,
+  .synth-volume-controls > button,
   .synth-selected-step-actions button,
   .voice-tabs button { min-height: 2.9em; }
   .synth-pitch-scrub { min-height: 6.25em; }
+  .synth-volume-range { min-height: 3.25em; }
   .vector-tool-row button,
   .vector-zoom-row button,
   .vector-preset-row button,
