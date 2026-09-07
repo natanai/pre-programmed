@@ -40,11 +40,13 @@ export const commandInteractionsWorkspace = defineAuthorWorkspace({
         id: "commands-interactions-targets",
         label: "Target owners",
         children: [{
-          type: "action-row",
-          id: "commands-interactions-target-actions",
-          actions: targetProviders().map((provider) => ({
+          type: "list",
+          id: "commands-interactions-target-list",
+          label: "Target owners",
+          items: targetProviders().map((provider) => ({
             id: `commands-interactions-target:${provider.kind}`,
-            label: provider.label.toUpperCase(),
+            label: provider.label,
+            detail: provider.targetAvailabilityDescription ?? provider.description,
             disabled: !provider.authorResourceKind || !context.resources.canOpenList(provider.authorResourceKind),
             onAction: () => {
               if (provider.authorResourceKind) context.resources.openList(provider.authorResourceKind);
@@ -68,11 +70,15 @@ export const commandGrammarWorkspace = defineAuthorWorkspace({
       context: `${commands.length} command${commands.length === 1 ? "" : "s"}`,
       blocks: [
         ...(commands.length ? [{
-          type: "action-row" as const,
+          type: "list" as const,
           id: "commands-grammar-list",
-          actions: commands.map((command) => ({
+          label: "Player commands",
+          items: commands.map((command) => ({
             id: `commands-grammar:${command.id}`,
-            label: `${command.label || "UNTITLED"} · ${command.enabled ? "ON" : "OFF"} · ${command.patterns[0] || "NO INPUT"}`,
+            label: command.label || "Untitled command",
+            detail: `${command.enabled ? "ON" : "OFF"} · ${command.patterns.length
+              ? `${command.patterns[0]}${command.patterns.length > 1 ? ` · +${command.patterns.length - 1} more` : ""}`
+              : "No player input"}`,
             onAction: () => context.pushTask({
               type: "feature",
               feature: "commands",
@@ -112,14 +118,16 @@ export const commandReferenceSourcesWorkspace = defineAuthorWorkspace({
         label: "Target types",
         importance: "primary",
         children: [{
-          type: "action-row",
-          id: "commands-reference-source-actions",
-          actions: providers.map((provider) => {
+          type: "list",
+          id: "commands-reference-source-items",
+          label: "Target types",
+          items: providers.map((provider) => {
             const setting = configured.find((candidate) => candidate.sourceKind === provider.kind);
             const count = provider.candidates({ snapshot: context.snapshot, state: context.playState }).length;
             return {
               id: `commands-reference-source:${provider.kind}`,
-              label: `${provider.label.toUpperCase()} · ${setting?.enabled ? "ON" : "OFF"} · ${count}`,
+              label: provider.label,
+              detail: `${setting?.enabled ? "ON" : "OFF"} · ${count} target${count === 1 ? "" : "s"} · ${provider.description}`,
               onAction: () => context.pushTask({
                 type: "feature",
                 feature: "commands",
@@ -259,11 +267,13 @@ export const commandTargetBehaviorsWorkspace = defineAuthorWorkspace({
       context: adapter?.label ?? sourceKind,
       blocks: [
         ...(adapter && targets.length ? [{
-          type: "action-row" as const,
+          type: "list" as const,
           id: "commands-target-behavior-list",
-          actions: targets.map((target) => ({
+          label: "Targets",
+          items: targets.map((target) => ({
             id: `commands-target-behavior:${target.id}`,
-            label: `${target.label} · ${target.available ? "AVAILABLE" : "OFF"} · ${target.responseCount} RESPONSE${target.responseCount === 1 ? "" : "S"}`,
+            label: target.label,
+            detail: `${target.available ? "AVAILABLE" : "OFF"} · ${target.responseCount} response${target.responseCount === 1 ? "" : "s"}`,
             onAction: () => context.pushTask(adapter.editRoute(target.id, operation)),
           })),
         }] : []),
