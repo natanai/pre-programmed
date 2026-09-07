@@ -131,23 +131,29 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
     voices: sound.voices.map((item, index) => index === voiceIndex ? next : item),
   });
 
-  const updateSelectedStep = (
+  const updateStepAt = (
+    index: number,
     transform: (step: SynthStep) => SynthStep,
     audition = false,
   ) => {
-    const current = voice.steps[selectedIndex];
+    const current = voice.steps[index];
     if (!current) return;
     const nextVoice = {
       ...voice,
-      steps: voice.steps.map((step, index) => index === selectedIndex ? transform(step) : step),
+      steps: voice.steps.map((step, candidateIndex) => candidateIndex === index ? transform(step) : step),
     };
     const nextSound = {
       ...sound,
-      voices: sound.voices.map((candidate, index) => index === voiceIndex ? nextVoice : candidate),
+      voices: sound.voices.map((candidate, candidateIndex) => candidateIndex === voiceIndex ? nextVoice : candidate),
     };
     onChange(nextSound);
-    if (audition) void playSynthStep(nextSound, voiceIndex, selectedIndex);
+    if (audition) void playSynthStep(nextSound, voiceIndex, index);
   };
+
+  const updateSelectedStep = (
+    transform: (step: SynthStep) => SynthStep,
+    audition = false,
+  ) => updateStepAt(selectedIndex, transform, audition);
 
   const nudgePitch = (amount: number) => updateSelectedStep(
     (step) => ({ ...step, note: shiftedPitch(step.note, amount) }),
@@ -259,20 +265,35 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
     </div>
 
     <div className="synth-step-pads" role="list" aria-label={`Voice ${voiceIndex + 1} sequence steps`}>
-      {voice.steps.map((step, index) => <button
-        type="button"
-        role="listitem"
+      {voice.steps.map((step, index) => <div
         className="synth-step-pad"
         data-active={step.active ? "true" : "false"}
-        aria-pressed={selectedIndex === index}
-        aria-label={`Step ${index + 1}, ${step.active ? "active" : "off"}, ${voice.waveform === "noise" ? "noise" : step.note}, volume ${Math.round(step.volume * 100)} percent`}
+        data-selected={selectedIndex === index ? "true" : "false"}
+        role="listitem"
         key={index}
-        onClick={() => setStepIndex(index)}
       >
-        <span>{String(index + 1).padStart(2, "0")} {step.active ? "●" : "○"}</span>
-        <strong>{voice.waveform === "noise" ? "NOISE" : step.note}</strong>
-        <small>{Math.round(step.volume * 100)}%</small>
-      </button>)}
+        <button
+          type="button"
+          className="synth-step-select"
+          aria-pressed={selectedIndex === index}
+          aria-label={`Select step ${index + 1}, ${step.active ? "active" : "off"}, ${voice.waveform === "noise" ? "noise" : step.note}, volume ${Math.round(step.volume * 100)} percent`}
+          onClick={() => setStepIndex(index)}
+        >
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <strong>{voice.waveform === "noise" ? "NOISE" : step.note}</strong>
+          <small>{Math.round(step.volume * 100)}%</small>
+        </button>
+        <button
+          type="button"
+          className="synth-step-toggle"
+          aria-pressed={step.active}
+          aria-label={`${step.active ? "Turn off" : "Turn on"} step ${index + 1}`}
+          onClick={() => {
+            setStepIndex(index);
+            updateStepAt(index, (current) => ({ ...current, active: !current.active }), !step.active);
+          }}
+        >[{step.active ? "ON" : "OFF"}]</button>
+      </div>)}
     </div>
 
     {selectedStep ? <section className="synth-step-editor" aria-label={`Edit step ${selectedIndex + 1}`}>
