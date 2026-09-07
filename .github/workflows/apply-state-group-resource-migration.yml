@@ -25,6 +25,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('src/features/state/author/workspaces.tsx')
           text = path.read_text()
@@ -34,39 +35,43 @@ jobs:
               raise SystemExit('Expected one direct ReferenceField import')
           text = text.replace(old_import, '')
 
-          old = '''          {
-            type: "custom",
-            id: `${id}-group-picker`,
-            role: "resource-picker",
-            content: <ReferenceField
-              kind="state-group"
-              value={presentation?.groupId ?? ""}
-              allowEmpty={false}
-              placeholder="choose or create a group"
-              onChange={(groupId) => setPresentation({
-                groupId,
-                order: presentation?.order ?? 0,
-                visibleWhen: presentation?.visibleWhen ?? ALWAYS,
-              })}
-            />,
-          },'''
-          new = '''          {
-            type: "resource" as const,
-            id: `${id}-group-picker`,
-            label: "Group",
-            kind: "state-group",
-            value: presentation?.groupId ?? "",
-            allowEmpty: false,
-            placeholder: "choose or create a group",
-            onChange: (groupId: string) => setPresentation({
-              groupId,
-              order: presentation?.order ?? 0,
-              visibleWhen: presentation?.visibleWhen ?? ALWAYS,
-            }),
-          },'''
-          if text.count(old) != 1:
+          pattern = re.compile(
+              r'          \{\n'
+              r'            type: "custom",\n'
+              r'            id: `\$\{id\}-group-picker`,\n'
+              r'            role: "resource-picker",\n'
+              r'            content: <ReferenceField\n'
+              r'              kind="state-group"\n'
+              r'              value=\{presentation\?\.groupId \?\? ""\}\n'
+              r'              allowEmpty=\{false\}\n'
+              r'              placeholder="choose or create a group"\n'
+              r'              onChange=\{\(groupId\) => setPresentation\(\{\n'
+              r'                groupId,\n'
+              r'                order: presentation\?\.order \?\? 0,\n'
+              r'                visibleWhen: presentation\?\.visibleWhen \?\? ALWAYS,\n'
+              r'              \}\)\}\n'
+              r'            />,\n'
+              r'          \},'
+          )
+          replacement = '\n'.join([
+              '          {',
+              '            type: "resource" as const,',
+              '            id: `${id}-group-picker`,',
+              '            label: "Group",',
+              '            kind: "state-group",',
+              '            value: presentation?.groupId ?? "",',
+              '            allowEmpty: false,',
+              '            placeholder: "choose or create a group",',
+              '            onChange: (groupId: string) => setPresentation({',
+              '              groupId,',
+              '              order: presentation?.order ?? 0,',
+              '              visibleWhen: presentation?.visibleWhen ?? ALWAYS,',
+              '            }),',
+              '          },',
+          ])
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
               raise SystemExit('Expected one State player-presentation custom resource picker')
-          text = text.replace(old, new)
 
           if 'ReferenceField' in text:
               raise SystemExit('Direct ReferenceField usage remains in State workspaces')
