@@ -31,6 +31,7 @@ export function ReferenceField({
     || `${option.label} ${option.detail ?? ""} ${option.value}`.toLocaleLowerCase().includes(normalizedQuery)), [normalizedQuery, options]);
   const selectedLabel = selected?.label ?? (value ? `Missing: ${value}` : (placeholder ?? `Choose ${label.toLowerCase()}`));
   const preview = showPreview && selected ? resources.preview(kind, value) : null;
+  const canEditSelected = Boolean(selected && resources.canEdit(kind, value));
 
   const closeChooser = () => {
     setOpen(false);
@@ -45,6 +46,7 @@ export function ReferenceField({
     resources.create(kind, (resource) => onChangeRef.current(resource.value));
   };
   const editResource = () => {
+    if (!canEditSelected) return;
     closeChooser();
     resources.edit(kind, value, (result) => {
       if (result?.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
@@ -63,17 +65,25 @@ export function ReferenceField({
   };
 
   return <div className={`author-reference-field${open ? " is-open" : ""}`} data-resource-kind={kind}>
-    <button
-      type="button"
-      className="author-reference-trigger"
-      aria-expanded={open}
-      aria-controls={chooserId}
-      onClick={openOrCreate}
-    >
-      <span className="author-reference-kind">{label.toUpperCase()}</span>
-      <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
-      <span className="author-reference-chevron" aria-hidden="true">{open ? "⌄" : "›"}</span>
-    </button>
+    <div className="author-reference-control-row">
+      <button
+        type="button"
+        className="author-reference-trigger"
+        aria-expanded={open}
+        aria-controls={chooserId}
+        onClick={openOrCreate}
+      >
+        <span className="author-reference-kind">{label.toUpperCase()}</span>
+        <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
+        <span className="author-reference-chevron" aria-hidden="true">{open ? "⌄" : "›"}</span>
+      </button>
+      {canEditSelected ? <button
+        type="button"
+        className="author-reference-direct-edit"
+        aria-label={`Edit ${selected?.label ?? label}`}
+        onClick={editResource}
+      >[EDIT]</button> : null}
+    </div>
 
     {preview ? <div className="author-reference-preview">{preview}</div> : null}
 
@@ -109,12 +119,10 @@ export function ReferenceField({
         {!options.length ? <span className="author-reference-no-results">NO {label.toUpperCase()}S YET</span> : null}
       </div>
       <div className="author-reference-actions">
-        {selected && resources.canEdit(kind, value) ? <button type="button" onClick={editResource}>[EDIT {label.toUpperCase()}]</button> : null}
+        {canEditSelected ? <button type="button" onClick={editResource}>[EDIT {label.toUpperCase()}]</button> : null}
         {resources.canCreate(kind) ? <button type="button" onClick={createResource}>[+ CREATE {label.toUpperCase()}]</button> : null}
         <button type="button" onClick={closeChooser}>[CLOSE]</button>
       </div>
-      {resources.canCreate(kind) ? <small className="author-reference-return-help">Creating opens a nested Author task. Save there to return here with the new {label.toLowerCase()} selected.</small> : null}
     </section> : null}
-    {!options.length && resources.canCreate(kind) && !open ? <small className="author-reference-empty">No {label.toLowerCase()} exists yet. Create one here.</small> : null}
   </div>;
 }
