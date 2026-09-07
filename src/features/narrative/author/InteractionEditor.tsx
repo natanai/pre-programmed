@@ -21,12 +21,17 @@ import {
   OutcomeConditionEditor,
   OutcomeEffectsEditor,
 } from "../../../author/outcomes/OutcomeComposer";
-import { createDraftInteraction, createDraftOutcome } from "../drafts";
+import { createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { interactionOutcomeProse, normalizeInteractionOutcomeProse } from "../interactionProse";
 import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
-import { validateTextNotation } from "../textNotation";
+import {
+  interactionSaveDescription,
+  normalizeInteractionAuthorDraft,
+  prepareInteractionForSave,
+} from "./interactionAuthoring";
+export { aliasesForUserInput } from "./interactionAuthoring";
 import "./interactionEditor.css";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
@@ -39,35 +44,6 @@ type EditorScreen =
   | { type: "overview" }
   | { type: "response"; outcomeId: string }
   | { type: "input-settings" };
-
-export function aliasesForUserInput(userInputText: string, aliases: string[]) {
-  const trimmed = userInputText.trim();
-  const values = [trimmed, ...aliases.map((alias) => alias.trim())].filter(Boolean);
-  const seen = new Set<string>();
-  return values.filter((alias) => {
-    const normalized = alias.toLocaleLowerCase();
-    if (seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-}
-
-function normalizedInteraction(
-  initial: Interaction | undefined,
-  sourceNodeId: string,
-  command: string,
-  fallback: boolean,
-) {
-  const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
-  value.matchMode ??= fallback ? "fallback" : "command";
-  value.choiceVisibility ??= fallback ? "typed" : "prompt";
-  value.choiceVisibleWhen ??= ALWAYS;
-  value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => normalizeInteractionOutcomeProse({
-    ...outcome,
-    authorStatus: outcome.authorStatus ?? "configured",
-  })) : [createDraftOutcome()];
-  return value;
-}
 
 function conditionSummary(condition: Condition): string {
   switch (condition.type) {
@@ -149,7 +125,7 @@ export function InteractionEditor({
 }) {
   const fallbackMode = fallback || initial?.matchMode === "fallback";
   const resolvedSourceNodeId = initial?.sourceNodeId ?? sourceNodeId ?? playState.currentNodeId;
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
+  const [draft, setDraft] = useState(() => normalizeInteractionAuthorDraft(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
   const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
   const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
@@ -219,53 +195,22 @@ export function InteractionEditor({
   };
 
   const save = async (): Promise<boolean> => {
-    const userInputText = draft.wording.trim();
-    if (!fallbackMode && !captureMode && !userInputText) {
-      setError("Enter user-input-text or choose Capture player input.");
-      setScreen({ type: "overview" });
+    const prepared = prepareInteractionForSave(draft, fallbackMode, snapshot);
+    if ("issue" in prepared) {
+      setError(prepared.issue.message);
+      setScreen(prepared.issue.outcomeId
+        ? { type: "response", outcomeId: prepared.issue.outcomeId }
+        : { type: "overview" });
       return false;
     }
-    if (captureMode && snapshot.interactions.some((interaction) =>
-      interaction.id !== draft.id
-      && interaction.sourceNodeId === draft.sourceNodeId
-      && interaction.matchMode === "capture")) {
-      setError("This node already has a Capture player input interaction. Edit that interaction instead.");
-      setScreen({ type: "overview" });
-      return false;
-    }
-    const incompleteTransition = draft.outcomes.find((outcome) => outcome.disposition === "transition" && !outcome.destinationNodeId);
-    if (incompleteTransition) {
-      setError("Choose an existing destination or create a new Node before saving.");
-      setScreen({ type: "response", outcomeId: incompleteTransition.id });
-      return false;
-    }
-    const invalidText = draft.outcomes.find((outcome) =>
-      validateTextNotation(outcome.responseText).length
-      || validateTextNotation(outcome.dialogueText ?? "").length);
-    if (invalidText) {
-      setError("Fix the response text rule error before saving.");
-      setScreen({ type: "response", outcomeId: invalidText.id });
-      return false;
-    }
+
     setError("");
     setSaving(true);
     try {
-      const interaction: Interaction = {
-        ...draft,
-        wording: fallbackMode || captureMode ? "" : userInputText,
-        matchMode: fallbackMode ? "fallback" : captureMode ? "capture" : "command",
-        choiceVisibility: fallbackMode || captureMode ? "typed" : draft.choiceVisibility,
-        choiceVisibleWhen: fallbackMode || captureMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
-        aliases: fallbackMode || captureMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
-        outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
-      };
+      const { interaction } = prepared;
       const result = await onSave(
         [{ type: "interaction.upsert", interaction }],
-        fallbackMode
-          ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
-          : captureMode
-            ? `${initial ? "Changed" : "Created"} player-input capture for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
-            : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
+        interactionSaveDescription(interaction, Boolean(initial), fallbackMode, snapshot),
       );
       if (result.status === "saved" || result.status === "queued") {
         setDraft(interaction);
