@@ -158,6 +158,56 @@ describe("Author project persistence", () => {
     expect(queue.queued()).toEqual([]);
   });
 
+  it("does not treat an external project change as this browser's own safe rebase", async () => {
+    const localBase = project({ revision: 10 });
+    const earlier = mutation("Created dependency", 10, [{ type: "node.upsert", node: node("b", 2) }]);
+    const localSnapshot = applyOperations(localBase, earlier.operations);
+    const current = mutation("Saved dependent edit", 10, [{ type: "node.upsert", node: node("c", 3) }]);
+    const optimistic = applyOperations(localSnapshot, current.operations);
+    const queue = localStore([{ id: "earlier", mutation: earlier, queuedAt: new Date(1_000).toISOString() }]);
+    const external = { ...applyOperations(localBase, [{ type: "node.upsert", node: node("x", 9) }]), revision: 11 };
+    let server = structuredClone(external);
+    const writes: ProjectMutation[] = [];
+    const persistence: ProjectPersistence = {
+      async readProject() {
+        return structuredClone(server);
+      },
+      async writeProject(value) {
+        writes.push(structuredClone(value));
+        if (value.expectedRevision !== server.revision) {
+          throw new ProjectRevisionConflictError(`Expected ${value.expectedRevision}; current ${server.revision}`);
+        }
+        server = { ...applyOperations(server, value.operations), revision: server.revision + 1 };
+        return structuredClone(server);
+      },
+    };
+
+    const flushResult = await flushQueuedAuthorMutations({
+      persistence,
+      authorization: "token",
+      local: queue.local,
+    });
+    expect(flushResult.flushedCount).toBe(1);
+    expect(server.revision).toBe(12);
+
+    const saveResult = await persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: current,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: localSnapshot,
+      local: queue.local,
+    });
+
+    expect(saveResult.status).toBe("conflict");
+    expect(writes.map((entry) => [entry.description, entry.expectedRevision])).toEqual([
+      ["Created dependency", 11],
+      ["Saved dependent edit", 10],
+    ]);
+    expect(server.nodes.map((entry) => entry.id)).toEqual(["a", "x", "b"]);
+    expect(server.nodes.some((entry) => entry.id === "c")).toBe(false);
+  });
+
   it("keeps a transiently unavailable write in this browser's durable queue", async () => {
     const before = project({ revision: 4 });
     const operation = { type: "node.upsert" as const, node: node("b", 2) };
