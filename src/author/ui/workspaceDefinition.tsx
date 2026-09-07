@@ -22,6 +22,12 @@ export type AuthorWorkspaceBuildContext<TDraft> = {
   setDraft: Dispatch<SetStateAction<TDraft>>;
   /** Shared controller-owned dirty state. Features may read it but must not create a second baseline. */
   dirty: boolean;
+  /**
+   * Adopt an asynchronously loaded canonical resource as the current clean draft.
+   * Use only for loading persisted source data after task creation; ordinary edits
+   * must continue through setDraft so they remain dirty.
+   */
+  adoptLoadedDraft: (draft: TDraft) => void;
   /** Shared task save boundary. Feature actions may save before nesting without creating another persistence path. */
   saveCurrentDraft?: (options?: AuthorWorkspaceSaveOptions) => Promise<boolean>;
 };
@@ -91,9 +97,15 @@ export function StructuredAuthorWorkspace<TDraft>({
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
+  const adoptLoadedDraft = useCallback((loadedDraft: TDraft) => {
+    setDraft(loadedDraft);
+    setBaseline(signature(loadedDraft));
+    context.setWorkspaceDirty(false);
+  }, [context, signature]);
+
   const saveBuild = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
-    () => ({ route, context, draft, setDraft, dirty }),
-    [context, dirty, draft, route],
+    () => ({ route, context, draft, setDraft, dirty, adoptLoadedDraft }),
+    [adoptLoadedDraft, context, dirty, draft, route],
   );
   const validForSave = definition.canSave?.(saveBuild) ?? true;
 
