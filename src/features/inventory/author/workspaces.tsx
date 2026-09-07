@@ -136,7 +136,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
           summary: equipmentSummary(draft, context.snapshot),
           children: [
             { type: "status", id: "inventory-item-equipment-help", tone: "info", text: "Equipment is authored as placements: choose an anchor, then reserve every body slot the item occupies there." },
-            { type: "custom", id: "inventory-item-equipment-open", role: "specialized-control", content: <div className="author-actions"><button type="button" onClick={openEquipment}>[CONFIGURE EQUIPMENT]</button></div> },
+            { type: "action-row", id: "inventory-item-equipment-actions", actions: [{ id: "inventory-item-equipment-open", label: "CONFIGURE EQUIPMENT", onAction: openEquipment }] },
           ],
         },
         {
