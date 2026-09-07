@@ -2,6 +2,7 @@ import type { SynthSound } from "./model";
 
 export const MAX_SYNTH_VOICES = 4;
 export const MAX_SYNTH_STEPS = 16;
+export const MAX_SYNTH_BEND = 12;
 
 const NOTE_PATTERN = /^([A-G])(#?)([2-7])$/;
 const NOTE_OFFSETS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -29,6 +30,9 @@ export function validateSynth(synth: SynthSound) {
         errors.push(`Invalid note ${step.note}.`);
       }
       if (step.volume < 0 || step.volume > 1) errors.push("Step volume must be between 0 and 1.");
+      if (step.bend !== undefined && (!Number.isFinite(step.bend) || step.bend < -MAX_SYNTH_BEND || step.bend > MAX_SYNTH_BEND)) {
+        errors.push(`Step pitch sweep must be between -${MAX_SYNTH_BEND} and +${MAX_SYNTH_BEND} semitones.`);
+      }
     }
   }
   return errors;

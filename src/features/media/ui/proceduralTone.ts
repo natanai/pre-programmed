@@ -44,6 +44,7 @@ export function scheduleSynthVoice(
   duration: number,
   volume: number,
   frequency?: number,
+  bendSemitones = 0,
 ) {
   const gain = context.createGain();
   gain.gain.setValueAtTime(0, start);
@@ -65,7 +66,10 @@ export function scheduleSynthVoice(
   if (!frequency || !Number.isFinite(frequency) || frequency <= 0) return;
   const oscillator = context.createOscillator();
   oscillator.type = voice.waveform;
-  oscillator.frequency.value = frequency;
+  const bend = Math.max(-12, Math.min(12, bendSemitones));
+  const endFrequency = frequency * 2 ** (bend / 12);
+  oscillator.frequency.setValueAtTime(frequency, start);
+  if (bend !== 0) oscillator.frequency.exponentialRampToValueAtTime(endFrequency, start + duration);
   oscillator.connect(gain).connect(destination);
   oscillator.start(start);
   oscillator.stop(start + duration + 0.01);

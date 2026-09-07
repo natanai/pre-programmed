@@ -2,6 +2,8 @@ export type SynthStep = {
   active: boolean;
   note: string;
   volume: number;
+  /** Optional semitone sweep across this step. Positive bends upward; negative bends downward. */
+  bend?: number;
 };
 
 export type SynthVoice = {

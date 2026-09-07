@@ -28,7 +28,7 @@ export async function playSynthSound(sound: SynthSound) {
       if (!step.active) return;
       const stepStart = start + index * stepDuration;
       const frequency = voice.waveform === "noise" ? undefined : noteFrequency(step.note) || undefined;
-      scheduleSynthVoice(context, context.destination, voice, stepStart, stepDuration, step.volume, frequency);
+      scheduleSynthVoice(context, context.destination, voice, stepStart, stepDuration, step.volume, frequency, step.bend ?? 0);
     });
   }
 }
@@ -53,7 +53,7 @@ export async function playSynthStep(sound: SynthSound, voiceIndex: number, stepI
 
   const stepDuration = Math.max(0.08, 60 / Math.max(30, sound.tempo) / 4);
   const frequency = voice.waveform === "noise" ? undefined : noteFrequency(step.note) || undefined;
-  scheduleSynthVoice(context, destination, voice, context.currentTime + 0.02, stepDuration, step.volume, frequency);
+  scheduleSynthVoice(context, destination, voice, context.currentTime + 0.02, stepDuration, step.volume, frequency, step.bend ?? 0);
   window.setTimeout(() => {
     if (activeStepPreview?.gain === destination) activeStepPreview = null;
     try { destination.disconnect(); } catch { /* already replaced/disconnected */ }
