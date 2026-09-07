@@ -68,8 +68,28 @@ jobs:
             exit 1
           fi
 
-          if ! grep -Fq 'commitTasks([taskFor({ type: "tools" })])' src/author/tasks/useAuthorTaskRuntime.ts; then
-            echo 'A finished root Author task must return to Author Tools rather than strand the editor or exit to play'
+          if grep -Fq 'const leaveCurrentTask = useCallback(() => requestBack(task.id)' src/author/workspace/AuthorWorkspaceHost.tsx \
+            || ! grep -Fq 'const leaveCurrentTask = useCallback(() => completeTask(task.id)' src/author/workspace/AuthorWorkspaceHost.tsx; then
+            echo 'Programmatic task completion must not be routed through Back/dirty confirmation'
+            exit 1
+          fi
+
+          complete_task_body="$(sed -n '/const completeTask = useCallback/,/const closeAll = useCallback/p' src/author/tasks/useAuthorTaskRuntime.ts)"
+          request_back_body="$(sed -n '/const requestBack = useCallback/,/const requestClose = useCallback/p' src/author/tasks/useAuthorTaskRuntime.ts)"
+          if ! grep -Fq 'type: "tools"' <<< "$complete_task_body" \
+            || grep -Fq 'type: "tools"' <<< "$request_back_body"; then
+            echo 'Finished root tasks must return to Author Tools through completion; Back must remain parent-only navigation'
+            exit 1
+          fi
+
+          if ! grep -Fq 'previousSelectionRef' src/author/resources/ReferenceField.tsx \
+            || ! grep -Fq 'previous.value !== value || !previous.optionId || selected || !value' src/author/resources/ReferenceField.tsx; then
+            echo 'A previously valid resource reference must reconcile when its nested owner deletes it'
+            exit 1
+          fi
+
+          if ! grep -Fq 'onChange: (groupId: string) => setPresentation(groupId ? {' src/features/state/author/workspaces.tsx; then
+            echo 'Deleting a referenced State Group must reconcile the parent draft to INTERNAL ONLY'
             exit 1
           fi
 

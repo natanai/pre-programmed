@@ -75,7 +75,9 @@ function AuthorTaskSurface({
     (result?: AuthorTaskResult) => completeTask(task.id, result),
     [completeTask, task.id],
   );
-  const leaveCurrentTask = useCallback(() => requestBack(task.id), [requestBack, task.id]);
+  // Programmatic leave means the task owner has already completed its work.
+  // Ordinary Back remains requestBack() in the shared shell and keeps dirty protection.
+  const leaveCurrentTask = useCallback(() => completeTask(task.id), [completeTask, task.id]);
   const setWorkspaceDirty = useCallback(
     (dirty: boolean) => setTaskDirty(task.id, dirty),
     [setTaskDirty, task.id],

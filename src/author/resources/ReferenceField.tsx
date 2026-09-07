@@ -29,6 +29,7 @@ export function ReferenceField({
   const options = resources.options(kind);
   const label = resources.label(kind);
   const selected = options.find((option) => option.value === value);
+  const previousSelectionRef = useRef({ value, optionId: selected?.id ?? null });
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filtered = useMemo(() => options.filter((option) => !normalizedQuery
     || `${option.label} ${option.detail ?? ""} ${option.value}`.toLocaleLowerCase().includes(normalizedQuery)), [normalizedQuery, options]);
@@ -49,6 +50,18 @@ export function ReferenceField({
       setReturned(false);
     }, 1100);
   };
+
+  useEffect(() => {
+    const previous = previousSelectionRef.current;
+    previousSelectionRef.current = { value, optionId: selected?.id ?? null };
+    // Reconcile only a live reference that disappeared while this field stayed
+    // mounted (for example, its nested canonical editor deleted it). Do not
+    // silently erase references that were already missing when Author opened.
+    if (previous.value !== value || !previous.optionId || selected || !value) return;
+    onChangeRef.current("");
+    markReturned();
+  }, [selected?.id, value]);
+
   const closeChooser = () => {
     setOpen(false);
     setQuery("");

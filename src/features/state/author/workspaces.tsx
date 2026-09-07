@@ -170,11 +170,11 @@ function presentationNodes(
             value: presentation?.groupId ?? "",
             allowEmpty: false,
             placeholder: "choose or create a group",
-            onChange: (groupId: string) => setPresentation({
+            onChange: (groupId: string) => setPresentation(groupId ? {
               groupId,
               order: presentation?.order ?? 0,
               visibleWhen: presentation?.visibleWhen ?? ALWAYS,
-            }),
+            } : null),
           },
           {
             type: "field",
