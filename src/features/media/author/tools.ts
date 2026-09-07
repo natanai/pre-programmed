@@ -23,8 +23,8 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "sound",
       label: "SOUND",
-      description: "Create and edit synthesized sounds stored with project data.",
-      searchText: "synth music audio voice waveform note sequence step tempo attack release volume advanced",
+      description: "Create and edit synthesized system sounds stored with project data.",
+      searchText: "synth system sound chirp bleep audio voice waveform note sequence step tempo attack release advanced",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "synth" }),
     },
   },
@@ -35,8 +35,8 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
     id: "media:synth-controls",
     groupLabel: "WORLD + MEDIA",
     label: "SYNTH · SIMPLE + ADVANCED",
-    description: "Start with a preset, then edit voices, waveforms, sequence length, notes, envelopes, and volume.",
-    searchText: "sound music audio recipe synth label loop tempo voice voices waveform square triangle sine saw noise attack release step steps note notes volume sequence advanced preset blip chime alert hit",
+    description: "Start with a system-sound preset, then shape voices, waveforms, sequence length, notes, and envelopes.",
+    searchText: "system sound chirp bleep audio recipe synth label loop tempo voice voices waveform square triangle sine saw noise attack release step steps note notes pitch sequence advanced preset blip chime alert hit",
     onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "synth" }),
   },
   {
