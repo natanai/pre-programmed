@@ -142,10 +142,13 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 Do only in behavior-preserving, independently verified slices.
 
 - [x] Reduce Radix-specific startup/presentation knowledge in `App.tsx` through a feature-owned runtime presentation controller.
-  - `useRadixRuntimePresentation` now owns startup sequence selection, active run state, sequence reconciliation, synth resolution, completion, effect-triggered runs, and Radix surface rendering.
-  - App retains only generic launch-blocking coordination and calls the controller's `active`, `startup`, `surface`, `showSequence`, `beginStartup`, and `suppressStartup` capabilities.
-  - Direct `RadixSequenceSurface`, sequence lookup, synth lookup, active Radix structure, and Radix completion/reconciliation branches were removed from App.
-- [ ] Move Narrative player presentation/execution semantics behind a Narrative-owned runtime contribution rather than calculating them directly in App.
+  - `useRadixRuntimePresentation` owns startup sequence selection, active run state, sequence reconciliation, synth resolution, completion, effect-triggered runs, and Radix surface rendering.
+  - App retains only generic launch-blocking coordination and the controller's narrow capabilities.
+- [ ] Finish moving Narrative player presentation/execution semantics behind Narrative-owned runtime contracts.
+  - [x] `useNarrativePlayerSurface` owns current node, anchor, graph notation, fallback interaction/notation, choice visibility, and immediate/menu choice derivation.
+  - [x] `resolveNodeOpeningPresentation` and memoized `useNarrativeContinuation` own node/interaction prose interpolation, text-notation compilation, speaker resolution, authored source identity, and follow-up prose payloads while App retains timing/state setters.
+  - [x] `executeInteraction` now returns the selected outcome's narration/dialogue performances, so App no longer reinterprets the outcome through `interactionOutcomeProse`.
+  - [ ] Re-audit the remaining direct Narrative imports in App and decide whether `executeInteraction` itself should remain a composition-root call or move behind a higher-level player-runtime contribution.
 - [ ] Consolidate complete play-session lifecycle ownership under Session.
 - [ ] Re-audit direct feature imports/branches in App after each extraction.
 
@@ -176,21 +179,26 @@ Full `npm run verify` has passed after:
 - Narrative Story Structure migration;
 - generic nested return-focus behavior;
 - Media legacy cleanup;
-- Media Assets structured browser migration after correcting its module extension to `.tsx`;
+- Media Assets structured browser migration;
 - embedded Structure/shared-shell cleanup;
-- creation of the Radix runtime presentation controller;
-- the deterministic Radix App extraction itself;
+- creation and App installation of the Radix runtime presentation controller;
 - an independent ordinary branch run after the Radix App extraction;
 - physical deletion of migrated Commands route components/styles;
 - Inventory Body Type background migration to semantic `resource`;
 - State Player Presentation group migration to semantic `resource`;
-- removal of redundant nested-return mechanics copy from the shared Author shell.
+- removal of redundant nested-return mechanics copy from the shared Author shell;
+- an independent ordinary branch run over the consolidated post-Radix Author cleanup;
+- creation and App installation of `useNarrativePlayerSurface`;
+- creation of the Narrative prose presentation resolver and its memoized continuation hook;
+- App delegation of node-opening and follow-up prose presentation to those Narrative-owned contracts;
+- expansion of `executeInteraction` to return presentation performances;
+- removal of App's duplicate `interactionOutcomeProse` interpretation.
 
-One-shot workflows are used only for mechanically editing large files when connector reads are chunked. They assert exact source shape, run full `npm run verify`, commit only on success, and remove themselves. A failed assertion therefore leaves the intended source change uncommitted; the State group migration demonstrated this safeguard when its first source-shape assertion failed before install/verify, then was corrected against the exact source and passed fully.
+One-shot workflows are used only for mechanically editing large files when connector reads are chunked. They assert exact source shape, run full `npm run verify`, commit only on success, and remove themselves. Failed assertions therefore leave the intended source change uncommitted.
 
-The Radix App extraction used the same pattern. The resulting App commit is `870c7eeb70d58df5f99777485e33667b5f024f03` (`refactor: delegate radix runtime presentation`). GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, so human-authored plan/checkpoint commits are used to trigger independent normal branch verification after groups of bot-committed verified changes.
+Long inline Python in one temporary Narrative workflow was rejected by GitHub before job creation. No source patch ran. The reliable pattern is now a temporary `.github/scripts/*.py` plus a small workflow that invokes it; both self-delete after a verified commit.
 
-There were short-lived red intermediate/staging commits while multi-file migrations were being completed. Final corrected heads were verified green; do not treat superseded intermediate runs as current branch failures.
+GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, so human-authored plan/checkpoint commits are used to trigger independent normal branch verification after groups of bot-committed verified changes.
 
 ## Manual acceptance route before merge
 
@@ -203,13 +211,14 @@ There were short-lived red intermediate/staging commits while multi-file migrati
 - create a 3+ task clean stack and tap an ancestor directly;
 - dirty a descendant and confirm ancestor shortcut is blocked while `*` visibly marks unsaved state;
 - confirm master X returns to player and Back remains within Author tasks;
-- verify nested Author navigation no longer needs or displays `SAVE RETURNS TO …` helper copy;
+- verify nested Author navigation no longer displays `SAVE RETURNS TO …` helper copy;
 - open Player Interactions, Player Commands, Target Names + Aliases, and Target Behavior after their structured migration;
-- edit a Player Command and a per-target Reference Source through their unchanged canonical legacy editors;
+- edit a Player Command and a per-target Reference Source through their canonical remaining editors;
 - edit a Body Type background image and confirm the shared Media chooser/preview/Edit/Create behavior;
 - edit a State value's Player Presentation group and confirm the shared State Group reference behavior;
 - open Story Structure and verify search/path/legend/node/interaction editing still work;
 - open Media Assets and Synth Sounds and verify their browser/list behavior still opens the same canonical editors;
+- test Narrative immediate/prompt/hidden choices, invalid fallback notation, node anchors, narration→dialogue continuation, interaction narration→dialogue continuation, speaker context, transitions, and entry effects after the runtime extraction;
 - test Radix startup presentation, effect-triggered Radix presentation, Author Edit Sequence/Edit Source affordances, and resume to node text after startup;
 - test narrow/mobile presentation with keyboard open;
 - confirm ordinary player behavior remains unchanged.
@@ -221,11 +230,11 @@ Latest comparison on 2026-09-06:
 - base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
 - branch: `author-ux-integration-refactor`
 - status: ahead of `main`
-- ahead: **71 commits** before this documentation update
+- ahead: **87 commits** before this documentation update
 - behind: **0 commits**
-- current pre-documentation head: `19314ac5827b7868841561aed28e1b7e991cedad` (`ux: remove redundant nested return copy`).
-- `App.tsx` has its first behavior-preserving feature-runtime extraction: Radix presentation/startup ownership moved behind `useRadixRuntimePresentation`.
-- No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix extraction or the subsequent Author cleanups.
+- current pre-documentation head: `2d484f5d682a2b05688c790e67801d6767f7d454` (`refactor: use narrative execution presentation contract`).
+- `App.tsx` diff versus main is now net smaller: 86 additions / 211 deletions as of the latest comparison, despite installing Radix and Narrative integration points.
+- No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix/Narrative presentation extractions.
 
 ## Change log
 
@@ -249,15 +258,13 @@ Latest comparison on 2026-09-06:
 - Commands: migrated Player Interactions, Player Commands list, Target Names + Aliases list, and Target Behavior list to structured workspaces.
 - Narrative: migrated Story Structure to structured task shell while retaining the graph browser as a specialized control; unrestricted renderer now handles only Interaction editing.
 - Media: migrated Synth Sounds list and Media Assets browser to structured task shells; removed their legacy branches and obsolete close wiring; unrestricted renderer now handles only canonical Media editors.
-- Media Assets instructional copy shortened while preserving the necessary D1-vs-repository file workflow distinction.
 
 ### 2026-09-06 — first runtime ownership extraction
 
 - Added feature-owned `useRadixRuntimePresentation`.
 - Moved Radix startup selection, active presentation state, deleted-sequence reconciliation, synth resolution, completion, effect-triggered presentation, and UI rendering out of App.
 - Replaced App's direct Radix implementation knowledge with a narrow controller capability surface.
-- Deterministic one-shot workflow applied the App patch and ran full `npm run verify` before committing; its temporary tooling removed itself afterward.
-- Post-commit source audit confirmed no direct `RadixSequenceSurface`, active Radix data structure, sequence lookup, or synth lookup remains in App.
+- Post-commit source audit confirmed direct Radix implementation details are gone from App.
 - Independent normal branch `npm run verify` subsequently passed on the Radix-integrated head.
 
 ### 2026-09-06 — post-Radix Author cleanup
@@ -266,7 +273,16 @@ Latest comparison on 2026-09-06:
 - Migrated Inventory Body Type background image from a custom `ReferenceField` escape hatch to the shared semantic `resource` node.
 - Migrated State Player Presentation group selection from a custom `ReferenceField` escape hatch to the same semantic `resource` node.
 - Removed `SAVE RETURNS TO …` from shared task navigation and Stack; parent context stays visible through the task trail and focus is restored on child return.
-- Every committed cleanup above passed full `npm run verify` before its one-shot workflow committed it.
+- Independent normal branch verification passed over the consolidated cleanup head.
+
+### 2026-09-06 — Narrative runtime ownership extraction
+
+- Added `useNarrativePlayerSurface`; App no longer constructs the Narrative graph, evaluates choice visibility, resolves node anchors, or derives fallback/input notation and terminal choices itself.
+- Added Narrative-owned prose presentation resolution for node openings and node/interaction continuation dialogue.
+- Added memoized `useNarrativeContinuation` so React effect dependencies retain stable payload identity and do not replay follow-up prose on unrelated renders.
+- App retains the timing effects and React presentation state setters but consumes resolved Narrative payloads instead of calculating interpolation, notation compilation, conversation speaker, or authored source identity itself.
+- Expanded `InteractionExecution` with narration/dialogue performances and removed App's second interpretation of the selected outcome via `interactionOutcomeProse`.
+- Every source and App-wiring slice above passed full `npm run verify` before/while committing.
 
 ## Resume here
 
@@ -275,9 +291,10 @@ At the start of every session:
 1. read this document;
 2. compare branch to current `main` and record any incoming divergence before editing;
 3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
-4. audit current branch for any remaining ordinary `custom` resource-picker escape hatches before deleting that legacy custom role;
-5. remaining Commands Author migration target: per-target Reference Source editor first if it can be moved to structured grammar without duplicating persistence; Player Command editor remains the more complex final Commands legacy surface;
-6. next runtime target: inspect Narrative presentation boundaries and Session lifecycle ownership, then choose the smaller isolated extraction rather than mixing them;
-7. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
-8. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
-9. update this document before ending any session where meaningful work occurred.
+4. re-audit remaining direct Narrative imports in App after the three runtime slices and decide whether a higher-level interaction contribution is warranted or whether the current call is an acceptable composition-root installation;
+5. audit current branch for any remaining ordinary `custom` resource-picker escape hatches before deleting that legacy custom role;
+6. remaining Commands Author migration target: per-target Reference Source editor first if it can be moved to structured grammar without duplicating persistence; Player Command editor remains the more complex final Commands legacy surface;
+7. do not begin the broader Session lifecycle move until the remaining lower-risk Author/runtime slices are stable; Session crosses saved-game compatibility and autosave semantics;
+8. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
+9. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
+10. update this document before ending any session where meaningful work occurred.
