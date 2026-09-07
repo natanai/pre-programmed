@@ -1,0 +1,38 @@
+name: Apply Narrative execution presentation cleanup
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Remove duplicate Narrative outcome presentation logic from App
+        run: python .github/scripts/apply-narrative-execution-presentation-cleanup.py
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify repository
+        run: npm run verify
+      - name: Commit verified cleanup and remove one-shot tooling
+        shell: bash
+        run: |
+          rm .github/scripts/apply-narrative-execution-presentation-cleanup.py
+          rm .github/workflows/apply-narrative-execution-presentation-cleanup.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/App.tsx .github/scripts/apply-narrative-execution-presentation-cleanup.py .github/workflows/apply-narrative-execution-presentation-cleanup.yml
+          git commit -m 'refactor: use narrative execution presentation contract'
+          git push origin HEAD:author-ux-integration-refactor
