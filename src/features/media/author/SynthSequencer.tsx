@@ -171,6 +171,10 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
     true,
   );
 
+  const setVolume = (value: number) => updateSelectedStep(
+    (step) => ({ ...step, volume: clamp(value, 0, 1) }),
+  );
+
   const beginPitchDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!selectedStep) return;
     event.preventDefault();
@@ -303,6 +307,35 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
           <button type="button" onClick={() => nudgePitch(12)} aria-label="Pitch up one octave">[+12]</button>
         </div>
       </div> : <div className="synth-noise-step">NOISE VOICE · PITCH NOT USED</div>}
+
+      <details className="synth-volume-disclosure">
+        <summary>VOLUME {Math.round(selectedStep.volume * 100)}%</summary>
+        <div className="synth-volume-editor">
+          <div className="synth-volume-controls">
+            <button
+              type="button"
+              onClick={() => setVolume(selectedStep.volume - 0.05)}
+              aria-label="Volume down 5 percent"
+            >[-5]</button>
+            <input
+              className="synth-volume-range"
+              type="range"
+              min={0}
+              max={1}
+              step={0.01}
+              value={selectedStep.volume}
+              aria-label={`Step ${selectedIndex + 1} volume`}
+              onChange={(event) => setVolume(Number(event.target.value))}
+            />
+            <button
+              type="button"
+              onClick={() => setVolume(selectedStep.volume + 0.05)}
+              aria-label="Volume up 5 percent"
+            >[+5]</button>
+          </div>
+          <small>Full-width touch rail · 1% steps · use ±5 for quick adjustments.</small>
+        </div>
+      </details>
     </section> : null}
   </div>;
 }
