@@ -364,9 +364,9 @@ export function AuthorWorkspaceHost({
               <span className="author-workspace-back-compact">[BACK]</span>
             </button> : null}
             {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => pushTaskWithReturnFocus({ type: "tools" })}>[TOOLS]</button> : null}
-            <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
+            {activeTask?.route.type !== "tools" ? <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
-            </div>
+            </div> : null}
             <button className="author-workspace-stack-toggle" type="button" aria-expanded={stackOpen} onClick={() => setStackOpen((open) => !open)}>[STACK]</button>
           </div>
 
