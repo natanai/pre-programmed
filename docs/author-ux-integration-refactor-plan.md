@@ -66,152 +66,177 @@ Previous audit summary:
 
 ## Work phases
 
-### Phase 1 — shared Author interaction improvements (low risk)
+### Phase 1 — shared Author interaction improvements
 
-- [x] Improve canonical resource/reference interaction so selected resources can be edited directly without first opening a chooser.
-- [x] Reduce redundant instructional copy in shared reference UI.
-- [x] Make task-trail ancestors actionable where safe, using the existing task runtime and dirty-state protections rather than feature-specific navigation.
-- [ ] Improve return-from-child continuity (focus/scroll/highlight where practical without changing save semantics).
-- [ ] Normalize shared action language and spacing where current shared components visibly disagree.
+- [x] Selected canonical references expose direct `[EDIT]` without opening the chooser first.
+- [x] Empty creatable references expose `[+ CREATE]`.
+- [x] Shared reference UI no longer explains nested-task mechanics in prose.
+- [x] Clean task-trail ancestors are directly navigable; dirty descendants block the shortcut.
+- [x] Dirty task trail entries display a visible `*`, including on mobile where hover help does not exist.
+- [x] Structured workspaces no longer add a second footer `[BACK]`; shared Author host owns Back/X.
+- [x] Reference-owned child completion briefly marks the returned-to reference.
+- [x] Generic nested task opening remembers the triggering focused element and restores focus when that child closes.
+- [x] Quick Find and Author Tools copy substantially reduced to raw controls/status instead of mechanics explanations.
+- [ ] Re-evaluate the remaining `SAVE RETURNS TO …` shell text now that return behavior is visible and focus restoration exists.
+- [ ] Manual mobile/desktop validation of focus return, trail jumping, long-press, and keyboard-open layout.
 
-Implementation notes:
+### Phase 2 — shared semantic Author UI grammar
 
-- `ReferenceField` now exposes a visible `[EDIT]` action for its selected canonical resource. Empty creatable references expose `[+ CREATE]`. The chooser remains the ordinary primary interaction.
-- A resource create/edit completion briefly marks the returned-to reference with the shared `.is-returned` treatment. This covers reference-driven child workflows; broader generic focus/scroll restoration after arbitrary nested tasks remains open.
-- Clean Author task ancestors in the task trail are clickable. A jump is disabled if any descendant task is dirty; dirty work therefore keeps the pre-existing Back/save/discard semantics rather than introducing a second exit path.
-- Structured workspaces no longer add their own footer `[BACK]`; task Back/X navigation is visually and behaviorally owned by the shared Author host. Broader action-language normalization remains open.
+- [x] Add semantic `resource` node.
+- [x] Route semantic resources through canonical `ReferenceField` behavior (choose/edit/create/preview/long-press/return).
+- [x] Add semantic `action-row` node for ordinary contextual actions inside task bodies.
+- [x] Add shared validation/rendering/responsive treatment for both primitives.
+- [x] Update `docs/author-ui-grammar.md` so code and architecture contract agree.
+- [x] Migrate World character Portrait to `resource`.
+- [x] Migrate Inventory item tile art to `resource`.
+- [x] Migrate Inventory Configure Equipment launcher to `action-row`.
+- [x] Migrate World Character/Location create actions to `action-row`.
+- [ ] Migrate remaining simple resource-picker escape hatches when their files are touched. Known examples: Inventory Body Type background, State player-presentation group.
 
-### Phase 2 — contextual actions and mobile acceleration (low risk)
+`custom` should remain for genuinely specialized controls: rule trees, operation editors, graph browsers, sequencers, layouts, drawing surfaces, and result browsers—not ordinary fields/resources/buttons.
 
-- [ ] Define one shared Author contextual-action model/component.
-- [x] Add shared press-and-hold support for eligible Author resources/list rows. Initial use: selected `ReferenceField` resources.
-- [x] Provide an ordinary visible/button route for every long-press action. `ReferenceField` long-press and `[EDIT]` call the same canonical resource editor.
-- [ ] Provide a desktop equivalent beyond the already-visible action (for example a future shared context-menu presentation) only if it improves use without duplicating behavior.
+### Phase 3 — incremental legacy Author migration
 
-Implementation notes:
+Structured workspace matching runs before legacy `renderWorkspace`, allowing one route at a time to migrate without duplicating or rewriting canonical editors.
 
-- `src/author/ui/useAuthorLongPress.ts` is a coarse-pointer accelerator only. It ignores mouse input and owns no authored state, validation, editor, mutation, or persistence behavior.
+#### Project
 
-### Phase 2A — strengthen the shared semantic UI grammar
+- [x] Run Navigation / History dispatch moved to shared Author registry.
+- [x] `project` removed from `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`.
+- [x] Obsolete unused `WorkspacePanel.onClose` removed.
 
-- [x] Add a first-class `resource` Author UI node so structured workspaces can declare resource intent without importing/rendering `ReferenceField` themselves.
-- [x] Route semantic resource nodes through the canonical shared `ReferenceField`, inheriting choose/edit/create/preview/long-press/return behavior automatically.
-- [x] Add resource-node validation to the shared Author workspace validator.
-- [x] Migrate World character portraits from a `custom` resource-picker escape hatch to the semantic resource node.
-- [ ] Migrate other simple structured `custom` resource pickers when touched. Confirmed follow-up: Inventory Body Type background image in `src/features/inventory/author/bodyWorkspaces.tsx`.
+#### Narrative
 
-The intent is that `custom` remains reserved for genuinely specialized controls such as operation editors, grids, sequencers, and layouts—not ordinary resource references.
+- [x] Node editor was already structured.
+- [x] Story Structure route moved to structured Author workspace.
+- [x] Structure graph browser remains a feature-owned specialized control embedded inside the shared task shell.
+- [x] Duplicate Structure task frame/header removed; shared Author shell owns task chrome.
+- [ ] Remaining unrestricted renderer: **Interaction editor only**.
 
-### Phase 3 — incremental legacy Author migration (low/moderate risk)
+#### Media
 
-Migrate ordinary fields/selects/toggles/choices/disclosures from unrestricted workspaces into the shared semantic workspace grammar while leaving genuinely specialized controls custom.
+- [x] Synth Sounds list moved to structured Author workspace; old legacy Synth list branch removed.
+- [x] Media Assets browser moved to structured Author workspace as a specialized control.
+- [x] Duplicate Asset Explorer Author frame/header removed.
+- [x] Obsolete Asset Explorer close prop removed.
+- [x] Migrated legacy `assets` and `synth` branches physically removed rather than left unreachable.
+- [ ] Remaining unrestricted renderer: **actual Media asset editor, vector editor, and synth editor only**.
 
-Priority order for remaining legacy feature surfaces:
+#### Commands
 
-1. Narrative
-2. Media
-3. Commands
+- [x] Player Interactions route moved to structured Author workspace.
+- [x] Player Commands list (`grammar` / `capabilities`) moved to structured Author workspace.
+- [x] Target Names + Aliases list moved to structured Author workspace.
+- [x] Target Behavior list moved to structured Author workspace.
+- [ ] Remaining unrestricted renderer: **Player Command editor and per-target Reference Source editor**.
+- [ ] Delete now-unreachable legacy list components from `CommandSettings.tsx` once the two remaining editors are cleanly separated from them.
 
-Do this section-by-section when it improves usability; do not rewrite all editors at once.
+#### Legacy exception list
 
-- [ ] Narrative legacy surface reduced
-- [ ] Media legacy surface reduced
-- [ ] Commands legacy surface reduced
-- [x] Project removed from legacy feature rendering.
-- [x] Remove entries from `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS` only when their unrestricted workspace path is genuinely gone. `project` was removed; remaining exceptions are Narrative, Media, Commands.
+`LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS` still contains `narrative`, `media`, and `commands` because each still owns at least one real unrestricted editor. Do not remove an id until its last unrestricted path is genuinely gone.
 
-Project cleanup notes:
+### Phase 4 — isolated runtime integration refactors
 
-- `type: "workspace"` routes (Run navigation / History) are core Author routes, not feature routes.
-- Their existing `WorkspacePanel` already lives under `src/author/workspace`.
-- Dispatch of those routes moved from `projectAuthorFeature.renderWorkspace` to the shared Author registry without changing the panel, APIs, run-navigation behavior, persistence calls, or node-edit resource route.
-- The old unused `WorkspacePanel.onClose` prop was removed; Back/X remain owned by the shared Author host.
-
-### Phase 4 — isolated runtime integration refactors (moderate risk)
-
-These should be separate, behavior-preserving commits after UX/shared-layer work is stable.
+Do only after Author/shared-layer work is stable and continuously green.
 
 - [ ] Reduce Radix-specific startup/presentation knowledge in `App.tsx` through a presentation/runtime contribution.
 - [ ] Move Narrative player presentation/execution semantics behind a Narrative-owned runtime contribution rather than calculating them directly in App.
 - [ ] Consolidate complete play-session lifecycle ownership under Session.
 - [ ] Re-audit direct feature imports/branches in App after each extraction.
 
-## Safety / verification strategy
+## Temporary branch verification
 
-For every change:
+The working environment cannot clone GitHub directly because outbound DNS is blocked. To avoid relying on static review, this branch temporarily contains:
 
-1. Keep durable mutations and save functions in their current owner.
-2. Prefer extending shared Author contracts/components over adding feature-specific UI branches.
-3. Verify both root and nested Author tasks.
-4. Verify dirty parent draft survives child open/save/back.
-5. Verify master X still returns to play rather than acting as task Back.
-6. Verify mobile and desktop use the same underlying action/task.
-7. Run `npm run verify` when executable CI/tooling access is available.
-8. Manually test representative nested flows after meaningful UI changes.
+`.github/workflows/verify-author-ux-refactor.yml`
 
-Suggested manual acceptance route:
+It runs on pushes to this branch only:
+
+1. checkout;
+2. Node 22;
+3. `npm ci --no-audit --no-fund`;
+4. `npm run verify`.
+
+**Delete this temporary workflow before merging.** It is branch scaffolding for this refactor, not permanent engine infrastructure.
+
+The workflow uses a concurrency group with `cancel-in-progress: true`; cancelled intermediate runs normally mean a newer commit superseded them, not that verification failed.
+
+### Successful verification checkpoints
+
+Full `npm run verify` has passed after:
+
+- initial shared Author/resource/task changes;
+- Commands navigation/list structured migrations;
+- Media Synth list migration;
+- Narrative Story Structure migration;
+- generic nested return-focus behavior;
+- Media legacy cleanup;
+- Media Assets structured browser migration after correcting its module extension to `.tsx`.
+
+There were short-lived red intermediate commits while multi-file migrations were being completed (for example removing a prop before removing its caller, and introducing JSX before renaming a `.ts` module to `.tsx`). The final corrected heads were verified green; do not treat those superseded intermediate runs as current branch failures.
+
+## Manual acceptance route before merge
 
 - enter Author mode from live play;
-- edit a current Narrative resource;
-- follow/edit a referenced State/World/Inventory/Media resource from context;
-- on mobile, long-press a selected reference and confirm it opens the exact same editor as `[EDIT]`;
-- confirm an empty creatable reference exposes `[+ CREATE]` without needing instructional copy;
-- create a child resource, save it, and confirm the parent reference updates and briefly marks the return location;
-- edit a World character and verify Portrait uses the same shared resource behavior, including preview;
-- create a 3+ task clean stack and tap an ancestor to return directly;
-- make a descendant dirty and confirm older ancestors are not jumpable until that dirty task is resolved;
-- confirm structured nested workspaces have one task Back control in the shared host rather than a second footer Back;
-- open/close Quick Find and task stack on narrow/mobile presentation;
-- open Run navigation and History and confirm both still behave exactly as before the Project legacy-render cleanup;
-- return to play with X;
+- edit current Narrative node and an interaction;
+- follow/edit referenced State, World, Inventory, and Media resources from context;
+- mobile: long-press a selected reference and confirm it opens the same canonical editor as `[EDIT]`;
+- create from an empty reference using `[+ CREATE]`, save child, and confirm parent draft resumes with new value;
+- confirm focus returns to the triggering control after closing/saving nested tasks;
+- create a 3+ task clean stack and tap an ancestor directly;
+- dirty a descendant and confirm ancestor shortcut is blocked while `*` visibly marks unsaved state;
+- confirm master X returns to player and Back remains within Author tasks;
+- open Player Interactions, Player Commands, Target Names + Aliases, and Target Behavior after their structured migration;
+- open Story Structure and verify search/path/legend/node/interaction editing still work;
+- open Media Assets and Synth Sounds and verify their browser/list behavior still opens the same canonical editors;
+- test narrow/mobile presentation with keyboard open;
 - confirm ordinary player behavior remains unchanged.
-
-## Verification status
-
-- Branch currently has no push-triggered CI workflow. Production deploy runs only on `main`; the portable workflow is not a general branch verification workflow and explicitly requires `main`.
-- Attempts to obtain an executable local checkout from the current environment were blocked by network/DNS restrictions.
-- The current work has therefore received static source/diff review only so far.
-- `npm run verify` and live manual Author testing remain required before merge.
-- Do not merge this branch solely on the basis of the source review recorded here.
 
 ## Current branch relationship
 
-As of the latest comparison on 2026-09-06:
+Latest comparison on 2026-09-06:
 
-- base/merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
-- branch status: ahead of `main`
-- behind `main`: 0 commits
-- no `App.tsx`, gameplay runtime, mutation, persistence, or Worker files changed on this branch.
+- base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
+- branch: `author-ux-integration-refactor`
+- status: ahead of `main`
+- ahead: 54 commits at the last comparison checkpoint
+- behind: **0 commits**
+- no `App.tsx`, gameplay runtime, project mutation, durable persistence, or Worker files changed yet.
 
 ## Change log
 
-### 2026-09-06
+### 2026-09-06 — initial shared layer
 
-- Created branch from current `main` at `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`.
-- Added this living plan before implementation.
-- Added direct `[EDIT]` access beside selected shared resource references and `[+ CREATE]` for empty creatable references.
-- Removed repeated nested-task explainer copy from `ReferenceField`; the task trail and controls now carry that interaction model.
-- Added shared coarse-pointer long-press accelerator and wired selected references to their existing canonical edit action.
-- Added a short shared return marker after reference-owned create/edit child tasks complete.
-- Made clean task-trail ancestors directly navigable; dirty descendants block the shortcut and retain existing Back/dirty-confirmation semantics.
-- Removed duplicate footer Back from structured workspaces so the shared Author host is the sole task-navigation owner.
-- Added semantic Author `resource` node + renderer + validation; migrated World character Portrait from custom JSX to this shared primitive.
-- Confirmed Inventory Body Type background art is another current `custom` resource picker suitable for later migration; deferred the 25 KB workspace rewrite until executable verification is available.
-- Moved Run navigation / History dispatch out of Project's unrestricted feature renderer and into the shared Author registry.
-- Removed `project` from `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`; remaining legacy features are Narrative, Media, Commands.
-- Removed the obsolete unused `WorkspacePanel.onClose` prop.
-- Latest branch/main comparison shows the branch remains 0 commits behind `main` and changes are limited to the documented Author/shared UI and World/Project presentation ownership cleanup.
+- Created branch and this living plan before implementation.
+- Added direct reference Edit/Create behavior and shared touch/pen long-press accelerator.
+- Added returned-reference marker.
+- Added actionable clean task ancestors and visible dirty markers.
+- Removed duplicate structured footer Back.
+- Added semantic `resource` and `action-row` grammar primitives and documentation.
+- Migrated initial World/Inventory controls to the shared primitives.
+- Simplified Quick Find / Author Tools mechanics copy.
+- Moved Project Run Navigation / History to shared routing and removed Project from the legacy exception list.
+
+### 2026-09-06 — executable verification + legacy reduction
+
+- Added temporary branch-only `npm run verify` workflow because local checkout is unavailable in this environment.
+- Confirmed repeated green full verification checkpoints.
+- Added generic focus restoration when a nested Author task returns to its still-mounted parent.
+- Commands: migrated Player Interactions, Player Commands list, Target Names + Aliases list, and Target Behavior list to structured workspaces.
+- Narrative: migrated Story Structure to structured task shell while retaining the graph browser as a specialized control; unrestricted renderer now handles only Interaction editing.
+- Media: migrated Synth Sounds list and Media Assets browser to structured task shells; removed their legacy branches and obsolete close wiring; unrestricted renderer now handles only canonical Media editors.
+- Media Assets instructional copy shortened while preserving the necessary D1-vs-repository file workflow distinction.
 
 ## Resume here
 
-At the start of each new work session:
+At the start of every session:
 
 1. read this document;
-2. compare branch to current `main` for incoming changes;
-3. update the Change log with any upstream merge/rebase decision;
-4. first obtain executable verification if available (`npm run verify`); if not, continue only low-risk shared/presentation work;
-5. when verification is available, migrate Inventory Body Type background art to the semantic `resource` node and verify the World portrait migration at the same time;
-6. next UX target: broader return-from-child focus/scroll continuity and remaining shared action-language normalization;
-7. next audit target: inspect Narrative/Media/Commands for the smallest ordinary UI section that can move to structured Author primitives without touching runtime semantics;
-8. only after the shared/Author work is stable and executable verification is passing, begin isolated `App.tsx` runtime extractions;
-9. record completed changes and verification before ending the session.
+2. compare branch to current `main` and record any incoming divergence before editing;
+3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
+4. finish small cleanup created by migrations before starting a new one (dead components/selectors/imports);
+5. next cleanup target: delete unreachable Commands list components from `CommandSettings.tsx` without touching the remaining Command/Reference Source editor persistence paths;
+6. next shared UX target: decide whether `SAVE RETURNS TO …` is now redundant, and polish embedded Structure/Media browser layout on narrow screens;
+7. only after the shared/Author migration is stable, begin Phase 4 runtime extraction in isolated commits;
+8. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
+9. update this document before ending any session where meaningful work occurred.
