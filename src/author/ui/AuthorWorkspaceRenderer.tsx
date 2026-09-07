@@ -32,6 +32,7 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
       autoFocus: node.autoFocus,
       enterKeyHint: node.enterKeyHint,
       inputMode: node.inputMode,
+      maxLength: node.maxLength,
       autoCapitalize: node.autoCapitalize,
       autoCorrect: node.autoCorrect,
       spellCheck: node.spellCheck,
@@ -141,7 +142,7 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
   return <div className="author-ui-custom" data-author-ui-role={node.role}>{node.content}</div>;
 }
 
-/** Render semantic blocks inside a legacy editor while that editor is migrated. */
+/** Render semantic blocks within the shared structured Author hierarchy. */
 export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
   return <div className="author-ui-blocks">{renderNodes(blocks)}</div>;
 }

@@ -32,6 +32,7 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<string>({
         id: "project-terminal-prompt-value",
         label: "Player prompt",
         value: draft,
+        maxLength: 32,
         onChange: setDraft,
         autoCapitalize: "none",
         autoCorrect: "off",

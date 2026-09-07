@@ -21,6 +21,7 @@ export type AuthorUiField = {
   min?: number;
   max?: number;
   step?: number;
+  maxLength?: number;
   autoCapitalize?: "none" | "sentences" | "words" | "characters";
   autoCorrect?: "on" | "off";
   spellCheck?: boolean;
