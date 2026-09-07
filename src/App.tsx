@@ -50,7 +50,6 @@ import { authoredSource, type AuthoredSourceIdentity } from "./engine/presentati
 import { effectEventsForTextCue } from "./engine/presentation/textCueEventCatalog";
 import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
-import { interactionOutcomeProse } from "./features/narrative/interactionProse";
 import { resolveNodeOpeningPresentation, useNarrativeContinuation } from "./features/narrative/runtime/presentation";
 import { useNarrativePlayerSurface } from "./features/narrative/runtime/useNarrativePlayerSurface";
 import { applyOperations } from "./engine/project/mutations";
@@ -817,15 +816,14 @@ export default function App() {
     }
 
     const execution = executeInteraction(snapshot, commandState, parsed.interaction);
-    const responseProse = execution.outcome ? interactionOutcomeProse(execution.outcome) : null;
     presentRuntimeExecution(
       snapshot,
       execution,
       commandState,
       commandLineId,
-      responseProse?.narrationPerformance ?? DEFAULT_TEXT_PERFORMANCE,
+      execution.responsePerformance,
       null,
-      responseProse?.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE,
+      execution.dialoguePerformance,
     );
   };
 
