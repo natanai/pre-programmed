@@ -1,16 +1,10 @@
-import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
-import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
-import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
-import type {
-  MutationOperation,
-  PlayState,
-  ProjectSnapshot,
-} from "../../../engine/project/model";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type {
   Interaction,
   InteractionChoiceVisibility,
@@ -26,11 +20,6 @@ import { buildGraphIndex, notationForNode } from "../graph";
 import { interactionOutcomeProse, normalizeInteractionOutcomeProse } from "../interactionProse";
 import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
-import {
-  interactionSaveDescription,
-  normalizeInteractionAuthorDraft,
-  prepareInteractionForSave,
-} from "./interactionAuthoring";
 export { aliasesForUserInput } from "./interactionAuthoring";
 import "./interactionEditor.css";
 
@@ -94,121 +83,6 @@ function secondaryAliases(wording: string, aliases: string[]) {
   return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
 }
 
-export function InteractionEditor({
-  snapshot,
-  playState,
-  sourceNodeId,
-  initial,
-  initialCommand = "",
-  initialOutcomeId,
-  fallback = false,
-  onSave,
-  onDirtyChange,
-  onRegisterSave,
-  onPreview,
-  onCreateDestination,
-  onEditDestination,
-}: {
-  snapshot: ProjectSnapshot;
-  playState: PlayState;
-  sourceNodeId?: string;
-  initial?: Interaction;
-  initialCommand?: string;
-  initialOutcomeId?: string;
-  fallback?: boolean;
-  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onDirtyChange: (dirty: boolean) => void;
-  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
-  onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
-  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
-  onEditDestination?: (nodeId: string) => void;
-}) {
-  const fallbackMode = fallback || initial?.matchMode === "fallback";
-  const resolvedSourceNodeId = initial?.sourceNodeId ?? sourceNodeId ?? playState.currentNodeId;
-  const [draft, setDraft] = useState(() => normalizeInteractionAuthorDraft(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
-  const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
-  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
-  const [screen, setScreen] = useState<InteractionEditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
-    ? { type: "response", outcomeId: initialOutcomeId }
-    : { type: "overview" });
-  const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState("");
-  const draftSignature = JSON.stringify(draft);
-
-  useEffect(() => {
-    onDirtyChange(draftSignature !== savedSignature);
-    return () => onDirtyChange(false);
-  }, [draftSignature, savedSignature, onDirtyChange]);
-
-  const save = async (): Promise<boolean> => {
-    const prepared = prepareInteractionForSave(draft, fallbackMode, snapshot);
-    if ("issue" in prepared) {
-      setError(prepared.issue.message);
-      setScreen(prepared.issue.outcomeId
-        ? { type: "response", outcomeId: prepared.issue.outcomeId }
-        : { type: "overview" });
-      return false;
-    }
-
-    setError("");
-    setSaving(true);
-    try {
-      const { interaction } = prepared;
-      const result = await onSave(
-        [{ type: "interaction.upsert", interaction }],
-        interactionSaveDescription(interaction, Boolean(initial), fallbackMode, snapshot),
-      );
-      if (result.status === "saved" || result.status === "queued") {
-        setDraft(interaction);
-        setNewOutcomeIds(new Set());
-        setSavedSignature(JSON.stringify(interaction));
-        return true;
-      }
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!onRegisterSave) return;
-    onRegisterSave(save);
-    return () => onRegisterSave(null);
-  });
-
-  const footer = <div className="author-actions author-panel-footer guided-editor-footer">
-    <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
-    {screen.type === "overview" && initial ? confirmDelete ? <>
-      <span>Delete this {fallbackMode ? "invalid-input response" : draft.matchMode === "capture" ? "player-input capture" : "user input"}?</span>
-      <button type="button" onClick={() => void onSave(
-        [{ type: "interaction.delete", id: initial.id }],
-        fallbackMode ? "Deleted invalid-input response" : draft.matchMode === "capture" ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`,
-      )}>[CONFIRM DELETE]</button>
-      <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
-    </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
-  </div>;
-
-  return <InteractionComposer
-    snapshot={snapshot}
-    playState={playState}
-    draft={draft}
-    setDraft={setDraft}
-    fallbackMode={fallbackMode}
-    isNew={!initial}
-    screen={screen}
-    setScreen={setScreen}
-    newOutcomeIds={newOutcomeIds}
-    setNewOutcomeIds={setNewOutcomeIds}
-    error={error}
-    onClearError={() => setError("")}
-    onPreview={onPreview}
-    onCreateDestination={onCreateDestination}
-    onEditDestination={onEditDestination}
-    footer={footer}
-  />;
-}
-
 /**
  * Controlled specialized interaction composer. It owns only sub-screen and
  * response-composition presentation; callers own the canonical Interaction
@@ -230,7 +104,6 @@ export function InteractionComposer({
   onPreview,
   onCreateDestination,
   onEditDestination,
-  footer,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
@@ -247,7 +120,6 @@ export function InteractionComposer({
   onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
   onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
   onEditDestination?: (nodeId: string) => void;
-  footer?: ReactNode;
 }) {
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const captureMode = !fallbackMode && draft.matchMode === "capture";
@@ -372,7 +244,6 @@ export function InteractionComposer({
       {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
     </div>
 
-    {footer ?? null}
   </section>;
 }
 
