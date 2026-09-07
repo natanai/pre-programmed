@@ -1,0 +1,104 @@
+name: Apply Commands legacy cleanup
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Remove unreachable Commands legacy routes
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('src/features/commands/author/CommandSettings.tsx')
+          text = path.read_text()
+
+          def sub(pattern, replacement, expected=1, flags=re.S):
+              global text
+              text, count = re.subn(pattern, replacement, text, count=expected, flags=flags)
+              if count != expected:
+                  raise SystemExit(f'Expected {expected} match(es), got {count}: {pattern[:80]}')
+
+          sub(r'\nfunction actionLabel\(action: CommandAction\) \{.*?\n\}\n\nfunction defaultResponseAction', '\nfunction defaultResponseAction')
+          sub(r'\nfunction PlayerInteractionsWorkspace\(.*?\nfunction ReferenceSourceEditor', '\nfunction ReferenceSourceEditor')
+          sub(r'\nfunction CommandGrammarWorkspace\(.*?\nfunction CommandEditor', '\nfunction CommandEditor')
+          sub(r'\nfunction TargetBehaviorsWorkspace\(.*?\nexport const COMMAND_PROJECT_SETTINGS_SECTION', '\nexport const COMMAND_PROJECT_SETTINGS_SECTION')
+
+          replacements = {
+              '  if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;\n': '',
+              '  if (route.workspace === "grammar" || route.workspace === "capabilities") return <CommandGrammarWorkspace context={context} />;\n': '',
+              '  if (route.workspace === "interactions") return <PlayerInteractionsWorkspace context={context} />;\n': '',
+              '  if (route.workspace === "target-behaviors") return <TargetBehaviorsWorkspace context={context} sourceKind={route.data?.sourceKind ?? ""} operation={route.data?.operation ?? ""} commandLabel={route.data?.commandLabel ?? ""} />;\n': '',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit(f'Expected one route branch: {old.strip()}')
+              text = text.replace(old, new)
+
+          for dead in ['PlayerInteractionsWorkspace', 'ReferenceSourcesWorkspace', 'CommandGrammarWorkspace', 'TargetBehaviorsWorkspace', 'actionLabel(']:
+              if dead in text:
+                  raise SystemExit(f'Dead Commands symbol remains: {dead}')
+          path.write_text(text)
+
+          css_path = Path('src/features/commands/author/commandSettings.css')
+          css = css_path.read_text()
+          replacements = {
+              '.command-settings-overview,\n.command-settings-list,\n.command-reference-editor,': '.command-settings-overview,\n.command-reference-editor,',
+              '.command-settings-overview > button,\n.command-settings-list > button {': '.command-settings-overview > button {',
+              '.command-settings-overview > button span:first-child,\n.command-settings-list > button span:first-child {': '.command-settings-overview > button span:first-child {',
+              '.command-settings-overview small,\n.command-settings-list small,\n.command-editor-body small,': '.command-settings-overview small,\n.command-editor-body small,',
+              '.command-settings-overview > button > span:last-child,\n.command-settings-list > button > span:last-child {': '.command-settings-overview > button > span:last-child {',
+              '  .command-settings-overview > button,\n  .command-settings-list > button {': '  .command-settings-overview > button {',
+              '  .command-settings-overview > button > span:last-child,\n  .command-settings-list > button > span:last-child {': '  .command-settings-overview > button > span:last-child {',
+          }
+          for old, new in replacements.items():
+              if css.count(old) != 1:
+                  raise SystemExit(f'Expected one CSS group: {old}')
+              css = css.replace(old, new)
+
+          def css_sub(pattern, replacement=''):
+              nonlocal_placeholder = None
+              global css
+              css, count = re.subn(pattern, replacement, css, count=1, flags=re.S)
+              if count != 1:
+                  raise SystemExit(f'Expected one CSS block: {pattern[:80]}')
+
+          css_sub(r'\n\.player-interactions-workspace h3,\n\.target-behaviors-workspace h3 \{.*?\n\}\n')
+          css_sub(r'\n\.player-interaction-target \{.*?\.player-interaction-operation-links button\.is-available \{.*?\}\n')
+          css_sub(r'\n\.command-settings-empty \{.*?\n\}\n')
+
+          for dead in ['command-settings-list', 'player-interactions-workspace', 'target-behaviors-workspace', 'player-interaction-target', 'command-settings-empty']:
+              if dead in css:
+                  raise SystemExit(f'Dead Commands CSS remains: {dead}')
+          css_path.write_text(css)
+          PY
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify repository
+        run: npm run verify
+      - name: Commit verified cleanup and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/apply-command-legacy-cleanup.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/features/commands/author/CommandSettings.tsx src/features/commands/author/commandSettings.css .github/workflows/apply-command-legacy-cleanup.yml
+          git commit -m 'cleanup: delete migrated commands legacy routes'
+          git push origin HEAD:author-ux-integration-refactor
