@@ -8,7 +8,7 @@ import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
 import { nodeWorkspace } from "./nodeWorkspace";
 import { notationForNarrativeInteraction } from "./notation";
-import { StructureNavigator } from "./StructureNavigator";
+import { structureWorkspace } from "./structureWorkspace";
 import { narrativeAuthorSearch, narrativeAuthorTools } from "./tools";
 import { interactionVisibilityEffectAdapter, transitionEffectAdapter, visitedConditionAdapter } from "./ruleAdapters";
 import { narrativeProjectReferences } from "./references";
@@ -42,7 +42,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
   references: [narrativeProjectReferences],
   tools: narrativeAuthorTools,
   search: narrativeAuthorSearch,
-  workspaces: [nodeWorkspace],
+  workspaces: [nodeWorkspace, structureWorkspace],
   resources: [
     {
       kind: "node",
@@ -205,24 +205,6 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         />
       </div>;
     }
-
-    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "structure") return <StructureNavigator
-      snapshot={context.snapshot}
-      playState={context.playState}
-      onOpenNode={(nodeId) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "node",
-        data: { nodeId },
-      })}
-      onEditInteraction={(interaction) => context.pushTask({
-        type: "feature",
-        feature: "narrative",
-        workspace: "interaction",
-        data: { interactionId: interaction.id },
-      })}
-      onClose={context.leaveCurrentTask}
-    />;
 
     return null;
   },
