@@ -26,19 +26,34 @@
 }
 .synth-step-pad {
   display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  border: 1px solid var(--dos-line);
+}
+.synth-step-select {
+  display: grid;
   align-content: space-between;
   gap: .2em;
   min-width: 0;
-  min-height: 4.35em;
+  min-height: 4em;
   padding: .45em;
   text-align: left;
-  border: 1px solid var(--dos-line);
+  border: 0;
+  background: transparent;
 }
-.synth-step-pad > span,
-.synth-step-pad > small { color: var(--dos-muted); }
-.synth-step-pad > strong { overflow-wrap: anywhere; }
-.synth-step-pad[aria-pressed="true"] { outline: 1px solid currentColor; outline-offset: 1px; }
-.synth-step-pad[data-active="true"] > strong { text-decoration: underline; text-underline-offset: .2em; }
+.synth-step-select > span,
+.synth-step-select > small { color: var(--dos-muted); }
+.synth-step-select > strong { overflow-wrap: anywhere; }
+.synth-step-toggle {
+  min-width: 0;
+  min-height: 2em;
+  padding: .2em .3em;
+  border: 0;
+  border-top: 1px dotted var(--dos-line);
+  background: transparent;
+}
+.synth-step-pad[data-selected="true"] { outline: 1px solid currentColor; outline-offset: 1px; }
+.synth-step-pad[data-active="true"] .synth-step-select > strong { text-decoration: underline; text-underline-offset: .2em; }
 
 .synth-step-editor {
   padding: .65em;
@@ -193,7 +208,8 @@
 }
 
 @media (pointer: coarse) {
-  .synth-step-pad { min-height: 4.9em; padding: .5em; }
+  .synth-step-select { min-height: 3.7em; padding: .5em; }
+  .synth-step-toggle { min-height: 2.55em; }
   .synth-pitch-controls > button,
   .synth-volume-controls > button,
   .synth-volume-pad,
