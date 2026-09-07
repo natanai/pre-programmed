@@ -183,7 +183,7 @@ export const commandReferenceSourceWorkspace = defineAuthorWorkspace({
           importance: "primary",
           children: candidates.length
             ? candidates.map((candidate) => ({
-              type: "section" as const,
+              type: "disclosure" as const,
               id: `commands-reference-source-candidate:${candidate.id}`,
               label: candidate.label,
               summary: candidate.detail,
