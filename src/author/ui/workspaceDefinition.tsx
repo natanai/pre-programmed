@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { AuthorWorkspaceContext } from "../features/types";
+import { beginAuthorCommit } from "../tasks/commitState";
 import type { AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import { AuthorWorkspaceRenderer } from "./AuthorWorkspaceRenderer";
 import type { AuthorWorkspaceSpec } from "./types";
@@ -117,6 +118,7 @@ export function StructuredAuthorWorkspace<TDraft>({
     if (!saveDefinition || !validForSave) return Promise.resolve(false);
 
     const pending = (async () => {
+      const releaseCommit = beginAuthorCommit();
       setSaving(true);
       try {
         const result = await saveDefinition(saveBuild);
@@ -130,6 +132,7 @@ export function StructuredAuthorWorkspace<TDraft>({
       } finally {
         setSaving(false);
         savePromiseRef.current = null;
+        releaseCommit();
       }
     })();
     savePromiseRef.current = pending;
