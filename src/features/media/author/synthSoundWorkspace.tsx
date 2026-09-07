@@ -204,8 +204,8 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       {
         type: "disclosure",
         id: "synth-advanced",
-        label: "Voices + sequence",
-        summary: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
+        label: "Shape + sequence",
+        summary: `wave · envelope · ${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         children: [{
           type: "custom",
           id: "synth-sequencer",
