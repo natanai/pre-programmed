@@ -1,0 +1,38 @@
+name: Apply Media shell cleanup
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Remove duplicate Media task chrome and obsolete Synth list
+        run: python scripts/apply-media-shell-cleanup.py
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify repository
+        run: npm run verify
+      - name: Commit verified cleanup and remove one-shot tooling
+        shell: bash
+        run: |
+          rm scripts/apply-media-shell-cleanup.py
+          rm .github/workflows/apply-media-shell-cleanup.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/features/media/author/MediaAssetEditor.tsx src/features/media/author/VectorAssetEditor.tsx src/features/media/author/SynthPanel.tsx src/features/media/author/mediaAuthor.css scripts/apply-media-shell-cleanup.py .github/workflows/apply-media-shell-cleanup.yml
+          git commit -m 'ux: remove duplicate media task chrome'
+          git push origin HEAD:author-ux-integration-refactor
