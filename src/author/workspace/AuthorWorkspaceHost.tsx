@@ -3,13 +3,15 @@ import { createPortal } from "react-dom";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { AuthorToolIndex, type AuthorToolGroup } from "../AuthorToolIndex";
 import type { AuthorSearchEntry } from "../search/types";
-import { describeAuthorTask, getAuthorCommandTargetAdapter, renderAuthorFeatureWorkspace } from "../features/registry";
+import { describeAuthorTask, getAuthorCommandTargetAdapter, getAuthorResourceProvider, renderAuthorFeatureWorkspace } from "../features/registry";
 import { AuthorQuickFind } from "../search/AuthorQuickFind";
 import type { AuthorPersist, AuthorRuntimeSurface, AuthorWorkspaceContext, AuthorWorkspaceSaveHandler } from "../features/types";
+import { authorResourceDeletionResult } from "../resources/completion";
 import { AuthorResourceProvider } from "../resources/context";
 import { buildAuthorResourceTools } from "../resources/runtime";
 import type { AuthorResourceTools } from "../resources/types";
 import { AuthorPlayStateProvider } from "../runtime/playStateContext";
+import { useAuthorCommitPending } from "../tasks/commitState";
 import type {
   AuthorLeaveConfirmation,
   AuthorTaskCompletion,
@@ -75,9 +77,33 @@ function AuthorTaskSurface({
     (result?: AuthorTaskResult) => completeTask(task.id, result),
     [completeTask, task.id],
   );
+  const leaveResultRef = useRef<AuthorTaskResult | undefined>(undefined);
+  const resourceTaskKind = task.route.type === "feature" ? task.route.data?.resourceTask : undefined;
+  const taskPersist = useCallback<AuthorPersist>(async (operations, description) => {
+    leaveResultRef.current = undefined;
+    const result = await persist(operations, description);
+    if (resourceTaskKind && (result.status === "saved" || result.status === "queued")) {
+      const provider = getAuthorResourceProvider(resourceTaskKind);
+      if (provider) {
+        leaveResultRef.current = authorResourceDeletionResult(
+          resourceTaskKind,
+          provider.list(snapshot),
+          provider.list(result.snapshot),
+        );
+      }
+    }
+    return result;
+  }, [persist, resourceTaskKind, snapshot]);
   // Programmatic leave means the task owner has already completed its work.
   // Ordinary Back remains requestBack() in the shared shell and keeps dirty protection.
-  const leaveCurrentTask = useCallback(() => completeTask(task.id), [completeTask, task.id]);
+  // A canonical resource task may attach the accepted deletion result observed
+  // at its persistence boundary so the suspended parent reconciles only after
+  // the durable write is saved/queued, never from optimistic list membership.
+  const leaveCurrentTask = useCallback(() => {
+    const result = leaveResultRef.current;
+    leaveResultRef.current = undefined;
+    completeTask(task.id, result);
+  }, [completeTask, task.id]);
   const setWorkspaceDirty = useCallback(
     (dirty: boolean) => setTaskDirty(task.id, dirty),
     [setTaskDirty, task.id],
@@ -96,7 +122,7 @@ function AuthorTaskSurface({
     playState,
     authorMode,
     authorToken,
-    persist,
+    persist: taskPersist,
     completeTask: completeCurrentTask,
     leaveCurrentTask,
     setWorkspaceDirty,
@@ -167,6 +193,7 @@ export function AuthorWorkspaceHost({
   const [previewing, setPreviewing] = useState(false);
   const [savingAll, setSavingAll] = useState(false);
   const [saveAllError, setSaveAllError] = useState("");
+  const commitPending = useAuthorCommitPending();
   const workspaceLayerRef = useRef<HTMLDivElement>(null);
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
   const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
@@ -204,7 +231,7 @@ export function AuthorWorkspaceHost({
       ? document.activeElement
       : null;
     const childTaskId = shared.pushTask(route, onComplete);
-    if (focused) returnFocusRef.current.set(childTaskId, focused);
+    if (focused && childTaskId) returnFocusRef.current.set(childTaskId, focused);
     return childTaskId;
   }, [shared.pushTask]);
 
@@ -310,6 +337,7 @@ export function AuthorWorkspaceHost({
         className="work-surface-close"
         type="button"
         aria-label="Close Author tasks and return to play"
+        disabled={commitPending}
         onClick={requestClose}
       >[X]</button>
       <div
@@ -320,7 +348,12 @@ export function AuthorWorkspaceHost({
         aria-hidden={previewing || undefined}
         onPointerDown={(event) => event.stopPropagation()}
       >
-        <nav className="author-workspace-navigation" aria-label="Author task navigation">
+        <nav
+          className="author-workspace-navigation"
+          aria-label="Author task navigation"
+          aria-busy={commitPending || undefined}
+          inert={commitPending || undefined}
+        >
           <div className="author-workspace-primary-actions">
             {tasks.length > 1 ? <button
               type="button"
@@ -380,7 +413,7 @@ export function AuthorWorkspaceHost({
           </section>
         </div> : null}
       </div>
-      {previewing ? <button type="button" className="author-preview-resume" onClick={resumeEditing}>[RESUME EDITING]</button> : null}
+      {previewing ? <button type="button" className="author-preview-resume" disabled={commitPending} onClick={resumeEditing}>[RESUME EDITING]</button> : null}
     </>,
     document.body,
   );
