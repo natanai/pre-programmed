@@ -20,6 +20,20 @@ export type AuthorUiField = {
   inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
 };
 
+export type AuthorUiResource = {
+  type: "resource";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  kind: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  allowEmpty?: boolean;
+  showPreview?: boolean;
+  help?: string;
+};
+
 export type AuthorUiSelectOption = {
   value: string;
   label: string;
@@ -104,6 +118,7 @@ export type AuthorUiStatus = {
 
 export type AuthorUiNode =
   | AuthorUiField
+  | AuthorUiResource
   | AuthorUiSelect
   | AuthorUiToggle
   | AuthorUiChoice
