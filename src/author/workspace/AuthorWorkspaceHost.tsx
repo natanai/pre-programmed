@@ -168,12 +168,24 @@ export function AuthorWorkspaceHost({
   const workspaceLayerRef = useRef<HTMLDivElement>(null);
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
   const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
+  const returnFocusRef = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => setStackOpen(false), [activeTaskId]);
   useEffect(() => {
     const liveTaskIds = new Set(tasks.map((task) => task.id));
+    let returnFocus: HTMLElement | null = null;
     for (const taskId of saveHandlersRef.current.keys()) {
       if (!liveTaskIds.has(taskId)) saveHandlersRef.current.delete(taskId);
+    }
+    for (const [childTaskId, element] of returnFocusRef.current.entries()) {
+      if (liveTaskIds.has(childTaskId)) continue;
+      returnFocusRef.current.delete(childTaskId);
+      if (element.isConnected) returnFocus = element;
+    }
+    if (returnFocus) {
+      window.requestAnimationFrame(() => {
+        if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+      });
     }
   }, [tasks]);
 
@@ -181,6 +193,16 @@ export function AuthorWorkspaceHost({
     if (handler) saveHandlersRef.current.set(taskId, handler);
     else saveHandlersRef.current.delete(taskId);
   }, []);
+
+  const pushTaskWithReturnFocus = useCallback((route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => {
+    const layer = workspaceLayerRef.current;
+    const focused = document.activeElement instanceof HTMLElement && layer?.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+    const childTaskId = shared.pushTask(route, onComplete);
+    if (focused) returnFocusRef.current.set(childTaskId, focused);
+    return childTaskId;
+  }, [shared.pushTask]);
 
   const preview = useCallback<AuthorRuntimeSurface["preview"]>((presentation) => {
     const layer = workspaceLayerRef.current;
@@ -240,12 +262,12 @@ export function AuthorWorkspaceHost({
   const authorRuntime = useMemo<AuthorRuntimeSurface>(() => ({ ...shared.runtime, preview }), [preview, shared.runtime]);
 
   if (!tasks.length) return null;
-  const resources = buildAuthorResourceTools(shared.snapshot, shared.pushTask);
+  const resources = buildAuthorResourceTools(shared.snapshot, pushTaskWithReturnFocus);
   const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot), dirty: task.dirty }));
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
   const parentLabel = taskLabels.at(-2)?.label;
   const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
-  const taskShared = { ...shared, runtime: authorRuntime };
+  const taskShared = { ...shared, pushTask: pushTaskWithReturnFocus, runtime: authorRuntime };
   const returnToCleanAncestor = (targetIndex: number) => {
     const leaving = tasks.slice(targetIndex + 1);
     if (!leaving.length || leaving.some((task) => task.dirty)) return;
@@ -297,7 +319,7 @@ export function AuthorWorkspaceHost({
               <span className="author-workspace-back-wide">[← BACK]</span>
               <span className="author-workspace-back-compact">[BACK]</span>
             </button> : null}
-            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => pushTaskWithReturnFocus({ type: "tools" })}>[TOOLS]</button> : null}
             <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
             </div>
