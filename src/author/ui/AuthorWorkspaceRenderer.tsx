@@ -123,6 +123,17 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
     </details>;
   }
 
+  if (node.type === "list") {
+    return <ul className="author-ui-list" aria-label={node.label}>
+      {node.items.map((item) => <li key={item.id}>
+        <button type="button" disabled={item.disabled} onClick={item.onAction}>
+          <span>{item.label}</span>
+          {item.detail ? <small>{item.detail}</small> : null}
+        </button>
+      </li>)}
+    </ul>;
+  }
+
   if (node.type === "action-row") {
     return <div className="author-ui-action-row">
       {node.actions.map((action) => <button
