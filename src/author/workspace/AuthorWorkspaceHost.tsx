@@ -152,6 +152,7 @@ export function AuthorWorkspaceHost({
   onConfirmLeave,
   onCancelLeave,
   requestClose,
+  requestReturnTo,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
@@ -160,6 +161,7 @@ export function AuthorWorkspaceHost({
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
   requestClose: () => void;
+  requestReturnTo: (taskId: string) => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -246,6 +248,16 @@ export function AuthorWorkspaceHost({
   const parentLabel = taskLabels.at(-2)?.label;
   const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
   const taskShared = { ...shared, runtime: authorRuntime };
+  const taskTrail = (label: string) => <ol className="author-task-trail" aria-label={label}>
+    {taskLabels.map((task, index) => {
+      const active = index === taskLabels.length - 1;
+      return <li key={task.id} aria-current={active ? "page" : undefined}>
+        {active
+          ? <span>{task.label}</span>
+          : <button type="button" onClick={() => requestReturnTo(task.id)}>{task.label}</button>}
+      </li>;
+    })}
+  </ol>;
 
   return createPortal(
     <>
@@ -281,21 +293,13 @@ export function AuthorWorkspaceHost({
           </div>
 
           <div className="author-workspace-navigation-context">
-            <ol className="author-task-trail" aria-label="Author task trail">
-              {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
-                <span>{task.label}</span>
-              </li>)}
-            </ol>
+            {taskTrail("Author task trail")}
             {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
           </div>
 
           {stackOpen ? <div className="author-workspace-stack-panel">
             <span className="author-workspace-stack-heading">TASK STACK · {taskLabels.length} {taskLabels.length === 1 ? "TASK" : "TASKS"}</span>
-            <ol className="author-task-trail" aria-label="Full Author task stack">
-              {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
-                <span>{task.label}</span>
-              </li>)}
-            </ol>
+            {taskTrail("Full Author task stack")}
             {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
           </div> : null}
         </nav>
@@ -322,13 +326,15 @@ export function AuthorWorkspaceHost({
             <p id="author-leave-copy">
               {leaveConfirmation.action === "close"
                 ? `${leaveConfirmation.dirtyCount} Author ${leaveConfirmation.dirtyCount === 1 ? "task has" : "tasks have"} unsaved work. Save all work before returning to play, or discard it.`
-                : "This Author task contains unsaved changes."}
+                : leaveConfirmation.action === "return"
+                  ? `${leaveConfirmation.dirtyCount} nested Author ${leaveConfirmation.dirtyCount === 1 ? "task contains" : "tasks contain"} unsaved changes.`
+                  : "This Author task contains unsaved changes."}
             </p>
             {saveAllError ? <p className="author-leave-error" role="alert">{saveAllError}</p> : null}
             <div className="author-leave-actions">
               <button type="button" autoFocus disabled={savingAll} onClick={() => { setSaveAllError(""); onCancelLeave(); }}>[KEEP EDITING]</button>
               {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={() => void saveAllAndReturn()}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
-              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
+              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : leaveConfirmation.action === "return" ? "DISCARD & RETURN" : "DISCARD CHANGES"}]</button>
             </div>
           </section>
         </div> : null}
