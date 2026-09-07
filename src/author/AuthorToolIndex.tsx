@@ -33,13 +33,12 @@ export function AuthorToolIndex({ groups, searchEntries }: { groups: AuthorToolG
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="find"
           autoCapitalize="none"
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="search"
         />
-        {query ? <button type="button" aria-label="Clear tool search" onClick={() => setQuery("")}>[CLEAR]</button> : null}
+        {query ? <button type="button" aria-label="Clear tool search" onClick={() => setQuery("")}>[X]</button> : null}
       </label>
       {!normalizedQuery ? groups.map((group) => <section className="author-tool-group" key={group.id}>
         <h3>{group.label}</h3>
@@ -69,8 +68,7 @@ export function AuthorToolIndex({ groups, searchEntries }: { groups: AuthorToolG
           </button>)}
         </div>
       </section>}
-      {!visibleCount ? <div className="author-tool-empty" role="status">NOTHING AUTHOR CAN OPEN MATCHES “{query.trim()}”. TRY A CONTROL, CONCEPT, OR AUTHORED NAME.</div> : null}
+      {!visibleCount ? <div className="author-tool-empty" role="status">NO MATCH</div> : null}
     </div>
-    <footer className="author-panel-footer"><span>{normalizedQuery ? "SEARCHING DESTINATIONS, CONTROLS, CONCEPTS, AND AUTHORED CONTENT." : "SELECT A TOOL OR [X] TO RETURN TO PLAY."}</span></footer>
   </section>;
 }
