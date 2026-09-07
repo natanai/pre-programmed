@@ -1,0 +1,40 @@
+name: Fix Author Save All
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+    paths:
+      - .github/scripts/fix-author-save-all.py
+      - .github/workflows/fix-author-save-all.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/fix-author-save-all.py
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
+      - name: Commit verified fix and remove temporary tooling
+        run: |
+          rm .github/scripts/fix-author-save-all.py
+          rm .github/workflows/fix-author-save-all.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --cached --quiet; then
+            echo "No save-all fix to commit"
+            exit 1
+          fi
+          git commit -m "fix: save parent dirtied by nested child completion"
+          git push origin HEAD:author-ux-integration-refactor
