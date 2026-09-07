@@ -45,36 +45,36 @@ export const mediaSynthLibraryWorkspace = defineAuthorWorkspace({
   matches: (route) => route.type === "feature" && route.feature === "media" && route.workspace === "synth",
   createDraft: () => ({}),
   buildSpec: ({ context }) => {
-    const sounds = context.snapshot.synthSounds;
+    const synths = context.snapshot.synthSounds;
     return {
       id: "media-synth-library",
-      title: "Synth sounds",
-      context: `${sounds.length} sound${sounds.length === 1 ? "" : "s"}`,
+      title: "Synths",
+      context: `${synths.length} Synth${synths.length === 1 ? "" : "s"}`,
       blocks: [
-        ...(sounds.length ? [{
+        ...(synths.length ? [{
           type: "list" as const,
           id: "media-synth-list",
-          label: "Synth sounds",
-          items: sounds.map((sound) => ({
-            id: `media-synth:${sound.id}`,
-            label: sound.label || sound.key || "Untitled sound",
-            detail: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sound.tempo} BPM`,
+          label: "Synths",
+          items: synths.map((synth) => ({
+            id: `media-synth:${synth.id}`,
+            label: synth.label || synth.key || "Untitled Synth",
+            detail: `${synth.voices.length} voice${synth.voices.length === 1 ? "" : "s"} · ${synth.tempo} BPM`,
             onAction: () => context.pushTask({
               type: "feature",
               feature: "media",
               workspace: "synth-sound",
-              data: { soundId: sound.id },
+              data: { soundId: synth.id },
             }),
           })),
         }] : [{
           type: "status" as const,
           id: "media-synth-empty",
-          text: "NO SYNTH SOUNDS YET.",
+          text: "NO SYNTHS YET.",
         }]),
       ],
       actions: [{
         id: "media-synth-create",
-        label: "+ SOUND",
+        label: "+ SYNTH",
         onAction: () => context.pushTask({
           type: "feature",
           feature: "media",
