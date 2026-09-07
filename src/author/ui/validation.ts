@@ -72,6 +72,15 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
       return;
     }
 
+    if (node.type === "action-row") {
+      if (!node.actions.length) errors.push(`${path} requires at least one action.`);
+      node.actions.forEach((action, index) => {
+        registerId(action.id, `${path}.actions[${index}]`);
+        if (!action.label.trim()) errors.push(`${path}.actions[${index}] requires a label.`);
+      });
+      return;
+    }
+
     if (node.type === "section") {
       if (sectionDepth > 0) {
         errors.push(`${path} nests a section inside another section. Start a subtask instead of creating another heading level.`);
