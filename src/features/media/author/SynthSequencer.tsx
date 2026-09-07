@@ -22,6 +22,14 @@ const PITCHES = [2, 3, 4, 5, 6, 7].flatMap((octave) =>
   ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"].map((note) => `${note}${octave}`),
 );
 
+const WAVEFORMS = [
+  { value: "square", label: "SQUARE" },
+  { value: "triangle", label: "TRI" },
+  { value: "sawtooth", label: "SAW" },
+  { value: "sine", label: "SINE" },
+  { value: "noise", label: "NOISE" },
+] as const;
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -126,10 +134,14 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
   const selectedIndex = Math.max(0, Math.min(stepIndex, voice.steps.length - 1));
   const selectedStep = voice.steps[selectedIndex];
 
-  const updateVoice = (next: typeof voice) => onChange({
-    ...sound,
-    voices: sound.voices.map((item, index) => index === voiceIndex ? next : item),
-  });
+  const updateVoice = (next: typeof voice, audition = false) => {
+    const nextSound = {
+      ...sound,
+      voices: sound.voices.map((item, index) => index === voiceIndex ? next : item),
+    };
+    onChange(nextSound);
+    if (audition && selectedStep) void playSynthStep(nextSound, voiceIndex, selectedIndex);
+  };
 
   const updateStepAt = (
     index: number,
@@ -247,21 +259,25 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
 
   return <div className="voice-editor">
     <div className="voice-settings">
-      <label>WAVE
-        <select value={voice.waveform} onChange={(event) => updateVoice({ ...voice, waveform: event.target.value as typeof voice.waveform })}>
-          <option value="square">square</option>
-          <option value="triangle">triangle</option>
-          <option value="sawtooth">saw</option>
-          <option value="sine">sine</option>
-          <option value="noise">noise</option>
-        </select>
-      </label>
-      <label>ATTACK
-        <input type="number" step="0.01" min={0} max={1} value={voice.attack} onChange={(event) => updateVoice({ ...voice, attack: Number(event.target.value) })} />
-      </label>
-      <label>RELEASE
-        <input type="number" step="0.01" min={0} max={1} value={voice.release} onChange={(event) => updateVoice({ ...voice, release: Number(event.target.value) })} />
-      </label>
+      <div className="synth-wave-editor">
+        <span>WAVE</span>
+        <div className="synth-wave-options">
+          {WAVEFORMS.map((waveform) => <button
+            type="button"
+            key={waveform.value}
+            aria-pressed={voice.waveform === waveform.value}
+            onClick={() => updateVoice({ ...voice, waveform: waveform.value }, true)}
+          >[{waveform.label}]</button>)}
+        </div>
+      </div>
+      <div className="synth-envelope-settings">
+        <label>ATTACK
+          <input type="number" step="0.01" min={0} max={1} value={voice.attack} onChange={(event) => updateVoice({ ...voice, attack: Number(event.target.value) })} />
+        </label>
+        <label>RELEASE
+          <input type="number" step="0.01" min={0} max={1} value={voice.release} onChange={(event) => updateVoice({ ...voice, release: Number(event.target.value) })} />
+        </label>
+      </div>
     </div>
 
     <div className="synth-step-pads" role="list" aria-label={`Voice ${voiceIndex + 1} sequence steps`}>
