@@ -3,6 +3,7 @@ import { configuredAssetStore } from "../ui/assetStore";
 import { AssetExplorer } from "./AssetExplorer";
 import { mediaFileAssetWorkspace, mediaFileHelpWorkspace } from "./mediaAssetWorkspace";
 import { synthSoundWorkspace } from "./synthSoundWorkspace";
+import { vectorAssetWorkspace } from "./vectorAssetWorkspace";
 
 export const mediaAssetsWorkspace = defineAuthorWorkspace({
   id: "media-assets",
@@ -89,4 +90,5 @@ export const MEDIA_STRUCTURED_WORKSPACES = [
   synthSoundWorkspace,
   mediaFileAssetWorkspace,
   mediaFileHelpWorkspace,
+  vectorAssetWorkspace,
 ] as const;
