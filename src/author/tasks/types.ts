@@ -25,7 +25,10 @@ export type AuthorResourceResult = {
 export type AuthorResourceDeletedResult = {
   type: "resource-deleted";
   kind: string;
+  /** Stable owner resource id. */
   id: string;
+  /** Reference value exposed by the resource provider before deletion. */
+  value: string;
 };
 
 /**
