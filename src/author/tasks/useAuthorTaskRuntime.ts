@@ -21,9 +21,10 @@ function taskFor(route: AuthorTaskRoute): AuthorTaskEntry {
  * are addressed by task id, so a suspended async task cannot alter or dismiss
  * whichever child happens to be active later.
  *
- * Back and task completion are strictly task-to-parent navigation. The root task
- * has no Author parent, so neither can pop it; the master close command owns the
- * intentional Author -> player transition.
+ * Visible Back and task completion are strictly task-to-parent navigation. The
+ * shell never exposes Back for the root task; a task-owned leave request at the
+ * root means that task has finished and returns to Author Tools. Only the master
+ * close command intentionally crosses Author -> player.
  */
 export function useAuthorTaskRuntime() {
   const [tasks, setTasks] = useState<AuthorTaskEntry[]>([]);
@@ -87,13 +88,21 @@ export function useAuthorTaskRuntime() {
     const current = tasksRef.current;
     const active = current.at(-1);
     if (!active || (taskId && active.id !== taskId)) return;
-    if (current.length <= 1) return;
+    if (current.length <= 1) {
+      // Root Back is never exposed by the shell. A programmatic leave at this
+      // depth means the task itself has finished (for example, its resource was
+      // deleted/reset), so stay in Author and replace the dead editor with Tools.
+      completions.current.clear();
+      setLeaveConfirmation(null);
+      commitTasks([taskFor({ type: "tools" })]);
+      return;
+    }
     if (active.dirty) {
       setLeaveConfirmation({ action: "back", dirtyCount: 1, taskId: active.id });
       return;
     }
     popTask(active.id);
-  }, [popTask]);
+  }, [commitTasks, popTask]);
 
   const requestClose = useCallback(() => {
     const current = tasksRef.current;
