@@ -1,0 +1,24 @@
+name: Audit Author custom roles
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+
+jobs:
+  audit:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - name: Audit custom role and ReferenceField usage
+        shell: bash
+        run: |
+          echo '=== CUSTOM ROLE USAGES ==='
+          rg -n 'role:\s*"[^"]+"' src --glob '*.ts' --glob '*.tsx' || true
+          echo '=== DIRECT REFERENCEFIELD USAGES ==='
+          rg -n 'ReferenceField' src --glob '*.ts' --glob '*.tsx' || true
+          echo '=== RESOURCE-PICKER ROLE ==='
+          rg -n 'resource-picker' src docs --glob '*.ts' --glob '*.tsx' --glob '*.md' || true
