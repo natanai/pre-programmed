@@ -272,16 +272,6 @@
   color: var(--dos-bright) !important;
 }
 
-.guided-editor-footer {
-  min-height: 3em;
-  align-items: center;
-}
-
-.guided-editor-footer > button {
-  min-height: 2.6em;
-  padding: .35em .15em !important;
-}
-
 .guided-editor-error {
   margin: .75em 0 0;
 }
@@ -295,15 +285,6 @@
     position: sticky;
     top: 0;
     z-index: 2;
-  }
-
-  .guided-editor-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 7;
-    padding-bottom: max(.35em, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--dos-line);
-    background: #000;
   }
 
   .interaction-mode-row {
