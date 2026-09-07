@@ -1,4 +1,3 @@
-import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { MutationOperation, ProjectSnapshot } from "../../../engine/project/model";
@@ -305,7 +304,16 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
               { value: "contain", label: "CONTAIN", help: "Show the whole image; unused canvas space may remain." },
               { value: "cover", label: "COVER", help: "Fill the canvas; image edges may be cropped." },
             ] },
-            { type: "custom", id: "inventory-body-type-image", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.bodyType.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, assetId } }))} placeholder="none" /> },
+            {
+    type: "resource" as const,
+    id: "inventory-body-type-image",
+    label: "Background image",
+    kind: "media-image",
+    value: draft.bodyType.assetId,
+    placeholder: "none",
+    showPreview: true,
+    onChange: (assetId: string) => setDraft((current) => ({ ...current, bodyType: { ...current.bodyType, assetId } })),
+  },
             { type: "status", id: "inventory-body-type-image-help", tone: "info", text: `Any Media image can be used. Repository image files are selectable here; creating a new image opens the scalable Vector maker. The ${DEFAULT_BODY_CANVAS.width}×${DEFAULT_BODY_CANVAS.height} Portrait vector preset matches the default Body canvas, but neither asset resolution nor Body shape is restricted to that size.` },
           ],
         },
