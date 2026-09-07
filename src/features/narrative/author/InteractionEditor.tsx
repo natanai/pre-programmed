@@ -127,7 +127,6 @@ export function InteractionEditor({
   initialOutcomeId,
   fallback = false,
   onSave,
-  onCancel,
   onDirtyChange,
   onRegisterSave,
   onPreview,
@@ -142,7 +141,6 @@ export function InteractionEditor({
   initialOutcomeId?: string;
   fallback?: boolean;
   onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onCancel?: () => void;
   onDirtyChange: (dirty: boolean) => void;
   onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
@@ -301,7 +299,7 @@ export function InteractionEditor({
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
-  return <section className="author-panel author-panel-frame interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="guided-editor-header">
       {screen.type !== "overview" ? <button type="button" className="guided-back" onClick={back} aria-label="Back to input">[‹ INPUT]</button> : null}
       <span>{title}</span>
@@ -358,7 +356,6 @@ export function InteractionEditor({
 
     <div className="author-actions author-panel-footer guided-editor-footer">
       <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}
       {screen.type === "overview" && initial ? confirmDelete ? <>
         <span>Delete this {fallbackMode ? "invalid-input response" : captureMode ? "player-input capture" : "user input"}?</span>
         <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : captureMode ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>

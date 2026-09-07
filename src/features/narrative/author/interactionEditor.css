@@ -1,6 +1,9 @@
 .guided-interaction-editor {
   width: 100%;
   max-width: none;
+  min-width: 0;
+  border: 0;
+  background: transparent;
 }
 
 .guided-editor-header {

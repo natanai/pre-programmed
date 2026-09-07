@@ -200,7 +200,6 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
             }
             return result;
           }}
-          onCancel={context.hasParentTask ? context.leaveCurrentTask : undefined}
           onDirtyChange={context.setWorkspaceDirty}
         />
       </div>;
