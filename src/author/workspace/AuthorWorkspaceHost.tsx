@@ -169,6 +169,8 @@ export function AuthorWorkspaceHost({
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
   const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
   const returnFocusRef = useRef(new Map<string, HTMLElement>());
+  const liveTasksRef = useRef(tasks);
+  liveTasksRef.current = tasks;
 
   useEffect(() => setStackOpen(false), [activeTaskId]);
   useEffect(() => {
@@ -237,8 +239,14 @@ export function AuthorWorkspaceHost({
     setSavingAll(true);
     setSaveAllError("");
     try {
-      const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
-      for (const task of dirtyTasks) {
+      // Re-read the live stack after every accepted save. Saving a nested
+      // resource may complete that child and update a previously clean parent
+      // reference, making the parent dirty only after the child has returned.
+      // A one-time dirty snapshot would miss that new parent work and could
+      // discard it while closing Author mode.
+      while (true) {
+        const task = [...liveTasksRef.current].reverse().find((candidate) => candidate.dirty);
+        if (!task) break;
         const taskLabel = describeAuthorTask(task.route, shared.snapshot);
         const save = saveHandlersRef.current.get(task.id);
         if (!save) {
@@ -251,13 +259,16 @@ export function AuthorWorkspaceHost({
           return;
         }
         shared.setTaskDirty(task.id, false);
+        // Child completion callbacks run in a microtask and may update the
+        // suspended parent draft. Give React a turn to publish any resulting
+        // parent dirty state before choosing the next deepest task.
         await afterReactTurn();
       }
       onConfirmLeave();
     } finally {
       setSavingAll(false);
     }
-  }, [onConfirmLeave, savingAll, shared, tasks]);
+  }, [onConfirmLeave, savingAll, shared]);
 
   const authorRuntime = useMemo<AuthorRuntimeSurface>(() => ({ ...shared.runtime, preview }), [preview, shared.runtime]);
 
