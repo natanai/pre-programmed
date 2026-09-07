@@ -1,11 +1,9 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
-import { previewEventsForEffects } from "../../../author/rules/catalog";
 import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { buildGraphIndex } from "../graph";
 import { createDraftInteraction } from "../drafts";
 import type { Interaction } from "../model";
 import { AuthorInputSurface } from "./AuthorInputSurface";
-import { InteractionEditor } from "./InteractionEditor";
 import { interactionWorkspace } from "./interactionWorkspace";
 import { nodeWorkspace } from "./nodeWorkspace";
 import { notationForNarrativeInteraction } from "./notation";
@@ -160,52 +158,5 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         });
       }}
     />;
-  },
-  renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "narrative" && route.workspace === "interaction") {
-      const initial = route.data?.interactionId
-        ? context.snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId)
-        : undefined;
-      const fallback = route.data?.fallback === "true";
-      const resourceTask = route.data?.resourceTask === "interaction";
-      return <div className="dialogue-authoring-popover">
-        <InteractionEditor
-          snapshot={context.snapshot}
-          playState={context.playState}
-          sourceNodeId={route.data?.sourceNodeId}
-          initial={initial}
-          initialCommand={route.data?.command ?? ""}
-          initialOutcomeId={route.data?.outcomeId}
-          fallback={fallback}
-          onRegisterSave={context.registerWorkspaceSave}
-          onPreview={(value, speakerId, outcome) => context.runtime.preview({
-            text: value.text,
-            performance: value.performance,
-            speakerId,
-            events: previewEventsForEffects(outcome.effects, context.snapshot),
-          })}
-          onCreateDestination={(onCreated) => context.resources.create("node", (resource) => onCreated(resource.id))}
-          onEditDestination={(nodeId) => context.resources.edit("node", nodeId)}
-          onSave={async (operations, description) => {
-            const result = await context.persist(operations, description);
-            if (result.status !== "saved" && result.status !== "queued") return result;
-            if (resourceTask) {
-              const operation = operations.find((candidate) => candidate.type === "interaction.upsert");
-              if (operation?.type === "interaction.upsert") context.completeTask({
-                type: "resource",
-                kind: "interaction",
-                id: operation.interaction.id,
-                value: operation.interaction.id,
-                label: interactionLabel(operation.interaction),
-              });
-            }
-            return result;
-          }}
-          onDirtyChange={context.setWorkspaceDirty}
-        />
-      </div>;
-    }
-
-    return null;
   },
 };
