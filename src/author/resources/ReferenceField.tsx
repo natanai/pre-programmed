@@ -1,4 +1,5 @@
 import { useId, useMemo, useRef, useState } from "react";
+import { useAuthorLongPress } from "../ui/useAuthorLongPress";
 import { useAuthorResourceTools } from "./context";
 import "./referenceField.css";
 
@@ -52,6 +53,10 @@ export function ReferenceField({
       if (result?.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
     });
   };
+  const longPressEdit = useAuthorLongPress({
+    enabled: canEditSelected,
+    onLongPress: editResource,
+  });
   const openOrCreate = () => {
     if (open) {
       closeChooser();
@@ -72,6 +77,7 @@ export function ReferenceField({
         aria-expanded={open}
         aria-controls={chooserId}
         onClick={openOrCreate}
+        {...longPressEdit}
       >
         <span className="author-reference-kind">{label.toUpperCase()}</span>
         <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
