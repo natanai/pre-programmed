@@ -152,9 +152,14 @@ export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
  * Feature code supplies semantic intent only; this component owns task-level
  * title, body hierarchy, responsive presentation, and the one action footer.
  */
-export function AuthorWorkspaceRenderer({ spec }: { spec: AuthorWorkspaceSpec }) {
+export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWorkspaceSpec; busy?: boolean }) {
   assertValidAuthorWorkspaceSpec(spec);
-  return <section className="author-panel author-panel-frame author-ui-workspace" data-author-ui-workspace={spec.id}>
+  return <section
+    className="author-panel author-panel-frame author-ui-workspace"
+    data-author-ui-workspace={spec.id}
+    aria-busy={busy || undefined}
+    inert={busy || undefined}
+  >
     <header className="author-ui-workspace-header">
       <span>{spec.title}</span>
       {spec.context ? <small>{spec.context}</small> : null}

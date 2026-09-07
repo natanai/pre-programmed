@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { AuthorWorkspaceContext } from "../features/types";
 import type { AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import { AuthorWorkspaceRenderer } from "./AuthorWorkspaceRenderer";
@@ -89,6 +89,8 @@ export function StructuredAuthorWorkspace<TDraft>({
   const [draft, setDraft] = useState<TDraft>(() => definition.createDraft(route, context));
   const signature = definition.signature ?? defaultSignature;
   const [baseline, setBaseline] = useState(() => signature(draft));
+  const [saving, setSaving] = useState(false);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const currentSignature = signature(draft);
   const dirty = currentSignature !== baseline;
 
@@ -109,16 +111,28 @@ export function StructuredAuthorWorkspace<TDraft>({
   );
   const validForSave = definition.canSave?.(saveBuild) ?? true;
 
-  const save = useCallback(async (options: AuthorWorkspaceSaveOptions = {}) => {
-    if (!definition.save || !validForSave) return false;
-    const result = await definition.save(saveBuild);
-    if (!result.accepted) return false;
-    const savedDraft = result.draft ?? saveBuild.draft;
-    if (result.draft !== undefined) setDraft(savedDraft);
-    setBaseline(signature(savedDraft));
-    context.setWorkspaceDirty(false);
-    if (result.completion && options.completeTask !== false && context.hasParentTask) context.completeTask(result.completion);
-    return true;
+  const save = useCallback((options: AuthorWorkspaceSaveOptions = {}) => {
+    if (savePromiseRef.current) return savePromiseRef.current;
+    if (!definition.save || !validForSave) return Promise.resolve(false);
+
+    const pending = (async () => {
+      setSaving(true);
+      try {
+        const result = await definition.save(saveBuild);
+        if (!result.accepted) return false;
+        const savedDraft = result.draft ?? saveBuild.draft;
+        if (result.draft !== undefined) setDraft(savedDraft);
+        setBaseline(signature(savedDraft));
+        context.setWorkspaceDirty(false);
+        if (result.completion && options.completeTask !== false && context.hasParentTask) context.completeTask(result.completion);
+        return true;
+      } finally {
+        setSaving(false);
+        savePromiseRef.current = null;
+      }
+    })();
+    savePromiseRef.current = pending;
+    return pending;
   }, [context, definition, saveBuild, signature, validForSave]);
 
   const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
@@ -141,13 +155,13 @@ export function StructuredAuthorWorkspace<TDraft>({
     actions: [
       ...(definition.save ? [{
         id: "author-core-save",
-        label: definition.saveLabel ?? "SAVE",
-        disabled: !dirty || !validForSave,
+        label: saving ? "SAVING..." : definition.saveLabel ?? "SAVE",
+        disabled: saving || !dirty || !validForSave,
         onAction: () => { void save(); },
       }] : []),
       ...(authoredSpec.actions ?? []),
     ],
   };
 
-  return <AuthorWorkspaceRenderer spec={spec} />;
+  return <AuthorWorkspaceRenderer spec={spec} busy={saving} />;
 }
