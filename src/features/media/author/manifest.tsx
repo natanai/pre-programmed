@@ -4,18 +4,11 @@ import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
-import { VectorAssetEditor } from "./VectorAssetEditor";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
 import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 import { MEDIA_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
-
-function routeDimension(value: string | undefined) {
-  if (!value) return undefined;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
 
 function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
   if (snapshot.synthSounds.some((sound) => sound.id === resource.id)) return {
@@ -162,36 +155,4 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
     { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
   ],
-  renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "vector-asset") {
-      const initial = route.data?.assetId
-        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
-        : undefined;
-      const resourceKind = route.data?.resourceTask;
-      return <VectorAssetEditor
-        snapshot={context.snapshot}
-        initial={initial}
-        initialWidth={routeDimension(route.data?.vectorWidth)}
-        initialHeight={routeDimension(route.data?.vectorHeight)}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
-            if (operation?.type === "mediaAsset.upsert") context.completeTask({
-              type: "resource",
-              kind: resourceKind,
-              id: operation.asset.id,
-              value: operation.asset.id,
-              label: operation.asset.name,
-            });
-          }
-          return result;
-        }}
-      />;
-    }
-
-    return null;
-  },
 };
