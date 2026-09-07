@@ -3,7 +3,6 @@ import type { AuthorResourceOption } from "../../../author/resources/types";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
-import { MediaAssetEditor } from "./MediaAssetEditor";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
 import { VectorAssetEditor } from "./VectorAssetEditor";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
@@ -30,6 +29,16 @@ function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSn
     feature: "media",
     workspace: "asset",
     data: { kind: "audio", assetId: resource.id, resourceTask: "media-sound" },
+  };
+}
+
+function mediaImageEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
+  const asset = configuredAssetStore.resolve(snapshot, resource.id);
+  return {
+    type: "feature",
+    feature: "media",
+    workspace: asset?.authoringMode === "vector-grid" ? "vector-asset" : "asset",
+    data: { kind: "image", assetId: resource.id, resourceTask: "media-image" },
   };
 }
 
@@ -80,8 +89,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       }),
     },
     {
-      // Reference-only union used by the generic Play sound effect. The effect
-      // does not need to know which storage/rendering implementation owns it.
       kind: "media-sound",
       label: "Sound",
       pluralLabel: "Sounds",
@@ -148,12 +155,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: "vector-asset",
         data: { kind: "image", resourceTask: "media-image" },
       }),
-      editRoute: (resource) => ({
-        type: "feature",
-        feature: "media",
-        workspace: "asset",
-        data: { kind: "image", assetId: resource.id, resourceTask: "media-image" },
-      }),
+      editRoute: mediaImageEditRoute,
     },
   ],
   terminalShortcuts: [
@@ -161,45 +163,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
   ],
   renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
-      const kind = route.data?.kind === "image" ? "image" : "audio";
-      const initial = route.data?.assetId
-        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
-        : undefined;
-      const resourceKind = route.data?.resourceTask;
-      const saveResource = async (operations: Parameters<typeof context.persist>[0], description: string) => {
-        const result = await context.persist(operations, description);
-        if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-          const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
-          if (operation?.type === "mediaAsset.upsert") context.completeTask({
-            type: "resource",
-            kind: resourceKind,
-            id: operation.asset.id,
-            value: operation.asset.id,
-            label: operation.asset.name,
-          });
-        }
-        return result;
-      };
-
-      if (kind === "image" && initial?.authoringMode === "vector-grid") return <VectorAssetEditor
-        snapshot={context.snapshot}
-        initial={initial}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={saveResource}
-      />;
-
-      return <MediaAssetEditor
-        snapshot={context.snapshot}
-        kind={kind}
-        initial={initial}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={saveResource}
-      />;
-    }
-
     if (route.type === "feature" && route.feature === "media" && route.workspace === "vector-asset") {
       const initial = route.data?.assetId
         ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
