@@ -93,15 +93,15 @@ The goal is for the author to understand what is saved, what is still draft, and
 
 ## New feature contract
 
-New feature workspaces should prefer data-first workspace definitions that separate:
+Feature workspaces use data-first workspace definitions that separate:
 
 1. draft creation;
 2. semantic UI specification;
 3. feature-owned save semantics.
 
-The shared workspace host should own ordinary draft lifecycle, dirty state, validation, rendering, task presentation, and shared save/exit behavior.
+The shared workspace host owns ordinary draft lifecycle, dirty state, rendering, task presentation, and shared save/exit behavior. Feature workspaces own domain validation and persistence semantics.
 
-Some existing feature surfaces may still use unrestricted custom workspace rendering. That is a current implementation detail, not a compatibility promise. Do not preserve an unsuitable editor merely to keep old JSX structure stable, and do not make unrestricted rendering the default for new features.
+Unrestricted feature-level workspace rendering is not part of the Author feature contract. Specialized controls remain supported through the semantic `custom` node, but they live inside a structured workspace whose draft and task lifecycle still follow the shared system.
 
 ## Responsive authenticity test
 
