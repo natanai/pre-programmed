@@ -28,7 +28,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     reference.resourceKind === "media-audio" || reference.resourceKind === "media-image" || reference.resourceKind === "media-sound");
 
   return <div className="asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
-    <input aria-label="Find media assets" placeholder="sound or image" value={query} onChange={(event) => setQuery(event.target.value)} />
+    <input aria-label="Find media assets" placeholder="audio or image" value={query} onChange={(event) => setQuery(event.target.value)} />
     <div className="author-actions">
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
     </div>
