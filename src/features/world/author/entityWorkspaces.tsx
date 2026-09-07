@@ -27,20 +27,26 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
     id: "world-library",
     title: "People + places",
     context: `${context.snapshot.entities.length} world entries`,
-    blocks: [{
-      type: "custom",
-      id: "world-entities",
-      role: "results",
-      content: <div className="world-author-resource-list">
-        <div className="world-author-create-row">
-          <button type="button" onClick={() => context.pushTask(worldEntityRoute("character"))}>[+ CHARACTER]</button>
-          <button type="button" onClick={() => context.pushTask(worldEntityRoute("location"))}>[+ LOCATION]</button>
-        </div>
-        {context.snapshot.entities.map((entity) => <button type="button" key={entity.id} onClick={() => context.pushTask(worldEntityRoute(entity.type, entity.id))}>
-          <span>{entity.name || entity.key}</span><small>{entity.type}</small>
-        </button>)}
-      </div>,
-    }],
+    blocks: [
+      {
+        type: "action-row",
+        id: "world-entity-create-actions",
+        actions: [
+          { id: "world-entity-create-character", label: "+ CHARACTER", onAction: () => context.pushTask(worldEntityRoute("character")) },
+          { id: "world-entity-create-location", label: "+ LOCATION", onAction: () => context.pushTask(worldEntityRoute("location")) },
+        ],
+      },
+      {
+        type: "custom",
+        id: "world-entities",
+        role: "results",
+        content: <div className="world-author-resource-list">
+          {context.snapshot.entities.map((entity) => <button type="button" key={entity.id} onClick={() => context.pushTask(worldEntityRoute(entity.type, entity.id))}>
+            <span>{entity.name || entity.key}</span><small>{entity.type}</small>
+          </button>)}
+        </div>,
+      },
+    ],
   }),
 });
 
