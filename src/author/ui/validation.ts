@@ -72,6 +72,15 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
       return;
     }
 
+    if (node.type === "list") {
+      if (!node.items.length) errors.push(`${path} requires at least one item.`);
+      node.items.forEach((item, index) => {
+        registerId(item.id, `${path}.items[${index}]`);
+        if (!item.label.trim()) errors.push(`${path}.items[${index}] requires a label.`);
+      });
+      return;
+    }
+
     if (node.type === "action-row") {
       if (!node.actions.length) errors.push(`${path} requires at least one action.`);
       node.actions.forEach((action, index) => {
