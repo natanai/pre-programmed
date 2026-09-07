@@ -97,6 +97,21 @@ export type AuthorUiDisclosure = {
   children: AuthorUiNode[];
 };
 
+export type AuthorUiInlineAction = {
+  id: string;
+  label: string;
+  onAction: () => void;
+  disabled?: boolean;
+  tone?: "default" | "danger";
+};
+
+/** Contextual actions inside a task body; persistence/navigation stay task-level. */
+export type AuthorUiActionRow = {
+  type: "action-row";
+  id: string;
+  actions: AuthorUiInlineAction[];
+};
+
 /**
  * Escape hatch for a genuinely specialized control such as a rule tree,
  * sequencer, grid, or resource result list. The shared workspace renderer still
@@ -124,6 +139,7 @@ export type AuthorUiNode =
   | AuthorUiChoice
   | AuthorUiSection
   | AuthorUiDisclosure
+  | AuthorUiActionRow
   | AuthorUiCustom
   | AuthorUiStatus;
 
