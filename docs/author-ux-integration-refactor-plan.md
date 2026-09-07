@@ -137,9 +137,12 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 
 ### Phase 4 — isolated runtime integration refactors
 
-Do only after Author/shared-layer work is stable and continuously green.
+Do only in behavior-preserving, independently verified slices.
 
-- [ ] Reduce Radix-specific startup/presentation knowledge in `App.tsx` through a presentation/runtime contribution.
+- [x] Reduce Radix-specific startup/presentation knowledge in `App.tsx` through a feature-owned runtime presentation controller.
+  - `useRadixRuntimePresentation` now owns startup sequence selection, active run state, sequence reconciliation, synth resolution, completion, effect-triggered runs, and Radix surface rendering.
+  - App retains only generic launch-blocking coordination and calls the controller's `active`, `startup`, `surface`, `showSequence`, `beginStartup`, and `suppressStartup` capabilities.
+  - Direct `RadixSequenceSurface`, sequence lookup, synth lookup, active Radix structure, and Radix completion/reconciliation branches were removed from App.
 - [ ] Move Narrative player presentation/execution semantics behind a Narrative-owned runtime contribution rather than calculating them directly in App.
 - [ ] Consolidate complete play-session lifecycle ownership under Session.
 - [ ] Re-audit direct feature imports/branches in App after each extraction.
@@ -171,7 +174,12 @@ Full `npm run verify` has passed after:
 - Narrative Story Structure migration;
 - generic nested return-focus behavior;
 - Media legacy cleanup;
-- Media Assets structured browser migration after correcting its module extension to `.tsx`.
+- Media Assets structured browser migration after correcting its module extension to `.tsx`;
+- embedded Structure/shared-shell cleanup;
+- creation of the Radix runtime presentation controller;
+- the deterministic Radix App extraction itself, before the verified one-shot workflow committed the resulting App change.
+
+The Radix App extraction used a temporary one-shot branch workflow because connector reads of the ~58 KB App source are chunked. That workflow asserted the exact old blocks, applied the patch, ran full `npm run verify`, committed only on success, and removed its own patch script/workflow. The resulting commit is `870c7eeb70d58df5f99777485e33667b5f024f03` (`refactor: delegate radix runtime presentation`). GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, so this documentation commit intentionally supplies the next ordinary human-authored branch verification trigger.
 
 There were short-lived red intermediate commits while multi-file migrations were being completed (for example removing a prop before removing its caller, and introducing JSX before renaming a `.ts` module to `.tsx`). The final corrected heads were verified green; do not treat those superseded intermediate runs as current branch failures.
 
@@ -189,6 +197,7 @@ There were short-lived red intermediate commits while multi-file migrations were
 - open Player Interactions, Player Commands, Target Names + Aliases, and Target Behavior after their structured migration;
 - open Story Structure and verify search/path/legend/node/interaction editing still work;
 - open Media Assets and Synth Sounds and verify their browser/list behavior still opens the same canonical editors;
+- test Radix startup presentation, effect-triggered Radix presentation, Author Edit Sequence/Edit Source affordances, and resume to node text after startup;
 - test narrow/mobile presentation with keyboard open;
 - confirm ordinary player behavior remains unchanged.
 
@@ -199,9 +208,10 @@ Latest comparison on 2026-09-06:
 - base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
 - branch: `author-ux-integration-refactor`
 - status: ahead of `main`
-- ahead: 54 commits at the last comparison checkpoint
+- ahead: **61 commits** before this documentation update
 - behind: **0 commits**
-- no `App.tsx`, gameplay runtime, project mutation, durable persistence, or Worker files changed yet.
+- `App.tsx` now has its first behavior-preserving feature-runtime extraction: Radix presentation/startup ownership moved behind `useRadixRuntimePresentation`.
+- No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix extraction.
 
 ## Change log
 
@@ -227,6 +237,14 @@ Latest comparison on 2026-09-06:
 - Media: migrated Synth Sounds list and Media Assets browser to structured task shells; removed their legacy branches and obsolete close wiring; unrestricted renderer now handles only canonical Media editors.
 - Media Assets instructional copy shortened while preserving the necessary D1-vs-repository file workflow distinction.
 
+### 2026-09-06 — first runtime ownership extraction
+
+- Added feature-owned `useRadixRuntimePresentation`.
+- Moved Radix startup selection, active presentation state, deleted-sequence reconciliation, synth resolution, completion, effect-triggered presentation, and UI rendering out of App.
+- Replaced App's direct Radix implementation knowledge with a narrow controller capability surface.
+- Deterministic one-shot workflow applied the App patch and ran full `npm run verify` before committing; its temporary tooling removed itself afterward.
+- Post-commit source audit confirmed no direct `RadixSequenceSurface`, active Radix data structure, sequence lookup, or synth lookup remains in App.
+
 ## Resume here
 
 At the start of every session:
@@ -235,8 +253,9 @@ At the start of every session:
 2. compare branch to current `main` and record any incoming divergence before editing;
 3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
 4. finish small cleanup created by migrations before starting a new one (dead components/selectors/imports);
-5. next cleanup target: delete unreachable Commands list components from `CommandSettings.tsx` without touching the remaining Command/Reference Source editor persistence paths;
-6. next shared UX target: decide whether `SAVE RETURNS TO …` is now redundant, and polish embedded Structure/Media browser layout on narrow screens;
-7. only after the shared/Author migration is stable, begin Phase 4 runtime extraction in isolated commits;
-8. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
-9. update this document before ending any session where meaningful work occurred.
+5. immediate cleanup target: delete unreachable Commands list components from `CommandSettings.tsx` without touching the remaining Command/Reference Source editor persistence paths;
+6. shared UX target: decide whether `SAVE RETURNS TO …` is now redundant and migrate simple remaining `custom` resource pickers when safely touched;
+7. next runtime target after cleanup: inspect Narrative presentation boundaries and Session ownership, then choose the smaller isolated extraction rather than mixing them;
+8. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
+9. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
+10. update this document before ending any session where meaningful work occurred.
