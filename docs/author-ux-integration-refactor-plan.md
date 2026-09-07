@@ -76,8 +76,10 @@ Previous audit summary:
 
 Implementation notes:
 
-- `ReferenceField` now exposes a visible `[EDIT]` action for its selected canonical resource. The chooser remains the ordinary primary interaction.
+- `ReferenceField` now exposes a visible `[EDIT]` action for its selected canonical resource. Empty creatable references expose `[+ CREATE]`. The chooser remains the ordinary primary interaction.
+- A resource create/edit completion briefly marks the returned-to reference with the shared `.is-returned` treatment. This covers reference-driven child workflows; broader generic focus/scroll restoration after arbitrary nested tasks remains open.
 - Clean Author task ancestors in the task trail are clickable. A jump is disabled if any descendant task is dirty; dirty work therefore keeps the pre-existing Back/save/discard semantics rather than introducing a second exit path.
+- Structured workspaces no longer add their own footer `[BACK]`; task Back/X navigation is visually and behaviorally owned by the shared Author host. Broader action-language normalization remains open.
 
 ### Phase 2 — contextual actions and mobile acceleration (low risk)
 
@@ -89,6 +91,16 @@ Implementation notes:
 Implementation notes:
 
 - `src/author/ui/useAuthorLongPress.ts` is a coarse-pointer accelerator only. It ignores mouse input and owns no authored state, validation, editor, mutation, or persistence behavior.
+
+### Phase 2A — strengthen the shared semantic UI grammar
+
+- [x] Add a first-class `resource` Author UI node so structured workspaces can declare resource intent without importing/rendering `ReferenceField` themselves.
+- [x] Route semantic resource nodes through the canonical shared `ReferenceField`, inheriting choose/edit/create/preview/long-press/return behavior automatically.
+- [x] Add resource-node validation to the shared Author workspace validator.
+- [x] Migrate World character portraits from a `custom` resource-picker escape hatch to the semantic resource node.
+- [ ] Migrate other simple structured `custom` resource pickers when touched. Confirmed follow-up: Inventory Body Type background image in `src/features/inventory/author/bodyWorkspaces.tsx`.
+
+The intent is that `custom` remains reserved for genuinely specialized controls such as operation editors, grids, sequencers, and layouts—not ordinary resource references.
 
 ### Phase 3 — incremental legacy Author migration (low/moderate risk)
 
@@ -143,9 +155,12 @@ Suggested manual acceptance route:
 - edit a current Narrative resource;
 - follow/edit a referenced State/World/Inventory/Media resource from context;
 - on mobile, long-press a selected reference and confirm it opens the exact same editor as `[EDIT]`;
-- create a child resource, save it, and confirm the parent draft resumes with the new reference selected;
+- confirm an empty creatable reference exposes `[+ CREATE]` without needing instructional copy;
+- create a child resource, save it, and confirm the parent reference updates and briefly marks the return location;
+- edit a World character and verify Portrait uses the same shared resource behavior, including preview;
 - create a 3+ task clean stack and tap an ancestor to return directly;
 - make a descendant dirty and confirm older ancestors are not jumpable until that dirty task is resolved;
+- confirm structured nested workspaces have one task Back control in the shared host rather than a second footer Back;
 - open/close Quick Find and task stack on narrow/mobile presentation;
 - open Run navigation and History and confirm both still behave exactly as before the Project legacy-render cleanup;
 - return to play with X;
@@ -153,10 +168,20 @@ Suggested manual acceptance route:
 
 ## Verification status
 
-- Branch currently has no push-triggered CI workflow. Production deploy runs only on `main`; the portable workflow is not a general branch verification workflow.
+- Branch currently has no push-triggered CI workflow. Production deploy runs only on `main`; the portable workflow is not a general branch verification workflow and explicitly requires `main`.
+- Attempts to obtain an executable local checkout from the current environment were blocked by network/DNS restrictions.
 - The current work has therefore received static source/diff review only so far.
 - `npm run verify` and live manual Author testing remain required before merge.
 - Do not merge this branch solely on the basis of the source review recorded here.
+
+## Current branch relationship
+
+As of the latest comparison on 2026-09-06:
+
+- base/merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
+- branch status: ahead of `main`
+- behind `main`: 0 commits
+- no `App.tsx`, gameplay runtime, mutation, persistence, or Worker files changed on this branch.
 
 ## Change log
 
@@ -164,14 +189,18 @@ Suggested manual acceptance route:
 
 - Created branch from current `main` at `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`.
 - Added this living plan before implementation.
-- Added direct `[EDIT]` access beside selected shared resource references.
+- Added direct `[EDIT]` access beside selected shared resource references and `[+ CREATE]` for empty creatable references.
 - Removed repeated nested-task explainer copy from `ReferenceField`; the task trail and controls now carry that interaction model.
 - Added shared coarse-pointer long-press accelerator and wired selected references to their existing canonical edit action.
+- Added a short shared return marker after reference-owned create/edit child tasks complete.
 - Made clean task-trail ancestors directly navigable; dirty descendants block the shortcut and retain existing Back/dirty-confirmation semantics.
+- Removed duplicate footer Back from structured workspaces so the shared Author host is the sole task-navigation owner.
+- Added semantic Author `resource` node + renderer + validation; migrated World character Portrait from custom JSX to this shared primitive.
+- Confirmed Inventory Body Type background art is another current `custom` resource picker suitable for later migration; deferred the 25 KB workspace rewrite until executable verification is available.
 - Moved Run navigation / History dispatch out of Project's unrestricted feature renderer and into the shared Author registry.
 - Removed `project` from `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`; remaining legacy features are Narrative, Media, Commands.
 - Removed the obsolete unused `WorkspacePanel.onClose` prop.
-- Compared branch to `main`; changes are limited to the documented Author shared layer, Project routing cleanup, and this plan. No `App.tsx`, runtime gameplay, mutation, persistence, or worker files have been changed.
+- Latest branch/main comparison shows the branch remains 0 commits behind `main` and changes are limited to the documented Author/shared UI and World/Project presentation ownership cleanup.
 
 ## Resume here
 
@@ -181,6 +210,8 @@ At the start of each new work session:
 2. compare branch to current `main` for incoming changes;
 3. update the Change log with any upstream merge/rebase decision;
 4. first obtain executable verification if available (`npm run verify`); if not, continue only low-risk shared/presentation work;
-5. next UX target: return-from-child continuity and shared action-language normalization;
-6. next audit target: inspect Narrative/Media/Commands for the smallest ordinary UI section that can move to structured Author primitives without touching runtime semantics;
-7. record completed changes and verification before ending the session.
+5. when verification is available, migrate Inventory Body Type background art to the semantic `resource` node and verify the World portrait migration at the same time;
+6. next UX target: broader return-from-child focus/scroll continuity and remaining shared action-language normalization;
+7. next audit target: inspect Narrative/Media/Commands for the smallest ordinary UI section that can move to structured Author primitives without touching runtime semantics;
+8. only after the shared/Author work is stable and executable verification is passing, begin isolated `App.tsx` runtime extractions;
+9. record completed changes and verification before ending the session.
