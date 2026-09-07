@@ -5,6 +5,7 @@ import {
   COMMAND_PROJECT_SETTINGS_SECTION,
   renderCommandSettingsWorkspace,
 } from "./CommandSettings";
+import { COMMAND_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function commandActionLabel(command: CommandDefinition) {
   if (command.action.type === "response") return "Respond with text";
@@ -54,6 +55,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
     },
   }],
   projectSettings: COMMAND_PROJECT_SETTINGS_SECTION,
+  workspaces: [...COMMAND_STRUCTURED_WORKSPACES],
   search: (context) => [
     {
       id: "commands:player-commands",
