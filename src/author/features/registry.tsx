@@ -110,7 +110,6 @@ export function renderAuthorFeatureWorkspace(
       onSnapshot={context.onSnapshot}
       onRestore={context.onRestore}
       onEditNode={(nodeId) => context.resources.edit("node", nodeId)}
-      onClose={context.leaveCurrentTask}
     />;
   }
 
