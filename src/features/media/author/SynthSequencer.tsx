@@ -120,8 +120,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
 }) {
   const voice = sound.voices[voiceIndex];
   const [stepIndex, setStepIndex] = useState(0);
-  const pitchDrag = useRef<{ pointerId: number; startX: number; startIndex: number; lastDelta: number } | null>(null);
-  const volumePointer = useRef<number | null>(null);
+  const pitchDrag = useRef<{ pointerId: number; startY: number; startIndex: number; lastDelta: number } | null>(null);
 
   useEffect(() => {
     setStepIndex(0);
@@ -172,18 +171,13 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
     true,
   );
 
-  const setVolume = (value: number, audition = false) => updateSelectedStep(
-    (step) => ({ ...step, volume: clamp(value, 0, 1) }),
-    audition,
-  );
-
   const beginPitchDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     if (!selectedStep) return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     pitchDrag.current = {
       pointerId: event.pointerId,
-      startX: event.clientX,
+      startY: event.clientY,
       startIndex: pitchIndex(selectedStep.note),
       lastDelta: 0,
     };
@@ -192,11 +186,12 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
   const movePitchDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
     const drag = pitchDrag.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const delta = Math.round((event.clientX - drag.startX) / 18);
+    // Up means higher pitch; down means lower pitch. One semitone per ~22 px.
+    const delta = Math.round((drag.startY - event.clientY) / 22);
     if (delta === drag.lastDelta) return;
     drag.lastDelta = delta;
     const note = PITCHES[clamp(drag.startIndex + delta, 0, PITCHES.length - 1)];
-    updateSelectedStep((step) => ({ ...step, note }));
+    updateSelectedStep((step) => ({ ...step, note }), true);
   };
 
   const endPitchDrag = (event: ReactPointerEvent<HTMLButtonElement>) => {
@@ -213,47 +208,6 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
     } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
       event.preventDefault();
       nudgePitch(amount);
-    }
-  };
-
-  const volumeFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    if (!rect.width) return;
-    setVolume((event.clientX - rect.left) / rect.width);
-  };
-
-  const beginVolume = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    volumePointer.current = event.pointerId;
-    volumeFromPointer(event);
-  };
-
-  const moveVolume = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (volumePointer.current !== event.pointerId) return;
-    volumeFromPointer(event);
-  };
-
-  const endVolume = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (volumePointer.current !== event.pointerId) return;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    volumePointer.current = null;
-  };
-
-  const volumeKey = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (!selectedStep) return;
-    if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
-      event.preventDefault();
-      setVolume(selectedStep.volume - 0.05, true);
-    } else if (event.key === "ArrowRight" || event.key === "ArrowUp") {
-      event.preventDefault();
-      setVolume(selectedStep.volume + 0.05, true);
-    } else if (event.key === "Home") {
-      event.preventDefault();
-      setVolume(0, true);
-    } else if (event.key === "End") {
-      event.preventDefault();
-      setVolume(1, true);
     }
   };
 
@@ -292,12 +246,11 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
           type="button"
           className="synth-step-select"
           aria-pressed={selectedIndex === index}
-          aria-label={`Select step ${index + 1}, ${step.active ? "active" : "off"}, ${voice.waveform === "noise" ? "noise" : step.note}, volume ${Math.round(step.volume * 100)} percent`}
+          aria-label={`Select step ${index + 1}, ${step.active ? "active" : "off"}, ${voice.waveform === "noise" ? "noise" : step.note}`}
           onClick={() => setStepIndex(index)}
         >
           <span>{String(index + 1).padStart(2, "0")}</span>
           <strong>{voice.waveform === "noise" ? "NOISE" : step.note}</strong>
-          <small>{Math.round(step.volume * 100)}%</small>
         </button>
         <button
           type="button"
@@ -329,49 +282,27 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
 
       {voice.waveform !== "noise" ? <div className="synth-pitch-editor">
         <span>PITCH</span>
-        <div className="synth-pitch-controls">
+        <button
+          type="button"
+          className="synth-pitch-scrub"
+          aria-label={`Pitch ${selectedStep.note}. Drag up to raise pitch or down to lower pitch. Arrow keys change pitch; hold Shift for an octave.`}
+          title="Drag up/down to scrub pitch"
+          onPointerDown={beginPitchDrag}
+          onPointerMove={movePitchDrag}
+          onPointerUp={endPitchDrag}
+          onPointerCancel={endPitchDrag}
+          onKeyDown={pitchKey}
+        >
+          <strong>{selectedStep.note}</strong>
+          <small>DRAG ↑↓</small>
+        </button>
+        <div className="synth-pitch-nudges">
           <button type="button" onClick={() => nudgePitch(-12)} aria-label="Pitch down one octave">[-12]</button>
           <button type="button" onClick={() => nudgePitch(-1)} aria-label="Pitch down one semitone">[-1]</button>
-          <button
-            type="button"
-            className="synth-pitch-scrub"
-            aria-label={`Pitch ${selectedStep.note}. Drag left or right, or use arrow keys, to change pitch.`}
-            title="Drag left/right to scrub pitch"
-            onPointerDown={beginPitchDrag}
-            onPointerMove={movePitchDrag}
-            onPointerUp={endPitchDrag}
-            onPointerCancel={endPitchDrag}
-            onKeyDown={pitchKey}
-          >{selectedStep.note}</button>
           <button type="button" onClick={() => nudgePitch(1)} aria-label="Pitch up one semitone">[+1]</button>
           <button type="button" onClick={() => nudgePitch(12)} aria-label="Pitch up one octave">[+12]</button>
         </div>
       </div> : <div className="synth-noise-step">NOISE VOICE · PITCH NOT USED</div>}
-
-      <div className="synth-volume-editor">
-        <span>VOLUME</span>
-        <div className="synth-volume-controls">
-          <button type="button" onClick={() => setVolume(selectedStep.volume - 0.05, true)} aria-label="Volume down 5 percent">[-5]</button>
-          <div
-            className="synth-volume-pad"
-            role="slider"
-            tabIndex={0}
-            aria-label={`Step ${selectedIndex + 1} volume`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={Math.round(selectedStep.volume * 100)}
-            onPointerDown={beginVolume}
-            onPointerMove={moveVolume}
-            onPointerUp={endVolume}
-            onPointerCancel={endVolume}
-            onKeyDown={volumeKey}
-          >
-            <span className="synth-volume-fill" style={{ width: `${Math.round(selectedStep.volume * 100)}%` }} />
-            <strong>VOL {Math.round(selectedStep.volume * 100)}%</strong>
-          </div>
-          <button type="button" onClick={() => setVolume(selectedStep.volume + 0.05, true)} aria-label="Volume up 5 percent">[+5]</button>
-        </div>
-      </div>
     </section> : null}
   </div>;
 }
