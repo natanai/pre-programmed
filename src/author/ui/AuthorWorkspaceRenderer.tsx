@@ -1,5 +1,6 @@
 import type { ChangeEvent } from "react";
 import { ReferenceField } from "../resources/ReferenceField";
+import { useAuthorCommitPending } from "../tasks/commitState";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -165,11 +166,13 @@ export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
  */
 export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWorkspaceSpec; busy?: boolean }) {
   assertValidAuthorWorkspaceSpec(spec);
+  const commitPending = useAuthorCommitPending();
+  const locked = busy || commitPending;
   return <section
     className="author-panel author-panel-frame author-ui-workspace"
     data-author-ui-workspace={spec.id}
-    aria-busy={busy || undefined}
-    inert={busy || undefined}
+    aria-busy={locked || undefined}
+    inert={locked || undefined}
   >
     <header className="author-ui-workspace-header">
       <span>{spec.title}</span>
