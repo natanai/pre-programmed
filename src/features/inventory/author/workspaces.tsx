@@ -1,6 +1,5 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
-import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
@@ -121,7 +120,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
           label: "Inventory tile",
           summary: `${draft.width}×${draft.height} · start ${draft.startingQuantity ?? 0}${draft.stackable ? " · stackable" : ""}`,
           children: [
-            { type: "custom", id: "inventory-item-asset", role: "resource-picker", content: <ReferenceField kind="media-image" value={draft.assetId} onChange={(assetId) => setDraft((current) => ({ ...current, assetId }))} placeholder="none / text tile" /> },
+            { type: "resource", id: "inventory-item-asset", label: "Image", kind: "media-image", value: draft.assetId, placeholder: "none / text tile", onChange: (assetId) => setDraft((current) => ({ ...current, assetId })) },
             { type: "field", id: "inventory-item-width", label: "Width", control: "number", value: draft.width, onChange: (width) => setDraft((current) => ({ ...current, width: Math.max(1, Math.min(10, Number(width))) })) },
             { type: "field", id: "inventory-item-height", label: "Height", control: "number", value: draft.height, onChange: (height) => setDraft((current) => ({ ...current, height: Math.max(1, Math.min(6, Number(height))) })) },
             { type: "toggle", id: "inventory-item-stackable", label: "Stackable", checked: draft.stackable, onChange: (stackable) => setDraft((current) => ({ ...current, stackable, maxStack: stackable ? Math.max(1, current.maxStack) : 1 })) },
