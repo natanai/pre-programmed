@@ -37,6 +37,12 @@ jobs:
             exit 1
           fi
 
+          if grep -Fq 'const dirtyTasks = [...tasks]' src/author/workspace/AuthorWorkspaceHost.tsx \
+            || ! grep -Fq 'liveTasksRef.current' src/author/workspace/AuthorWorkspaceHost.tsx; then
+            echo 'Save All must re-read the live task stack so child completion cannot strand new parent edits'
+            exit 1
+          fi
+
           for removed in \
             src/features/media/author/MediaAssetEditor.tsx \
             src/features/media/author/SynthPanel.tsx \
