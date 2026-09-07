@@ -6,33 +6,42 @@ The Author Synth is primarily for short retro computer/system audio: chirps, ble
 
 A **Synth** is a procedural authored definition stored with project data. An **audio file** is ordinary repository Media discovered from `public/assets/` (or the portable installation's `assets/` folder). These are separate authoring concepts even when a playback rule can accept either as an audio source.
 
-That does **not** mean advanced Synth values should be deleted. Less-common controls should remain fully authorable through progressive disclosure instead of occupying the primary composition surface.
+The Synth should feel like a small tactile sound toy rather than a form. Less-common controls remain authorable through progressive disclosure without competing with the primary composition surface.
 
 ## Primary interaction hierarchy
 
 The normal path should read roughly:
 
-`SYNTH PALETTE → WAVE → SHAPE → STEPS → PITCH`
+`PLAY / TEMPO → VOICE → WAVE → ATTACK / RELEASE → SEQUENCE`
 
-Exact envelope values, per-step volume, multi-voice structure, and similar detail remain available without competing with this primary path.
+The sequence itself is the instrument. Authors should not have to select a step, travel to another editor, and then manipulate the note they just touched.
 
 ## Current interaction direction
 
 - The structured Synth workspace owns its draft, dirty state, validation, persistence, resource-task completion, and Save/Delete lifecycle. The legacy internal route/resource identifier `synth-sound` remains a compatibility boundary; it is not the product label.
 - `SynthSequencer` is a specialized direct-manipulation control only. It must not grow a second draft/baseline/save path.
-- Synth palettes are editable starting recipes, not a second media format. Current palette set: **BLIP, CHIRP, CONFIRM, CHIME, ALERT, ERROR, BOOT, ASCEND, ZAP, HIT**.
-- Applying a palette immediately auditions it, then exposes the same ordinary Synth recipe for further editing.
-- Waveform choice is a row of tactile **SQUARE / TRI / SAW / SINE / NOISE** buttons rather than a dropdown and auditions the selected step.
-- Voice envelope has lightweight **TIGHT / PUNCH / SOFT / RING** shape buttons. These only set the existing Attack/Release values; no new persisted synthesis model is introduced.
-- Exact Attack/Release values remain available under an `EXACT ENVELOPE` disclosure and inherit the shared Author numeric scrub/flick behavior.
-- Steps are large pads, four per row on narrow/mobile layouts.
-- Each step exposes ON/OFF directly so rhythm authoring does not require selecting the step first.
-- Selecting a step opens one roomy step editor rather than repeating tiny note controls across every step.
-- The note itself is the primary pitch control: drag **up** to raise the note and **down** to lower it. Pitch changes audition while scrubbing.
-- `-12`, `-1`, `+1`, and `+12` remain visible precision/accessibility fallbacks. Keyboard arrows also work; Shift changes by an octave.
-- Selected steps can be auditioned independently from the whole recipe.
-- Per-step `volume` remains fully authorable but is **secondary**. The selected step shows a compact `VOLUME n%` disclosure; opening it reveals a full-width 0–100 touch rail plus `-5 / +5` controls. Do not return to tiny repeated sliders on every step.
-- Tempo and Sequence Length remain numeric inputs and therefore inherit the shared Author mobile number scrub/flick gesture.
+- The workbench transport keeps **PLAY, BPM, and LOOP** adjacent to the instrument. BPM retains ordinary numeric entry plus shared Author touch scrubbing and explicit `-5 / +5` adjustments.
+- The transport is sticky within the Synth task so tempo remains reachable while editing long sequences on narrow/mobile layouts.
+- Waveform choice is a tactile **SQUARE / TRI / SAW / SINE / NOISE** row rather than a dropdown.
+- The old named Shape presets are not part of the primary authoring model. **Attack** and **Release** are direct full-width rails.
+- Attack/Release rails use a non-linear mapping that gives short envelope times more physical travel, making tiny computer clicks/bleeps easier to tune than raw decimal entry.
+- Sequence length lives with the sequence as direct `- / +` controls and still calls the one canonical sequence-resize operation for every voice.
+- Steps are large pads, four per row in narrow panes and eight per row when the actual Author pane has enough width.
+- Tapping a step toggles it on/off.
+- On pitched voices, dragging a step **up/down** changes its chromatic note and auditions changes immediately.
+- On pitched voices, dragging a step **left/right** adds a restrained per-step pitch sweep. Horizontal and vertical gestures use a dead zone and axis lock so slightly diagonal finger movement does not accidentally change both values.
+- A pitch sweep is optional Synth recipe data expressed in semitones across one step. Existing Synths without it remain valid. The procedural oscillator scheduler owns playback of the sweep; the editor does not fake it.
+- A small selected-step detail disclosure remains only for secondary controls such as per-step volume, audition, and clearing a sweep. Primary note manipulation never depends on opening it.
+- Noise steps retain direct activation and volume/audition behavior but do not expose pitch gestures.
+- Multi-voice add/duplicate/remove operations remain on the same Synth draft and use the existing voice helpers.
+
+## Responsive ownership
+
+- Mobile and desktop use exactly the same Synth resource, editor component, mutations, playback path, and Save semantics.
+- Responsive behavior is based on the **actual Author pane width**, not the browser viewport. A narrow resizable desktop Author pane therefore receives the same compact presentation as a phone-sized pane.
+- The workbench uses one column when narrow. With enough Author-pane width, patch controls and the sequence become a two-column workbench.
+- The sequence keeps four columns in narrow panes and eight columns once there is enough local width.
+- Interactive controls must remain comfortably reachable with coarse pointers and while the mobile keyboard is open.
 
 ## Audio-source boundary
 
@@ -48,17 +57,22 @@ Prefer playful direct manipulation over repeated form controls, but every gestur
 
 ## Manual checks
 
-- On iPhone-size width, confirm four step pads per row remain comfortably tappable.
-- Apply each Synth palette and confirm it immediately auditions and remains editable as ordinary Synth data.
-- Switch waveform using the tactile waveform buttons and confirm the selected step auditions.
-- Switch among TIGHT/PUNCH/SOFT/RING and confirm envelope character changes without requiring raw numbers.
-- Open EXACT ENVELOPE and verify Attack/Release remain editable and support shared numeric drag/flick interaction.
-- Toggle several steps ON/OFF directly from the pads without opening the detail editor each time.
-- Select a pitched step and drag the large note surface upward/downward; confirm the note walks up/down the chromatic scale and auditions changes.
-- Confirm `-12/-1/+1/+12` produce the same pitch mutations without gestures.
-- Open VOLUME on a selected step and confirm the full-width rail is easy to control on mobile; verify `-5/+5` provide precise fallback adjustments.
-- Confirm Noise hides pitch editing but retains step activation, volume, and audition behavior.
-- Confirm Tempo/Sequence Length support shared numeric drag/flick interaction on coarse pointers.
-- Save, leave, reopen, and verify the authored recipe is unchanged except for intended edits.
+- At a narrow Author-pane width, confirm the workbench stays single-column, step pads remain four per row, and no control creates horizontal page overflow.
+- At a wider Author-pane width, confirm patch controls and sequence become a two-column workbench and steps become eight per row.
+- Scroll a long Synth task and confirm PLAY/BPM/LOOP remain reachable without covering unrelated Author chrome.
+- Change BPM by typing, shared touch scrubbing, and `-5 / +5`; verify all three edit the same tempo value.
+- Adjust Attack and Release from very short values through longer tails; confirm short values have useful physical resolution.
+- Add and remove beats with the sequence `- / +`; switch voices and confirm every voice stays the same sequence length.
+- Toggle pitched beats by tapping them directly.
+- Drag pitched beats vertically and confirm notes walk the chromatic scale, become active when manipulated, and audition each meaningful change.
+- Drag pitched beats horizontally and confirm small left/right movements inside the dead zone do nothing, then clear horizontal movement locks to pitch sweep only.
+- Confirm an upward sweep displays `↗n`, a downward sweep displays `↘n`, playback actually bends during the beat, and `CLEAR SWEEP` returns it to zero.
+- Confirm slightly diagonal gestures commit to only one axis rather than mutating both note and sweep.
+- Verify keyboard Up/Down adjusts note and Left/Right adjusts sweep on focused pitched pads.
+- Open Step Details and confirm volume/audition remain available without becoming the primary pitch workflow.
+- Confirm Noise uses direct step activation but no pitch/sweep gesture language.
+- Add, duplicate, remove, and switch voices; verify edits remain on the same Synth draft.
+- Save, leave, reopen, and verify notes, sweeps, envelope, sequence length, tempo, loop state, and volume persist unchanged.
+- Reopen an older Synth created before pitch sweeps existed and confirm it plays and saves without migration.
 - Add a repository audio file, rebuild, and confirm it appears as an Audio File rather than a Synth.
 - Open an Audio Source selector and confirm procedural Synths and repository audio files are both selectable and visibly distinguished.
