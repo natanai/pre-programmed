@@ -93,7 +93,7 @@ Previous audit summary:
 - [x] Migrate State Player Presentation group selector to `resource`.
 - [x] Migrate Inventory Configure Equipment launcher to `action-row`.
 - [x] Migrate World Character/Location create actions to `action-row`.
-- [ ] Audit current branch for any remaining ordinary `custom` resource-picker escape hatches before removing that legacy role from the grammar.
+- [x] Audited the live branch for `custom` resource-picker escape hatches; migrated the ordinary Radix synth selector to semantic `resource`, reclassified Narrative Node context as a genuine composite `specialized-control`, and removed the `resource-picker` role from the grammar.
 
 `custom` should remain for genuinely specialized controls: rule trees, operation editors, graph browsers, sequencers, layouts, drawing surfaces, and result browsers—not ordinary fields/resources/buttons.
 
@@ -131,7 +131,8 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Target Names + Aliases list moved to structured Author workspace.
 - [x] Target Behavior list moved to structured Author workspace.
 - [x] Deleted the four now-unreachable legacy route components, their old renderer branches, the helper used only by them, and migrated list-route CSS instead of leaving prototype UI dormant.
-- [ ] Remaining unrestricted renderer: **Player Command editor and per-target Reference Source editor only**.
+- [x] Per-target Reference Source editor moved to structured Author grammar using the same Commands-owned `project.settings` persistence path; old editor branch and CSS were physically removed.
+- [ ] Remaining unrestricted renderer: **Player Command editor only**.
 
 #### Legacy exception list
 
@@ -192,7 +193,9 @@ Full `npm run verify` has passed after:
 - creation of the Narrative prose presentation resolver and its memoized continuation hook;
 - App delegation of node-opening and follow-up prose presentation to those Narrative-owned contracts;
 - expansion of `executeInteraction` to return presentation performances;
-- removal of App's duplicate `interactionOutcomeProse` interpretation.
+- removal of App's duplicate `interactionOutcomeProse` interpretation;
+- Commands per-target Reference Source structured migration using shared Commands persistence;
+- branch-native audit and removal of the obsolete `custom` `resource-picker` role.
 
 One-shot workflows are used only for mechanically editing large files when connector reads are chunked. They assert exact source shape, run full `npm run verify`, commit only on success, and remove themselves. Failed assertions therefore leave the intended source change uncommitted.
 
@@ -213,7 +216,7 @@ GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, s
 - confirm master X returns to player and Back remains within Author tasks;
 - verify nested Author navigation no longer displays `SAVE RETURNS TO …` helper copy;
 - open Player Interactions, Player Commands, Target Names + Aliases, and Target Behavior after their structured migration;
-- edit a Player Command and a per-target Reference Source through their canonical remaining editors;
+- edit a Player Command through its remaining canonical editor and edit a per-target Reference Source through the structured task;
 - edit a Body Type background image and confirm the shared Media chooser/preview/Edit/Create behavior;
 - edit a State value's Player Presentation group and confirm the shared State Group reference behavior;
 - open Story Structure and verify search/path/legend/node/interaction editing still work;
@@ -275,6 +278,15 @@ Latest comparison on 2026-09-06:
 - Removed `SAVE RETURNS TO …` from shared task navigation and Stack; parent context stays visible through the task trail and focus is restored on child return.
 - Independent normal branch verification passed over the consolidated cleanup head.
 
+### 2026-09-06 — Commands Reference Source + resource-picker cleanup
+
+- Moved per-target Reference Source editing into structured Author grammar using shared toggles, fields, sections, and contextual actions.
+- Centralized Commands author settings persistence helpers so the structured Reference Source task and remaining Player Command editor share one mutation path.
+- Removed the old Reference Source legacy renderer branch and its route-specific CSS rather than leaving it unreachable.
+- Branch-native audit found only two `custom` `resource-picker` roles: Radix synth selection and the composite Narrative Node context strip.
+- Migrated Radix synth selection to semantic `resource`; retained Node context as a specialized composite because it owns Set / Continue / Clear context semantics rather than acting as an ordinary picker.
+- Removed `resource-picker` from the shared `AuthorUiCustom` role union so new ordinary resource fields cannot regress to that escape hatch.
+
 ### 2026-09-06 — Narrative runtime ownership extraction
 
 - Added `useNarrativePlayerSurface`; App no longer constructs the Narrative graph, evaluates choice visibility, resolves node anchors, or derives fallback/input notation and terminal choices itself.
@@ -292,9 +304,8 @@ At the start of every session:
 2. compare branch to current `main` and record any incoming divergence before editing;
 3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
 4. re-audit remaining direct Narrative imports in App after the three runtime slices and decide whether a higher-level interaction contribution is warranted or whether the current call is an acceptable composition-root installation;
-5. audit current branch for any remaining ordinary `custom` resource-picker escape hatches before deleting that legacy custom role;
-6. remaining Commands Author migration target: per-target Reference Source editor first if it can be moved to structured grammar without duplicating persistence; Player Command editor remains the more complex final Commands legacy surface;
-7. do not begin the broader Session lifecycle move until the remaining lower-risk Author/runtime slices are stable; Session crosses saved-game compatibility and autosave semantics;
-8. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
-9. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
-10. update this document before ending any session where meaningful work occurred.
+5. remaining Commands Author migration target: Player Command editor, now the only unrestricted Commands workspace; migrate it only if the structured grammar can preserve its specialized text/effects/target setup without duplicating persistence;
+6. do not begin the broader Session lifecycle move until the remaining lower-risk Author/runtime slices are stable; Session crosses saved-game compatibility and autosave semantics;
+7. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
+8. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
+9. update this document before ending any session where meaningful work occurred.

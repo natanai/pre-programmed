@@ -164,7 +164,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
         defaultOpen: true,
         children: [
           { type: "toggle", id: "radix-sound-enabled", label: "SOUND ENABLED", checked: draft.soundEnabled, onChange: (soundEnabled) => setDraft({ ...draft, soundEnabled }) },
-          { type: "custom", id: "radix-synth", role: "resource-picker", content: <ReferenceField kind="synth-sound" value={draft.synthId} onChange={(synthId) => setDraft({ ...draft, synthId })} placeholder="Default triangle tone" /> },
+          { type: "resource", id: "radix-synth", label: "SYNTH SOUND", kind: "synth-sound", value: draft.synthId, onChange: (synthId) => setDraft({ ...draft, synthId }), placeholder: "Default triangle tone" },
           { type: "field", id: "radix-min-frequency", label: "MIN FREQUENCY (HZ)", control: "number", inputMode: "decimal", value: draft.minFrequency, onChange: (value) => setDraft({ ...draft, minFrequency: numberValue(value, draft.minFrequency, 20, 12000) }) },
           { type: "field", id: "radix-max-frequency", label: "MAX FREQUENCY (HZ)", control: "number", inputMode: "decimal", value: draft.maxFrequency, onChange: (value) => setDraft({ ...draft, maxFrequency: numberValue(value, draft.maxFrequency, draft.minFrequency, 16000) }) },
           { type: "field", id: "radix-volume", label: "VOLUME (0–1)", control: "number", inputMode: "decimal", value: draft.volume, onChange: (value) => setDraft({ ...draft, volume: numberValue(value, draft.volume, 0, 1) }), help: "The selected synth's first pitched voice supplies waveform and envelope." },

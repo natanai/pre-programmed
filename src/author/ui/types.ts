@@ -120,7 +120,7 @@ export type AuthorUiActionRow = {
 export type AuthorUiCustom = {
   type: "custom";
   id: string;
-  role: "specialized-control" | "resource-picker" | "ordered-list" | "rule-editor" | "preview" | "results";
+  role: "specialized-control" | "ordered-list" | "rule-editor" | "preview" | "results";
   content: ReactNode;
 };
 
