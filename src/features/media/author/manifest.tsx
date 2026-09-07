@@ -7,7 +7,7 @@ import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
 import { VectorAssetEditor } from "./VectorAssetEditor";
-import { SynthEditor, SynthPanel } from "./SynthPanel";
+import { SynthEditor } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
@@ -165,7 +165,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   renderWorkspace(route, context) {
     if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
       snapshot={context.snapshot}
-      onClose={context.leaveCurrentTask}
       onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
         type: "feature",
         feature: "media",
@@ -243,22 +242,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         }}
       />;
     }
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "synth") return <SynthPanel
-      snapshot={context.snapshot}
-      onOpenSound={(sound) => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: "synth-sound",
-        data: { soundId: sound.id },
-      })}
-      onNewSound={() => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: "synth-sound",
-        data: { soundId: "new" },
-      })}
-    />;
 
     if (route.type === "feature" && route.feature === "media" && route.workspace === "synth-sound") {
       const soundId = route.data?.soundId ?? "new";
