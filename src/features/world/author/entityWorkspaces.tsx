@@ -1,7 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
-import { completeAuthorResourceDeletion } from "../../../author/resources/completion";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { EntityDefinition } from "../model";
 import "./worldWorkspaces.css";
@@ -75,7 +74,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
         `Delete ${draft.type} ${label}`,
       );
       if (result.status !== "saved" && result.status !== "queued") return;
-      completeAuthorResourceDeletion(context, route.data?.resourceTask ?? draft.type, draft.id);
+      context.leaveCurrentTask();
     };
 
     return {
