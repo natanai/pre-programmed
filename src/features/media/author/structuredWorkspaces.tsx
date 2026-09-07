@@ -4,6 +4,7 @@ import { AssetExplorer } from "./AssetExplorer";
 import { mediaFileAssetWorkspace, mediaFileHelpWorkspace } from "./mediaAssetWorkspace";
 import { synthSoundWorkspace } from "./synthSoundWorkspace";
 import { vectorAssetWorkspace } from "./vectorAssetWorkspace";
+import "./mediaAuthor.css";
 
 export const mediaAssetsWorkspace = defineAuthorWorkspace({
   id: "media-assets",
