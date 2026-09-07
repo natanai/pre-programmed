@@ -1,4 +1,5 @@
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useAuthorLongPress } from "../ui/useAuthorLongPress";
 import { useAuthorResourceTools } from "./context";
 import "./referenceField.css";
 
@@ -20,9 +21,11 @@ export function ReferenceField({
   const resources = useAuthorResourceTools();
   const chooserId = useId();
   const onChangeRef = useRef(onChange);
+  const returnHighlightTimerRef = useRef<number | null>(null);
   onChangeRef.current = onChange;
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
+  const [returned, setReturned] = useState(false);
   const options = resources.options(kind);
   const label = resources.label(kind);
   const selected = options.find((option) => option.value === value);
@@ -31,7 +34,21 @@ export function ReferenceField({
     || `${option.label} ${option.detail ?? ""} ${option.value}`.toLocaleLowerCase().includes(normalizedQuery)), [normalizedQuery, options]);
   const selectedLabel = selected?.label ?? (value ? `Missing: ${value}` : (placeholder ?? `Choose ${label.toLowerCase()}`));
   const preview = showPreview && selected ? resources.preview(kind, value) : null;
+  const canEditSelected = Boolean(selected && resources.canEdit(kind, value));
+  const canCreate = resources.canCreate(kind);
 
+  useEffect(() => () => {
+    if (returnHighlightTimerRef.current !== null) window.clearTimeout(returnHighlightTimerRef.current);
+  }, []);
+
+  const markReturned = () => {
+    setReturned(true);
+    if (returnHighlightTimerRef.current !== null) window.clearTimeout(returnHighlightTimerRef.current);
+    returnHighlightTimerRef.current = window.setTimeout(() => {
+      returnHighlightTimerRef.current = null;
+      setReturned(false);
+    }, 1100);
+  };
   const closeChooser = () => {
     setOpen(false);
     setQuery("");
@@ -42,38 +59,62 @@ export function ReferenceField({
   };
   const createResource = () => {
     closeChooser();
-    resources.create(kind, (resource) => onChangeRef.current(resource.value));
-  };
-  const editResource = () => {
-    closeChooser();
-    resources.edit(kind, value, (result) => {
-      if (result?.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
+    resources.create(kind, (resource) => {
+      onChangeRef.current(resource.value);
+      markReturned();
     });
   };
+  const editResource = () => {
+    if (!canEditSelected) return;
+    closeChooser();
+    resources.edit(kind, value, (result) => {
+      if (!result) return;
+      if (result.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
+      markReturned();
+    });
+  };
+  const longPressEdit = useAuthorLongPress({
+    enabled: canEditSelected,
+    onLongPress: editResource,
+  });
   const openOrCreate = () => {
     if (open) {
       closeChooser();
       return;
     }
-    if (!value && !options.length && resources.canCreate(kind)) {
+    if (!value && !options.length && canCreate) {
       createResource();
       return;
     }
     setOpen(true);
   };
 
-  return <div className={`author-reference-field${open ? " is-open" : ""}`} data-resource-kind={kind}>
-    <button
-      type="button"
-      className="author-reference-trigger"
-      aria-expanded={open}
-      aria-controls={chooserId}
-      onClick={openOrCreate}
-    >
-      <span className="author-reference-kind">{label.toUpperCase()}</span>
-      <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
-      <span className="author-reference-chevron" aria-hidden="true">{open ? "⌄" : "›"}</span>
-    </button>
+  return <div className={`author-reference-field${open ? " is-open" : ""}${returned ? " is-returned" : ""}`} data-resource-kind={kind}>
+    <div className="author-reference-control-row">
+      <button
+        type="button"
+        className="author-reference-trigger"
+        aria-expanded={open}
+        aria-controls={chooserId}
+        onClick={openOrCreate}
+        {...longPressEdit}
+      >
+        <span className="author-reference-kind">{label.toUpperCase()}</span>
+        <span className={`author-reference-value${selected ? "" : " is-empty"}`}>{selectedLabel}</span>
+        <span className="author-reference-chevron" aria-hidden="true">{open ? "⌄" : "›"}</span>
+      </button>
+      {canEditSelected ? <button
+        type="button"
+        className="author-reference-direct-action"
+        aria-label={`Edit ${selected?.label ?? label}`}
+        onClick={editResource}
+      >[EDIT]</button> : !selected && canCreate ? <button
+        type="button"
+        className="author-reference-direct-action"
+        aria-label={`Create ${label}`}
+        onClick={createResource}
+      >[+ CREATE]</button> : null}
+    </div>
 
     {preview ? <div className="author-reference-preview">{preview}</div> : null}
 
@@ -109,12 +150,9 @@ export function ReferenceField({
         {!options.length ? <span className="author-reference-no-results">NO {label.toUpperCase()}S YET</span> : null}
       </div>
       <div className="author-reference-actions">
-        {selected && resources.canEdit(kind, value) ? <button type="button" onClick={editResource}>[EDIT {label.toUpperCase()}]</button> : null}
-        {resources.canCreate(kind) ? <button type="button" onClick={createResource}>[+ CREATE {label.toUpperCase()}]</button> : null}
+        {canCreate ? <button type="button" onClick={createResource}>[+ CREATE {label.toUpperCase()}]</button> : null}
         <button type="button" onClick={closeChooser}>[CLOSE]</button>
       </div>
-      {resources.canCreate(kind) ? <small className="author-reference-return-help">Creating opens a nested Author task. Save there to return here with the new {label.toLowerCase()} selected.</small> : null}
     </section> : null}
-    {!options.length && resources.canCreate(kind) && !open ? <small className="author-reference-empty">No {label.toLowerCase()} exists yet. Create one here.</small> : null}
   </div>;
 }

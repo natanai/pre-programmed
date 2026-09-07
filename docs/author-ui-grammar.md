@@ -29,15 +29,21 @@ See [`author-resource-ownership.md`](author-resource-ownership.md) for the full 
 Data-first Author workspaces should express ordinary tasks through a small semantic vocabulary:
 
 - `field` — edit text or a numeric value;
+- `resource` — choose, create, preview, or enter the canonical editor for an authorable resource through the shared resource contract;
 - `select` — choose one value from a conventional compact list;
 - `toggle` — turn one boolean option on or off;
 - `choice` — choose one mutually exclusive path, especially when the alternatives carry meaning or conditional content;
 - `section` — one root-level conceptual group;
 - `disclosure` — optional/advanced material without adding navigation depth;
+- `action-row` — one or more contextual actions inside the current task body;
 - `status` — validation or feedback;
 - `custom` — a specialized control that cannot reasonably be represented by ordinary primitives.
 
-A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/selects/toggles, global task navigation, task headers, Author exit behavior, or persistence semantics.
+A resource control is an entry point into the owning resource system, not an embedded foreign editor. Its ordinary choose/create/edit presentation belongs to shared Author UI; saving and validation remain with the resource owner's nested task.
+
+An action row is for ordinary contextual actions such as opening a separately suspendable subtask. It does not replace the task-level Save area, Author Back/X navigation, or feature-owned persistence semantics.
+
+A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/resources/selects/toggles/action rows, global task navigation, task headers, Author exit behavior, or persistence semantics.
 
 ## Finite visual hierarchy
 
@@ -87,15 +93,15 @@ The goal is for the author to understand what is saved, what is still draft, and
 
 ## New feature contract
 
-New feature workspaces should prefer data-first workspace definitions that separate:
+Feature workspaces use data-first workspace definitions that separate:
 
 1. draft creation;
 2. semantic UI specification;
 3. feature-owned save semantics.
 
-The shared workspace host should own ordinary draft lifecycle, dirty state, validation, rendering, task presentation, and shared save/exit behavior.
+The shared workspace host owns ordinary draft lifecycle, dirty state, rendering, task presentation, and shared save/exit behavior. Feature workspaces own domain validation and persistence semantics.
 
-Some existing feature surfaces may still use unrestricted custom workspace rendering. That is a current implementation detail, not a compatibility promise. Do not preserve an unsuitable editor merely to keep old JSX structure stable, and do not make unrestricted rendering the default for new features.
+Unrestricted feature-level workspace rendering is not part of the Author feature contract. Specialized controls remain supported through the semantic `custom` node, but they live inside a structured workspace whose draft and task lifecycle still follow the shared system.
 
 ## Responsive authenticity test
 

@@ -2,8 +2,8 @@ import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { SORT_ALGORITHM_LABELS } from "../model";
 import { radixEffectAdapter } from "./ruleAdapters";
 import { RADIX_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
+import { RADIX_PROJECT_SETTINGS, radixStartupWorkspace } from "./startupWorkspace";
 import {
-  RADIX_PROJECT_SETTINGS,
   radixSequenceEditorWorkspace,
   radixSequenceListWorkspace,
 } from "./workspaces";
@@ -12,6 +12,7 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
   id: "radix",
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "radix") return null;
+    if (route.workspace === "startup") return "Player launch";
     if (route.workspace === "sequences") return "Sort sequences";
     if (route.workspace === "sequence") {
       const sequence = snapshot.settings.radix.sequences.find((candidate) => candidate.id === route.data?.sequenceId);
@@ -62,5 +63,5 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
     commands: ["/radix", "radix", "/sort", "sort"],
     route: { type: "feature", feature: "radix", workspace: "sequences" },
   }],
-  workspaces: [radixSequenceListWorkspace, radixSequenceEditorWorkspace],
+  workspaces: [radixStartupWorkspace, radixSequenceListWorkspace, radixSequenceEditorWorkspace],
 };

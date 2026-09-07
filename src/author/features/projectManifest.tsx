@@ -1,8 +1,7 @@
 import type { AuthorFeatureManifest } from "./types";
-import { PROJECT_GENERAL_SETTINGS } from "../settings/projectGeneralSettings";
+import { PROJECT_GENERAL_SETTINGS, projectTerminalSettingsWorkspace } from "../settings/projectGeneralSettings";
 import { projectTransferAuthorWorkspace } from "../project/projectTransferWorkspace";
 import { projectAuthorTools } from "../tools/projectTools";
-import { WorkspacePanel } from "../workspace/WorkspacePanel";
 import {
   allConditionAdapter,
   alwaysConditionAdapter,
@@ -16,8 +15,8 @@ import {
 export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
   describeTask(route) {
-    if (route.type === "workspace") return route.view === "history" ? "History" : "Run navigation";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
+    if (route.type === "feature" && route.feature === "project" && route.workspace === "terminal-settings") return "Terminal prompt";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "transfer") return "Project file";
     return null;
   },
@@ -45,8 +44,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
     editRoute: () => ({
       type: "feature",
       feature: "project",
-      workspace: "settings",
-      data: { section: "project-terminal" },
+      workspace: "terminal-settings",
     }),
   }],
   conditions: [
@@ -59,19 +57,6 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   ],
   effects: [notificationEffectAdapter],
   tools: projectAuthorTools,
-  workspaces: [projectTransferAuthorWorkspace],
+  workspaces: [projectTerminalSettingsWorkspace, projectTransferAuthorWorkspace],
   projectSettings: PROJECT_GENERAL_SETTINGS,
-  renderWorkspace(route, context) {
-    if (route.type !== "workspace") return null;
-    return <WorkspacePanel
-      token={context.authorToken}
-      snapshot={context.snapshot}
-      playState={context.playState}
-      initialView={route.view === "history" ? "history" : "navigation"}
-      onSnapshot={context.onSnapshot}
-      onRestore={context.onRestore}
-      onEditNode={(nodeId) => context.resources.edit("node", nodeId)}
-      onClose={context.leaveCurrentTask}
-    />;
-  },
 };

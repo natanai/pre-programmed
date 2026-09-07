@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { ReferenceField } from "../resources/ReferenceField";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -31,15 +32,40 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
       autoFocus: node.autoFocus,
       enterKeyHint: node.enterKeyHint,
       inputMode: node.inputMode,
+      maxLength: node.maxLength,
+      autoCapitalize: node.autoCapitalize,
+      autoCorrect: node.autoCorrect,
+      spellCheck: node.spellCheck,
       onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => node.onChange(event.target.value),
     };
     return <label className="author-ui-field" htmlFor={node.id}>
       <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
       {node.control === "textarea"
         ? <textarea {...common} rows={node.rows ?? 4} />
-        : <input {...common} type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"} />}
+        : <input
+            {...common}
+            type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"}
+            min={node.min}
+            max={node.max}
+            step={node.step}
+          />}
       {node.help ? <small className="author-ui-help">{node.help}</small> : null}
     </label>;
+  }
+
+  if (node.type === "resource") {
+    return <div className="author-ui-field author-ui-resource-field">
+      <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
+      <ReferenceField
+        kind={node.kind}
+        value={node.value}
+        onChange={node.onChange}
+        placeholder={node.placeholder}
+        allowEmpty={node.allowEmpty}
+        showPreview={node.showPreview}
+      />
+      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
+    </div>;
   }
 
   if (node.type === "select") {
@@ -97,6 +123,18 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
     </details>;
   }
 
+  if (node.type === "action-row") {
+    return <div className="author-ui-action-row">
+      {node.actions.map((action) => <button
+        type="button"
+        className={action.tone === "danger" ? "danger" : undefined}
+        disabled={action.disabled}
+        onClick={action.onAction}
+        key={action.id}
+      >[{action.label}]</button>)}
+    </div>;
+  }
+
   if (node.type === "status") {
     return <div className={`author-ui-status author-ui-status-${node.tone ?? "info"}`} role={node.tone === "error" ? "alert" : "status"}>{node.text}</div>;
   }
@@ -104,7 +142,7 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
   return <div className="author-ui-custom" data-author-ui-role={node.role}>{node.content}</div>;
 }
 
-/** Render semantic blocks inside a legacy editor while that editor is migrated. */
+/** Render semantic blocks within the shared structured Author hierarchy. */
 export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
   return <div className="author-ui-blocks">{renderNodes(blocks)}</div>;
 }
@@ -114,9 +152,14 @@ export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
  * Feature code supplies semantic intent only; this component owns task-level
  * title, body hierarchy, responsive presentation, and the one action footer.
  */
-export function AuthorWorkspaceRenderer({ spec }: { spec: AuthorWorkspaceSpec }) {
+export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWorkspaceSpec; busy?: boolean }) {
   assertValidAuthorWorkspaceSpec(spec);
-  return <section className="author-panel author-panel-frame author-ui-workspace" data-author-ui-workspace={spec.id}>
+  return <section
+    className="author-panel author-panel-frame author-ui-workspace"
+    data-author-ui-workspace={spec.id}
+    aria-busy={busy || undefined}
+    inert={busy || undefined}
+  >
     <header className="author-ui-workspace-header">
       <span>{spec.title}</span>
       {spec.context ? <small>{spec.context}</small> : null}

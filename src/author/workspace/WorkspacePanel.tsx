@@ -25,7 +25,6 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
   onSnapshot: (snapshot: ProjectSnapshot) => void;
   onRestore: (bookmark: AuthorBookmark) => void;
   onEditNode: (nodeId: string) => void;
-  onClose: () => void;
 }) {
   const [view, setView] = useState<WorkspaceView>(initialView);
   const [revisions, setRevisions] = useState<RevisionSummary[]>([]);

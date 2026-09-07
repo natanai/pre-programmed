@@ -18,6 +18,27 @@ export type AuthorUiField = {
   autoFocus?: boolean;
   enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  min?: number;
+  max?: number;
+  step?: number;
+  maxLength?: number;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: "on" | "off";
+  spellCheck?: boolean;
+};
+
+export type AuthorUiResource = {
+  type: "resource";
+  id: string;
+  label: string;
+  labelMode?: AuthorUiLabelMode;
+  kind: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  allowEmpty?: boolean;
+  showPreview?: boolean;
+  help?: string;
 };
 
 export type AuthorUiSelectOption = {
@@ -83,6 +104,21 @@ export type AuthorUiDisclosure = {
   children: AuthorUiNode[];
 };
 
+export type AuthorUiInlineAction = {
+  id: string;
+  label: string;
+  onAction: () => void;
+  disabled?: boolean;
+  tone?: "default" | "danger";
+};
+
+/** Contextual actions inside a task body; persistence/navigation stay task-level. */
+export type AuthorUiActionRow = {
+  type: "action-row";
+  id: string;
+  actions: AuthorUiInlineAction[];
+};
+
 /**
  * Escape hatch for a genuinely specialized control such as a rule tree,
  * sequencer, grid, or resource result list. The shared workspace renderer still
@@ -91,7 +127,7 @@ export type AuthorUiDisclosure = {
 export type AuthorUiCustom = {
   type: "custom";
   id: string;
-  role: "specialized-control" | "resource-picker" | "ordered-list" | "rule-editor" | "preview" | "results";
+  role: "specialized-control" | "ordered-list" | "rule-editor" | "preview" | "results";
   content: ReactNode;
 };
 
@@ -104,11 +140,13 @@ export type AuthorUiStatus = {
 
 export type AuthorUiNode =
   | AuthorUiField
+  | AuthorUiResource
   | AuthorUiSelect
   | AuthorUiToggle
   | AuthorUiChoice
   | AuthorUiSection
   | AuthorUiDisclosure
+  | AuthorUiActionRow
   | AuthorUiCustom
   | AuthorUiStatus;
 

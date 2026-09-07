@@ -168,12 +168,26 @@ export function AuthorWorkspaceHost({
   const workspaceLayerRef = useRef<HTMLDivElement>(null);
   const preservedViewRef = useRef<PreservedWorkspaceView | null>(null);
   const saveHandlersRef = useRef(new Map<string, AuthorWorkspaceSaveHandler>());
+  const returnFocusRef = useRef(new Map<string, HTMLElement>());
+  const liveTasksRef = useRef(tasks);
+  liveTasksRef.current = tasks;
 
   useEffect(() => setStackOpen(false), [activeTaskId]);
   useEffect(() => {
     const liveTaskIds = new Set(tasks.map((task) => task.id));
+    let returnFocus: HTMLElement | null = null;
     for (const taskId of saveHandlersRef.current.keys()) {
       if (!liveTaskIds.has(taskId)) saveHandlersRef.current.delete(taskId);
+    }
+    for (const [childTaskId, element] of returnFocusRef.current.entries()) {
+      if (liveTaskIds.has(childTaskId)) continue;
+      returnFocusRef.current.delete(childTaskId);
+      if (element.isConnected) returnFocus = element;
+    }
+    if (returnFocus) {
+      window.requestAnimationFrame(() => {
+        if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+      });
     }
   }, [tasks]);
 
@@ -181,6 +195,16 @@ export function AuthorWorkspaceHost({
     if (handler) saveHandlersRef.current.set(taskId, handler);
     else saveHandlersRef.current.delete(taskId);
   }, []);
+
+  const pushTaskWithReturnFocus = useCallback((route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => {
+    const layer = workspaceLayerRef.current;
+    const focused = document.activeElement instanceof HTMLElement && layer?.contains(document.activeElement)
+      ? document.activeElement
+      : null;
+    const childTaskId = shared.pushTask(route, onComplete);
+    if (focused) returnFocusRef.current.set(childTaskId, focused);
+    return childTaskId;
+  }, [shared.pushTask]);
 
   const preview = useCallback<AuthorRuntimeSurface["preview"]>((presentation) => {
     const layer = workspaceLayerRef.current;
@@ -215,8 +239,14 @@ export function AuthorWorkspaceHost({
     setSavingAll(true);
     setSaveAllError("");
     try {
-      const dirtyTasks = [...tasks].filter((task) => task.dirty).reverse();
-      for (const task of dirtyTasks) {
+      // Re-read the live stack after every accepted save. Saving a nested
+      // resource may complete that child and update a previously clean parent
+      // reference, making the parent dirty only after the child has returned.
+      // A one-time dirty snapshot would miss that new parent work and could
+      // discard it while closing Author mode.
+      while (true) {
+        const task = [...liveTasksRef.current].reverse().find((candidate) => candidate.dirty);
+        if (!task) break;
         const taskLabel = describeAuthorTask(task.route, shared.snapshot);
         const save = saveHandlersRef.current.get(task.id);
         if (!save) {
@@ -229,23 +259,48 @@ export function AuthorWorkspaceHost({
           return;
         }
         shared.setTaskDirty(task.id, false);
+        // Child completion callbacks run in a microtask and may update the
+        // suspended parent draft. Give React a turn to publish any resulting
+        // parent dirty state before choosing the next deepest task.
         await afterReactTurn();
       }
       onConfirmLeave();
     } finally {
       setSavingAll(false);
     }
-  }, [onConfirmLeave, savingAll, shared, tasks]);
+  }, [onConfirmLeave, savingAll, shared]);
 
   const authorRuntime = useMemo<AuthorRuntimeSurface>(() => ({ ...shared.runtime, preview }), [preview, shared.runtime]);
 
   if (!tasks.length) return null;
-  const resources = buildAuthorResourceTools(shared.snapshot, shared.pushTask);
-  const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot) }));
+  const resources = buildAuthorResourceTools(shared.snapshot, pushTaskWithReturnFocus);
+  const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot), dirty: task.dirty }));
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
-  const parentLabel = taskLabels.at(-2)?.label;
-  const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
-  const taskShared = { ...shared, runtime: authorRuntime };
+  const taskShared = { ...shared, pushTask: pushTaskWithReturnFocus, runtime: authorRuntime };
+  const returnToCleanAncestor = (targetIndex: number) => {
+    const leaving = tasks.slice(targetIndex + 1);
+    if (!leaving.length || leaving.some((task) => task.dirty)) return;
+    leaving.forEach(() => shared.requestBack());
+  };
+  const taskName = (task: { label: string; dirty: boolean }) => <>
+    {task.label}{task.dirty ? <span className="author-task-dirty" aria-label="unsaved changes"> *</span> : null}
+  </>;
+  const taskTrail = (label: string) => <ol className="author-task-trail" aria-label={label}>
+    {taskLabels.map((task, index) => {
+      const active = index === taskLabels.length - 1;
+      const blockedByDirtyDescendant = !active && tasks.slice(index + 1).some((candidate) => candidate.dirty);
+      return <li key={task.id} aria-current={active ? "page" : undefined}>
+        {active
+          ? <span>{taskName(task)}</span>
+          : <button
+              type="button"
+              disabled={blockedByDirtyDescendant}
+              title={blockedByDirtyDescendant ? "Save or leave nested changes before returning here." : `Return to ${task.label}`}
+              onClick={() => returnToCleanAncestor(index)}
+            >{taskName(task)}</button>}
+      </li>;
+    })}
+  </ol>;
 
   return createPortal(
     <>
@@ -273,7 +328,7 @@ export function AuthorWorkspaceHost({
               <span className="author-workspace-back-wide">[← BACK]</span>
               <span className="author-workspace-back-compact">[BACK]</span>
             </button> : null}
-            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => shared.pushTask({ type: "tools" })}>[TOOLS]</button> : null}
+            {activeTask?.route.type !== "tools" ? <button className="author-workspace-tools" type="button" onClick={() => pushTaskWithReturnFocus({ type: "tools" })}>[TOOLS]</button> : null}
             <div className="author-workspace-find-slot" onPointerDown={() => setStackOpen(false)}>
               <AuthorQuickFind entries={shared.searchEntries} />
             </div>
@@ -281,22 +336,12 @@ export function AuthorWorkspaceHost({
           </div>
 
           <div className="author-workspace-navigation-context">
-            <ol className="author-task-trail" aria-label="Author task trail">
-              {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
-                <span>{task.label}</span>
-              </li>)}
-            </ol>
-            {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
+            {taskTrail("Author task trail")}
           </div>
 
           {stackOpen ? <div className="author-workspace-stack-panel">
             <span className="author-workspace-stack-heading">TASK STACK · {taskLabels.length} {taskLabels.length === 1 ? "TASK" : "TASKS"}</span>
-            <ol className="author-task-trail" aria-label="Full Author task stack">
-              {taskLabels.map((task, index) => <li key={task.id} aria-current={index === taskLabels.length - 1 ? "page" : undefined}>
-                <span>{task.label}</span>
-              </li>)}
-            </ol>
-            {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
+            {taskTrail("Full Author task stack")}
           </div> : null}
         </nav>
         <div className="author-workspace-content">

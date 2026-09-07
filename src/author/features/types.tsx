@@ -76,12 +76,19 @@ export type AuthorPlaySurfaceContext = {
   submitInput: (input: string) => void;
 };
 
+/**
+ * Project-wide settings index contribution.
+ *
+ * Entries describe where the owning setting task lives; they never render or
+ * persist settings themselves. The referenced route must open the owner's real
+ * structured Author task so draft/save/navigation semantics stay canonical.
+ */
 export type AuthorProjectSettingsSection = {
   id: string;
   label: string;
   description: string;
   order?: number;
-  render: (context: AuthorWorkspaceContext) => ReactNode;
+  route: AuthorTaskRoute;
 };
 
 export type AuthorTerminalShortcut = {
@@ -112,7 +119,7 @@ export type AuthorFeatureManifest = {
   searchDocuments?: readonly SearchDocumentContribution[];
   /** Outbound project references used for missing-link and lifecycle analysis. */
   references?: readonly ProjectReferenceContribution[];
-  /** Optional advanced project settings owned by this module. */
+  /** Optional project settings routes contributed to the shared Advanced Settings index. */
   projectSettings?: readonly AuthorProjectSettingsSection[];
   /** Optional terminal aliases that open a workspace owned by this feature. */
   terminalShortcuts?: readonly AuthorTerminalShortcut[];
@@ -123,14 +130,8 @@ export type AuthorFeatureManifest = {
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
   /**
-   * Preferred data-first Author workspaces. Core owns their task lifecycle and
-   * visual hierarchy; features own draft data and save semantics.
+   * Data-first Author workspaces. Core owns their task lifecycle and visual
+   * hierarchy; features own draft data and save semantics.
    */
   workspaces?: readonly RegisteredAuthorWorkspaceDefinition[];
-  /**
-   * Transitional escape hatch for prototype workspaces not yet migrated to the
-   * shared Author UI grammar. New features should not add unrestricted workspace
-   * markup; the architecture test keeps this legacy surface from expanding.
-   */
-  renderWorkspace?: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };

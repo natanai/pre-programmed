@@ -18,3 +18,28 @@
 .author-ui-toggle > .author-ui-help {
   grid-column: 2;
 }
+
+.author-ui-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .35em .75em;
+  min-width: 0;
+}
+
+.author-ui-action-row > button {
+  min-height: 2.5em;
+  padding: .3em .1em !important;
+  border: 0;
+  background: #000;
+  color: var(--dos-text);
+  font: inherit;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px), (pointer: coarse) {
+  .author-ui-action-row > button {
+    min-height: 3em;
+    font-size: max(16px, 1em);
+  }
+}

@@ -1,7 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
-import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { EntityDefinition } from "../model";
 import "./worldWorkspaces.css";
@@ -28,20 +27,26 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
     id: "world-library",
     title: "People + places",
     context: `${context.snapshot.entities.length} world entries`,
-    blocks: [{
-      type: "custom",
-      id: "world-entities",
-      role: "results",
-      content: <div className="world-author-resource-list">
-        <div className="world-author-create-row">
-          <button type="button" onClick={() => context.pushTask(worldEntityRoute("character"))}>[+ CHARACTER]</button>
-          <button type="button" onClick={() => context.pushTask(worldEntityRoute("location"))}>[+ LOCATION]</button>
-        </div>
-        {context.snapshot.entities.map((entity) => <button type="button" key={entity.id} onClick={() => context.pushTask(worldEntityRoute(entity.type, entity.id))}>
-          <span>{entity.name || entity.key}</span><small>{entity.type}</small>
-        </button>)}
-      </div>,
-    }],
+    blocks: [
+      {
+        type: "action-row",
+        id: "world-entity-create-actions",
+        actions: [
+          { id: "world-entity-create-character", label: "+ CHARACTER", onAction: () => context.pushTask(worldEntityRoute("character")) },
+          { id: "world-entity-create-location", label: "+ LOCATION", onAction: () => context.pushTask(worldEntityRoute("location")) },
+        ],
+      },
+      {
+        type: "custom",
+        id: "world-entities",
+        role: "results",
+        content: <div className="world-author-resource-list">
+          {context.snapshot.entities.map((entity) => <button type="button" key={entity.id} onClick={() => context.pushTask(worldEntityRoute(entity.type, entity.id))}>
+            <span>{entity.name || entity.key}</span><small>{entity.type}</small>
+          </button>)}
+        </div>,
+      },
+    ],
   }),
 });
 
@@ -86,19 +91,14 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           children: [
             { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
             ...(draft.type === "character" ? [{
-              type: "custom" as const,
+              type: "resource" as const,
               id: "world-character-portrait",
-              role: "resource-picker" as const,
-              content: <div className="world-character-portrait-field">
-                <span>Portrait</span>
-                <ReferenceField
-                  kind="media-image"
-                  value={draft.portraitAssetId ?? ""}
-                  placeholder="No portrait"
-                  showPreview
-                  onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
-                />
-              </div>,
+              label: "Portrait",
+              kind: "media-image",
+              value: draft.portraitAssetId ?? "",
+              placeholder: "No portrait",
+              showPreview: true,
+              onChange: (portraitAssetId: string) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null })),
             }] : []),
             { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
             { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },

@@ -7,28 +7,16 @@ import { radixAuthorFeature } from "../../features/radix/author/manifest";
 import { stateAuthorFeature } from "../../features/state/author/manifest";
 import { worldAuthorFeature } from "../../features/world/author/manifest";
 import type { AuthorResourceProvider } from "../resources/types";
-import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
+import { createProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import type { AuthorTaskRoute } from "../tasks/types";
 import { StructuredAuthorWorkspace } from "../ui/workspaceDefinition";
+import { WorkspacePanel } from "../workspace/WorkspacePanel";
 import { projectAuthorFeature } from "./projectManifest";
 import type {
   AuthorFeatureManifest,
   AuthorPlaySurfaceContext,
   AuthorWorkspaceContext,
 } from "./types";
-
-/**
- * Existing prototype features that still contain unrestricted workspace markup.
- * New feature ids do not belong here: add data-first `workspaces` contributions
- * instead. Keeping the exception list centralized makes migration one-way and
- * makes any attempt to expand the legacy foundation obvious in review/tests.
- */
-export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
-  "narrative",
-  "media",
-  "commands",
-  "project",
-]);
 
 /** Single composition registry for Author-capable feature modules. */
 export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
@@ -41,6 +29,10 @@ export const AUTHOR_FEATURES: readonly AuthorFeatureManifest[] = [
   commandsAuthorFeature,
   projectAuthorFeature,
 ];
+
+const PROJECT_SETTINGS_WORKSPACE = createProjectSettingsWorkspace(
+  AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []),
+);
 
 export function getAuthorResourceProvider(kind: string): AuthorResourceProvider | undefined {
   for (const feature of AUTHOR_FEATURES) {
@@ -101,24 +93,26 @@ export function renderAuthorFeatureWorkspace(
   route: AuthorTaskRoute,
   context: AuthorWorkspaceContext,
 ) {
+  if (route.type === "workspace") {
+    return <WorkspacePanel
+      token={context.authorToken}
+      snapshot={context.snapshot}
+      playState={context.playState}
+      initialView={route.view === "history" ? "history" : "navigation"}
+      onSnapshot={context.onSnapshot}
+      onRestore={context.onRestore}
+      onEditNode={(nodeId) => context.resources.edit("node", nodeId)}
+    />;
+  }
+
   if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") {
-    const sections = AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []);
-    return <ProjectSettingsWorkspace route={route} sections={sections} context={context} />;
+    return <StructuredAuthorWorkspace definition={PROJECT_SETTINGS_WORKSPACE} route={route} context={context} />;
   }
 
   for (const feature of AUTHOR_FEATURES) {
-    if (route.type === "feature") {
-      const definition = feature.workspaces?.find((candidate) => candidate.matches(route));
-      if (definition) return <StructuredAuthorWorkspace definition={definition} route={route} context={context} />;
-    }
-
-    if (feature.renderWorkspace) {
-      if (!LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS.has(feature.id)) {
-        throw new Error(`Feature ${feature.id} attempted to use legacy Author workspace rendering.`);
-      }
-      const workspace = feature.renderWorkspace(route, context);
-      if (workspace !== null && workspace !== undefined) return workspace;
-    }
+    if (route.type !== "feature") continue;
+    const definition = feature.workspaces?.find((candidate) => candidate.matches(route));
+    if (definition) return <StructuredAuthorWorkspace definition={definition} route={route} context={context} />;
   }
   return null;
 }

@@ -1,51 +1,40 @@
-import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../features/types";
-import type { AuthorTaskRoute } from "../tasks/types";
-import "./projectSettings.css";
+import type { AuthorProjectSettingsSection } from "../features/types";
+import { defineAuthorWorkspace } from "../ui/workspaceDefinition";
 
-export function ProjectSettingsWorkspace({
-  route,
-  sections,
-  context,
-}: {
-  route: Extract<AuthorTaskRoute, { type: "feature" }>;
-  sections: readonly AuthorProjectSettingsSection[];
-  context: AuthorWorkspaceContext;
-}) {
-  const ordered = [...sections].sort((left, right) => (left.order ?? 100) - (right.order ?? 100) || left.label.localeCompare(right.label));
-  const sectionId = route.data?.section;
-  const active = ordered.find((section) => section.id === sectionId);
+export function createProjectSettingsWorkspace(sections: readonly AuthorProjectSettingsSection[]) {
+  const ordered = [...sections].sort(
+    (left, right) => (left.order ?? 100) - (right.order ?? 100) || left.label.localeCompare(right.label),
+  );
 
-  if (active) {
-    return <section className="author-panel author-panel-frame project-settings-workspace">
-      <header><span>ADVANCED PROJECT SETTINGS · {active.label}</span></header>
-      <div className="author-panel-body project-settings-section-body">
-        <p className="project-settings-description">{active.description}</p>
-        {active.render(context)}
-      </div>
-    </section>;
-  }
-
-  return <section className="author-panel author-panel-frame project-settings-workspace">
-    <header><span>ADVANCED PROJECT SETTINGS</span><span>{ordered.length} SECTIONS</span></header>
-    <div className="author-panel-body project-settings-index">
-      <p className="project-settings-intro">
-        Project-wide engine configuration. Personal display/accessibility preferences stay in Display Settings.
-      </p>
-      <div className="project-settings-section-list">
-        {ordered.map((section) => <button
-          type="button"
-          key={section.id}
-          onClick={() => context.pushTask({
-            type: "feature",
-            feature: "project",
-            workspace: "settings",
-            data: { section: section.id },
-          })}
-        >
-          <span><strong>{section.label}</strong><small>{section.description}</small></span>
-          <span aria-hidden="true">›</span>
-        </button>)}
-      </div>
-    </div>
-  </section>;
+  return defineAuthorWorkspace<null>({
+    id: "project-settings-index",
+    matches: (route) => route.type === "feature" && route.feature === "project" && route.workspace === "settings",
+    createDraft: () => null,
+    buildSpec: ({ context }) => ({
+      id: "project-settings-index",
+      title: "ADVANCED PROJECT SETTINGS",
+      context: `${ordered.length} ${ordered.length === 1 ? "section" : "sections"}`,
+      blocks: ordered.length
+        ? ordered.map((section) => ({
+          type: "section" as const,
+          id: `project-settings:${section.id}`,
+          label: section.label,
+          summary: section.description,
+          children: [{
+            type: "action-row" as const,
+            id: `project-settings-open:${section.id}`,
+            actions: [{
+              id: `project-settings-open-action:${section.id}`,
+              label: "OPEN",
+              onAction: () => context.pushTask(section.route),
+            }],
+          }],
+        }))
+        : [{
+          type: "status" as const,
+          id: "project-settings-empty",
+          text: "NO ADVANCED PROJECT SETTINGS ARE CONTRIBUTED.",
+        }],
+    }),
+  });
 }

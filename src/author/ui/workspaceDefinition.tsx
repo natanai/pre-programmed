@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import type { AuthorWorkspaceContext } from "../features/types";
 import type { AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import { AuthorWorkspaceRenderer } from "./AuthorWorkspaceRenderer";
@@ -10,11 +10,26 @@ export type AuthorWorkspaceSaveResult<TDraft> =
   | { accepted: true; draft?: TDraft; completion?: AuthorTaskResult }
   | { accepted: false };
 
+export type AuthorWorkspaceSaveOptions = {
+  /** Suppress nested resource-task completion when saving only to establish a child editor prerequisite. */
+  completeTask?: boolean;
+};
+
 export type AuthorWorkspaceBuildContext<TDraft> = {
   route: AuthorFeatureTaskRoute;
   context: AuthorWorkspaceContext;
   draft: TDraft;
   setDraft: Dispatch<SetStateAction<TDraft>>;
+  /** Shared controller-owned dirty state. Features may read it but must not create a second baseline. */
+  dirty: boolean;
+  /**
+   * Adopt an asynchronously loaded canonical resource as the current clean draft.
+   * Use only for loading persisted source data after task creation; ordinary edits
+   * must continue through setDraft so they remain dirty.
+   */
+  adoptLoadedDraft: (draft: TDraft) => void;
+  /** Shared task save boundary. Feature actions may save before nesting without creating another persistence path. */
+  saveCurrentDraft?: (options?: AuthorWorkspaceSaveOptions) => Promise<boolean>;
 };
 
 /**
@@ -55,8 +70,9 @@ function defaultSignature(value: unknown) {
 
 /**
  * Shared controller for data-first workspaces. Draft state, dirty state, Save
- * registration, contextual Back, and rendering are generic; only draft
- * creation/spec/persistence stay with the feature definition.
+ * registration, and rendering are generic; only draft creation/spec/persistence
+ * stay with the feature definition. Author task Back/X navigation remains owned
+ * by the shared workspace host so structured feature editors do not duplicate it.
  *
  * Save cannot be an implicit Author exit here. A completion result is honored
  * only when the task actually has an Author parent; root exit belongs to X.
@@ -73,6 +89,8 @@ export function StructuredAuthorWorkspace<TDraft>({
   const [draft, setDraft] = useState<TDraft>(() => definition.createDraft(route, context));
   const signature = definition.signature ?? defaultSignature;
   const [baseline, setBaseline] = useState(() => signature(draft));
+  const [saving, setSaving] = useState(false);
+  const savePromiseRef = useRef<Promise<boolean> | null>(null);
   const currentSignature = signature(draft);
   const dirty = currentSignature !== baseline;
 
@@ -81,30 +99,54 @@ export function StructuredAuthorWorkspace<TDraft>({
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
-  const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
-    () => ({ route, context, draft, setDraft }),
-    [context, draft, route],
-  );
-  const validForSave = definition.canSave?.(build) ?? true;
-
-  const save = useCallback(async () => {
-    if (!definition.save || !validForSave) return false;
-    const result = await definition.save(build);
-    if (!result.accepted) return false;
-    const savedDraft = result.draft ?? build.draft;
-    if (result.draft !== undefined) setDraft(savedDraft);
-    setBaseline(signature(savedDraft));
+  const adoptLoadedDraft = useCallback((loadedDraft: TDraft) => {
+    setDraft(loadedDraft);
+    setBaseline(signature(loadedDraft));
     context.setWorkspaceDirty(false);
-    if (result.completion && context.hasParentTask) context.completeTask(result.completion);
-    return true;
-  }, [build, context, definition, signature, validForSave]);
+  }, [context, signature]);
+
+  const saveBuild = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
+    () => ({ route, context, draft, setDraft, dirty, adoptLoadedDraft }),
+    [adoptLoadedDraft, context, dirty, draft, route],
+  );
+  const validForSave = definition.canSave?.(saveBuild) ?? true;
+
+  const save = useCallback((options: AuthorWorkspaceSaveOptions = {}) => {
+    if (savePromiseRef.current) return savePromiseRef.current;
+    const saveDefinition = definition.save;
+    if (!saveDefinition || !validForSave) return Promise.resolve(false);
+
+    const pending = (async () => {
+      setSaving(true);
+      try {
+        const result = await saveDefinition(saveBuild);
+        if (!result.accepted) return false;
+        const savedDraft = result.draft ?? saveBuild.draft;
+        if (result.draft !== undefined) setDraft(savedDraft);
+        setBaseline(signature(savedDraft));
+        context.setWorkspaceDirty(false);
+        if (result.completion && options.completeTask !== false && context.hasParentTask) context.completeTask(result.completion);
+        return true;
+      } finally {
+        setSaving(false);
+        savePromiseRef.current = null;
+      }
+    })();
+    savePromiseRef.current = pending;
+    return pending;
+  }, [context, definition.save, saveBuild, signature, validForSave]);
+
+  const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
+    () => ({ ...saveBuild, saveCurrentDraft: save }),
+    [save, saveBuild],
+  );
 
   useEffect(() => {
     if (!definition.save) {
       context.registerWorkspaceSave(null);
       return;
     }
-    context.registerWorkspaceSave(save);
+    context.registerWorkspaceSave(() => save());
     return () => context.registerWorkspaceSave(null);
   }, [context.registerWorkspaceSave, definition.save, save]);
 
@@ -114,18 +156,13 @@ export function StructuredAuthorWorkspace<TDraft>({
     actions: [
       ...(definition.save ? [{
         id: "author-core-save",
-        label: definition.saveLabel ?? "SAVE",
-        disabled: !dirty || !validForSave,
+        label: saving ? "SAVING..." : definition.saveLabel ?? "SAVE",
+        disabled: saving || !dirty || !validForSave,
         onAction: () => { void save(); },
-      }] : []),
-      ...(context.hasParentTask ? [{
-        id: "author-core-back",
-        label: "BACK",
-        onAction: context.leaveCurrentTask,
       }] : []),
       ...(authoredSpec.actions ?? []),
     ],
   };
 
-  return <AuthorWorkspaceRenderer spec={spec} />;
+  return <AuthorWorkspaceRenderer spec={spec} busy={saving} />;
 }
