@@ -4,15 +4,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import type { AuthorUiAction, AuthorUiNode } from "../../../author/ui/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { SynthSound } from "../model";
-import {
-  applySynthPreset,
-  createStarterSynth,
-  SYNTH_PRESET_IDS,
-  synthSequenceLength,
-  type SynthPresetId,
-  validateSynth,
-} from "../synth";
-import { playSynthSound } from "../ui/synthPlayback";
+import { createStarterSynth, synthSequenceLength, validateSynth } from "../synth";
 import { SynthSequencer } from "./SynthSequencer";
 
 type SynthSoundWorkspaceDraft = {
@@ -107,12 +99,6 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       saveError: "",
     }));
 
-    const applyPreset = (preset: SynthPresetId) => {
-      const next = applySynthPreset(sound, preset);
-      changeSound(next);
-      void playSynthSound(next);
-    };
-
     const remove = async () => {
       if (!persisted || usages.length || draft.saving) return;
       if (!window.confirm(`Delete Synth “${persisted.label}”?`)) return;
@@ -134,8 +120,8 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
     const blocks: AuthorUiNode[] = [
       {
         type: "section",
-        id: "synth-recipe",
-        label: "Recipe",
+        id: "synth-identity",
+        label: "Synth",
         importance: "primary",
         children: [
           {
@@ -145,24 +131,6 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
             value: sound.label,
             autoFocus: !persisted,
             onChange: (label) => changeSound({ ...sound, label }),
-          },
-          {
-            type: "field",
-            id: "synth-tempo",
-            label: "Tempo",
-            control: "number",
-            value: sound.tempo,
-            min: 30,
-            max: 300,
-            step: 1,
-            onChange: (tempo) => changeSound({ ...sound, tempo: Number(tempo) }),
-          },
-          {
-            type: "toggle",
-            id: "synth-loop",
-            label: "Loop recipe",
-            checked: sound.loop,
-            onChange: (loop) => changeSound({ ...sound, loop }),
           },
           {
             type: "disclosure",
@@ -188,24 +156,9 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       },
       {
         type: "section",
-        id: "synth-quick-start",
-        label: "Synth palettes",
+        id: "synth-workbench",
+        label: "Workbench",
         summary: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
-        children: [{
-          type: "action-row",
-          id: "synth-presets",
-          actions: SYNTH_PRESET_IDS.map((preset) => ({
-            id: `synth-preset:${preset}`,
-            label: preset.toUpperCase(),
-            onAction: () => applyPreset(preset),
-          })),
-        }],
-      },
-      {
-        type: "section",
-        id: "synth-advanced",
-        label: "Shape + sequence",
-        summary: `wave · envelope · ${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         importance: "primary",
         children: [{
           type: "custom",
@@ -228,11 +181,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       }] : []),
     ];
 
-    const actions: AuthorUiAction[] = [{
-      id: "synth-play",
-      label: "PLAY",
-      onAction: () => { void playSynthSound(sound); },
-    }];
+    const actions: AuthorUiAction[] = [];
     if (persisted) actions.push({
       id: "synth-delete",
       label: `DELETE${usages.length ? ` · ${usages.length} USE${usages.length === 1 ? "" : "S"}` : ""}`,
