@@ -680,13 +680,6 @@ export default function App() {
     const rawText = beginsWithDialogue ? dialogueText : execution.responseText;
     const rawPerformance = beginsWithDialogue ? dialoguePerformance : performance;
     const rawSpeakerId = beginsWithDialogue ? execution.dialogueSpeakerId ?? null : speakerId;
-    let source = execution.source;
-    if (source?.resourceKind === "interaction") {
-      source = authoredSource("interaction", source.resourceId, {
-        ...(source.focus ?? {}),
-        section: beginsWithDialogue ? "dialogue" : "narration",
-      });
-    }
     if (rawText) {
       firedCueIds.current = new Set();
       completedPendingDestination.current = "";
@@ -694,7 +687,7 @@ export default function App() {
       setActiveText(compiled.text);
       setActiveNodeId(undefined);
       setActiveSpeakerId(rawSpeakerId);
-      setActiveSource(source);
+      setActiveSource(execution.source);
       setActivePerformance(compiled.performance);
       setPendingDestinationNodeId(destination?.id ?? null);
     } else if (destination) {

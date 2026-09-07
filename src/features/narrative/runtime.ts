@@ -95,7 +95,7 @@ export function executeInteraction(
   };
   const prose = interactionOutcomeProse(outcome);
   const sourceConversation = resolveNodeConversationContext(snapshot, initialState, interaction.sourceNodeId);
-  const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
+  const effectSource = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
   const execution = executeEffects(snapshot, state, outcome.effects, {
     bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
     scope,
@@ -110,7 +110,7 @@ export function executeInteraction(
     const next = event.type === "notification"
       ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
       : event;
-    return { ...next, source };
+    return { ...next, source: effectSource };
   });
   const enteredNode = state.currentNodeId !== initialState.currentNodeId
     || state.traversal.length > initialState.traversal.length;
@@ -119,17 +119,25 @@ export function executeInteraction(
     : { state, events: [] };
   state = entry.state;
 
+  const responseText = interpolateText(prose.narrationText, { snapshot, state });
+  const dialogueText = interpolateText(prose.dialogueText, { snapshot, state });
+  const presentationSource = responseText
+    ? authoredSource("interaction", interaction.id, { outcomeId: outcome.id, section: "narration" })
+    : dialogueText
+      ? authoredSource("interaction", interaction.id, { outcomeId: outcome.id, section: "dialogue" })
+      : effectSource;
+
   return {
     state,
     outcome,
-    responseText: interpolateText(prose.narrationText, { snapshot, state }),
+    responseText,
     responsePerformance: prose.narrationPerformance,
-    dialogueText: interpolateText(prose.dialogueText, { snapshot, state }),
+    dialogueText,
     dialoguePerformance: prose.dialoguePerformance,
     dialogueSpeakerId: sourceConversation?.characterId ?? outcome.speakerId ?? null,
     events: [...interactionEvents, ...entry.events],
     attempt,
     eventKey,
-    source,
+    source: presentationSource,
   };
 }
