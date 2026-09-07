@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, type MouseEvent, type PointerEvent } fr
 
 const DEFAULT_DELAY_MS = 450;
 const DEFAULT_MOVE_TOLERANCE_PX = 10;
+const CLICK_SUPPRESSION_EXPIRY_MS = 1200;
 
 type AuthorLongPressOptions = {
   enabled?: boolean;
@@ -26,6 +27,7 @@ export function useAuthorLongPress({
   onLongPress,
 }: AuthorLongPressOptions) {
   const timerRef = useRef<number | null>(null);
+  const suppressionExpiryRef = useRef<number | null>(null);
   const pointerIdRef = useRef<number | null>(null);
   const startRef = useRef({ x: 0, y: 0 });
   const suppressClickRef = useRef(false);
@@ -37,12 +39,30 @@ export function useAuthorLongPress({
     timerRef.current = null;
   }, []);
 
+  const clearSuppression = useCallback(() => {
+    suppressClickRef.current = false;
+    if (suppressionExpiryRef.current !== null) window.clearTimeout(suppressionExpiryRef.current);
+    suppressionExpiryRef.current = null;
+  }, []);
+
+  const armClickSuppression = useCallback(() => {
+    clearSuppression();
+    suppressClickRef.current = true;
+    suppressionExpiryRef.current = window.setTimeout(() => {
+      suppressClickRef.current = false;
+      suppressionExpiryRef.current = null;
+    }, CLICK_SUPPRESSION_EXPIRY_MS);
+  }, [clearSuppression]);
+
   const resetPointer = useCallback(() => {
     clearTimer();
     pointerIdRef.current = null;
   }, [clearTimer]);
 
-  useEffect(() => resetPointer, [resetPointer]);
+  useEffect(() => () => {
+    resetPointer();
+    clearSuppression();
+  }, [clearSuppression, resetPointer]);
 
   const onPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     if (!enabled || !event.isPrimary || (event.pointerType !== "touch" && event.pointerType !== "pen")) return;
@@ -52,10 +72,10 @@ export function useAuthorLongPress({
     timerRef.current = window.setTimeout(() => {
       timerRef.current = null;
       if (pointerIdRef.current !== event.pointerId) return;
-      suppressClickRef.current = true;
+      armClickSuppression();
       onLongPressRef.current();
     }, delayMs);
-  }, [delayMs, enabled, resetPointer]);
+  }, [armClickSuppression, delayMs, enabled, resetPointer]);
 
   const onPointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
     if (pointerIdRef.current !== event.pointerId || timerRef.current === null) return;
@@ -76,10 +96,10 @@ export function useAuthorLongPress({
 
   const onClickCapture = useCallback((event: MouseEvent<HTMLElement>) => {
     if (!suppressClickRef.current) return;
-    suppressClickRef.current = false;
+    clearSuppression();
     event.preventDefault();
     event.stopPropagation();
-  }, []);
+  }, [clearSuppression]);
 
   return {
     onPointerDown,
