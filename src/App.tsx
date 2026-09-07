@@ -77,7 +77,7 @@ import { parseCommand, type ParserResult } from "./features/commands/parser";
 import { executeInteraction } from "./features/narrative/runtime";
 import { compileTextNotation } from "./features/narrative/textNotation";
 import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
-import { RadixSequenceSurface } from "./features/radix/ui/RadixSequenceSurface";
+import { useRadixRuntimePresentation } from "./features/radix/runtime/useRadixRuntimePresentation";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -101,12 +101,6 @@ type RuntimePresentationExecution = {
   source?: AuthoredSourceIdentity;
 };
 
-type ActiveRadixPresentation = {
-  sequenceId: string;
-  runKey: string;
-  startup: boolean;
-  source?: AuthoredSourceIdentity;
-};
 
 function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
   return {
@@ -176,7 +170,6 @@ export default function App() {
   const [notifications, setNotifications] = useState<Array<{ id: string; text: string; anchorLineId?: string; source?: AuthoredSourceIdentity }>>([]);
   const [eventArtAssetId, setEventArtAssetId] = useState("");
   const [eventArtSource, setEventArtSource] = useState<AuthoredSourceIdentity | undefined>();
-  const [activeRadix, setActiveRadix] = useState<ActiveRadixPresentation | null>(null);
   const terminalComposerRef = useRef<TerminalCommandComposerHandle>(null);
   const terminalHistoryRef = useRef<HTMLDivElement>(null);
   const historyPinnedToPresentRef = useRef(true);
@@ -184,8 +177,7 @@ export default function App() {
   const completedPendingDestination = useRef("");
   const flushingQueue = useRef(false);
   const playSessionDecisionRef = useRef<"continue" | "new" | null>(null);
-  const startupRunRef = useRef(false);
-  const startupActiveRef = useRef(false);
+  const launchPresentationBlockingRef = useRef(false);
   const typewriter = useTypewriter(activeText, activePerformance, textSpeedMultiplier);
   useTerminalViewport();
 
@@ -251,6 +243,28 @@ export default function App() {
     snapshot && source && authorRouteForSource(snapshot, source),
   );
 
+  const radixPresentation = useRadixRuntimePresentation({
+    snapshot,
+    launchBlockingRef: launchPresentationBlockingRef,
+    authorMode: authorMode && authorView,
+    onStartupBegin: () => {
+      setActiveText("");
+      setActiveNodeId(undefined);
+      setActiveSpeakerId(null);
+      setActiveSource(undefined);
+      setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
+      setPendingDestinationNodeId(null);
+    },
+    onStartupComplete: () => {
+      if (!snapshot || !playState || pendingPlaySession) return;
+      const node = snapshot.nodes.find((candidate) => candidate.id === playState.currentNodeId);
+      if (node) showNode(snapshot, node, playState);
+    },
+    onEditSequence: (sequenceId) => openAuthorResource("radix-sequence", sequenceId),
+    onEditSource: (source) => openAuthorSource(source),
+    canEditSource: canEditAuthorSource,
+  });
+
   useEffect(() => {
     if (!snapshot) return;
     const now = Date.now();
@@ -263,11 +277,11 @@ export default function App() {
   }, [projectClockSchedule]);
 
   useEffect(() => {
-    if (!typewriter.complete || secondaryProsePending || pendingDestinationNodeId || panel || playerWorkspace || pendingPlaySession || activeRadix) return;
+    if (!typewriter.complete || secondaryProsePending || pendingDestinationNodeId || panel || playerWorkspace || pendingPlaySession || radixPresentation.active) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
     const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
-  }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey, activeRadix]);
+  }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey, radixPresentation.active]);
 
   const notationForInput = (interaction: Interaction) => {
     if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
@@ -298,8 +312,8 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame);
   }, [transcript.length, typewriter.visibleText]);
 
-  const showNode = (project: ProjectSnapshot, node: GameNode, state: PlayState) => {
-    if (startupActiveRef.current) return;
+  function showNode(project: ProjectSnapshot, node: GameNode, state: PlayState) {
+    if (launchPresentationBlockingRef.current) return;
     firedCueIds.current = new Set();
     const narration = interpolateText(node.text, { snapshot: project, state });
     const dialogue = interpolateText(node.dialogueText ?? "", { snapshot: project, state });
@@ -313,30 +327,7 @@ export default function App() {
     setActiveSpeakerId(conversation?.characterId ?? null);
     setActiveSource(authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }));
     setActivePerformance(compiled.performance);
-  };
-
-  const beginLaunchPresentation = (project: ProjectSnapshot) => {
-    if (startupRunRef.current) return startupActiveRef.current;
-    startupRunRef.current = true;
-    const startup = project.settings.radix.startup;
-    const sequence = startup.enabled
-      ? project.settings.radix.sequences.find((candidate) => candidate.id === startup.sequenceId)
-      : undefined;
-    if (!sequence) return false;
-    startupActiveRef.current = true;
-    setActiveText("");
-    setActiveNodeId(undefined);
-    setActiveSpeakerId(null);
-    setActiveSource(undefined);
-    setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
-    setPendingDestinationNodeId(null);
-    setActiveRadix({
-      sequenceId: sequence.id,
-      runKey: crypto.randomUUID(),
-      startup: true,
-    });
-    return true;
-  };
+  }
 
   useEffect(() => {
     if (!typewriter.complete || !nodeDialoguePending || !snapshot || !playState || !activeNodePresentation) return;
@@ -388,25 +379,12 @@ export default function App() {
     activeInteractionOutcome, activeInteractionProse, activeText, activeSpeakerId, activeSource,
   ]);
 
-  useEffect(() => {
-    if (!snapshot || !playState || !activeRadix) return;
-    if (snapshot.settings.radix.sequences.some((sequence) => sequence.id === activeRadix.sequenceId)) return;
-    const wasStartup = activeRadix.startup;
-    setActiveRadix(null);
-    if (!wasStartup) return;
-    startupActiveRef.current = false;
-    if (pendingPlaySession) return;
-    const node = snapshot.nodes.find((candidate) => candidate.id === playState.currentNodeId);
-    if (node) showNode(snapshot, node, playState);
-  }, [snapshot, playState, activeRadix, pendingPlaySession]);
 
   const continuePlaySession = () => {
     if (!snapshot || !pendingPlaySession) return;
     const session = pendingPlaySession;
     playSessionDecisionRef.current = "continue";
-    startupRunRef.current = true;
-    startupActiveRef.current = false;
-    setActiveRadix(null);
+    radixPresentation.suppressStartup();
     const state = resumePlayState(snapshot, session.playState, session.savedAt);
     const sameRevision = session.projectRevision === snapshot.revision;
     setPlayState(state);
@@ -447,9 +425,7 @@ export default function App() {
   const startNewGame = () => {
     if (!snapshot) return;
     playSessionDecisionRef.current = "new";
-    startupRunRef.current = true;
-    startupActiveRef.current = false;
-    setActiveRadix(null);
+    radixPresentation.suppressStartup();
     const state = createEmptyPlayState(snapshot);
     setPlayState(state);
     setTranscript([]);
@@ -507,7 +483,7 @@ export default function App() {
       if (cached && !cancelled) {
         setConnectionState("ready");
         const state = createEmptyPlayState(cached);
-        const launchOwnsPresentation = beginLaunchPresentation(cached);
+        const launchOwnsPresentation = radixPresentation.beginStartup(cached);
         setSnapshot(cached);
         setPlayState(state);
         const node = cached.nodes.find((item) => item.id === cached.startNodeId);
@@ -523,7 +499,7 @@ export default function App() {
         });
         if (cancelled) return;
         setConnectionState("ready");
-        const launchOwnsPresentation = beginLaunchPresentation(project);
+        const launchOwnsPresentation = radixPresentation.beginStartup(project);
         setSnapshot(project);
         setPlayState((existing) => {
           const existingCompatible = Boolean(existing && project.nodes.some((node) => node.id === existing.currentNodeId));
@@ -556,7 +532,7 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorTasks.hasTasks || activeRadix?.startup) return;
+    if (!snapshot || !playState || !playSessionReady || pendingPlaySession || authorTasks.hasTasks || radixPresentation.startup) return;
     const timer = window.setTimeout(() => {
       void savePlaySession({
         version: 2,
@@ -582,7 +558,7 @@ export default function App() {
     playSessionReady,
     pendingPlaySession,
     authorTasks.hasTasks,
-    activeRadix,
+    radixPresentation.active,
     transcript,
     activeText,
     activeNodeId,
@@ -746,13 +722,7 @@ export default function App() {
           setEventArtSource(source);
         },
         showRadixSequence(sequenceId, source) {
-          if (!snapshot.settings.radix.sequences.some((sequence) => sequence.id === sequenceId)) return;
-          setActiveRadix({
-            sequenceId,
-            runKey: crypto.randomUUID(),
-            startup: false,
-            source,
-          });
+          radixPresentation.showSequence(sequenceId, source);
         },
       },
     });
@@ -817,7 +787,7 @@ export default function App() {
   }, [typewriter.count, activePerformance, activeSource]);
 
   const handleTerminalValue = async (value: string) => {
-    if (!snapshot || !playState || pendingPlaySession || activeRadix) return;
+    if (!snapshot || !playState || pendingPlaySession || radixPresentation.active) return;
     historyPinnedToPresentRef.current = true;
     scrollHistoryToPresent();
     const normalized = value.trim().toLowerCase();
@@ -998,12 +968,6 @@ export default function App() {
   const editorOpen = authorTasks.hasTasks;
   const playerWorkspaceOpen = playerWorkspace !== null;
   const authorExperience = authorMode && authorView;
-  const activeRadixSequence = activeRadix
-    ? snapshot.settings.radix.sequences.find((sequence) => sequence.id === activeRadix.sequenceId)
-    : undefined;
-  const activeRadixSynth = activeRadixSequence?.synthId
-    ? snapshot.synthSounds.find((sound) => sound.id === activeRadixSequence.synthId)
-    : undefined;
   const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
   const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
   const matchedAuthorSource = parserResult?.invocation
@@ -1029,31 +993,11 @@ export default function App() {
     downloadBackup,
   }, authorToolGroups);
 
-  const finishActiveRadix = () => {
-    if (!activeRadix) return;
-    const wasStartup = activeRadix.startup;
-    setActiveRadix(null);
-    if (!wasStartup) return;
-    startupActiveRef.current = false;
-    if (pendingPlaySession) return;
-    const node = snapshot.nodes.find((candidate) => candidate.id === playState.currentNodeId);
-    if (node) showNode(snapshot, node, playState);
-  };
-
   return <main className="dos-screen" aria-label="Pre-Programmed terminal" onPointerDown={() => {
-    if (!activeRadix && !typewriter.complete) typewriter.completeImmediately();
+    if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
   }}>
     <div className="dos-terminal">
-      {activeRadix && activeRadixSequence ? <RadixSequenceSurface
-        sequence={activeRadixSequence}
-        synth={activeRadixSynth}
-        runKey={activeRadix.runKey}
-        source={activeRadix.source}
-        authorMode={authorExperience}
-        onComplete={finishActiveRadix}
-        onEditSequence={authorExperience ? () => openAuthorResource("radix-sequence", activeRadixSequence.id) : undefined}
-        onEditSource={authorExperience && canEditAuthorSource(activeRadix.source) ? () => openAuthorSource(activeRadix.source) : undefined}
-      /> : null}
+      {radixPresentation.surface}
       <div
         ref={terminalHistoryRef}
         className="terminal-history"
@@ -1061,7 +1005,7 @@ export default function App() {
         onScroll={handleHistoryScroll}
         onPointerDown={(event) => {
           event.stopPropagation();
-          if (!activeRadix && !typewriter.complete) typewriter.completeImmediately();
+          if (!radixPresentation.active && !typewriter.complete) typewriter.completeImmediately();
         }}
       >
         <div className="terminal-history-content">
@@ -1109,7 +1053,7 @@ export default function App() {
         </div>
       </div>
 
-      {!panel && !playerWorkspace && !pendingPlaySession && !activeRadix ? <TerminalCommandComposer
+      {!panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active ? <TerminalCommandComposer
         ref={terminalComposerRef}
         label={promptLabel}
         value={command}
@@ -1132,7 +1076,7 @@ export default function App() {
       /> : null}
 
       <div className="terminal-lower" onPointerDown={(event) => event.stopPropagation()}>
-        {authorExperience && typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId && !requestingKey && !command && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix
+        {authorExperience && typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId && !requestingKey && !command && !panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active
           ? renderAuthorFeaturePlaySurfaces({
             snapshot,
             playState,
@@ -1141,7 +1085,7 @@ export default function App() {
           })
           : null}
 
-        {authorExperience && typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession && !activeRadix ? <AuthorHome
+        {authorExperience && typewriter.complete && !secondaryProsePending && !pendingDestinationNodeId && !panel && !playerWorkspace && !pendingPlaySession && !radixPresentation.active ? <AuthorHome
           nodeNumber={currentNode.nodeNumber}
           revision={snapshot.revision}
           notation={currentNotation.join("")}
@@ -1228,7 +1172,7 @@ export default function App() {
         />
       </div>
     </div>
-    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !activeRadix} onToggleAuthorView={() => {
+    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       authorTasks.closeAll();
       setAuthorMessage("");
@@ -1246,7 +1190,7 @@ export default function App() {
         setEventArtSource(undefined);
       }}
     /> : null}
-    {pendingPlaySession && !activeRadix ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
+    {pendingPlaySession && !radixPresentation.active ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
   </main>;
 }
 
