@@ -27,6 +27,26 @@ jobs:
             exit 1
           fi
 
+          if grep -Fq 'render: (context: AuthorWorkspaceContext)' src/author/features/types.tsx \
+            || grep -RInF 'AuthorProjectSettingsSection["render"]' src; then
+            echo 'Advanced project settings must route to owning structured tasks, not render feature-owned lifecycle UI'
+            exit 1
+          fi
+
+          if ! grep -Fq 'route: AuthorTaskRoute;' src/author/features/types.tsx; then
+            echo 'Project settings contribution contract must retain its canonical owner route'
+            exit 1
+          fi
+
+          for removed in \
+            src/author/settings/projectSettings.css \
+            src/features/commands/author/commandSettings.css; do
+            if [[ -e "$removed" ]]; then
+              echo "Superseded settings lifecycle presentation remains: $removed"
+              exit 1
+            fi
+          done
+
           if grep -RIn 'resource-picker' src; then
             echo 'Obsolete custom resource-picker role remains in src/'
             exit 1
