@@ -5,16 +5,18 @@ import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
 import { transitionState } from "./effectRuntime";
-import { interactionOutcomeProse } from "./interactionProse";
+import { DEFAULT_INTERACTION_TEXT_PERFORMANCE, interactionOutcomeProse } from "./interactionProse";
 import { interpolateText } from "./interpolation";
-import type { Interaction, InteractionOutcome } from "./model";
+import type { Interaction, InteractionOutcome, TextPerformance } from "./model";
 import { resolveNodeConversationContext } from "./sceneContext";
 
 export type InteractionExecution = {
   state: PlayState;
   outcome: InteractionOutcome | null;
   responseText: string;
+  responsePerformance: TextPerformance;
   dialogueText: string;
+  dialoguePerformance: TextPerformance;
   dialogueSpeakerId: string | null;
   events: EffectEvent[];
   attempt: number;
@@ -80,7 +82,16 @@ export function executeInteraction(
     .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey, scope })) ?? null;
 
   if (!outcome) return {
-    state, outcome, responseText: "", dialogueText: "", dialogueSpeakerId: null, events: [], attempt, eventKey,
+    state,
+    outcome,
+    responseText: "",
+    responsePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueText: "",
+    dialoguePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueSpeakerId: null,
+    events: [],
+    attempt,
+    eventKey,
   };
   const prose = interactionOutcomeProse(outcome);
   const sourceConversation = resolveNodeConversationContext(snapshot, initialState, interaction.sourceNodeId);
@@ -112,7 +123,9 @@ export function executeInteraction(
     state,
     outcome,
     responseText: interpolateText(prose.narrationText, { snapshot, state }),
+    responsePerformance: prose.narrationPerformance,
     dialogueText: interpolateText(prose.dialogueText, { snapshot, state }),
+    dialoguePerformance: prose.dialoguePerformance,
     dialogueSpeakerId: sourceConversation?.characterId ?? outcome.speakerId ?? null,
     events: [...interactionEvents, ...entry.events],
     attempt,
