@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { useAuthorLongPress } from "../ui/useAuthorLongPress";
+import { reconciledAuthorReferenceValue } from "./completion";
 import { useAuthorResourceTools } from "./context";
 import "./referenceField.css";
 
@@ -70,15 +71,9 @@ export function ReferenceField({
     const editedValue = value;
     closeChooser();
     resources.edit(kind, editedValue, (result) => {
-      if (!result) return;
-      if (result.type === "resource" && result.kind === kind) {
-        onChangeRef.current(result.value);
-      } else if (result.type === "resource-deleted" && result.kind === kind && result.id === editedValue) {
-        // Deletion is authoritative only when the owning child task reports an
-        // accepted durable delete. Optimistic snapshot disappearance is not a
-        // deletion signal because a conflict/rejection may restore the resource.
-        onChangeRef.current("");
-      }
+      const nextValue = reconciledAuthorReferenceValue(kind, editedValue, result);
+      if (nextValue === undefined) return;
+      onChangeRef.current(nextValue);
       markReturned();
     });
   };
