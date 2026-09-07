@@ -69,9 +69,10 @@ export function ReferenceField({
   const editResource = () => {
     if (!canEditSelected) return;
     const editedValue = value;
+    const editedId = selected?.id ?? null;
     closeChooser();
     resources.edit(kind, editedValue, (result) => {
-      const nextValue = reconciledAuthorReferenceValue(kind, editedValue, result);
+      const nextValue = reconciledAuthorReferenceValue(kind, editedValue, editedId, result);
       if (nextValue === undefined) return;
       onChangeRef.current(nextValue);
       markReturned();
