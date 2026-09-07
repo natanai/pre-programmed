@@ -7,6 +7,7 @@ import type { SynthSound } from "../model";
 import {
   applySynthPreset,
   createStarterSynth,
+  SYNTH_PRESET_IDS,
   synthSequenceLength,
   type SynthPresetId,
   validateSynth,
@@ -188,12 +189,12 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       {
         type: "section",
         id: "synth-quick-start",
-        label: "Quick start",
+        label: "Sound palettes",
         summary: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         children: [{
           type: "action-row",
           id: "synth-presets",
-          actions: (["blip", "chime", "alert", "hit"] as SynthPresetId[]).map((preset) => ({
+          actions: SYNTH_PRESET_IDS.map((preset) => ({
             id: `synth-preset:${preset}`,
             label: preset.toUpperCase(),
             onAction: () => applyPreset(preset),
@@ -203,7 +204,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       {
         type: "disclosure",
         id: "synth-advanced",
-        label: "Advanced voices + sequence",
+        label: "Voices + sequence",
         summary: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         children: [{
           type: "custom",
