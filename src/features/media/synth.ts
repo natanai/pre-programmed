@@ -3,6 +3,8 @@ import type { SynthSound } from "./model";
 export const MAX_SYNTH_VOICES = 4;
 export const MAX_SYNTH_STEPS = 16;
 export const MAX_SYNTH_BEND = 12;
+export const MIN_SYNTH_LOOP_COUNT = 2;
+export const MAX_SYNTH_LOOP_COUNT = 99;
 
 const NOTE_PATTERN = /^([A-G])(#?)([2-7])$/;
 const NOTE_OFFSETS: Record<string, number> = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -19,6 +21,10 @@ export function validateSynth(synth: SynthSound) {
   if (!synth.voices.length) errors.push("A Synth needs at least one voice.");
   if (synth.voices.length > MAX_SYNTH_VOICES) errors.push(`A Synth may contain at most ${MAX_SYNTH_VOICES} voices.`);
   if (synth.tempo < 30 || synth.tempo > 300) errors.push("Tempo must be between 30 and 300 BPM.");
+  if (synth.loopCount !== undefined
+    && (!Number.isInteger(synth.loopCount) || synth.loopCount < MIN_SYNTH_LOOP_COUNT || synth.loopCount > MAX_SYNTH_LOOP_COUNT)) {
+    errors.push(`Loop plays must be a whole number between ${MIN_SYNTH_LOOP_COUNT} and ${MAX_SYNTH_LOOP_COUNT}.`);
+  }
   for (const voice of synth.voices) {
     if (!voice.steps.length) errors.push("Every voice needs at least one sequence step.");
     if (voice.steps.length > MAX_SYNTH_STEPS) errors.push(`A voice may contain at most ${MAX_SYNTH_STEPS} steps.`);
@@ -44,6 +50,13 @@ function blankStep(note = "C4") {
 
 export function synthSequenceLength(sound: SynthSound) {
   return Math.max(1, ...sound.voices.map((voice) => voice.steps.length));
+}
+
+/** Total sequence passes for playback. Looping is deliberately finite. */
+export function synthLoopCount(sound: SynthSound) {
+  if (!sound.loop) return 1;
+  const requested = sound.loopCount ?? MIN_SYNTH_LOOP_COUNT;
+  return Math.max(MIN_SYNTH_LOOP_COUNT, Math.min(MAX_SYNTH_LOOP_COUNT, Math.round(requested)));
 }
 
 export function resizeSynthSequence(sound: SynthSound, requestedLength: number): SynthSound {
