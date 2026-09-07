@@ -1,0 +1,141 @@
+import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
+import { SEMANTIC_REFERENCE_PROVIDERS } from "../../../engine/references/catalog";
+
+function targetProviders() {
+  return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
+}
+
+export const commandInteractionsWorkspace = defineAuthorWorkspace({
+  id: "commands-interactions",
+  matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "interactions",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => ({
+    id: "commands-interactions",
+    title: "Player interactions",
+    context: "Project-wide",
+    blocks: [
+      {
+        type: "section",
+        id: "commands-interactions-commands",
+        label: "Player commands",
+        importance: "primary",
+        children: [{
+          type: "action-row",
+          id: "commands-interactions-open-commands",
+          actions: [{
+            id: "commands-interactions-open-command-list",
+            label: `PLAYER COMMANDS · ${context.snapshot.settings.commands.commands.length}`,
+            onAction: () => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" }),
+          }],
+        }],
+      },
+      {
+        type: "section",
+        id: "commands-interactions-targets",
+        label: "Target owners",
+        children: [{
+          type: "action-row",
+          id: "commands-interactions-target-actions",
+          actions: targetProviders().map((provider) => ({
+            id: `commands-interactions-target:${provider.kind}`,
+            label: provider.label.toUpperCase(),
+            disabled: !provider.authorResourceKind || !context.resources.canOpenList(provider.authorResourceKind),
+            onAction: () => {
+              if (provider.authorResourceKind) context.resources.openList(provider.authorResourceKind);
+            },
+          })),
+        }],
+      },
+    ],
+  }),
+});
+
+export const commandReferenceSourcesWorkspace = defineAuthorWorkspace({
+  id: "commands-reference-sources",
+  matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "references",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => {
+    const providers = targetProviders();
+    const configured = context.snapshot.settings.commands.referenceSources;
+    return {
+      id: "commands-reference-sources",
+      title: "Target names + aliases",
+      context: `${configured.filter((source) => source.enabled).length} enabled`,
+      blocks: [{
+        type: "section",
+        id: "commands-reference-source-list",
+        label: "Target types",
+        importance: "primary",
+        children: [{
+          type: "action-row",
+          id: "commands-reference-source-actions",
+          actions: providers.map((provider) => {
+            const setting = configured.find((candidate) => candidate.sourceKind === provider.kind);
+            const count = provider.candidates({ snapshot: context.snapshot, state: context.playState }).length;
+            return {
+              id: `commands-reference-source:${provider.kind}`,
+              label: `${provider.label.toUpperCase()} · ${setting?.enabled ? "ON" : "OFF"} · ${count}`,
+              onAction: () => context.pushTask({
+                type: "feature",
+                feature: "commands",
+                workspace: "reference-source",
+                data: { sourceKind: provider.kind },
+              }),
+            };
+          }),
+        }],
+      }],
+    };
+  },
+});
+
+export const commandTargetBehaviorsWorkspace = defineAuthorWorkspace({
+  id: "commands-target-behaviors",
+  matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "target-behaviors",
+  createDraft: () => ({}),
+  buildSpec: ({ route, context }) => {
+    const sourceKind = route.data?.sourceKind ?? "";
+    const operation = route.data?.operation ?? "";
+    const commandLabel = route.data?.commandLabel || operation || "Command";
+    const adapter = context.resolveCommandTarget(sourceKind);
+    const targets = adapter?.list(context.snapshot, operation) ?? [];
+    return {
+      id: "commands-target-behaviors",
+      title: `${commandLabel} · target behavior`,
+      context: adapter?.label ?? sourceKind,
+      blocks: [
+        ...(adapter && targets.length ? [{
+          type: "action-row" as const,
+          id: "commands-target-behavior-list",
+          actions: targets.map((target) => ({
+            id: `commands-target-behavior:${target.id}`,
+            label: `${target.label} · ${target.available ? "AVAILABLE" : "OFF"} · ${target.responseCount} RESPONSE${target.responseCount === 1 ? "" : "S"}`,
+            onAction: () => context.pushTask(adapter.editRoute(target.id, operation)),
+          })),
+        }] : []),
+        ...(!adapter ? [{
+          type: "status" as const,
+          id: "commands-target-behavior-no-adapter",
+          tone: "warning" as const,
+          text: "NO AUTHORING ROUTE FOR THIS TARGET TYPE.",
+        }] : []),
+        ...(adapter && !targets.length ? [{
+          type: "status" as const,
+          id: "commands-target-behavior-empty",
+          text: `NO ${adapter.label.toUpperCase()}S EXIST YET.`,
+        }] : []),
+      ],
+      actions: adapter?.createRoute ? [{
+        id: "commands-target-behavior-create",
+        label: `+ CREATE ${adapter.label.toUpperCase()}`,
+        onAction: () => context.pushTask(adapter.createRoute!(operation)),
+      }] : [],
+    };
+  },
+});
+
+export const COMMAND_STRUCTURED_WORKSPACES = [
+  commandInteractionsWorkspace,
+  commandReferenceSourcesWorkspace,
+  commandTargetBehaviorsWorkspace,
+] as const;
