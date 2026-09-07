@@ -14,10 +14,16 @@
 .synth-voice-actions { margin: 0; }
 .voice-tabs { display: flex; flex-wrap: wrap; gap: .35em; }
 .voice-tabs button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
-.voice-settings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6em; }
-.voice-settings label { display: grid; gap: .25em; min-width: 0; }
-.voice-settings input,
-.voice-settings select { min-width: 0; width: 100%; }
+.voice-settings { display: grid; gap: .6em; }
+.synth-wave-editor,
+.synth-envelope-settings { display: grid; gap: .35em; }
+.synth-wave-editor > span { color: var(--dos-muted); font-size: .9em; }
+.synth-wave-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .3em; }
+.synth-wave-options > button { min-width: 0; min-height: 2.7em; padding-inline: .25em; }
+.synth-wave-options > button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: .2em; }
+.synth-envelope-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6em; }
+.synth-envelope-settings label { display: grid; gap: .25em; min-width: 0; }
+.synth-envelope-settings input { min-width: 0; width: 100%; }
 
 .synth-step-pads {
   display: grid;
@@ -203,13 +209,12 @@
 @media (max-width: 700px) {
   .synth-structure-controls { align-items: stretch; }
   .synth-step-pads { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .voice-settings { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .voice-settings > label:first-child { grid-column: 1 / -1; }
 }
 
 @media (pointer: coarse) {
   .synth-step-select { min-height: 3.7em; padding: .5em; }
   .synth-step-toggle { min-height: 2.55em; }
+  .synth-wave-options > button,
   .synth-pitch-controls > button,
   .synth-volume-controls > button,
   .synth-volume-pad,
