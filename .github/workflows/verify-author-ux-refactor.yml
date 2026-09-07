@@ -63,6 +63,16 @@ jobs:
             exit 1
           fi
 
+          if grep -RInE '&& context\.hasParentTask\) context\.leaveCurrentTask\(\)' src/features; then
+            echo 'Durable destructive actions must finish their task at both nested and root depth'
+            exit 1
+          fi
+
+          if ! grep -Fq 'commitTasks([taskFor({ type: "tools" })])' src/author/tasks/useAuthorTaskRuntime.ts; then
+            echo 'A finished root Author task must return to Author Tools rather than strand the editor or exit to play'
+            exit 1
+          fi
+
           for removed in \
             src/features/media/author/MediaAssetEditor.tsx \
             src/features/media/author/SynthPanel.tsx \
