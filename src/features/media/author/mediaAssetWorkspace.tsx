@@ -232,7 +232,7 @@ export const mediaFileAssetWorkspace = defineAuthorWorkspace<FileMediaWorkspaceD
       blocks.push({
         type: "section",
         id: "media-file-definition",
-        label: kind === "audio" ? "Sound file" : "Image file",
+        label: kind === "audio" ? "Audio file" : "Image file",
         importance: "primary",
         children,
       });
@@ -265,7 +265,7 @@ export const mediaFileAssetWorkspace = defineAuthorWorkspace<FileMediaWorkspaceD
 
     return {
       id: "media-file-asset",
-      title: `${kind === "audio" ? "Sound file" : "Image file"} · ${asset?.name ?? "Unavailable"}`,
+      title: `${kind === "audio" ? "Audio file" : "Image file"} · ${asset?.name ?? "Unavailable"}`,
       context: descriptor?.contentSource === "repository"
         ? "repository file"
         : descriptor?.contentSource === "missing"
@@ -286,7 +286,7 @@ export const mediaFileHelpWorkspace = defineAuthorWorkspace({
   createDraft: () => ({}),
   buildSpec: ({ route }) => ({
     id: "media-file-help",
-    title: `Add ${route.data?.kind === "audio" ? "sound" : "image"} file`,
+    title: `Add ${route.data?.kind === "audio" ? "audio" : "image"} file`,
     context: "filesystem-owned content",
     blocks: [
       {

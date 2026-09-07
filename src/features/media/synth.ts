@@ -13,12 +13,12 @@ export function noteFrequency(note: string) {
   return 440 * 2 ** ((midi - 69) / 12);
 }
 
-export function validateSynth(sound: SynthSound) {
+export function validateSynth(synth: SynthSound) {
   const errors: string[] = [];
-  if (!sound.voices.length) errors.push("A synth sound needs at least one voice.");
-  if (sound.voices.length > MAX_SYNTH_VOICES) errors.push(`A synth sound may contain at most ${MAX_SYNTH_VOICES} voices.`);
-  if (sound.tempo < 30 || sound.tempo > 300) errors.push("Tempo must be between 30 and 300 BPM.");
-  for (const voice of sound.voices) {
+  if (!synth.voices.length) errors.push("A Synth needs at least one voice.");
+  if (synth.voices.length > MAX_SYNTH_VOICES) errors.push(`A Synth may contain at most ${MAX_SYNTH_VOICES} voices.`);
+  if (synth.tempo < 30 || synth.tempo > 300) errors.push("Tempo must be between 30 and 300 BPM.");
+  for (const voice of synth.voices) {
     if (!voice.steps.length) errors.push("Every voice needs at least one sequence step.");
     if (voice.steps.length > MAX_SYNTH_STEPS) errors.push(`A voice may contain at most ${MAX_SYNTH_STEPS} steps.`);
     if (voice.attack < 0 || voice.attack > 1 || voice.release < 0 || voice.release > 1) {
@@ -205,12 +205,12 @@ export function applySynthPreset(sound: SynthSound, preset: SynthPresetId): Synt
   return { ...sound, ...structuredClone(PRESETS[preset]) };
 }
 
-/** A new sound is immediately audible and small enough to understand at a glance. */
+/** A new Synth is immediately audible and small enough to understand at a glance. */
 export function createStarterSynth(id = crypto.randomUUID()): SynthSound {
   return {
     id,
-    key: "new-sound",
-    label: "New sound",
+    key: "new-synth",
+    label: "New Synth",
     ...structuredClone(PRESETS.blip),
   };
 }

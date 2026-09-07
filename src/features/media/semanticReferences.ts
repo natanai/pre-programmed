@@ -25,7 +25,7 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
   {
     kind: "media.audio",
     label: "Audio files",
-    description: "Authored audio assets stored in the project Media catalog.",
+    description: "Repository audio assets stored in the project Media catalog.",
     authorSyntax: "audio",
     authorResourceKind: "media-audio",
     defaultProjection: "name",
@@ -45,22 +45,22 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
   },
   {
     kind: "media.synth",
-    label: "Synth sounds",
-    description: "Authored synthesizer sounds.",
+    label: "Synths",
+    description: "Authored procedural Synth definitions.",
     authorSyntax: "synth",
     authorResourceKind: "synth-sound",
     defaultProjection: "label",
-    candidates: ({ snapshot }) => snapshot.synthSounds.map((sound) => ({
-      id: sound.id,
-      key: sound.key,
-      label: sound.label || sound.key,
-      detail: `${sound.tempo} BPM`,
-      aliases: [sound.label, sound.key].filter(Boolean),
+    candidates: ({ snapshot }) => snapshot.synthSounds.map((synth) => ({
+      id: synth.id,
+      key: synth.key,
+      label: synth.label || synth.key,
+      detail: `${synth.tempo} BPM`,
+      aliases: [synth.label, synth.key].filter(Boolean),
       defaultProjection: "label",
-      projections: { label: sound.label || sound.key, key: sound.key },
-      author: { resourceKind: "synth-sound", resourceId: sound.id },
+      projections: { label: synth.label || synth.key, key: synth.key },
+      author: { resourceKind: "synth-sound", resourceId: synth.id },
     })),
-    projectResource: (id, snapshot) => snapshot.synthSounds.some((sound) => sound.id === id)
+    projectResource: (id, snapshot) => snapshot.synthSounds.some((synth) => synth.id === id)
       ? { resourceKind: "synth-sound", resourceId: id }
       : null,
   },

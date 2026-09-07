@@ -6,22 +6,22 @@ const synthCommand: TextCueAuthorAdapter = {
   inlineCode: "synth",
   label: "Synth",
   category: "MEDIA",
-  description: "Play a synth sound when delivery reaches this point.",
+  description: "Play a Synth when delivery reaches this point.",
   references: (value, snapshot) => {
     const token = value.trim();
     if (!token) return [];
-    const sound = snapshot.synthSounds.find((candidate) => candidate.id === token || candidate.key === token);
-    return [{ resourceKind: "synth-sound", resourceId: sound?.id ?? token, detail: "inline /synth command" }];
+    const synth = snapshot.synthSounds.find((candidate) => candidate.id === token || candidate.key === token);
+    return [{ resourceKind: "synth-sound", resourceId: synth?.id ?? token, detail: "inline /synth command" }];
   },
   renderValue: ({ value, snapshot, onValueChange }) => {
     const token = value.trim();
-    const sound = snapshot.synthSounds.find((candidate) => candidate.id === token || candidate.key === token);
+    const synth = snapshot.synthSounds.find((candidate) => candidate.id === token || candidate.key === token);
     return <ReferenceField
       kind="synth-sound"
-      value={sound?.id ?? token}
+      value={synth?.id ?? token}
       onChange={(nextValue) => {
-        const nextSound = snapshot.synthSounds.find((candidate) => candidate.id === nextValue || candidate.key === nextValue);
-        onValueChange(nextSound?.key || nextValue);
+        const nextSynth = snapshot.synthSounds.find((candidate) => candidate.id === nextValue || candidate.key === nextValue);
+        onValueChange(nextSynth?.key || nextValue);
       }}
       allowEmpty={false}
     />;
@@ -52,6 +52,6 @@ function resourceCommand(
 
 export const MEDIA_TEXT_CUE_AUTHOR_ADAPTERS: readonly TextCueAuthorAdapter[] = [
   synthCommand,
-  resourceCommand("audio", "media-audio", "Audio", "Play an audio asset when delivery reaches this point."),
+  resourceCommand("audio", "media-audio", "Audio", "Play a repository audio file when delivery reaches this point."),
   resourceCommand("sprite", "media-image", "Sprite", "Show an image asset when delivery reaches this point."),
 ];
