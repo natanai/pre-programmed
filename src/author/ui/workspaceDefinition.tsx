@@ -113,12 +113,13 @@ export function StructuredAuthorWorkspace<TDraft>({
 
   const save = useCallback((options: AuthorWorkspaceSaveOptions = {}) => {
     if (savePromiseRef.current) return savePromiseRef.current;
-    if (!definition.save || !validForSave) return Promise.resolve(false);
+    const saveDefinition = definition.save;
+    if (!saveDefinition || !validForSave) return Promise.resolve(false);
 
     const pending = (async () => {
       setSaving(true);
       try {
-        const result = await definition.save(saveBuild);
+        const result = await saveDefinition(saveBuild);
         if (!result.accepted) return false;
         const savedDraft = result.draft ?? saveBuild.draft;
         if (result.draft !== undefined) setDraft(savedDraft);
@@ -133,7 +134,7 @@ export function StructuredAuthorWorkspace<TDraft>({
     })();
     savePromiseRef.current = pending;
     return pending;
-  }, [context, definition, saveBuild, signature, validForSave]);
+  }, [context, definition.save, saveBuild, signature, validForSave]);
 
   const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
     () => ({ ...saveBuild, saveCurrentDraft: save }),
