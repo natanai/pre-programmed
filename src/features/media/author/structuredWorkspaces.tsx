@@ -52,11 +52,13 @@ export const mediaSynthLibraryWorkspace = defineAuthorWorkspace({
       context: `${sounds.length} sound${sounds.length === 1 ? "" : "s"}`,
       blocks: [
         ...(sounds.length ? [{
-          type: "action-row" as const,
+          type: "list" as const,
           id: "media-synth-list",
-          actions: sounds.map((sound) => ({
+          label: "Synth sounds",
+          items: sounds.map((sound) => ({
             id: `media-synth:${sound.id}`,
-            label: `${sound.label || sound.key || "UNTITLED"} · ${sound.voices.length} VOICE${sound.voices.length === 1 ? "" : "S"} · ${sound.tempo} BPM`,
+            label: sound.label || sound.key || "Untitled sound",
+            detail: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sound.tempo} BPM`,
             onAction: () => context.pushTask({
               type: "feature",
               feature: "media",
