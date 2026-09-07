@@ -30,6 +30,7 @@
 
 .guided-editor-body {
   padding-bottom: .75em;
+  overflow: visible;
 }
 
 .guided-context-copy {
@@ -317,7 +318,7 @@
 }
 
 @media (pointer: coarse), (max-width: 640px) {
-  .guided-editor-body {
+  [data-author-ui-workspace="narrative.interaction"] .author-ui-workspace-body {
     scroll-padding-top: 4em;
     scroll-padding-bottom: max(45vh, 15em);
   }
