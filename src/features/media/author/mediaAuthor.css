@@ -103,9 +103,7 @@
   overflow-wrap: anywhere;
 }
 
-.media-asset-editor .author-panel-body,
 .vector-editor-body { display: grid; align-content: start; gap: .75em; }
-.media-asset-editor label,
 .vector-controls label { display: grid; gap: .3em; }
 .media-asset-preview { display: grid; place-items: center; min-height: 8em; padding: .5em; border: 1px dotted var(--dos-line); }
 .media-asset-preview audio { width: min(100%, 30em); }
