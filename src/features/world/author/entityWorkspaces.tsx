@@ -74,8 +74,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
         `Delete ${draft.type} ${label}`,
       );
       if (result.status !== "saved" && result.status !== "queued") return;
-      context.setWorkspaceDirty(false);
-      if (context.hasParentTask) context.completeTask();
+      context.leaveCurrentTask();
     };
 
     return {
