@@ -29,6 +29,7 @@ See [`author-resource-ownership.md`](author-resource-ownership.md) for the full 
 Data-first Author workspaces should express ordinary tasks through a small semantic vocabulary:
 
 - `field` — edit text or a numeric value;
+- `resource` — choose, create, preview, or enter the canonical editor for an authorable resource through the shared resource contract;
 - `select` — choose one value from a conventional compact list;
 - `toggle` — turn one boolean option on or off;
 - `choice` — choose one mutually exclusive path, especially when the alternatives carry meaning or conditional content;
@@ -37,7 +38,9 @@ Data-first Author workspaces should express ordinary tasks through a small seman
 - `status` — validation or feedback;
 - `custom` — a specialized control that cannot reasonably be represented by ordinary primitives.
 
-A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/selects/toggles, global task navigation, task headers, Author exit behavior, or persistence semantics.
+A resource control is an entry point into the owning resource system, not an embedded foreign editor. Its ordinary choose/create/edit presentation belongs to shared Author UI; saving and validation remain with the resource owner's nested task.
+
+A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/resources/selects/toggles, global task navigation, task headers, Author exit behavior, or persistence semantics.
 
 ## Finite visual hierarchy
 
