@@ -59,9 +59,9 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     { id: "vectors", label: "VECTORS" },
   ];
 
-  return <div className="asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
+  return <div className="media-asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
     <input aria-label="Find media assets" placeholder="audio or image" value={query} onChange={(event) => setQuery(event.target.value)} />
-    <div className="asset-filters" role="group" aria-label="Filter media assets">
+    <div className="media-asset-filters" role="group" aria-label="Filter media assets">
       {filters.map((option) => <button
         type="button"
         key={option.id}
@@ -69,15 +69,15 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
         onClick={() => setFilter(option.id)}
       >{option.label} {counts[option.id]}</button>)}
     </div>
-    <div className="author-actions asset-actions">
+    <div className="author-actions media-asset-actions">
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
     </div>
     <div className="field-help">GENERATED MEDIA → D1 · FILE MEDIA → public/assets/</div>
     <div className="field-help">FILE ASSETS: put the media file in the appropriate <code>public/assets/</code> directory; the next build indexes it.</div>
-    {missing.length ? <div className="asset-warning"><strong>MISSING LINKED ASSETS</strong>{missing.map((reference, index) => <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.resourceId}:${index}`} onClick={() => reference.route && onOpenReference(reference.route)} disabled={!reference.route}>
+    {missing.length ? <div className="media-asset-warning"><strong>MISSING LINKED ASSETS</strong>{missing.map((reference, index) => <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.resourceId}:${index}`} onClick={() => reference.route && onOpenReference(reference.route)} disabled={!reference.route}>
       <span>{reference.resourceId}</span><small>{reference.ownerLabel} · {reference.detail}</small>
     </button>)}</div> : null}
-    <div className="asset-list">{assets.map((asset) => {
+    <div className="media-asset-list">{assets.map((asset) => {
       const usage = mediaReferences.filter((reference) => reference.resourceId === asset.id && (
         reference.resourceKind === `media-${asset.kind}` || (asset.kind === "audio" && reference.resourceKind === "media-sound")
       ));
@@ -93,6 +93,6 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
         <code>{asset.id}</code>
       </button>;
     })}</div>
-    {!assets.length ? <span className="asset-empty">{normalizedQuery ? "NO ASSETS MATCH." : `NO ${filter === "all" ? "MEDIA" : filter.toUpperCase()} ASSETS.`}</span> : null}
+    {!assets.length ? <span className="media-asset-empty">{normalizedQuery ? "NO ASSETS MATCH." : `NO ${filter === "all" ? "MEDIA" : filter.toUpperCase()} ASSETS.`}</span> : null}
   </div>;
 }
