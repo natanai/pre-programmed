@@ -601,7 +601,7 @@ export const stateGroupWorkspace = defineAuthorWorkspace<StateGroupDefinition>({
         onAction: () => {
           if (!window.confirm(`Delete player group “${draft.label}”? Values in it will become internal-only.`)) return;
           void context.persist([{ type: "stateGroup.delete", id: draft.id }], `Delete State group ${draft.label}`).then((result) => {
-            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+            if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
           });
         },
       }] : [],
