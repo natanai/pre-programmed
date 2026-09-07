@@ -241,7 +241,7 @@ export function AuthorWorkspaceHost({
 
   if (!tasks.length) return null;
   const resources = buildAuthorResourceTools(shared.snapshot, shared.pushTask);
-  const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot) }));
+  const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot), dirty: task.dirty }));
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
   const parentLabel = taskLabels.at(-2)?.label;
   const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
@@ -251,19 +251,22 @@ export function AuthorWorkspaceHost({
     if (!leaving.length || leaving.some((task) => task.dirty)) return;
     leaving.forEach(() => shared.requestBack());
   };
+  const taskName = (task: { label: string; dirty: boolean }) => <>
+    {task.label}{task.dirty ? <span className="author-task-dirty" aria-label="unsaved changes"> *</span> : null}
+  </>;
   const taskTrail = (label: string) => <ol className="author-task-trail" aria-label={label}>
     {taskLabels.map((task, index) => {
       const active = index === taskLabels.length - 1;
       const blockedByDirtyDescendant = !active && tasks.slice(index + 1).some((candidate) => candidate.dirty);
       return <li key={task.id} aria-current={active ? "page" : undefined}>
         {active
-          ? <span>{task.label}</span>
+          ? <span>{taskName(task)}</span>
           : <button
               type="button"
               disabled={blockedByDirtyDescendant}
               title={blockedByDirtyDescendant ? "Save or leave nested changes before returning here." : `Return to ${task.label}`}
               onClick={() => returnToCleanAncestor(index)}
-            >{task.label}</button>}
+            >{taskName(task)}</button>}
       </li>;
     })}
   </ol>;
