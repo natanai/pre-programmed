@@ -104,6 +104,22 @@ export type AuthorUiDisclosure = {
   children: AuthorUiNode[];
 };
 
+export type AuthorUiListItem = {
+  id: string;
+  label: string;
+  detail?: string;
+  onAction: () => void;
+  disabled?: boolean;
+};
+
+/** Scannable authored objects or destinations. Verbs belong in action-row instead. */
+export type AuthorUiList = {
+  type: "list";
+  id: string;
+  label: string;
+  items: AuthorUiListItem[];
+};
+
 export type AuthorUiInlineAction = {
   id: string;
   label: string;
@@ -146,6 +162,7 @@ export type AuthorUiNode =
   | AuthorUiChoice
   | AuthorUiSection
   | AuthorUiDisclosure
+  | AuthorUiList
   | AuthorUiActionRow
   | AuthorUiCustom
   | AuthorUiStatus;
