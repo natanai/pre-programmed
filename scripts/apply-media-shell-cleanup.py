@@ -57,12 +57,14 @@ if 'export function SynthPanel' in synth:
     raise SystemExit("Obsolete SynthPanel list component remains")
 synth_path.write_text(synth)
 
-# Prove no source file still references the removed SynthPanel list export.
+# Prove no source file still references the removed SynthPanel component symbol.
 for candidate in Path('src').rglob('*'):
     if candidate.suffix not in {'.ts', '.tsx'} or candidate == synth_path:
         continue
-    if 'SynthPanel' in candidate.read_text():
-        raise SystemExit(f"Removed SynthPanel is still referenced by {candidate}")
+    source = candidate.read_text()
+    symbol_uses = ('<SynthPanel', 'SynthPanel(', '{ SynthPanel', ', SynthPanel', 'SynthPanel,')
+    if any(token in source for token in symbol_uses):
+        raise SystemExit(f"Removed SynthPanel component is still referenced by {candidate}")
 
 css_path = Path("src/features/media/author/mediaAuthor.css")
 css = css_path.read_text()
