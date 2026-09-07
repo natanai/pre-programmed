@@ -15,7 +15,6 @@ function dimensionLabel(asset: ReturnType<typeof configuredAssetStore.list>[numb
 
 export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenReference }: {
   snapshot: ProjectSnapshot;
-  onClose: () => void;
   onOpenAsset: (assetId: string, kind: MediaAssetKind, authoringMode: MediaAssetAuthoringMode) => void;
   onNewVector: () => void;
   onOpenReference: (route: AuthorTaskRoute) => void;
