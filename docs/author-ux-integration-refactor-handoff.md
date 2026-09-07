@@ -1,301 +1,173 @@
-# Author UX + Integration Refactor — Live Handoff Log
+# Author UX + Integration Refactor — Live Handoff
 
 Branch: `author-ux-integration-refactor`
-PR: #182 — **draft / do not merge yet**
+PR: #182
 Base: `main`
-Last fully verified code head before this handoff-only commit: `66e6e8ee3a853c0df217617f2fe54e17833421f3`
-Verified workflow run: `34146807830` — **success**
-Branch comparison at that checkpoint: **236 ahead / 0 behind `main`**
+PR remains **draft / unmerged**.
 
-> This file is the recovery point for continuing this branch from a fresh ChatGPT conversation. Keep it current after every meaningful repair/verification pass. Updating this file itself advances the branch head, so always fetch PR #182’s actual head before editing; use the “last fully verified code head” above to distinguish a documentation-only head advance from the last code checkpoint.
+Last fully verified **code** head: `8106149217b233fb457af45122bdb31943eb0b5e`
+Verification workflow run: `34150653842` — **SUCCESS**
+At the last main comparison before this final repair, the branch was 0 behind `main`; re-check immediately before merge.
 
-## Product / architecture rules that must remain true
+Emergency pre-merge production anchor:
+
+- branch: `rollback/pr182-premerge-main`
+- commit: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
+- this is the exact `main` commit PR #182 was based on and the known-good production source before the refactor.
+
+> This file is the recovery point for a new conversation. Always fetch PR #182 first because updating this handoff itself advances the branch head beyond the last verified code SHA above.
+
+## Non-negotiable project rules
 
 1. Play stays play; Author augments the real running game.
-2. Author tools manage canonical authored systems; do not clone player surfaces just to edit them.
-3. Seen means editable: canonical editor reachable from every Author reference.
-4. One resource, one owner, one save path.
-5. Editing is additive to normal navigation/play behavior.
-6. Nested editing opens the owning Author task, preserves the parent draft, and returns to it when complete. Back stays within Author tasks; master X returns to play.
-7. Player-visible authored output retains provenance sufficient to reopen its definition.
-8. Features communicate through task/resource/capability contracts rather than embedding each other’s editors.
-9. Testing/current-run controls must not become alternate durable authoring paths.
-10. Mobile and desktop share the same tasks/editors/mutations/save semantics; only responsive presentation differs.
+2. Seen means editable through the resource's canonical owner editor.
+3. One resource, one owner, one durable save path.
+4. Nested work preserves parent draft/context and returns to it; Back stays inside Author; master X returns to play.
+5. Features communicate through resource/capability/task contracts, not embedded duplicate editors.
+6. Testing/current-run actions are not alternate persistence paths.
+7. Mobile and desktop share tasks/editors/mutations/save semantics; responsive presentation alone may differ.
 
-## Current merge decision
+## Current technical assessment
 
-**DO NOT MERGE YET.**
+All definite PR-specific static/runtime blockers found by repeated independent audits have now been repaired and the exact latest code head is green.
 
-The two lifecycle/persistence blockers from the latest branch-wide audit now have shared architectural repairs and the latest code checkpoint is green. The remaining merge gates are primarily real-device/manual acceptance, final branch hygiene, and removal of temporary branch-only verification/planning material—not known failing automated checks.
+The branch is **not yet merged** because remaining uncertainty is predominantly real-device acceptance plus final branch hygiene. Since the live site is the only practical environment available to the user for true iPhone/desktop acceptance, treat the eventual merge as a controlled production canary with the rollback procedure below rather than as an irreversible release.
 
-Do not infer “merge ready” solely from CI. The branch changes Author navigation, nested resource lifecycle, responsive presentation, and several specialized editors; the explicit manual acceptance below is still required.
+## DONE — major repaired audit findings
 
-## DONE — blocker A: durable operations cannot race Author navigation
+### Commands
 
-### Shared durable-operation lock
+- illegal nested structured sections removed;
+- dynamic `{placeholder}` target slots normalize when wording changes;
+- target aliases with real candidates validate;
+- semantic `list` presentation replaces giant no-wrap resource/action buttons;
+- regression tests build the previously crashing dynamic workspace states.
 
-- Added `src/author/tasks/commitState.ts` with a ref-counted Author commit-in-progress state.
-- `persistAuthorMutation()` enters that shared lock, so durable project Save/Delete/Reset operations participate automatically instead of each feature inventing its own navigation lock.
-- Structured workspace Save holds an **outer** commit token through persistence **and typed child completion**. Its inner project persistence may also hold a token; reference counting prevents premature unlock.
-- `useAuthorTaskRuntime` refuses user stack-changing operations while any commit is pending:
-  - open/replace task;
-  - push child task;
-  - Back;
-  - Close/X;
-  - discard/leave confirmation;
-  - direct close-all.
-- `completeTask()` intentionally remains legal while locked. This is required so the already-accepted child can return its typed result to the suspended parent before the outer commit scope releases.
-- `AuthorWorkspaceRenderer` makes structured feature controls inert while any durable Author write is pending.
-- `AuthorWorkspaceHost` also makes shared shell navigation visibly/intractably unavailable while pending:
-  - `[X]` disabled;
-  - navigation marked busy/inert, covering Back, Tools, Quick Find, Stack and breadcrumb/task jumps;
-  - preview resume disabled.
-- Runtime guards remain underneath presentation-level `disabled`/`inert`, so safety does not depend on DOM styling.
-- `pushTaskWithReturnFocus` ignores a blocked empty task id instead of recording an invalid return-focus entry.
+### Synth
 
-### App persistence boundary sanity check
+- authored sounds use semantic identity list rows;
+- tactile note/pitch controls retained;
+- procedural playback uses shared AudioContext;
+- rapid pitch audition replaces/fades the previous preview instead of allocating one AudioContext per semitone.
 
-Checked the current branch’s `App.tsx` author persistence caller. It:
+### Nested task lifecycle
 
-1. computes the optimistic snapshot synchronously;
-2. applies `setSnapshot` / optimistic play-state updates synchronously;
-3. sets `SAVING...`;
-4. immediately calls/awaits `persistAuthorMutation()`.
+- successful Delete/Reset no longer routes through dirty Back protection;
+- typed resource completion returns to suspended parents;
+- successful deletion uses explicit `resource-deleted` completion;
+- failed/conflicted optimistic deletion cannot mutate the parent reference;
+- parent reference reconciliation depends on authoritative child completion, not temporary option-list disappearance.
 
-There is **no `await`, timer, requestAnimationFrame, or other browser-yielding gap before `persistAuthorMutation()` acquires the shared commit lock**. A second shell interaction therefore cannot run between optimistic application and lock acquisition.
+### Durable operation lock
 
-## DONE — blocker B: parent references reconcile only from authoritative child completion
+- shared ref-counted Author commit state exists in `src/author/tasks/commitState.ts`;
+- foreground Save/Delete/Reset operations enter the commit boundary;
+- structured Save keeps the outer lock until typed child completion is delivered;
+- runtime refuses task navigation while commit is pending;
+- shell navigation and structured feature UI are visually inert/disabled while pending;
+- `completeTask()` remains legal so accepted nested work can return to the parent;
+- deferred/overlapping commit tests are present.
 
-### Removed optimistic-disappearance inference
+### Background offline-sync race — latest repair
 
-`ReferenceField` no longer watches its option list and clears a selected reference simply because an optimistic snapshot temporarily stopped listing it. The removed `previousSelectionRef` behavior was the source of the failed/conflicted-delete collateral parent mutation.
+Audit found that standalone `flushQueuedAuthorMutations()` shared the synchronization queue but did not share the Author commit boundary. A reconnect/15-second background flush could therefore advance D1 while a foreground Save had already captured the old revision, producing a self-generated conflict.
 
-### Explicit deletion result
+Repair now in `src/author/persistence/authorProjectPersistence.ts`:
 
-`AuthorTaskResult` now includes:
+- automatic queue flush enters the **same `withAuthorCommit(...)` boundary** as foreground writes;
+- foreground and background synchronization still use one serialized queue;
+- successful writes remember the latest snapshot published by this browser;
+- a waiting foreground mutation may rebase to that revision **only when project content (ignoring revision) exactly matches its pre-save snapshot**;
+- if background synchronization observed a real external project change, content differs and the foreground edit still produces an ordinary revision conflict rather than silently overwriting it.
 
-```ts
-{
-  type: "resource-deleted";
-  kind: string;
-  id: string;    // stable owner id
-  value: string; // reference value exposed by the provider before deletion
-}
-```
+Tests in `tests/authorPersistence.test.ts` now cover both directions:
 
-The separate `value` matters for resource kinds whose stable owner id and authored reference value can differ.
+1. queued background write R10→R11 followed by same-browser foreground save => foreground writes at R11 and succeeds, no self-generated 409;
+2. remote/external content changed before background flush => foreground stale edit is **not** treated as a safe own-browser rebase and remains a conflict.
 
-### Generic resource-contract derivation — no per-feature delete fork
+Latest code head `8106149217b233fb457af45122bdb31943eb0b5e` passed architecture assertions, clean install, complete `npm run verify`, and production Vite build in workflow `34150653842`.
 
-Deletion completion is now derived centrally from the resource contract rather than patched into every feature owner.
+## Network-stall decision
 
-For a feature task opened with `route.data.resourceTask`:
+Do **not** add a naive short fetch timeout immediately before merge.
 
-- the shared task surface wraps that task’s ordinary `context.persist(...)`;
-- before the write it gets the owner resource provider’s canonical list from the current snapshot;
-- after a **saved or queued** result it gets the same provider’s list from the accepted result snapshot;
-- `authorResourceDeletionResult(...)` reports a deletion only when exactly one previously available resource of that canonical kind disappeared by stable owner id;
-- the task stores that typed result for its normal `leaveCurrentTask()`;
-- failed/conflicted persistence stores no deletion result.
+Reason: aborting a POST only proves the client stopped waiting; it does not prove the Worker failed to commit the mutation. Automatically queueing/replaying an ambiguously committed write can duplicate a mutation unless writes have an idempotency/replay key.
 
-This is intentionally feature-independent. State, Inventory, Narrative, Commands, Media, Radix, World and future canonical resource kinds continue using their real owner task and real persistence path.
+The current lock always releases when the promise settles. A truly stalled browser/network request can therefore leave Author temporarily locked, but this is preferable to introducing ambiguous duplicate writes in a last-minute timeout patch. A durable future solution should pair bounded requests with mutation idempotency/replay identity.
 
-Important edge case handled: a Media “reset to repository” may delete a D1 override while the canonical repository asset still exists. Because the owner provider still lists the resource after the accepted write, the shared contract correctly treats that as **survival**, not resource deletion.
+The separate pre-existing problem where a permanently rejected offline queue entry may repeatedly block later queue work remains real but existed on `main`; track it separately rather than mixing it into PR #182's final stabilization.
 
-### Parent reconciliation
+## DONE — smaller audit cleanup
 
-`ReferenceField` captures both the reference’s value and stable selected id before entering the child editor. On child completion:
+- Author Tools has one Find surface: large Tools Find on Tools, shell Quick Find elsewhere.
+- Asset Explorer no longer tells authors to hand-create `.asset.json` sidecars.
+- Synth Sounds uses semantic list rows.
+- Node -> Input explicit prerequisite Save remains a known creative-flow friction, not a stability blocker; do not add an alternate persistence path.
 
-- no result / cancelled / failed / conflicted / unrelated result => parent unchanged;
-- matching `resource` result => adopt returned value;
-- matching `resource-deleted` by value or stable id => clear the reference;
-- no snapshot-membership inference occurs in the parent.
+## Emergency rollback plan
 
-For State Group specifically, clearing the resource field still flows through State’s existing canonical `onChange`, which converts the presentation to `null` / INTERNAL ONLY. A rejected deletion never sends the deletion result, so the suspended parent keeps its original group reference.
+The production workflow `.github/workflows/deploy.yml` supports both push-to-main deployment **and `workflow_dispatch`**.
 
-## DONE — adversarial automated coverage
+Before PR #182 is merged, `rollback/pr182-premerge-main` was created at the exact old-main SHA `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`.
 
-`tests/authorCommitLifecycle.test.ts` covers:
+If the live merge is badly broken:
 
-- a deferred durable operation keeps Author navigation disallowed until the promise settles;
-- overlapping outer + inner commit scopes do not unlock until both release;
-- accepted before/after resource lists produce the typed deletion result;
-- surviving resource (including reset-style behavior) produces no deletion;
-- ambiguous multi-resource disappearance produces no inferred deletion;
-- no/cancelled/ordinary/unrelated completion leaves parent reference unchanged;
-- matching confirmed deletion clears the parent reference;
-- stable-id matching works when resource id and reference value differ.
+1. In GitHub Actions open **Deploy production**.
+2. Run the workflow manually against ref/branch `rollback/pr182-premerge-main`.
+3. That branch contains the previous Worker/client code and deployment workflow, so the old Worker + GitHub Pages build can be redeployed without first rewriting `main` history.
+4. Verify `/api/health`, `/api/project/snapshot`, and the player surface after rollback deployment.
+5. Then make the repository history match production by reverting the PR merge on `main` (prefer GitHub's Revert flow / a normal revert commit rather than force-moving `main`).
 
-The test suite intentionally remains DOM-light; exact visual shell-click behavior is backed by the same tested commit state plus branch architecture assertions that require both runtime navigation gating and shell `inert` wiring. Real-device interaction remains a manual acceptance gate.
+Why rollback is comparatively safe here:
 
-## DONE — temporary verifier updated
-
-`.github/workflows/verify-author-ux-refactor.yml` no longer requires the removed optimistic `previousSelectionRef` behavior.
-
-It now asserts the new shared lifecycle contract, including:
-
-- runtime navigation uses `authorNavigationAllowed()`;
-- shared host observes `useAuthorCommitPending`;
-- shell navigation uses `inert={commitPending || undefined}`;
-- `ReferenceField` does **not** contain `previousSelectionRef`;
-- `ReferenceField` uses authoritative `reconciledAuthorReferenceValue`;
-- task host uses `authorResourceDeletionResult`;
-- existing structured Author/Save-All/ownership invariants remain asserted.
-
-The workflow still performs a clean install and full `npm run verify` after architecture assertions.
-
-## DONE — latest audit UX cleanup
-
-### Synth Sounds uses semantic list grammar
-
-The Synth library now represents authored sounds as identity-bearing `list` rows:
-
-- primary line: sound name;
-- secondary detail: `N voice(s) · BPM`;
-- row opens the existing canonical Synth task;
-- `+ SOUND` remains an action.
-
-It no longer compresses names/metadata into action-row verb buttons.
-
-### One Find surface on Author Tools
-
-- The larger `AuthorToolIndex` Find remains the canonical search on the Tools task.
-- Shared shell Quick Find is hidden only while the active task is Tools.
-- Shell Quick Find remains available everywhere else.
-
-This avoids two keyboard-summoning search controls for the same Author universe on mobile.
-
-### Asset Explorer no longer teaches manual `.asset.json` ceremony
-
-Live Asset Explorer copy now tells authors to put file media in the appropriate `public/assets/` directory and let the next build index it. It no longer says a neighboring `.asset.json` sidecar must be hand-created.
-
-## Verification checkpoints
-
-### Green blocker-repair checkpoint
-
-Head: `bd6d44d5f4d0faf4833e5f9ccc90e52383717bb8`
-Workflow: `34146539430`
-Result: **success**
-
-Passed:
-
-- branch architecture assertions;
-- `npm ci --no-audit --no-fund`;
-- full `npm run verify`.
-
-### Green latest code checkpoint after UX cleanup
-
-Head: `66e6e8ee3a853c0df217617f2fe54e17833421f3`
-Workflow: `34146807830`
-Result: **success**
-
-Passed:
-
-- branch architecture assertions;
-- `npm ci --no-audit --no-fund`;
-- full `npm run verify`.
-
-### Main divergence at latest code checkpoint
-
-`main` base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
-Branch: **236 commits ahead, 0 behind**.
-
-Re-check immediately before merge; this is a point-in-time statement.
-
-## TODO — manual acceptance / remaining merge gates
-
-### Required real-device Author lifecycle acceptance
-
-On a real iPhone/mobile browser and on desktop (including a narrow/resized Author panel), exercise:
-
-1. **Nested CREATE pending-save race**
-   - parent resource reference -> `+ CREATE`;
-   - edit child;
-   - press Save;
-   - while request is pending, attempt Back / Tools / Find / Stack / breadcrumb ancestor / X;
-   - navigation must remain unavailable;
-   - when write resolves, child completes exactly once;
-   - parent receives the new resource exactly once and returns to the same draft/context.
-
-2. **Nested DELETE rejected/conflicted**
-   - edit a referenced canonical resource (State Group is the clearest reproduction);
-   - start Delete while observing the parent remains mounted/suspended;
-   - if persistence rejects/conflicts and canonical snapshot restores, parent must retain its original reference/draft value;
-   - child must remain available for retry/correction and no deletion completion may reach parent.
-
-3. **Nested DELETE success**
-   - accepted/queued deletion must return the explicit deletion result;
-   - parent clears exactly that matching reference and becomes dirty through its ordinary feature-owned `onChange` semantics;
-   - unrelated references remain untouched.
-
-4. **Save All**
-   - nested child completion dirties a previously clean parent;
-   - Save All must re-read the live task stack and save that newly dirty parent before returning to player.
-
-5. **Commit-lock presentation**
-   - feature controls and shell navigation visibly stop accepting input while durable writes are pending;
-   - controls become available again on saved, queued, failed, or conflicted completion.
-
-### Required broader manual regression acceptance
-
-- iPhone/mobile with keyboard open and closed.
-- Desktop at wide and narrow/resizable Author panel widths.
-- Narrative Interaction create/edit/delete; response sub-navigation; destination create/edit; fallback/capture modes; Save/return.
-- Media File/Vector/Synth structured editors; Synth touch interactions.
-- Commands dynamic placeholder target and alias editing regressions.
-- Synth rapid audition / shared AudioContext behavior.
-- World, Inventory, State, Radix, Media and Narrative capabilities remain present.
-- ordinary player behavior, Narrative continuation/transitions/effects and Radix startup/effect presentation remain unchanged.
-- existing project data / D1 / player-save compatibility unchanged.
-
-## TODO — optional creative-flow follow-up (not a current data-safety blocker)
-
-Narrative new Node -> Input still requires an explicit prerequisite Save. Desired eventual flow:
-
-`create node -> write node -> Add Input -> transparently persist prerequisite node through the SAME canonical save boundary -> open Input`
-
-If implementing on this branch, reuse the structured workspace’s `saveCurrentDraft({ completeTask: false })` prerequisite-save pattern (as Commands already does for prerequisite target behavior). Do **not** create an alternate mutation/save path. Keep this isolated from the now-green lifecycle repair.
-
-## TODO — final branch hygiene before merge
-
-1. Re-check branch is still 0 behind `main`.
-2. Ensure the final code head (after any remaining code change) has a green branch verifier and full `npm run verify`.
-3. Remove temporary `.github/workflows/verify-author-ux-refactor.yml` **before merge**.
-4. Decide whether `docs/author-ux-integration-refactor-plan.md` should be removed or distilled into durable architecture/product documentation.
-5. Decide whether this handoff file should be removed before merge or distilled into a permanent implementation/acceptance note. It is intentionally useful while the branch is active, but should not become stale project documentation accidentally.
-6. After deleting any temporary verification/docs, run the repository’s normal final verification path again if possible and inspect the final PR diff for accidental temporary material.
-7. Do not merge until the user has completed/accepted the real-device checks above.
-
-## Files most relevant to the latest lifecycle repair
-
-- `src/author/tasks/commitState.ts`
-- `src/author/tasks/useAuthorTaskRuntime.ts`
-- `src/author/tasks/types.ts`
-- `src/author/ui/workspaceDefinition.tsx`
-- `src/author/ui/AuthorWorkspaceRenderer.tsx`
-- `src/author/persistence/authorProjectPersistence.ts`
-- `src/author/workspace/AuthorWorkspaceHost.tsx`
-- `src/author/resources/ReferenceField.tsx`
-- `src/author/resources/completion.ts`
-- `tests/authorCommitLifecycle.test.ts`
-- `.github/workflows/verify-author-ux-refactor.yml`
-
-UX cleanup touched:
-
-- `src/features/media/author/structuredWorkspaces.tsx`
-- `src/features/media/author/AssetExplorer.tsx`
-- `src/author/workspace/AuthorWorkspaceHost.tsx`
-
-Always inspect the current branch before relying on this list; it is a handoff aid, not an ownership registry.
-
-## Safe continuation order for a fresh conversation
-
-1. Fetch PR #182 info and read this file before making changes.
-2. Compare `main...author-ux-integration-refactor`; do not assume the branch is still 0 behind.
-3. Inspect the latest branch verification run; do not rely only on the historical green SHAs in this log.
-4. If the user is ready for acceptance, guide/perform the manual checklist above and record results here.
-5. If implementing the optional Node -> Input prerequisite-save cleanup, keep it isolated and use the existing structured Save boundary; verify again afterward.
-6. Repair any new findings without weakening architecture assertions just to make CI green.
-7. When acceptance is complete, remove temporary verifier/planning/handoff material as appropriate.
-8. Re-run/inspect final verification and final PR diff.
-9. Only then reassess merge readiness; do not merge without explicit user direction.
+- PR #182 introduces no D1 migration;
+- no Worker schema change;
+- no project mutation schema change;
+- no player-save format change;
+- the production persistence adapter/deploy format was unchanged through the main refactor.
+
+Important limitation: rolling code back does **not** erase authored project mutations made while the new UI was live. Those use the existing project schema and should remain readable by old code, but a code rollback is not a data-undo operation.
+
+Prefer merging PR #182 with a normal **merge commit**, not rebase, so GitHub retains the PR boundary and a single merge can be reverted cleanly while preserving the branch's incremental history.
+
+## Before merge — remaining gates
+
+1. Re-fetch PR #182 and compare against `main`; require 0 behind.
+2. Prefer one more independent audit of the post-sync-race code head or later.
+3. Do not add unrelated UX/features after the final audit.
+4. Keep this handoff and the temporary verifier until the final merge decision because they are the branch recovery system.
+5. Immediately before merge:
+   - remove `.github/workflows/verify-author-ux-refactor.yml`;
+   - remove or distill `docs/author-ux-integration-refactor-plan.md`;
+   - remove this handoff if it should not become durable project documentation;
+   - inspect the final diff to ensure only intended production files remain.
+6. Merge only with explicit user direction.
+7. Treat the live deployment as the real-device acceptance window. Test iPhone + desktop immediately, especially nested task return/focus, keyboard-open layouts, Synth touch controls, Narrative interaction authoring, and ordinary player/Radix behavior.
+8. If anything is catastrophically broken, use the rollback deployment branch above first; diagnose second.
+
+## High-value live acceptance route
+
+After controlled merge/deploy, immediately test:
+
+- nested reference -> `+ CREATE` -> child Save -> parent receives selected resource exactly once;
+- while Save is pending, Back/Tools/Find/Stack/breadcrumb/X cannot navigate;
+- nested referenced deletion success clears only that parent reference;
+- rejected/conflicted deletion leaves parent unchanged;
+- Save All after nested return saves newly dirtied parent;
+- Commands target placeholder edit/rename/remove;
+- Synth rapid pitch drag + note audition on iPhone;
+- Vector touch editing;
+- Narrative valid input / fallback / destination create-edit-return;
+- player Narrative continuation/transitions/effects;
+- Radix startup/presentation;
+- ordinary save/load and existing project data.
+
+## Fresh-conversation continuation order
+
+1. Fetch PR #182 and read this file.
+2. Compare branch to `main`.
+3. Check latest workflow run for the actual current head.
+4. If a new audit finding exists, repair only that finding and add a regression test.
+5. Update this handoff after every meaningful repair.
+6. Do not merge automatically; wait for explicit user instruction.
+7. When merge is authorized, perform final temporary-file cleanup, re-check diff/main divergence, use merge-commit strategy, observe production deploy, then execute the live acceptance checklist.
