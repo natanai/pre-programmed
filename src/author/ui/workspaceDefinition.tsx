@@ -10,11 +10,18 @@ export type AuthorWorkspaceSaveResult<TDraft> =
   | { accepted: true; draft?: TDraft; completion?: AuthorTaskResult }
   | { accepted: false };
 
+export type AuthorWorkspaceSaveOptions = {
+  /** Suppress nested resource-task completion when saving only to establish a child editor prerequisite. */
+  completeTask?: boolean;
+};
+
 export type AuthorWorkspaceBuildContext<TDraft> = {
   route: AuthorFeatureTaskRoute;
   context: AuthorWorkspaceContext;
   draft: TDraft;
   setDraft: Dispatch<SetStateAction<TDraft>>;
+  /** Shared task save boundary. Feature actions may save before nesting without creating another persistence path. */
+  saveCurrentDraft?: (options?: AuthorWorkspaceSaveOptions) => Promise<boolean>;
 };
 
 /**
@@ -82,30 +89,35 @@ export function StructuredAuthorWorkspace<TDraft>({
     return () => context.setWorkspaceDirty(false);
   }, [context.setWorkspaceDirty, dirty]);
 
-  const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
+  const saveBuild = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
     () => ({ route, context, draft, setDraft }),
     [context, draft, route],
   );
-  const validForSave = definition.canSave?.(build) ?? true;
+  const validForSave = definition.canSave?.(saveBuild) ?? true;
 
-  const save = useCallback(async () => {
+  const save = useCallback(async (options: AuthorWorkspaceSaveOptions = {}) => {
     if (!definition.save || !validForSave) return false;
-    const result = await definition.save(build);
+    const result = await definition.save(saveBuild);
     if (!result.accepted) return false;
-    const savedDraft = result.draft ?? build.draft;
+    const savedDraft = result.draft ?? saveBuild.draft;
     if (result.draft !== undefined) setDraft(savedDraft);
     setBaseline(signature(savedDraft));
     context.setWorkspaceDirty(false);
-    if (result.completion && context.hasParentTask) context.completeTask(result.completion);
+    if (result.completion && options.completeTask !== false && context.hasParentTask) context.completeTask(result.completion);
     return true;
-  }, [build, context, definition, signature, validForSave]);
+  }, [context, definition, saveBuild, signature, validForSave]);
+
+  const build = useMemo<AuthorWorkspaceBuildContext<TDraft>>(
+    () => ({ ...saveBuild, saveCurrentDraft: save }),
+    [save, saveBuild],
+  );
 
   useEffect(() => {
     if (!definition.save) {
       context.registerWorkspaceSave(null);
       return;
     }
-    context.registerWorkspaceSave(save);
+    context.registerWorkspaceSave(() => save());
     return () => context.registerWorkspaceSave(null);
   }, [context.registerWorkspaceSave, definition.save, save]);
 

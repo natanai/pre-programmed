@@ -27,7 +27,6 @@ import type {
 export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
   "narrative",
   "media",
-  "commands",
 ]);
 
 /** Single composition registry for Author-capable feature modules. */

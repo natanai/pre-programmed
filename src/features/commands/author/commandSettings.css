@@ -1,6 +1,4 @@
-.command-settings-overview,
-.command-editor-body,
-.command-editor-form {
+.command-settings-overview {
   width: 100%;
   max-width: 100%;
   min-width: 0;
@@ -33,9 +31,7 @@
   gap: .25rem;
 }
 
-.command-settings-overview small,
-.command-editor-body small,
-.command-editor-form small {
+.command-settings-overview small {
   color: var(--dos-muted);
   white-space: normal;
   line-height: 1.35;
@@ -52,164 +48,7 @@
   color: var(--dos-bright) !important;
 }
 
-.command-settings-note {
-  margin: 0;
-  color: var(--dos-muted);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-}
-
-.command-settings-note code,
-.command-editor-form code {
-  color: inherit;
-}
-
-.command-settings-workspace {
-  height: 100%;
-  min-height: 0;
-}
-
-.command-settings-workspace .author-panel-body {
-  width: 100%;
-  max-width: 100%;
-  min-height: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
-}
-
-.command-slot-editor h3 {
-  margin: .4rem 0 0;
-}
-
-.command-slot-editor,
-.command-target-action,
-.command-target-setup {
-  display: grid;
-  gap: .7rem;
-}
-
-.command-slot-row {
-  display: grid;
-  gap: .45rem;
-  padding: .6rem;
-  border: 1px solid var(--dos-line);
-}
-
-.command-slot-editor > label,
-.command-editor-body > label,
-.command-editor-form > label,
-.command-target-action > label {
-  display: grid;
-  gap: .35rem;
-}
-
-.command-editor-body textarea,
-.command-editor-body input,
-.command-editor-body select,
-.command-editor-form textarea,
-.command-editor-form input,
-.command-editor-form select,
-.command-slot-editor select {
-  width: 100%;
-  box-sizing: border-box;
-}
-
-.command-editor-form textarea::placeholder,
-.command-editor-form input::placeholder {
-  color: var(--dos-muted);
-  opacity: .5;
-}
-
-.command-slot-editor {
-  border-top: 1px solid var(--dos-line);
-  padding-top: .8rem;
-}
-
-.command-slot-source-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: .45rem .8rem;
-}
-
-.command-slot-source-row > button,
-.command-target-setup button,
-.command-target-action > button {
-  min-height: 2.5em;
-  padding: .3em .5em;
-  border: 1px solid var(--dos-line);
-  background: transparent;
-  color: var(--dos-bright);
-  font: inherit;
-  cursor: pointer;
-}
-
-.command-target-setup {
-  padding: .65rem;
-  border: 1px dashed var(--dos-line);
-}
-
-.command-target-setup > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-}
-
-.command-author-warning {
-  padding: .6rem .7rem;
-  border: 1px solid var(--dos-line);
-  color: var(--dos-bright);
-  line-height: 1.4;
-}
-
-.command-slot-editor > label:not(:last-child) {
-  grid-template-columns: minmax(6rem, auto) 1fr;
-  align-items: center;
-}
-
-.command-slot-source-warning {
-  grid-column: 1 / -1;
-}
-
-.command-slot-source-warning button {
-  min-height: 2.5em;
-  margin-left: .35em;
-  border: 0;
-  background: transparent;
-  color: var(--dos-bright);
-  font: inherit;
-  cursor: pointer;
-}
-
-.command-delete-zone {
-  margin-top: 1rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--dos-line);
-  display: flex;
-  flex-wrap: wrap;
-  gap: .7rem;
-  align-items: center;
-}
-
 @media (max-width: 560px) {
-  .command-settings-workspace > header {
-    align-items: flex-start;
-    flex-wrap: wrap;
-    line-height: 1.2;
-  }
-
-  .command-settings-workspace > header > span {
-    max-width: 100%;
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
   .command-settings-overview > button {
     min-height: 4.8rem;
     align-items: flex-start;
@@ -219,19 +58,5 @@
 
   .command-settings-overview > button > span:last-child {
     margin-left: auto;
-  }
-
-  .command-slot-editor > label:not(:last-child) {
-    grid-template-columns: 1fr;
-  }
-
-  .command-slot-source-row {
-    align-items: flex-start;
-  }
-
-  .command-slot-source-row > button,
-  .command-target-setup button,
-  .command-target-action > button {
-    min-height: 2.75em;
   }
 }

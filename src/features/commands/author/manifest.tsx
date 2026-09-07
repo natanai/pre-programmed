@@ -1,10 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { APPLICATION_COMMAND_CAPABILITY_BY_OPERATION } from "../../../engine/application/catalog";
 import type { CommandDefinition } from "../model";
-import {
-  COMMAND_PROJECT_SETTINGS_SECTION,
-  renderCommandSettingsWorkspace,
-} from "./CommandSettings";
+import { COMMAND_PROJECT_SETTINGS_SECTION } from "./CommandSettings";
 import { COMMAND_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function commandActionLabel(command: CommandDefinition) {
@@ -82,5 +79,4 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
       onSelect: () => context.pushTask({ type: "feature" as const, feature: "commands", workspace: "command", data: { commandId: command.id } }),
     })),
   ],
-  renderWorkspace: renderCommandSettingsWorkspace,
 };

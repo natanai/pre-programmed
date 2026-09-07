@@ -1,6 +1,7 @@
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "../../../engine/references/catalog";
 import { persistCommands, referenceSetting, updateReferenceSetting } from "./settingsPersistence";
+import { commandWorkspace } from "./commandWorkspace";
 
 function targetProviders() {
   return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
@@ -288,6 +289,7 @@ export const commandTargetBehaviorsWorkspace = defineAuthorWorkspace({
 });
 
 export const COMMAND_STRUCTURED_WORKSPACES = [
+  commandWorkspace,
   commandInteractionsWorkspace,
   commandGrammarWorkspace,
   commandReferenceSourcesWorkspace,
