@@ -341,7 +341,7 @@ export const inventoryBodyTypeWorkspace = defineAuthorWorkspace<BodyTypeDraft>({
         onAction: () => {
           if (usages.length || !window.confirm(`Delete body type “${draft.bodyType.name}”?`)) return;
           void context.persist([{ type: "bodyBackground.delete", id: draft.bodyType.id }], `Delete body type ${draft.bodyType.name}`).then((result) => {
-            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+            if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
           });
         },
       }] : [],
