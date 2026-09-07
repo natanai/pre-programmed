@@ -69,12 +69,12 @@ jobs:
           fi
 
           if grep -Fq 'const leaveCurrentTask = useCallback(() => requestBack(task.id)' src/author/workspace/AuthorWorkspaceHost.tsx \
-            || ! grep -Fq 'const leaveCurrentTask = useCallback(() => completeTask(task.id)' src/author/workspace/AuthorWorkspaceHost.tsx; then
+            || ! grep -Fq 'completeTask(task.id, result)' src/author/workspace/AuthorWorkspaceHost.tsx; then
             echo 'Programmatic task completion must not be routed through Back/dirty confirmation'
             exit 1
           fi
 
-          complete_task_body="$(sed -n '/const completeTask = useCallback/,/const closeAll = useCallback/p' src/author/tasks/useAuthorTaskRuntime.ts)"
+          complete_task_body="$(sed -n '/const completeTask = useCallback/,/const forceCloseAll = useCallback/p' src/author/tasks/useAuthorTaskRuntime.ts)"
           request_back_body="$(sed -n '/const requestBack = useCallback/,/const requestClose = useCallback/p' src/author/tasks/useAuthorTaskRuntime.ts)"
           if ! grep -Fq 'type: "tools"' <<< "$complete_task_body" \
             || grep -Fq 'type: "tools"' <<< "$request_back_body"; then
@@ -82,9 +82,17 @@ jobs:
             exit 1
           fi
 
-          if ! grep -Fq 'previousSelectionRef' src/author/resources/ReferenceField.tsx \
-            || ! grep -Fq 'previous.value !== value || !previous.optionId || selected || !value' src/author/resources/ReferenceField.tsx; then
-            echo 'A previously valid resource reference must reconcile when its nested owner deletes it'
+          if ! grep -Fq 'authorNavigationAllowed()' src/author/tasks/useAuthorTaskRuntime.ts \
+            || ! grep -Fq 'useAuthorCommitPending' src/author/workspace/AuthorWorkspaceHost.tsx \
+            || ! grep -Fq 'inert={commitPending || undefined}' src/author/workspace/AuthorWorkspaceHost.tsx; then
+            echo 'Durable Author commits must lock both runtime navigation and shell interaction'
+            exit 1
+          fi
+
+          if grep -Fq 'previousSelectionRef' src/author/resources/ReferenceField.tsx \
+            || ! grep -Fq 'reconciledAuthorReferenceValue' src/author/resources/ReferenceField.tsx \
+            || ! grep -Fq 'authorResourceDeletionResult' src/author/workspace/AuthorWorkspaceHost.tsx; then
+            echo 'Resource deletion must reconcile from accepted task completion, never optimistic option disappearance'
             exit 1
           fi
 
