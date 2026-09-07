@@ -48,8 +48,9 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
 
     if ("label" in node && !node.label.trim()) errors.push(`${path} requires a label.`);
 
-    if (node.type === "field") {
+    if (node.type === "field" || node.type === "resource") {
       repeatedParentLabel(node, path, parentLabel);
+      if (node.type === "resource" && !node.kind.trim()) errors.push(`${path} requires a resource kind.`);
       return;
     }
 
@@ -68,6 +69,24 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
 
     if (node.type === "toggle") {
       repeatedParentLabel(node, path, parentLabel);
+      return;
+    }
+
+    if (node.type === "list") {
+      if (!node.items.length) errors.push(`${path} requires at least one item.`);
+      node.items.forEach((item, index) => {
+        registerId(item.id, `${path}.items[${index}]`);
+        if (!item.label.trim()) errors.push(`${path}.items[${index}] requires a label.`);
+      });
+      return;
+    }
+
+    if (node.type === "action-row") {
+      if (!node.actions.length) errors.push(`${path} requires at least one action.`);
+      node.actions.forEach((action, index) => {
+        registerId(action.id, `${path}.actions[${index}]`);
+        if (!action.label.trim()) errors.push(`${path}.actions[${index}] requires a label.`);
+      });
       return;
     }
 

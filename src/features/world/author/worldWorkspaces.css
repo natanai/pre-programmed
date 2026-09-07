@@ -21,13 +21,6 @@
   color: var(--dos-muted);
 }
 
-.world-author-create-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4em;
-  margin-bottom: .2em;
-}
-
 .world-author-reference-list {
   display: grid;
   gap: .35em;

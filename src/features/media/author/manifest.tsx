@@ -3,21 +3,12 @@ import type { AuthorResourceOption } from "../../../author/resources/types";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
-import { AssetExplorer } from "./AssetExplorer";
-import { MediaAssetEditor } from "./MediaAssetEditor";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
-import { VectorAssetEditor } from "./VectorAssetEditor";
-import { SynthEditor, SynthPanel } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
 import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
-
-function routeDimension(value: string | undefined) {
-  if (!value) return undefined;
-  const parsed = Number(value);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : undefined;
-}
+import { MEDIA_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
   if (snapshot.synthSounds.some((sound) => sound.id === resource.id)) return {
@@ -31,6 +22,16 @@ function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSn
     feature: "media",
     workspace: "asset",
     data: { kind: "audio", assetId: resource.id, resourceTask: "media-sound" },
+  };
+}
+
+function mediaImageEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
+  const asset = configuredAssetStore.resolve(snapshot, resource.id);
+  return {
+    type: "feature",
+    feature: "media",
+    workspace: asset?.authoringMode === "vector-grid" ? "vector-asset" : "asset",
+    data: { kind: "image", assetId: resource.id, resourceTask: "media-image" },
   };
 }
 
@@ -55,6 +56,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   searchDocuments: [mediaSearchDocuments],
   tools: mediaAuthorTools,
   search: mediaAuthorSearch,
+  workspaces: [...MEDIA_STRUCTURED_WORKSPACES],
   resources: [
     {
       kind: "synth-sound",
@@ -80,8 +82,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       }),
     },
     {
-      // Reference-only union used by the generic Play sound effect. The effect
-      // does not need to know which storage/rendering implementation owns it.
       kind: "media-sound",
       label: "Sound",
       pluralLabel: "Sounds",
@@ -148,144 +148,11 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
         workspace: "vector-asset",
         data: { kind: "image", resourceTask: "media-image" },
       }),
-      editRoute: (resource) => ({
-        type: "feature",
-        feature: "media",
-        workspace: "asset",
-        data: { kind: "image", assetId: resource.id, resourceTask: "media-image" },
-      }),
+      editRoute: mediaImageEditRoute,
     },
   ],
   terminalShortcuts: [
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
     { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
   ],
-  renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
-      snapshot={context.snapshot}
-      onClose={context.leaveCurrentTask}
-      onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
-        data: { assetId, kind },
-      })}
-      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "vector-asset", data: { kind: "image" } })}
-      onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
-    />;
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
-      const kind = route.data?.kind === "image" ? "image" : "audio";
-      const initial = route.data?.assetId
-        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
-        : undefined;
-      const resourceKind = route.data?.resourceTask;
-      const saveResource = async (operations: Parameters<typeof context.persist>[0], description: string) => {
-        const result = await context.persist(operations, description);
-        if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-          const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
-          if (operation?.type === "mediaAsset.upsert") context.completeTask({
-            type: "resource",
-            kind: resourceKind,
-            id: operation.asset.id,
-            value: operation.asset.id,
-            label: operation.asset.name,
-          });
-        }
-        return result;
-      };
-
-      if (kind === "image" && initial?.authoringMode === "vector-grid") return <VectorAssetEditor
-        snapshot={context.snapshot}
-        initial={initial}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={saveResource}
-      />;
-
-      return <MediaAssetEditor
-        snapshot={context.snapshot}
-        kind={kind}
-        initial={initial}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={saveResource}
-      />;
-    }
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "vector-asset") {
-      const initial = route.data?.assetId
-        ? configuredAssetStore.resolve(context.snapshot, route.data.assetId) ?? undefined
-        : undefined;
-      const resourceKind = route.data?.resourceTask;
-      return <VectorAssetEditor
-        snapshot={context.snapshot}
-        initial={initial}
-        initialWidth={routeDimension(route.data?.vectorWidth)}
-        initialHeight={routeDimension(route.data?.vectorHeight)}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-        onCancel={context.leaveCurrentTask}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceKind && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "mediaAsset.upsert");
-            if (operation?.type === "mediaAsset.upsert") context.completeTask({
-              type: "resource",
-              kind: resourceKind,
-              id: operation.asset.id,
-              value: operation.asset.id,
-              label: operation.asset.name,
-            });
-          }
-          return result;
-        }}
-      />;
-    }
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "synth") return <SynthPanel
-      snapshot={context.snapshot}
-      onOpenSound={(sound) => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: "synth-sound",
-        data: { soundId: sound.id },
-      })}
-      onNewSound={() => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: "synth-sound",
-        data: { soundId: "new" },
-      })}
-    />;
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "synth-sound") {
-      const soundId = route.data?.soundId ?? "new";
-      const sound = soundId === "new"
-        ? undefined
-        : context.snapshot.synthSounds.find((candidate) => candidate.id === soundId);
-      const resourceTask = route.data?.resourceTask;
-      return <SynthEditor
-        snapshot={context.snapshot}
-        initial={sound}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceTask && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "synth.upsert");
-            if (operation?.type === "synth.upsert") context.completeTask({
-              type: "resource",
-              kind: resourceTask,
-              id: operation.sound.id,
-              value: operation.sound.id,
-              label: operation.sound.label || operation.sound.key || "Untitled sound",
-            });
-          }
-          return result;
-        }}
-        onCancel={context.leaveCurrentTask}
-        setWorkspaceDirty={context.setWorkspaceDirty}
-      />;
-    }
-
-    return null;
-  },
 };

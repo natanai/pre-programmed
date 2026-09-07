@@ -36,16 +36,16 @@ export function AuthorQuickFind({ entries }: { entries: readonly AuthorSearchEnt
 
   return <div className="author-quick-find">
     <button ref={trigger} type="button" aria-expanded={open} onClick={() => open ? close() : setOpen(true)}>
-      [{open ? "CLOSE FIND" : "FIND"}]
+      [{open ? "CLOSE" : "FIND"}]
     </button>
     <AuthorPicker
       open={open}
-      title="FIND ANYTHING"
+      title="FIND"
       query={query}
       onQueryChange={setQuery}
       groups={groups}
-      placeholder="tool, rule, command, item, scene..."
-      emptyText={query.trim() ? "NO MATCH. TRY A CONCEPT, CONTROL, OR AUTHORED NAME." : "TYPE TO SEARCH..."}
+      placeholder="name or system"
+      emptyText={query.trim() ? "NO MATCH" : "TYPE TO FIND"}
       onClose={close}
       anchorRef={trigger as RefObject<HTMLElement | null>}
     />

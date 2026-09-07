@@ -3,12 +3,37 @@
   container-type: inline-size;
 }
 
+.embedded-structure-panel {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+}
+
 .focused-structure-body {
   display: flex;
   min-height: 0;
   flex-direction: column;
   gap: .6em;
   overflow: hidden;
+}
+
+.structure-embedded-body {
+  overflow: visible;
+}
+
+.structure-embedded-controls {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5em;
+  color: var(--dos-muted);
+}
+
+.structure-embedded-controls > button {
+  min-width: 2.75em;
+  min-height: 2.5em;
+  padding: .3em .4em !important;
 }
 
 .structure-navigation-tools {
@@ -315,6 +340,7 @@
 }
 
 @media (max-width: 700px), (pointer: coarse) {
+  .structure-embedded-controls > button,
   .structure-step-back,
   .structure-return-current,
   .structure-path-step > button,

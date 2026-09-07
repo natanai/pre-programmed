@@ -79,7 +79,20 @@ export function removeSynthVoice(sound: SynthSound, index: number): SynthSound {
   return { ...sound, voices: sound.voices.filter((_, candidateIndex) => candidateIndex !== index) };
 }
 
-export type SynthPresetId = "blip" | "chime" | "alert" | "hit";
+export const SYNTH_PRESET_IDS = [
+  "blip",
+  "chirp",
+  "confirm",
+  "chime",
+  "alert",
+  "error",
+  "boot",
+  "ascend",
+  "zap",
+  "hit",
+] as const;
+
+export type SynthPresetId = typeof SYNTH_PRESET_IDS[number];
 
 const PRESETS: Record<SynthPresetId, Pick<SynthSound, "tempo" | "loop" | "voices">> = {
   blip: {
@@ -90,6 +103,26 @@ const PRESETS: Record<SynthPresetId, Pick<SynthSound, "tempo" | "loop" | "voices
       { active: true, note: "G5", volume: 0.32 },
       { active: false, note: "C5", volume: 0.35 },
       { active: false, note: "C5", volume: 0.35 },
+    ] }],
+  },
+  chirp: {
+    tempo: 240,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C5", volume: 0.38 },
+      { active: true, note: "E5", volume: 0.36 },
+      { active: true, note: "G5", volume: 0.34 },
+      { active: false, note: "G5", volume: 0.35 },
+    ] }],
+  },
+  confirm: {
+    tempo: 180,
+    loop: false,
+    voices: [{ waveform: "sine", attack: 0.01, release: 0.18, steps: [
+      { active: true, note: "G5", volume: 0.34 },
+      { active: true, note: "C6", volume: 0.32 },
+      { active: false, note: "C6", volume: 0.35 },
+      { active: false, note: "C6", volume: 0.35 },
     ] }],
   },
   chime: {
@@ -110,6 +143,50 @@ const PRESETS: Record<SynthPresetId, Pick<SynthSound, "tempo" | "loop" | "voices
       { active: true, note: "C6", volume: 0.4 },
       { active: true, note: "C5", volume: 0.4 },
       { active: true, note: "C6", volume: 0.4 },
+    ] }],
+  },
+  error: {
+    tempo: 220,
+    loop: false,
+    voices: [{ waveform: "square", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C4", volume: 0.4 },
+      { active: true, note: "C#4", volume: 0.4 },
+      { active: true, note: "C4", volume: 0.4 },
+      { active: true, note: "C#4", volume: 0.4 },
+    ] }],
+  },
+  boot: {
+    tempo: 190,
+    loop: false,
+    voices: [{ waveform: "triangle", attack: 0.01, release: 0.12, steps: [
+      { active: true, note: "C4", volume: 0.36 },
+      { active: true, note: "E4", volume: 0.35 },
+      { active: true, note: "G4", volume: 0.34 },
+      { active: true, note: "C5", volume: 0.33 },
+      { active: false, note: "C5", volume: 0.35 },
+      { active: true, note: "G5", volume: 0.3 },
+    ] }],
+  },
+  ascend: {
+    tempo: 200,
+    loop: false,
+    voices: [{ waveform: "triangle", attack: 0.02, release: 0.18, steps: [
+      { active: true, note: "C5", volume: 0.34 },
+      { active: true, note: "D5", volume: 0.33 },
+      { active: true, note: "E5", volume: 0.32 },
+      { active: true, note: "G5", volume: 0.31 },
+      { active: true, note: "B5", volume: 0.3 },
+      { active: true, note: "C6", volume: 0.29 },
+    ] }],
+  },
+  zap: {
+    tempo: 260,
+    loop: false,
+    voices: [{ waveform: "sawtooth", attack: 0, release: 0.05, steps: [
+      { active: true, note: "C6", volume: 0.34 },
+      { active: true, note: "G5", volume: 0.36 },
+      { active: true, note: "D5", volume: 0.38 },
+      { active: true, note: "G4", volume: 0.4 },
     ] }],
   },
   hit: {

@@ -5,16 +5,18 @@ import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
 import { transitionState } from "./effectRuntime";
-import { interactionOutcomeProse } from "./interactionProse";
+import { DEFAULT_INTERACTION_TEXT_PERFORMANCE, interactionOutcomeProse } from "./interactionProse";
 import { interpolateText } from "./interpolation";
-import type { Interaction, InteractionOutcome } from "./model";
+import type { Interaction, InteractionOutcome, TextPerformance } from "./model";
 import { resolveNodeConversationContext } from "./sceneContext";
 
 export type InteractionExecution = {
   state: PlayState;
   outcome: InteractionOutcome | null;
   responseText: string;
+  responsePerformance: TextPerformance;
   dialogueText: string;
+  dialoguePerformance: TextPerformance;
   dialogueSpeakerId: string | null;
   events: EffectEvent[];
   attempt: number;
@@ -80,11 +82,20 @@ export function executeInteraction(
     .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey, scope })) ?? null;
 
   if (!outcome) return {
-    state, outcome, responseText: "", dialogueText: "", dialogueSpeakerId: null, events: [], attempt, eventKey,
+    state,
+    outcome,
+    responseText: "",
+    responsePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueText: "",
+    dialoguePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueSpeakerId: null,
+    events: [],
+    attempt,
+    eventKey,
   };
   const prose = interactionOutcomeProse(outcome);
   const sourceConversation = resolveNodeConversationContext(snapshot, initialState, interaction.sourceNodeId);
-  const source = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
+  const effectSource = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
   const execution = executeEffects(snapshot, state, outcome.effects, {
     bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
     scope,
@@ -99,7 +110,7 @@ export function executeInteraction(
     const next = event.type === "notification"
       ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
       : event;
-    return { ...next, source };
+    return { ...next, source: effectSource };
   });
   const enteredNode = state.currentNodeId !== initialState.currentNodeId
     || state.traversal.length > initialState.traversal.length;
@@ -108,15 +119,25 @@ export function executeInteraction(
     : { state, events: [] };
   state = entry.state;
 
+  const responseText = interpolateText(prose.narrationText, { snapshot, state });
+  const dialogueText = interpolateText(prose.dialogueText, { snapshot, state });
+  const presentationSource = responseText
+    ? authoredSource("interaction", interaction.id, { outcomeId: outcome.id, section: "narration" })
+    : dialogueText
+      ? authoredSource("interaction", interaction.id, { outcomeId: outcome.id, section: "dialogue" })
+      : effectSource;
+
   return {
     state,
     outcome,
-    responseText: interpolateText(prose.narrationText, { snapshot, state }),
-    dialogueText: interpolateText(prose.dialogueText, { snapshot, state }),
+    responseText,
+    responsePerformance: prose.narrationPerformance,
+    dialogueText,
+    dialoguePerformance: prose.dialoguePerformance,
     dialogueSpeakerId: sourceConversation?.characterId ?? outcome.speakerId ?? null,
     events: [...interactionEvents, ...entry.events],
     attempt,
     eventKey,
-    source,
+    source: presentationSource,
   };
 }

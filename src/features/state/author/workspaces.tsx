@@ -1,7 +1,6 @@
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
-import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { AuthorUiNode } from "../../../author/ui/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
@@ -164,20 +163,18 @@ function presentationNodes(
         label: "SHOW IN GROUP",
         content: visible ? [
           {
-            type: "custom",
+            type: "resource" as const,
             id: `${id}-group-picker`,
-            role: "resource-picker",
-            content: <ReferenceField
-              kind="state-group"
-              value={presentation?.groupId ?? ""}
-              allowEmpty={false}
-              placeholder="choose or create a group"
-              onChange={(groupId) => setPresentation({
-                groupId,
-                order: presentation?.order ?? 0,
-                visibleWhen: presentation?.visibleWhen ?? ALWAYS,
-              })}
-            />,
+            label: "Group",
+            kind: "state-group",
+            value: presentation?.groupId ?? "",
+            allowEmpty: false,
+            placeholder: "choose or create a group",
+            onChange: (groupId: string) => setPresentation(groupId ? {
+              groupId,
+              order: presentation?.order ?? 0,
+              visibleWhen: presentation?.visibleWhen ?? ALWAYS,
+            } : null),
           },
           {
             type: "field",
@@ -604,7 +601,7 @@ export const stateGroupWorkspace = defineAuthorWorkspace<StateGroupDefinition>({
         onAction: () => {
           if (!window.confirm(`Delete player group “${draft.label}”? Values in it will become internal-only.`)) return;
           void context.persist([{ type: "stateGroup.delete", id: draft.id }], `Delete State group ${draft.label}`).then((result) => {
-            if ((result.status === "saved" || result.status === "queued") && context.hasParentTask) context.leaveCurrentTask();
+            if (result.status === "saved" || result.status === "queued") context.leaveCurrentTask();
           });
         },
       }] : [],

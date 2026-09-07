@@ -1,6 +1,9 @@
 .guided-interaction-editor {
   width: 100%;
   max-width: none;
+  min-width: 0;
+  border: 0;
+  background: transparent;
 }
 
 .guided-editor-header {
@@ -27,6 +30,7 @@
 
 .guided-editor-body {
   padding-bottom: .75em;
+  overflow: visible;
 }
 
 .guided-context-copy {
@@ -269,16 +273,6 @@
   color: var(--dos-bright) !important;
 }
 
-.guided-editor-footer {
-  min-height: 3em;
-  align-items: center;
-}
-
-.guided-editor-footer > button {
-  min-height: 2.6em;
-  padding: .35em .15em !important;
-}
-
 .guided-editor-error {
   margin: .75em 0 0;
 }
@@ -292,15 +286,6 @@
     position: sticky;
     top: 0;
     z-index: 2;
-  }
-
-  .guided-editor-footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 7;
-    padding-bottom: max(.35em, env(safe-area-inset-bottom));
-    border-top: 1px solid var(--dos-line);
-    background: #000;
   }
 
   .interaction-mode-row {
@@ -333,7 +318,7 @@
 }
 
 @media (pointer: coarse), (max-width: 640px) {
-  .guided-editor-body {
+  [data-author-ui-workspace="narrative.interaction"] .author-ui-workspace-body {
     scroll-padding-top: 4em;
     scroll-padding-bottom: max(45vh, 15em);
   }

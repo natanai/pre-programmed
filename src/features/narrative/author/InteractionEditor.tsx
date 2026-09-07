@@ -1,16 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
-import type { AuthorWorkspaceSaveHandler } from "../../../author/features/types";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
-import type {
-  MutationOperation,
-  PlayState,
-  ProjectSnapshot,
-} from "../../../engine/project/model";
+import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type {
   Interaction,
   InteractionChoiceVisibility,
@@ -21,12 +15,12 @@ import {
   OutcomeConditionEditor,
   OutcomeEffectsEditor,
 } from "../../../author/outcomes/OutcomeComposer";
-import { createDraftInteraction, createDraftOutcome } from "../drafts";
+import { createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { interactionOutcomeProse, normalizeInteractionOutcomeProse } from "../interactionProse";
 import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
-import { validateTextNotation } from "../textNotation";
+export { aliasesForUserInput } from "./interactionAuthoring";
 import "./interactionEditor.css";
 
 const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; help: string }> = [
@@ -35,39 +29,10 @@ const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; 
   { value: "typed", label: "TYPED ONLY", help: "Never suggest this choice. Typing the input directly still works." },
 ];
 
-type EditorScreen =
+export type InteractionEditorScreen =
   | { type: "overview" }
   | { type: "response"; outcomeId: string }
   | { type: "input-settings" };
-
-export function aliasesForUserInput(userInputText: string, aliases: string[]) {
-  const trimmed = userInputText.trim();
-  const values = [trimmed, ...aliases.map((alias) => alias.trim())].filter(Boolean);
-  const seen = new Set<string>();
-  return values.filter((alias) => {
-    const normalized = alias.toLocaleLowerCase();
-    if (seen.has(normalized)) return false;
-    seen.add(normalized);
-    return true;
-  });
-}
-
-function normalizedInteraction(
-  initial: Interaction | undefined,
-  sourceNodeId: string,
-  command: string,
-  fallback: boolean,
-) {
-  const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
-  value.matchMode ??= fallback ? "fallback" : "command";
-  value.choiceVisibility ??= fallback ? "typed" : "prompt";
-  value.choiceVisibleWhen ??= ALWAYS;
-  value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => normalizeInteractionOutcomeProse({
-    ...outcome,
-    authorStatus: outcome.authorStatus ?? "configured",
-  })) : [createDraftOutcome()];
-  return value;
-}
 
 function conditionSummary(condition: Condition): string {
   switch (condition.type) {
@@ -118,61 +83,51 @@ function secondaryAliases(wording: string, aliases: string[]) {
   return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
 }
 
-export function InteractionEditor({
+/**
+ * Controlled specialized interaction composer. It owns only sub-screen and
+ * response-composition presentation; callers own the canonical Interaction
+ * draft, dirty baseline, validation, and persistence lifecycle.
+ */
+export function InteractionComposer({
   snapshot,
   playState,
-  sourceNodeId,
-  initial,
-  initialCommand = "",
-  initialOutcomeId,
-  fallback = false,
-  onSave,
-  onCancel,
-  onDirtyChange,
-  onRegisterSave,
+  draft,
+  setDraft,
+  fallbackMode,
+  isNew,
+  screen,
+  setScreen,
+  newOutcomeIds,
+  setNewOutcomeIds,
+  error,
+  onClearError,
   onPreview,
   onCreateDestination,
   onEditDestination,
 }: {
   snapshot: ProjectSnapshot;
   playState: PlayState;
-  sourceNodeId?: string;
-  initial?: Interaction;
-  initialCommand?: string;
-  initialOutcomeId?: string;
-  fallback?: boolean;
-  onSave: (operations: MutationOperation[], description: string) => Promise<AuthorPersistResult>;
-  onCancel?: () => void;
-  onDirtyChange: (dirty: boolean) => void;
-  onRegisterSave?: (handler: AuthorWorkspaceSaveHandler | null) => void;
+  draft: Interaction;
+  setDraft: Dispatch<SetStateAction<Interaction>>;
+  fallbackMode: boolean;
+  isNew: boolean;
+  screen: InteractionEditorScreen;
+  setScreen: Dispatch<SetStateAction<InteractionEditorScreen>>;
+  newOutcomeIds: Set<string>;
+  setNewOutcomeIds: Dispatch<SetStateAction<Set<string>>>;
+  error?: string;
+  onClearError?: () => void;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
   onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
   onEditDestination?: (nodeId: string) => void;
 }) {
-  const fallbackMode = fallback || initial?.matchMode === "fallback";
-  const resolvedSourceNodeId = initial?.sourceNodeId ?? sourceNodeId ?? playState.currentNodeId;
-  const [draft, setDraft] = useState(() => normalizedInteraction(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
-  const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
-  const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
-  const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
-    ? { type: "response", outcomeId: initialOutcomeId }
-    : { type: "overview" });
-  const [saving, setSaving] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState("");
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
-  const draftSignature = JSON.stringify(draft);
   const captureMode = !fallbackMode && draft.matchMode === "capture";
   const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
   const sourcePlayState = sourceTraversalIndex >= 0
     ? { ...playState, currentNodeId: draft.sourceNodeId, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
     : { ...playState, currentNodeId: draft.sourceNodeId };
   const conversationCharacterId = resolveNodeConversationContext(snapshot, sourcePlayState, draft.sourceNodeId)?.characterId ?? null;
-
-  useEffect(() => {
-    onDirtyChange(draftSignature !== savedSignature);
-    return () => onDirtyChange(false);
-  }, [draftSignature, savedSignature, onDirtyChange]);
 
   const configureOutcome = (id: string, change: (outcome: InteractionOutcome) => InteractionOutcome) => {
     setDraft((current) => ({
@@ -220,79 +175,12 @@ export function InteractionEditor({
     return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destinationNodeId).join("") || "[A1]";
   };
 
-  const save = async (): Promise<boolean> => {
-    const userInputText = draft.wording.trim();
-    if (!fallbackMode && !captureMode && !userInputText) {
-      setError("Enter user-input-text or choose Capture player input.");
-      setScreen({ type: "overview" });
-      return false;
-    }
-    if (captureMode && snapshot.interactions.some((interaction) =>
-      interaction.id !== draft.id
-      && interaction.sourceNodeId === draft.sourceNodeId
-      && interaction.matchMode === "capture")) {
-      setError("This node already has a Capture player input interaction. Edit that interaction instead.");
-      setScreen({ type: "overview" });
-      return false;
-    }
-    const incompleteTransition = draft.outcomes.find((outcome) => outcome.disposition === "transition" && !outcome.destinationNodeId);
-    if (incompleteTransition) {
-      setError("Choose an existing destination or create a new Node before saving.");
-      setScreen({ type: "response", outcomeId: incompleteTransition.id });
-      return false;
-    }
-    const invalidText = draft.outcomes.find((outcome) =>
-      validateTextNotation(outcome.responseText).length
-      || validateTextNotation(outcome.dialogueText ?? "").length);
-    if (invalidText) {
-      setError("Fix the response text rule error before saving.");
-      setScreen({ type: "response", outcomeId: invalidText.id });
-      return false;
-    }
-    setError("");
-    setSaving(true);
-    try {
-      const interaction: Interaction = {
-        ...draft,
-        wording: fallbackMode || captureMode ? "" : userInputText,
-        matchMode: fallbackMode ? "fallback" : captureMode ? "capture" : "command",
-        choiceVisibility: fallbackMode || captureMode ? "typed" : draft.choiceVisibility,
-        choiceVisibleWhen: fallbackMode || captureMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
-        aliases: fallbackMode || captureMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
-        outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
-      };
-      const result = await onSave(
-        [{ type: "interaction.upsert", interaction }],
-        fallbackMode
-          ? `${initial ? "Changed" : "Created"} invalid-input response for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
-          : captureMode
-            ? `${initial ? "Changed" : "Created"} player-input capture for node ${snapshot.nodes.find((node) => node.id === draft.sourceNodeId)?.nodeNumber}`
-            : initial ? `Changed user input ${interaction.wording}` : `Created user input ${interaction.wording}`,
-      );
-      if (result.status === "saved" || result.status === "queued") {
-        setDraft(interaction);
-        setNewOutcomeIds(new Set());
-        setSavedSignature(JSON.stringify(interaction));
-        return true;
-      }
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!onRegisterSave) return;
-    onRegisterSave(save);
-    return () => onRegisterSave(null);
-  });
-
   const selectedOutcome = "outcomeId" in screen
     ? draft.outcomes.find((outcome) => outcome.id === screen.outcomeId)
     : undefined;
 
   const back = () => {
-    setError("");
+    onClearError?.();
     setScreen({ type: "overview" });
   };
 
@@ -301,7 +189,7 @@ export function InteractionEditor({
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
-  return <section className="author-panel author-panel-frame interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
+  return <section className="interaction-editor-panel guided-interaction-editor" onPointerDown={(event) => event.stopPropagation()}>
     <header className="guided-editor-header">
       {screen.type !== "overview" ? <button type="button" className="guided-back" onClick={back} aria-label="Back to input">[‹ INPUT]</button> : null}
       <span>{title}</span>
@@ -316,7 +204,7 @@ export function InteractionEditor({
         snapshot={snapshot}
         conversationCharacterId={conversationCharacterId}
         notationForOutcome={notationForOutcome}
-        autoFocusWording={!initial}
+        autoFocusWording={isNew}
         onWording={(wording) => setDraft({ ...draft, wording })}
         onMatchMode={(matchMode) => setDraft({ ...draft, matchMode })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
@@ -338,7 +226,7 @@ export function InteractionEditor({
         index={draft.outcomes.findIndex((outcome) => outcome.id === selectedOutcome.id)}
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
-        autoFocusText={!initial || newOutcomeIds.has(selectedOutcome.id)}
+        autoFocusText={isNew || newOutcomeIds.has(selectedOutcome.id)}
         conversationCharacterId={conversationCharacterId}
         onPreview={onPreview ? (value, speakerId) => onPreview(value, speakerId, selectedOutcome) : undefined}
         playState={sourcePlayState}
@@ -356,15 +244,6 @@ export function InteractionEditor({
       {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
     </div>
 
-    <div className="author-actions author-panel-footer guided-editor-footer">
-      <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {onCancel ? <button type="button" onClick={onCancel}>[BACK]</button> : null}
-      {screen.type === "overview" && initial ? confirmDelete ? <>
-        <span>Delete this {fallbackMode ? "invalid-input response" : captureMode ? "player-input capture" : "user input"}?</span>
-        <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : captureMode ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
-        <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
-      </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
-    </div>
   </section>;
 }
 
@@ -653,7 +532,7 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
       {
         value: "create",
         label: "CREATE NEW",
-        help: "Open the real Node editor. Saving that nested task returns here with the new Node linked.",
+        help: "Create and link a new Node.",
       },
       {
         value: "existing",

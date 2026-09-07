@@ -192,7 +192,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         {
           type: "custom",
           id: "node-context-strip",
-          role: "resource-picker",
+          role: "specialized-control",
           content: <details className="node-context-strip">
             <summary>
               <span className="node-context-primary">{locationLabel} <span aria-hidden="true">·</span> {conversationLabel}</span>

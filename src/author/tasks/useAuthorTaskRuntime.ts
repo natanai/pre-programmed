@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from "react";
+import { authorNavigationAllowed } from "./commitState";
 import { popActiveAuthorTask, setAuthorTaskDirtyState } from "./taskStack";
 import type {
   AuthorLeaveConfirmation,
@@ -21,9 +22,16 @@ function taskFor(route: AuthorTaskRoute): AuthorTaskEntry {
  * are addressed by task id, so a suspended async task cannot alter or dismiss
  * whichever child happens to be active later.
  *
- * Back and task completion are strictly task-to-parent navigation. The root task
- * has no Author parent, so neither can pop it; the master close command owns the
- * intentional Author -> player transition.
+ * Back is cancellable task-to-parent navigation and therefore protects dirty
+ * drafts. Task completion is different: once feature-owned work has already
+ * completed durably, completion bypasses the dirty Back guard. Nested completion
+ * returns to the suspended parent; root completion returns to Author Tools.
+ * Only the master close command intentionally crosses Author -> player.
+ *
+ * User navigation is frozen while any durable Author commit is in flight. This
+ * prevents the task stack from moving underneath an accepted Save/Delete/Reset,
+ * while programmatic completeTask() remains available so the committed child
+ * can still return its typed result to the suspended parent.
  */
 export function useAuthorTaskRuntime() {
   const [tasks, setTasks] = useState<AuthorTaskEntry[]>([]);
@@ -39,6 +47,7 @@ export function useAuthorTaskRuntime() {
   }, []);
 
   const openTask = useCallback((route: AuthorTaskRoute) => {
+    if (!authorNavigationAllowed()) return "";
     const task = taskFor(route);
     completions.current.clear();
     setLeaveConfirmation(null);
@@ -47,6 +56,7 @@ export function useAuthorTaskRuntime() {
   }, [commitTasks]);
 
   const pushTask = useCallback((route: AuthorTaskRoute, onComplete?: AuthorTaskCompletion) => {
+    if (!authorNavigationAllowed()) return "";
     const task = taskFor(route);
     if (onComplete) completions.current.set(task.id, onComplete);
     setLeaveConfirmation(null);
@@ -68,15 +78,30 @@ export function useAuthorTaskRuntime() {
   const completeTask = useCallback((taskId: string, result?: AuthorTaskResult) => {
     const current = tasksRef.current;
     const active = current.at(-1);
-    if (!active || active.id !== taskId || current.length <= 1) return false;
+    if (!active || active.id !== taskId) return false;
+    if (current.length <= 1) {
+      // The task has already completed its owner-defined work. Do not route it
+      // through Back/dirty confirmation; replace the finished root editor with
+      // Author Tools while preserving the master X as the only exit to play.
+      completions.current.clear();
+      setLeaveConfirmation(null);
+      commitTasks([taskFor({ type: "tools" })]);
+      return true;
+    }
     return popTask(taskId, result);
-  }, [popTask]);
+  }, [commitTasks, popTask]);
 
-  const closeAll = useCallback(() => {
+  const forceCloseAll = useCallback(() => {
     completions.current.clear();
     setLeaveConfirmation(null);
     commitTasks([]);
   }, [commitTasks]);
+
+  const closeAll = useCallback(() => {
+    if (!authorNavigationAllowed()) return false;
+    forceCloseAll();
+    return true;
+  }, [forceCloseAll]);
 
   const setTaskDirty = useCallback((taskId: string, dirty: boolean) => {
     const next = setAuthorTaskDirtyState(tasksRef.current, taskId, dirty);
@@ -84,10 +109,10 @@ export function useAuthorTaskRuntime() {
   }, [commitTasks]);
 
   const requestBack = useCallback((taskId?: string) => {
+    if (!authorNavigationAllowed()) return;
     const current = tasksRef.current;
     const active = current.at(-1);
-    if (!active || (taskId && active.id !== taskId)) return;
-    if (current.length <= 1) return;
+    if (!active || (taskId && active.id !== taskId) || current.length <= 1) return;
     if (active.dirty) {
       setLeaveConfirmation({ action: "back", dirtyCount: 1, taskId: active.id });
       return;
@@ -96,6 +121,7 @@ export function useAuthorTaskRuntime() {
   }, [popTask]);
 
   const requestClose = useCallback(() => {
+    if (!authorNavigationAllowed()) return;
     const current = tasksRef.current;
     if (!current.length) return;
     const currentDirtyCount = current.filter((task) => task.dirty).length;
@@ -103,13 +129,14 @@ export function useAuthorTaskRuntime() {
       setLeaveConfirmation({ action: "close", dirtyCount: currentDirtyCount });
       return;
     }
-    closeAll();
-  }, [closeAll]);
+    forceCloseAll();
+  }, [forceCloseAll]);
 
   const confirmLeave = useCallback(() => {
+    if (!authorNavigationAllowed()) return;
     if (leaveConfirmation?.action === "back") popTask(leaveConfirmation.taskId);
-    else if (leaveConfirmation?.action === "close") closeAll();
-  }, [closeAll, leaveConfirmation, popTask]);
+    else if (leaveConfirmation?.action === "close") forceCloseAll();
+  }, [forceCloseAll, leaveConfirmation, popTask]);
 
   const cancelLeave = useCallback(() => setLeaveConfirmation(null), []);
 
