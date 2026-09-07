@@ -54,22 +54,22 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
         existingKeys: context.snapshot.synthSounds
           .filter((candidate) => candidate.id !== draft.sound.id)
           .map((candidate) => candidate.key),
-        fallback: "sound",
+        fallback: "synth",
       }),
     };
 
     setDraft((current) => ({ ...current, sound, saving: true, saveError: "" }));
     const result = await context.persist(
       [{ type: "synth.upsert", sound }],
-      `${persisted ? "Changed" : "Created"} synth ${sound.label}`,
+      `${persisted ? "Changed" : "Created"} Synth ${sound.label}`,
     );
     if (result.status !== "saved" && result.status !== "queued") {
       setDraft((current) => ({
         ...current,
         saving: false,
         saveError: result.status === "conflict"
-          ? "The project changed while this sound was saving. Your draft is still here; save it again."
-          : result.message ?? "This sound could not be saved. Your draft is still here.",
+          ? "The project changed while this Synth was saving. Your draft is still here; save it again."
+          : result.message ?? "This Synth could not be saved. Your draft is still here.",
       }));
       return { accepted: false };
     }
@@ -85,7 +85,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
           kind: resourceKind,
           id: sound.id,
           value: sound.id,
-          label: sound.label || sound.key || "Untitled sound",
+          label: sound.label || sound.key || "Untitled Synth",
         },
       } : {}),
     };
@@ -115,9 +115,9 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
 
     const remove = async () => {
       if (!persisted || usages.length || draft.saving) return;
-      if (!window.confirm(`Delete synth sound “${persisted.label}”?`)) return;
+      if (!window.confirm(`Delete Synth “${persisted.label}”?`)) return;
       setDraft((current) => ({ ...current, saving: true, saveError: "" }));
-      const result = await context.persist([{ type: "synth.delete", id: persisted.id }], `Deleted synth ${persisted.label}`);
+      const result = await context.persist([{ type: "synth.delete", id: persisted.id }], `Deleted Synth ${persisted.label}`);
       if (result.status === "saved" || result.status === "queued") {
         context.leaveCurrentTask();
         return;
@@ -126,8 +126,8 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
         ...current,
         saving: false,
         saveError: result.status === "conflict"
-          ? "The project changed while this sound was being deleted. Nothing was removed."
-          : result.message ?? "This sound could not be deleted.",
+          ? "The project changed while this Synth was being deleted. Nothing was removed."
+          : result.message ?? "This Synth could not be deleted.",
       }));
     };
 
@@ -189,7 +189,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       {
         type: "section",
         id: "synth-quick-start",
-        label: "Sound palettes",
+        label: "Synth palettes",
         summary: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         children: [{
           type: "action-row",
@@ -243,7 +243,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
 
     return {
       id: "media-synth-sound",
-      title: `Synth sound · ${sound.label || "New"}`,
+      title: `Synth · ${sound.label || "New"}`,
       context: `${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sound.tempo} BPM`,
       blocks,
       actions,
