@@ -1,0 +1,25 @@
+name: Verify Author UX refactor
+
+on:
+  push:
+    branches: [author-ux-integration-refactor]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: author-ux-integration-refactor-verify
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
