@@ -3,7 +3,6 @@ import type { AuthorResourceOption } from "../../../author/resources/types";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
-import { AssetExplorer } from "./AssetExplorer";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
 import { VectorAssetEditor } from "./VectorAssetEditor";
@@ -163,18 +162,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
   ],
   renderWorkspace(route, context) {
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "assets") return <AssetExplorer
-      snapshot={context.snapshot}
-      onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
-        type: "feature",
-        feature: "media",
-        workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
-        data: { assetId, kind },
-      })}
-      onNewVector={() => context.pushTask({ type: "feature", feature: "media", workspace: "vector-asset", data: { kind: "image" } })}
-      onOpenReference={(targetRoute) => context.pushTask(targetRoute)}
-    />;
-
     if (route.type === "feature" && route.feature === "media" && route.workspace === "asset") {
       const kind = route.data?.kind === "image" ? "image" : "audio";
       const initial = route.data?.assetId
