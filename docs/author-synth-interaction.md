@@ -12,7 +12,7 @@ The Synth should feel like a small tactile sound toy rather than a form. Less-co
 
 The normal path should read roughly:
 
-`PLAY / TEMPO → VOICE → WAVE → ATTACK / RELEASE → SEQUENCE`
+`PLAY / STOP / TEMPO / LOOP → VOICE → WAVE → ATTACK / RELEASE → SEQUENCE`
 
 The sequence itself is the instrument. Authors should not have to select a step, travel to another editor, and then manipulate the note they just touched.
 
@@ -20,7 +20,9 @@ The sequence itself is the instrument. Authors should not have to select a step,
 
 - The structured Synth workspace owns its draft, dirty state, validation, persistence, resource-task completion, and Save/Delete lifecycle. The legacy internal route/resource identifier `synth-sound` remains a compatibility boundary; it is not the product label.
 - `SynthSequencer` is a specialized direct-manipulation control only. It must not grow a second draft/baseline/save path.
-- The workbench transport keeps **PLAY, BPM, and LOOP** adjacent to the instrument. BPM retains ordinary numeric entry plus shared Author touch scrubbing and explicit `-5 / +5` adjustments.
+- The workbench transport keeps **PLAY/STOP, BPM, and LOOP** adjacent to the instrument. BPM retains ordinary numeric entry plus shared Author touch scrubbing and explicit `-5 / +5` adjustments.
+- **LOOP is finite authored behavior**, not an endless toggle. Enabling it exposes **PLAYS**, the total number of sequence passes, from 2–99. Older loop-enabled recipes without a count resolve to two plays. The count persists with the Synth recipe and therefore applies through the same Media playback contract in Author preview and player-triggered Synth effects.
+- During Author audition, **PLAY becomes STOP**. Stop owns only that audition playback session and does not globally mute unrelated Media/Synth playback.
 - The transport is sticky within the Synth task so tempo remains reachable while editing long sequences on narrow/mobile layouts.
 - Waveform choice is a tactile **SQUARE / TRI / SAW / SINE / NOISE** row rather than a dropdown.
 - The old named Shape presets are not part of the primary authoring model. **Attack** and **Release** are direct full-width rails.
@@ -59,8 +61,11 @@ Prefer playful direct manipulation over repeated form controls, but every gestur
 
 - At a narrow Author-pane width, confirm the workbench stays single-column, step pads remain four per row, and no control creates horizontal page overflow.
 - At a wider Author-pane width, confirm patch controls and sequence become a two-column workbench and steps become eight per row.
-- Scroll a long Synth task and confirm PLAY/BPM/LOOP remain reachable without covering unrelated Author chrome.
+- Scroll a long Synth task and confirm PLAY/STOP, BPM, LOOP, and (when enabled) PLAYS remain reachable without covering unrelated Author chrome.
 - Change BPM by typing, shared touch scrubbing, and `-5 / +5`; verify all three edit the same tempo value.
+- Turn LOOP on and confirm PLAYS appears at 2 by default; set it to 3, press PLAY, and confirm the complete sequence plays exactly three times.
+- While a looped preview is running, press STOP and confirm playback ends immediately without muting a separate Synth effect.
+- Save a looped Synth, leave, reopen, and confirm its PLAYS count persists. Trigger the Synth through a player effect and confirm it uses the same finite count.
 - Adjust Attack and Release from very short values through longer tails; confirm short values have useful physical resolution.
 - Add and remove beats with the sequence `- / +`; switch voices and confirm every voice stays the same sequence length.
 - Toggle pitched beats by tapping them directly.
@@ -72,7 +77,7 @@ Prefer playful direct manipulation over repeated form controls, but every gestur
 - Open Step Details and confirm volume/audition remain available without becoming the primary pitch workflow.
 - Confirm Noise uses direct step activation but no pitch/sweep gesture language.
 - Add, duplicate, remove, and switch voices; verify edits remain on the same Synth draft.
-- Save, leave, reopen, and verify notes, sweeps, envelope, sequence length, tempo, loop state, and volume persist unchanged.
-- Reopen an older Synth created before pitch sweeps existed and confirm it plays and saves without migration.
+- Save, leave, reopen, and verify notes, sweeps, envelope, sequence length, tempo, loop state/count, and volume persist unchanged.
+- Reopen an older Synth created before pitch sweeps or loop counts existed and confirm it plays and saves without migration.
 - Add a repository audio file, rebuild, and confirm it appears as an Audio File rather than a Synth.
 - Open an Audio Source selector and confirm procedural Synths and repository audio files are both selectable and visibly distinguished.
