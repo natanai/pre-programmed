@@ -33,7 +33,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
     </div>
     <div className="field-help">GENERATED MEDIA → D1 · FILE MEDIA → public/assets/</div>
-    <div className="field-help">FILE ASSETS: add the media file and its <code>.asset.json</code> sidecar; the next build indexes both.</div>
+    <div className="field-help">FILE ASSETS: put the media file in the appropriate <code>public/assets/</code> directory; the next build indexes it.</div>
     {missing.length ? <div className="asset-warning"><strong>MISSING LINKED ASSETS</strong>{missing.map((reference, index) => <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.resourceId}:${index}`} onClick={() => reference.route && onOpenReference(reference.route)} disabled={!reference.route}>
       <span>{reference.resourceId}</span><small>{reference.ownerLabel} · {reference.detail}</small>
     </button>)}</div> : null}
