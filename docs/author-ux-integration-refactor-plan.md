@@ -113,7 +113,8 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Story Structure route moved to structured Author workspace.
 - [x] Structure graph browser remains a feature-owned specialized control embedded inside the shared task shell.
 - [x] Duplicate Structure task frame/header removed; shared Author shell owns task chrome.
-- [ ] Remaining unrestricted renderer: **Interaction editor only**.
+- [x] Interaction editor duplicate outer frame and task-level Back removed; shared task navigation owns Back/X while `[‹ INPUT]` remains internal response/settings navigation.
+- [ ] Remaining unrestricted renderer: **Interaction editor only**; its draft/validation/save lifecycle is still feature-owned and should not be disguised as a giant structured `custom` block.
 
 #### Media
 
@@ -122,7 +123,9 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Duplicate Asset Explorer Author frame/header removed.
 - [x] Obsolete Asset Explorer close prop removed.
 - [x] Migrated legacy `assets` and `synth` branches physically removed rather than left unreachable.
-- [ ] Remaining unrestricted renderer: **actual Media asset editor, vector editor, and synth editor only**.
+- [x] File Media, Vector, and Synth editors no longer draw duplicate Author task frames/titles or task-exit buttons; shared Author owns task navigation while editor-specific Save/Play/Export/Delete/Reset remain feature-owned.
+- [x] Obsolete `SynthPanel` list component and its dead list/back CSS removed after branch-native proof that the structured Synth library is the only list owner.
+- [ ] Remaining unrestricted renderer: **actual Media asset editor, vector editor, and synth editor only**; their specialized draft/content lifecycles remain genuine migration boundaries.
 
 #### Commands
 
@@ -198,7 +201,9 @@ Full `npm run verify` has passed after:
 - removal of App's duplicate `interactionOutcomeProse` interpretation;
 - Commands per-target Reference Source structured migration using shared Commands persistence;
 - branch-native audit and removal of the obsolete `custom` `resource-picker` role;
-- full Player Command structured migration and removal of Commands from the legacy Author exception list.
+- full Player Command structured migration and removal of Commands from the legacy Author exception list;
+- Narrative Interaction duplicate task-chrome cleanup;
+- Media specialized-editor task-chrome cleanup and deletion of the superseded Synth list component.
 
 One-shot workflows are used only for mechanically editing large files when connector reads are chunked. They assert exact source shape, run full `npm run verify`, commit only on success, and remove themselves. Failed assertions therefore leave the intended source change uncommitted.
 
@@ -225,7 +230,9 @@ GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, s
 - edit a Body Type background image and confirm the shared Media chooser/preview/Edit/Create behavior;
 - edit a State value's Player Presentation group and confirm the shared State Group reference behavior;
 - open Story Structure and verify search/path/legend/node/interaction editing still work;
+- open an Interaction as a nested task and confirm shared Author is the only task-level Back while `[‹ INPUT]` still navigates from Response/Input Settings to the interaction overview;
 - open Media Assets and Synth Sounds and verify their browser/list behavior still opens the same canonical editors;
+- open File Media, Vector, and Synth editors and confirm shared task Back/X replaces their old Close/Cancel/frame while Save/Play/Export/Delete/Reset still work;
 - test Narrative immediate/prompt/hidden choices, invalid fallback notation, node anchors, narration→dialogue continuation, interaction narration→dialogue continuation, speaker context, transitions, and entry effects after the runtime extraction;
 - test Radix startup presentation, effect-triggered Radix presentation, Author Edit Sequence/Edit Source affordances, and resume to node text after startup;
 - test narrow/mobile presentation with keyboard open;
@@ -238,9 +245,9 @@ Latest comparison on 2026-09-06:
 - base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
 - branch: `author-ux-integration-refactor`
 - status: ahead of `main`
-- ahead: **100 commits** before this checkpoint staging update
+- ahead: **110 commits** before this checkpoint staging update
 - behind: **0 commits**
-- current pre-checkpoint source head: `09974df2aa978ae41b7baaaa7e3609f2430cc4f2` (`refactor: structure player command editor`).
+- current pre-checkpoint source head: `7b3d87519df674450c06cc3a3fa76fd8ccb5e6ce` (`ux: remove duplicate media task chrome`).
 - `App.tsx` diff versus main is now net smaller: 86 additions / 211 deletions as of the latest comparison, despite installing Radix and Narrative integration points.
 - No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix/Narrative presentation extractions.
 
@@ -301,6 +308,14 @@ Latest comparison on 2026-09-06:
 - Removed Commands' unrestricted `renderWorkspace` contribution and removed `commands` from the legacy exception list; only Narrative and Media remain.
 - The migration passed full `npm run verify`; an independent normal branch verification is triggered by this checkpoint staging commit.
 
+### 2026-09-06 — remaining legacy editor shell cleanup
+
+- Removed the Interaction editor's redundant outer Author frame and task-level Back. The shared task stack is now the only Author-task Back/X surface; the editor's `[‹ INPUT]` remains correctly scoped to its internal response/settings navigation.
+- Removed duplicate outer frames/titles and visible Close/Cancel task-exit controls from File Media and Vector editors; Synth received the same outer-frame cleanup.
+- Kept Media `onCancel` callbacks only as private lifecycle completion hooks after successful delete/reset, not as an alternate Author navigation path.
+- Deleted the obsolete `SynthPanel` list component and its list/back CSS after asserting no component-symbol consumers remain; the structured Synth library is the single list owner.
+- Both cleanup slices passed full `npm run verify`. These changes deliberately do **not** remove Narrative or Media from the legacy exception list because their specialized draft/save internals have not yet moved into the shared structured controller.
+
 ### 2026-09-06 — Narrative runtime ownership extraction
 
 - Added `useNarrativePlayerSurface`; App no longer constructs the Narrative graph, evaluates choice visibility, resolves node anchors, or derives fallback/input notation and terminal choices itself.
@@ -317,7 +332,7 @@ At the start of every session:
 1. read this document;
 2. compare branch to current `main` and record any incoming divergence before editing;
 3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
-4. choose the next remaining legacy Author editor by ownership boundary: Narrative Interaction versus Media asset/vector/synth; do not wrap either in a giant `custom` block merely to remove an exception id;
+4. for Narrative Interaction or Media specialized editors, migrate only by moving real draft/save lifecycle into the shared structured controller; do not wrap the existing stateful editor wholesale as `custom` merely to remove an exception id;
 5. re-audit remaining direct Narrative imports in App and decide whether the current `executeInteraction` composition-root call is an acceptable boundary before another runtime extraction;
 6. do not begin the broader Session lifecycle move until the remaining lower-risk Author/runtime slices are stable; Session crosses saved-game compatibility and autosave semantics;
 7. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
