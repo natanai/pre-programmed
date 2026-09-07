@@ -1,4 +1,5 @@
 import type { ChangeEvent } from "react";
+import { ReferenceField } from "../resources/ReferenceField";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -40,6 +41,21 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
         : <input {...common} type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"} />}
       {node.help ? <small className="author-ui-help">{node.help}</small> : null}
     </label>;
+  }
+
+  if (node.type === "resource") {
+    return <div className="author-ui-field author-ui-resource-field">
+      <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
+      <ReferenceField
+        kind={node.kind}
+        value={node.value}
+        onChange={node.onChange}
+        placeholder={node.placeholder}
+        allowEmpty={node.allowEmpty}
+        showPreview={node.showPreview}
+      />
+      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
+    </div>;
   }
 
   if (node.type === "select") {
