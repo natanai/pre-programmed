@@ -73,12 +73,23 @@ export const mediaMutationValidator: WorkerMutationValidator = {
         if (asset.authoringMode !== "vector-grid" || asset.contentKey === null || mimeType !== generated.mimeType) {
           return "Generated Media content must belong to its vector-grid SVG definition.";
         }
-        if (new TextEncoder().encode(generated.text).byteLength > MAX_GENERATED_MEDIA_BYTES) return "Generated Media content exceeds the supported size.";
+        const byteLength = new TextEncoder().encode(generated.text).byteLength;
+        if (byteLength > MAX_GENERATED_MEDIA_BYTES) return "Database-backed generated media must be no larger than 1 MB.";
+        if (byteLength !== asset.byteLength) return "Generated Media byte length does not match its definition.";
+        const document = parseVectorGrid(generated.text);
+        if (!document
+          || document.width !== asset.intrinsicWidth
+          || document.height !== asset.intrinsicHeight) {
+          return "Generated vector content does not match its Media definition.";
+        }
       }
-      return null;
     }
-    if (operation.type === "synth.delete") return typeof operation.id === "string" && Boolean(operation.id) ? null : "Synth id is required.";
-    if (operation.type === "mediaAsset.delete") return typeof operation.id === "string" && Boolean(operation.id) ? null : "Media asset id is required.";
+    if (operation.type === "synth.delete") {
+      return typeof operation.id === "string" && operation.id ? null : "Synth id is required.";
+    }
+    if (operation.type === "mediaAsset.delete") {
+      return typeof operation.id === "string" && operation.id ? null : "Media asset id is required.";
+    }
     return null;
   },
 };
