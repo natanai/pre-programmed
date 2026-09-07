@@ -1,21 +1,31 @@
-import type { AuthorWorkspaceContext } from "../features/types";
-import type { AuthorTaskResult } from "../tasks/types";
+import type { AuthorResourceDeletedResult, AuthorTaskResult } from "../tasks/types";
+import type { AuthorResourceOption } from "./types";
 
 /**
- * Finish a canonical resource deletion through the existing task-result channel.
- * Nested editors report the accepted deletion to their suspended parent; root
- * editors preserve ordinary completed-task behavior and return to Author Tools.
+ * Compare one canonical resource kind before and after an accepted Author write.
+ *
+ * The owner-provided resource list is the contract for resource identity. A
+ * resource task reports deletion only when exactly one previously available
+ * resource disappeared by stable owner id. This deliberately does not inspect
+ * mutation type names, so settings-backed resources (Commands/Radix) work too,
+ * and a Media reset that removes a database override but leaves the repository
+ * resource available is correctly treated as survival rather than deletion.
  */
-export function completeAuthorResourceDeletion(
-  context: AuthorWorkspaceContext,
+export function authorResourceDeletionResult(
   kind: string,
-  id: string,
-) {
-  if (context.hasParentTask) {
-    context.completeTask({ type: "resource-deleted", kind, id });
-    return;
-  }
-  context.leaveCurrentTask();
+  before: readonly AuthorResourceOption[],
+  after: readonly AuthorResourceOption[],
+): AuthorResourceDeletedResult | undefined {
+  const afterIds = new Set(after.map((resource) => resource.id));
+  const disappeared = before.filter((resource) => !afterIds.has(resource.id));
+  if (disappeared.length !== 1) return undefined;
+  const resource = disappeared[0];
+  return {
+    type: "resource-deleted",
+    kind,
+    id: resource.id,
+    value: resource.value,
+  };
 }
 
 /**
@@ -26,10 +36,15 @@ export function completeAuthorResourceDeletion(
 export function reconciledAuthorReferenceValue(
   kind: string,
   currentValue: string,
+  currentId: string | null | undefined,
   result?: AuthorTaskResult,
 ): string | undefined {
   if (!result) return undefined;
   if (result.type === "resource" && result.kind === kind) return result.value;
-  if (result.type === "resource-deleted" && result.kind === kind && result.id === currentValue) return "";
+  if (
+    result.type === "resource-deleted"
+    && result.kind === kind
+    && (result.value === currentValue || Boolean(currentId) && result.id === currentId)
+  ) return "";
   return undefined;
 }
