@@ -6,6 +6,7 @@ import { createDraftInteraction } from "../drafts";
 import type { Interaction } from "../model";
 import { AuthorInputSurface } from "./AuthorInputSurface";
 import { InteractionEditor } from "./InteractionEditor";
+import { interactionWorkspace } from "./interactionWorkspace";
 import { nodeWorkspace } from "./nodeWorkspace";
 import { notationForNarrativeInteraction } from "./notation";
 import { structureWorkspace } from "./structureWorkspace";
@@ -42,7 +43,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
   references: [narrativeProjectReferences],
   tools: narrativeAuthorTools,
   search: narrativeAuthorSearch,
-  workspaces: [nodeWorkspace, structureWorkspace],
+  workspaces: [nodeWorkspace, structureWorkspace, interactionWorkspace],
   resources: [
     {
       kind: "node",
