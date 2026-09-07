@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { AuthorHome } from "./author/AuthorHome";
 import {
   renderAuthorFeaturePlaySurfaces,
@@ -50,12 +50,10 @@ import { authoredSource, type AuthoredSourceIdentity } from "./engine/presentati
 import { effectEventsForTextCue } from "./engine/presentation/textCueEventCatalog";
 import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
-import { buildGraphIndex, notationForNode } from "./features/narrative/graph";
-import { isInteractionChoiceVisible } from "./features/narrative/choiceVisibility";
-import { resolveActiveNodeAnchor } from "./features/narrative/anchor";
 import { resolveActiveNodeConversationContext, resolveNodeConversationContext } from "./features/narrative/sceneContext";
 import { interactionOutcomeProse } from "./features/narrative/interactionProse";
 import { interpolateText } from "./features/narrative/interpolation";
+import { useNarrativePlayerSurface } from "./features/narrative/runtime/useNarrativePlayerSurface";
 import { applyOperations } from "./engine/project/mutations";
 import {
   createEmptyPlayState,
@@ -71,7 +69,7 @@ import type {
   ProjectMutation,
   ProjectSnapshot,
 } from "./engine/project/model";
-import type { GameNode, Interaction, TextPerformance } from "./features/narrative/model";
+import type { GameNode, TextPerformance } from "./features/narrative/model";
 import { executeOperation } from "./features/operations/runtime";
 import { parseCommand, type ParserResult } from "./features/commands/parser";
 import { executeInteraction } from "./features/narrative/runtime";
@@ -81,7 +79,6 @@ import { useRadixRuntimePresentation } from "./features/radix/runtime/useRadixRu
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
-  type TerminalCommandChoice,
   type TerminalCommandComposerHandle,
 } from "./ui/TerminalCommandComposer";
 import { PlayerSessionGate } from "./ui/PlayerSessionGate";
@@ -101,13 +98,6 @@ type RuntimePresentationExecution = {
   source?: AuthoredSourceIdentity;
 };
 
-
-function terminalChoiceForInteraction(interaction: Interaction): TerminalCommandChoice {
-  return {
-    id: interaction.id,
-    text: interaction.aliases[0] || interaction.wording,
-  };
-}
 
 function delayForPosition(performance: TextPerformance, position: number, speedMultiplier: number) {
   const speedCue = performance.cues.find((cue) => cue.type === "speed" && cue.start <= position && cue.end > position);
@@ -181,10 +171,9 @@ export default function App() {
   const typewriter = useTypewriter(activeText, activePerformance, textSpeedMultiplier);
   useTerminalViewport();
 
-  const currentNode = snapshot && playState
-    ? snapshot.nodes.find((node) => node.id === playState.currentNodeId) ?? null
-    : null;
-  const activeNodeAnchor = snapshot && playState ? resolveActiveNodeAnchor(snapshot, playState) : null;
+  const narrativeSurface = useNarrativePlayerSurface(snapshot, playState);
+  const currentNode = narrativeSurface.currentNode;
+  const activeNodeAnchor = narrativeSurface.anchor;
   const activeNodePresentation = snapshot && activeNodeId
     ? snapshot.nodes.find((node) => node.id === activeNodeId) ?? null
     : null;
@@ -208,23 +197,10 @@ export default function App() {
     && activeInteractionProse?.dialogueText.trim(),
   );
   const secondaryProsePending = nodeDialoguePending || interactionDialoguePending;
-  const graph = useMemo(() => snapshot ? buildGraphIndex(snapshot) : null, [snapshot]);
-  const currentNotation = snapshot && playState && graph
-    ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, playState.currentNodeId)
-    : [];
-  const currentInputs = snapshot && playState
-    ? snapshot.interactions.filter((interaction) => interaction.sourceNodeId === playState.currentNodeId && (interaction.matchMode ?? "command") === "command")
-    : [];
-  const fallbackInput = snapshot && playState
-    ? snapshot.interactions.find((interaction) => interaction.sourceNodeId === playState.currentNodeId && interaction.matchMode === "fallback")
-    : undefined;
-  const playerChoiceInputs = snapshot && playState
-    ? currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, playState, interaction))
-    : [];
-  const immediateChoices = playerChoiceInputs.filter((interaction) => interaction.choiceVisibility === "immediate");
-  const promptChoices = playerChoiceInputs.filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt");
-  const immediateTerminalChoices = immediateChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
-  const promptTerminalChoices = promptChoices.map(terminalChoiceForInteraction).filter((choice) => choice.text);
+  const currentNotation = narrativeSurface.currentNotation;
+  const fallbackInput = narrativeSurface.fallbackInput;
+  const immediateTerminalChoices = narrativeSurface.immediateChoices;
+  const promptTerminalChoices = narrativeSurface.promptChoices;
   const projectClockSchedule = snapshot ? projectClockScheduleKey(snapshot) : "[]";
 
   const openAuthorResource = (kind: string, id: string, focus?: Record<string, string>) => {
@@ -282,15 +258,6 @@ export default function App() {
     const frame = window.requestAnimationFrame(() => terminalComposerRef.current?.focus());
     return () => window.cancelAnimationFrame(frame);
   }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, panel, playerWorkspace, pendingPlaySession, requestingKey, radixPresentation.active]);
-
-  const notationForInput = (interaction: Interaction) => {
-    if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
-    const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
-    if (!first) return "[D]";
-    if (first.disposition === "stay" || !first.destinationNodeId) return "[H]";
-    if (!snapshot || !playState || !graph) return "[A1]";
-    return notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, first.destinationNodeId).join("") || "[A1]";
-  };
 
   const scrollHistoryToPresent = () => {
     const history = terminalHistoryRef.current;
@@ -968,8 +935,8 @@ export default function App() {
   const editorOpen = authorTasks.hasTasks;
   const playerWorkspaceOpen = playerWorkspace !== null;
   const authorExperience = authorMode && authorView;
-  const invalidDraft = Boolean(fallbackInput && notationForInput(fallbackInput) === "[D]");
-  const invalidLabel = fallbackInput ? `${notationForInput(fallbackInput)} INVALID` : "[+ INVALID]";
+  const invalidDraft = Boolean(fallbackInput && narrativeSurface.fallbackNotation === "[D]");
+  const invalidLabel = fallbackInput ? `${narrativeSurface.fallbackNotation} INVALID` : "[+ INVALID]";
   const matchedAuthorSource = parserResult?.invocation
     ? authoredSource("player-command", parserResult.invocation.commandId)
     : parserResult?.interaction
