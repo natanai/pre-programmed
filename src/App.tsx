@@ -50,9 +50,8 @@ import { authoredSource, type AuthoredSourceIdentity } from "./engine/presentati
 import { effectEventsForTextCue } from "./engine/presentation/textCueEventCatalog";
 import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
-import { resolveActiveNodeConversationContext, resolveNodeConversationContext } from "./features/narrative/sceneContext";
 import { interactionOutcomeProse } from "./features/narrative/interactionProse";
-import { interpolateText } from "./features/narrative/interpolation";
+import { resolveNodeOpeningPresentation, useNarrativeContinuation } from "./features/narrative/runtime/presentation";
 import { useNarrativePlayerSurface } from "./features/narrative/runtime/useNarrativePlayerSurface";
 import { applyOperations } from "./engine/project/mutations";
 import {
@@ -174,29 +173,10 @@ export default function App() {
   const narrativeSurface = useNarrativePlayerSurface(snapshot, playState);
   const currentNode = narrativeSurface.currentNode;
   const activeNodeAnchor = narrativeSurface.anchor;
-  const activeNodePresentation = snapshot && activeNodeId
-    ? snapshot.nodes.find((node) => node.id === activeNodeId) ?? null
-    : null;
-  const nodeDialoguePending = Boolean(
-    activeNodePresentation
-    && activeSource?.resourceKind === "node"
-    && activeSource.resourceId === activeNodePresentation.id
-    && activeSource.focus?.section === "narration"
-    && activeNodePresentation.dialogueText?.trim(),
-  );
-  const activeInteractionPresentation = snapshot && activeSource?.resourceKind === "interaction"
-    ? snapshot.interactions.find((interaction) => interaction.id === activeSource.resourceId) ?? null
-    : null;
-  const activeInteractionOutcome = activeInteractionPresentation && activeSource?.focus?.outcomeId
-    ? activeInteractionPresentation.outcomes.find((outcome) => outcome.id === activeSource.focus?.outcomeId) ?? null
-    : null;
-  const activeInteractionProse = activeInteractionOutcome ? interactionOutcomeProse(activeInteractionOutcome) : null;
-  const interactionDialoguePending = Boolean(
-    activeInteractionOutcome
-    && activeSource?.focus?.section === "narration"
-    && activeInteractionProse?.dialogueText.trim(),
-  );
-  const secondaryProsePending = nodeDialoguePending || interactionDialoguePending;
+  const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource);
+  const nodeDialoguePending = narrativeContinuation.nodeDialoguePending;
+  const interactionDialoguePending = narrativeContinuation.interactionDialoguePending;
+  const secondaryProsePending = narrativeContinuation.secondaryProsePending;
   const currentNotation = narrativeSurface.currentNotation;
   const fallbackInput = narrativeSurface.fallbackInput;
   const immediateTerminalChoices = narrativeSurface.immediateChoices;
@@ -282,46 +262,37 @@ export default function App() {
   function showNode(project: ProjectSnapshot, node: GameNode, state: PlayState) {
     if (launchPresentationBlockingRef.current) return;
     firedCueIds.current = new Set();
-    const narration = interpolateText(node.text, { snapshot: project, state });
-    const dialogue = interpolateText(node.dialogueText ?? "", { snapshot: project, state });
-    const beginsWithDialogue = !narration && Boolean(dialogue);
-    const rawText = beginsWithDialogue ? dialogue : narration;
-    const performance = beginsWithDialogue ? node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE : node.performance;
-    const compiled = compileTextNotation(rawText, performance);
-    const conversation = beginsWithDialogue ? resolveActiveNodeConversationContext(project, state) : null;
-    setActiveText(compiled.text);
+    const presentation = resolveNodeOpeningPresentation(project, state, node);
+    setActiveText(presentation.text);
     setActiveNodeId(node.id);
-    setActiveSpeakerId(conversation?.characterId ?? null);
-    setActiveSource(authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }));
-    setActivePerformance(compiled.performance);
+    setActiveSpeakerId(presentation.speakerId);
+    setActiveSource(presentation.source);
+    setActivePerformance(presentation.performance);
   }
 
   useEffect(() => {
-    if (!typewriter.complete || !nodeDialoguePending || !snapshot || !playState || !activeNodePresentation) return;
-    const dialogue = interpolateText(activeNodePresentation.dialogueText ?? "", { snapshot, state: playState });
-    if (!dialogue) return;
+    const node = narrativeContinuation.node;
+    const presentation = narrativeContinuation.nodeDialogue;
+    if (!typewriter.complete || !nodeDialoguePending || !node || !presentation) return;
     if (activeText) {
       setTranscript((lines) => [...lines, {
         id: crypto.randomUUID(),
         text: activeText,
-        nodeId: activeNodePresentation.id,
+        nodeId: node.id,
         speakerId: activeSpeakerId,
         source: activeSource,
       }]);
     }
     firedCueIds.current = new Set();
-    const compiled = compileTextNotation(dialogue, activeNodePresentation.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE);
-    const conversation = resolveActiveNodeConversationContext(snapshot, playState);
-    setActiveText(compiled.text);
-    setActiveSpeakerId(conversation?.characterId ?? null);
-    setActiveSource(authoredSource("node", activeNodePresentation.id, { section: "dialogue" }));
-    setActivePerformance(compiled.performance);
-  }, [typewriter.complete, nodeDialoguePending, snapshot, playState, activeNodePresentation, activeText, activeSpeakerId, activeSource]);
+    setActiveText(presentation.text);
+    setActiveSpeakerId(presentation.speakerId);
+    setActiveSource(presentation.source);
+    setActivePerformance(presentation.performance);
+  }, [typewriter.complete, nodeDialoguePending, narrativeContinuation.node, narrativeContinuation.nodeDialogue, activeText, activeSpeakerId, activeSource]);
 
   useEffect(() => {
-    if (!typewriter.complete || !interactionDialoguePending || !snapshot || !playState || !activeInteractionPresentation || !activeInteractionOutcome || !activeInteractionProse) return;
-    const dialogue = interpolateText(activeInteractionProse.dialogueText, { snapshot, state: playState });
-    if (!dialogue) return;
+    const presentation = narrativeContinuation.interactionDialogue;
+    if (!typewriter.complete || !interactionDialoguePending || !presentation) return;
     if (activeText) {
       setTranscript((lines) => [...lines, {
         id: crypto.randomUUID(),
@@ -331,19 +302,14 @@ export default function App() {
       }]);
     }
     firedCueIds.current = new Set();
-    const compiled = compileTextNotation(dialogue, activeInteractionProse.dialoguePerformance);
-    const conversation = resolveNodeConversationContext(snapshot, playState, activeInteractionPresentation.sourceNodeId);
-    setActiveText(compiled.text);
+    setActiveText(presentation.text);
     setActiveNodeId(undefined);
-    setActiveSpeakerId(conversation?.characterId ?? activeInteractionOutcome.speakerId ?? null);
-    setActiveSource(authoredSource("interaction", activeInteractionPresentation.id, {
-      outcomeId: activeInteractionOutcome.id,
-      section: "dialogue",
-    }));
-    setActivePerformance(compiled.performance);
+    setActiveSpeakerId(presentation.speakerId);
+    setActiveSource(presentation.source);
+    setActivePerformance(presentation.performance);
   }, [
-    typewriter.complete, interactionDialoguePending, snapshot, playState, activeInteractionPresentation,
-    activeInteractionOutcome, activeInteractionProse, activeText, activeSpeakerId, activeSource,
+    typewriter.complete, interactionDialoguePending, narrativeContinuation.interactionDialogue,
+    activeText, activeSpeakerId, activeSource,
   ]);
 
 
