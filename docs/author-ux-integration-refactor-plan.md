@@ -11,6 +11,16 @@ The guiding rule for this branch is:
 
 > Improve presentation and shared interaction contracts first. Do not casually combine a UX change with a runtime rewrite.
 
+## Current merge-readiness status
+
+- All feature Author workspaces are now data-first/structured.
+- `renderWorkspace` and `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS` have been removed from the Author architecture entirely.
+- Narrative Interaction, Media File/Vector/Synth, Commands, Project, State, Inventory, World, and Radix all use the shared workspace lifecycle.
+- Specialized controls remain feature-owned inside structured tasks; they do not own parallel durable save paths.
+- Radix and the selected Narrative presentation/runtime seams have been extracted from `App.tsx` in independently verified slices.
+- Session lifecycle consolidation remains a separate follow-up architecture project and is not a merge blocker for this Author UX branch.
+- Remaining merge gates: final branch-wide verification, real mobile/desktop acceptance, remove the temporary branch verifier, and confirm the branch is still 0 behind `main`.
+
 ## Protected semantics
 
 Do not change without an isolated, explicitly documented refactor:
@@ -62,7 +72,7 @@ Previous audit summary:
 5. Replace explainer text with clear controls where the UI can carry the meaning itself.
 6. Desktop and mobile expose the same actions; responsive presentation and input gestures may differ.
 7. Avoid adding feature-specific knowledge to `App.tsx` unless it is an explicit composition-root installation.
-8. No new feature should enter `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`.
+8. Unrestricted feature-level workspace rendering is not part of the Author feature contract.
 
 ## Work phases
 
@@ -114,7 +124,10 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Structure graph browser remains a feature-owned specialized control embedded inside the shared task shell.
 - [x] Duplicate Structure task frame/header removed; shared Author shell owns task chrome.
 - [x] Interaction editor duplicate outer frame and task-level Back removed; shared task navigation owns Back/X while `[‹ INPUT]` remains internal response/settings navigation.
-- [ ] Remaining unrestricted renderer: **Interaction editor only**; its draft/validation/save lifecycle is still feature-owned and should not be disguised as a giant structured `custom` block.
+- [x] Interaction normalization, validation, persisted-shape construction, and save descriptions centralized in Narrative-owned authoring semantics.
+- [x] Interaction response/settings UI split into a controlled specialized composer with no persistence or dirty-baseline ownership.
+- [x] Interaction resource draft, dirty state, validation, Save/Delete, nested completion, and persistence moved to `interactionWorkspace`.
+- [x] Narrative `renderWorkspace` and its legacy self-owning Interaction wrapper physically removed after the structured live route passed full verification.
 
 #### Media
 
@@ -125,7 +138,10 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Migrated legacy `assets` and `synth` branches physically removed rather than left unreachable.
 - [x] File Media, Vector, and Synth editors no longer draw duplicate Author task frames/titles or task-exit buttons; shared Author owns task navigation while editor-specific Save/Play/Export/Delete/Reset remain feature-owned.
 - [x] Obsolete `SynthPanel` list component and its dead list/back CSS removed after branch-native proof that the structured Synth library is the only list owner.
-- [ ] Remaining unrestricted renderer: **actual Media asset editor, vector editor, and synth editor only**; their specialized draft/content lifecycles remain genuine migration boundaries.
+- [x] File Media metadata lifecycle moved to a structured workspace; vector-grid images route directly to their owning Vector workspace.
+- [x] Synth durable draft/save lifecycle moved to a structured workspace while the sequencer remains a specialized controlled interaction.
+- [x] Vector durable draft/save lifecycle moved to a structured workspace with async canonical-draft adoption; canvas tools/undo/redo/zoom remain local transient interaction state.
+- [x] Media `renderWorkspace` removed and superseded File/Vector/Synth legacy editor wrappers physically deleted.
 
 #### Commands
 
@@ -139,9 +155,11 @@ Structured workspace matching runs before legacy `renderWorkspace`, allowing one
 - [x] Shared structured save boundary now supports prerequisite saves without completing a resource task, preserving save-before-nested-target editing without a Commands-only mutation path.
 - [x] Commands `renderWorkspace` removed and `commands` removed from `LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS`.
 
-#### Legacy exception list
+#### Legacy renderer removal
 
-`LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS` now contains only `narrative` and `media`, each because it still owns real unrestricted canonical editors. Do not remove an id until its last unrestricted path is genuinely gone.
+- [x] Every feature workspace now enters through a structured workspace definition.
+- [x] The registry's unrestricted workspace fallback and legacy exception set were removed.
+- [x] `renderWorkspace` was removed from `AuthorFeatureManifest`, so unrestricted feature-level workspace rendering can no longer be reintroduced accidentally.
 
 ### Phase 4 — isolated runtime integration refactors
 
@@ -156,7 +174,7 @@ Do only in behavior-preserving, independently verified slices.
   - [x] `executeInteraction` returns the selected outcome's narration/dialogue performances, so App no longer reinterprets the outcome through `interactionOutcomeProse`.
   - [x] Interaction execution now returns the exact narration/dialogue presentation source while keeping effect-event provenance outcome-level; App no longer assigns Narrative prose sections itself.
   - [x] Re-audit concluded `executeInteraction(...)` is an appropriate composition-root call: App dispatches a parsed Interaction into its owning runtime but no longer contains the feature-specific interpretation around that call. Do not add an abstraction whose only purpose is hiding this import.
-- [ ] Consolidate complete play-session lifecycle ownership under Session.
+- [ ] Consolidate complete play-session lifecycle ownership under Session. **Deferred follow-up; not a merge blocker for this branch.**
 - [ ] Re-audit direct feature imports/branches in App after each extraction.
 
 ## Temporary branch verification
@@ -174,7 +192,7 @@ It runs on pushes to this branch only:
 
 **Delete this temporary workflow before merging.** It is branch scaffolding for this refactor, not permanent engine infrastructure.
 
-The workflow uses a concurrency group with `cancel-in-progress: true`; cancelled intermediate runs normally mean a newer commit superseded them, not that verification failed.
+The verifier intentionally has no single-run concurrency lock; a previously stuck GitHub runner should not block verification of a newer branch head.
 
 ### Successful verification checkpoints
 
@@ -242,16 +260,11 @@ GitHub does not recursively trigger push workflows from a `GITHUB_TOKEN` push, s
 
 ## Current branch relationship
 
-Latest comparison on 2026-09-06:
-
-- base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
-- branch: `author-ux-integration-refactor`
-- status: ahead of `main`
-- ahead: **116 commits** before this checkpoint staging update
-- behind: **0 commits**
-- current pre-checkpoint source head: `a43f6b2a18c5573820f0f1b63619c461c8b58931` (`refactor: keep interaction prose provenance in narrative runtime`).
-- `App.tsx` remains net smaller than main: 87 additions / 219 deletions as of the latest comparison, despite installing Radix and Narrative integration points.
-- No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix/Narrative presentation extractions.
+- Merge base remains the current `main` head from branch creation unless a later comparison says otherwise.
+- Acceptance audits during this branch have repeatedly shown **0 commits behind `main`**; re-check immediately before merge.
+- `App.tsx` remains net smaller than the branch-start `main` snapshot despite installing Radix and Narrative integration contracts.
+- No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema were changed by the Author workspace migrations or the isolated Radix/Narrative presentation extractions.
+- Temporary verification scaffolding must be deleted after the final real-device acceptance pass and before merge.
 
 ## Change log
 

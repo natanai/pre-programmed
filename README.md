@@ -125,7 +125,7 @@ The Media tool includes a logical-grid vector drawing surface with reusable canv
 
 ### Synth authoring
 
-Synth sounds are stored as reusable synth definitions in project data. They are reconstructed by the browser's synth player; they are not rendered into uploaded audio blobs.
+Synth sounds are stored as reusable synth definitions in project data. They are reconstructed by the browser's synth player; they are not rendered into uploaded audio blobs. Author mode provides lightweight system-sound palettes plus direct waveform and envelope-shape controls, while the same underlying recipe remains fully editable. Sequence steps use large touch-friendly pads, pitch can be scrubbed vertically, and less-common precision controls such as per-step volume and exact envelope values use progressive disclosure instead of occupying the primary mobile workflow.
 
 ### Repository Media
 

@@ -532,7 +532,7 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
       {
         value: "create",
         label: "CREATE NEW",
-        help: "Open the real Node editor. Saving that nested task returns here with the new Node linked.",
+        help: "Create and link a new Node.",
       },
       {
         value: "existing",
