@@ -1,7 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
-import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { EntityDefinition } from "../model";
 import "./worldWorkspaces.css";
@@ -86,19 +85,14 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           children: [
             { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
             ...(draft.type === "character" ? [{
-              type: "custom" as const,
+              type: "resource" as const,
               id: "world-character-portrait",
-              role: "resource-picker" as const,
-              content: <div className="world-character-portrait-field">
-                <span>Portrait</span>
-                <ReferenceField
-                  kind="media-image"
-                  value={draft.portraitAssetId ?? ""}
-                  placeholder="No portrait"
-                  showPreview
-                  onChange={(portraitAssetId) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null }))}
-                />
-              </div>,
+              label: "Portrait",
+              kind: "media-image",
+              value: draft.portraitAssetId ?? "",
+              placeholder: "No portrait",
+              showPreview: true,
+              onChange: (portraitAssetId: string) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null })),
             }] : []),
             { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
             { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
