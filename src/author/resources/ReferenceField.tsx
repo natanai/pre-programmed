@@ -29,7 +29,6 @@ export function ReferenceField({
   const options = resources.options(kind);
   const label = resources.label(kind);
   const selected = options.find((option) => option.value === value);
-  const previousSelectionRef = useRef({ value, optionId: selected?.id ?? null });
   const normalizedQuery = query.trim().toLocaleLowerCase();
   const filtered = useMemo(() => options.filter((option) => !normalizedQuery
     || `${option.label} ${option.detail ?? ""} ${option.value}`.toLocaleLowerCase().includes(normalizedQuery)), [normalizedQuery, options]);
@@ -51,17 +50,6 @@ export function ReferenceField({
     }, 1100);
   };
 
-  useEffect(() => {
-    const previous = previousSelectionRef.current;
-    previousSelectionRef.current = { value, optionId: selected?.id ?? null };
-    // Reconcile only a live reference that disappeared while this field stayed
-    // mounted (for example, its nested canonical editor deleted it). Do not
-    // silently erase references that were already missing when Author opened.
-    if (previous.value !== value || !previous.optionId || selected || !value) return;
-    onChangeRef.current("");
-    markReturned();
-  }, [selected?.id, value]);
-
   const closeChooser = () => {
     setOpen(false);
     setQuery("");
@@ -79,10 +67,18 @@ export function ReferenceField({
   };
   const editResource = () => {
     if (!canEditSelected) return;
+    const editedValue = value;
     closeChooser();
-    resources.edit(kind, value, (result) => {
+    resources.edit(kind, editedValue, (result) => {
       if (!result) return;
-      if (result.type === "resource" && result.kind === kind) onChangeRef.current(result.value);
+      if (result.type === "resource" && result.kind === kind) {
+        onChangeRef.current(result.value);
+      } else if (result.type === "resource-deleted" && result.kind === kind && result.id === editedValue) {
+        // Deletion is authoritative only when the owning child task reports an
+        // accepted durable delete. Optimistic snapshot disappearance is not a
+        // deletion signal because a conflict/rejection may restore the resource.
+        onChangeRef.current("");
+      }
       markReturned();
     });
   };
