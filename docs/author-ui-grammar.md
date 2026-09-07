@@ -35,15 +35,18 @@ Data-first Author workspaces should express ordinary tasks through a small seman
 - `choice` — choose one mutually exclusive path, especially when the alternatives carry meaning or conditional content;
 - `section` — one root-level conceptual group;
 - `disclosure` — optional/advanced material without adding navigation depth;
-- `action-row` — one or more contextual actions inside the current task body;
+- `list` — scan and enter durable authored objects or destinations, with a primary name and wrapping contextual detail;
+- `action-row` — one or more contextual verbs inside the current task body;
 - `status` — validation or feedback;
 - `custom` — a specialized control that cannot reasonably be represented by ordinary primitives.
 
 A resource control is an entry point into the owning resource system, not an embedded foreign editor. Its ordinary choose/create/edit presentation belongs to shared Author UI; saving and validation remain with the resource owner's nested task.
 
-An action row is for ordinary contextual actions such as opening a separately suspendable subtask. It does not replace the task-level Save area, Author Back/X navigation, or feature-owned persistence semantics.
+A list represents things the author recognizes and chooses by identity: resources, target owners, or other durable destinations. List rows may summarize status or meaning, but opening the row still routes to the owning task. Do not compress authored names and descriptions into action labels merely to avoid defining a list.
 
-A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/resources/selects/toggles/action rows, global task navigation, task headers, Author exit behavior, or persistence semantics.
+An action row is for verbs such as Create, Preview, Open, or other contextual actions. It does not replace a scannable resource list, the task-level Save area, Author Back/X navigation, or feature-owned persistence semantics.
+
+A custom control may own specialized interaction such as a rule tree, inventory grid, body-slot layout, sequencer, drawing surface, or resource results. It should not duplicate ordinary fields/resources/selects/toggles/lists/action rows, global task navigation, task headers, Author exit behavior, or persistence semantics.
 
 ## Finite visual hierarchy
 
