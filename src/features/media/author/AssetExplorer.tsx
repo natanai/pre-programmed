@@ -1,7 +1,7 @@
 import { useState } from "react";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
-import { mediaAssetDimensions, type MediaAssetAuthoringMode, type MediaAssetKind } from "../model";
+import { isVectorAsset, mediaAssetDimensions, type MediaAssetAuthoringMode, type MediaAssetKind } from "../model";
 import { buildProjectReferences, missingProjectReferences } from "../../../author/references/projectReferences";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 
@@ -19,12 +19,12 @@ function dimensionLabel(asset: ListedAsset) {
 function matchesAssetFilter(asset: ListedAsset, filter: AssetFilter) {
   if (filter === "all") return true;
   if (filter === "audio") return asset.kind === "audio";
-  if (filter === "vectors") return asset.authoringMode === "vector-grid";
-  return asset.kind === "image" && asset.authoringMode !== "vector-grid";
+  if (filter === "vectors") return isVectorAsset(asset);
+  return asset.kind === "image" && !isVectorAsset(asset);
 }
 
 function assetSearchText(asset: ListedAsset) {
-  const sourceKind = asset.authoringMode === "vector-grid" ? "vector" : asset.kind;
+  const sourceKind = isVectorAsset(asset) ? "vector" : asset.kind;
   return `${asset.name} ${asset.id} ${asset.mimeType} ${sourceKind} ${asset.contentSource}`.toLowerCase();
 }
 
@@ -81,7 +81,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
       const usage = mediaReferences.filter((reference) => reference.resourceId === asset.id && (
         reference.resourceKind === `media-${asset.kind}` || (asset.kind === "audio" && reference.resourceKind === "media-sound")
       ));
-      const sourceKind = asset.authoringMode === "vector-grid" ? "vector" : asset.kind;
+      const sourceKind = isVectorAsset(asset) ? "vector" : asset.kind;
       const contentSource = asset.contentSource === "database"
         ? "D1 generated"
         : asset.contentSource === "repository"
