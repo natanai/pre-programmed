@@ -123,14 +123,8 @@ export type AuthorFeatureManifest = {
   /** Optional contextual Author controls rendered beside the live play surface. */
   renderPlaySurface?: (context: AuthorPlaySurfaceContext) => ReactNode | null;
   /**
-   * Preferred data-first Author workspaces. Core owns their task lifecycle and
-   * visual hierarchy; features own draft data and save semantics.
+   * Data-first Author workspaces. Core owns their task lifecycle and visual
+   * hierarchy; features own draft data and save semantics.
    */
   workspaces?: readonly RegisteredAuthorWorkspaceDefinition[];
-  /**
-   * Transitional escape hatch for prototype workspaces not yet migrated to the
-   * shared Author UI grammar. New features should not add unrestricted workspace
-   * markup; the architecture test keeps this legacy surface from expanding.
-   */
-  renderWorkspace?: (route: AuthorTaskRoute, context: AuthorWorkspaceContext) => ReactNode | null;
 };
