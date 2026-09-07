@@ -139,6 +139,30 @@
   color: var(--dos-bright);
 }
 
+.author-workspace-navigation .author-task-trail button {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  text-align: left;
+}
+
+.author-workspace-navigation .author-task-trail button:hover,
+.author-workspace-navigation .author-task-trail button:focus-visible {
+  color: var(--dos-bright);
+  text-decoration: underline;
+  text-underline-offset: .15em;
+}
+
+.author-workspace-navigation .author-task-trail button:disabled {
+  color: var(--dos-muted);
+  cursor: not-allowed;
+  opacity: .55;
+  text-decoration: none;
+}
+
 .author-task-return,
 .author-workspace-stack-heading {
   color: var(--dos-muted);
@@ -327,6 +351,11 @@ body:has(.author-workspace-layer.is-previewing) .work-surface-close {
     font-size: max(16px, 1em);
   }
 
+  .author-workspace-navigation .author-task-trail button {
+    min-height: 0;
+    font-size: inherit;
+  }
+
   body:has(.author-workspace-layer) .work-surface-close {
     min-width: 2.75em;
     min-height: 2.75em;
@@ -384,6 +413,10 @@ html[data-keyboard-open="true"] .author-workspace-stack-toggle {
 
 html[data-keyboard-open="true"] .author-workspace-navigation button {
   min-height: 2.2em;
+}
+
+html[data-keyboard-open="true"] .author-workspace-navigation .author-task-trail button {
+  min-height: 0;
 }
 
 html[data-keyboard-open="true"] .author-workspace-stack-panel {
