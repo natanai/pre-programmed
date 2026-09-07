@@ -5,14 +5,14 @@
 }
 
 .author-reference-control-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  display: flex;
   align-items: stretch;
   gap: .45em;
   min-width: 0;
 }
 
 .author-reference-trigger {
+  flex: 1 1 auto;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
@@ -38,6 +38,7 @@
 }
 
 .author-reference-direct-action {
+  flex: none;
   min-width: 4.5em;
   min-height: 2.75em;
   padding: .35em .25em !important;
@@ -55,10 +56,10 @@
 
 .author-reference-value {
   min-width: 0;
-  overflow: hidden;
   color: var(--dos-bright);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .author-reference-value.is-empty {
@@ -87,6 +88,7 @@
   grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
   gap: .6em;
+  margin: 0;
 }
 
 .author-reference-search > span {

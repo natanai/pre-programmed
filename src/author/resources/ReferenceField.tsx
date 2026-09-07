@@ -113,12 +113,7 @@ export function ReferenceField({
         className="author-reference-direct-action"
         aria-label={`Edit ${selected?.label ?? label}`}
         onClick={editResource}
-      >[EDIT]</button> : !selected && canCreate ? <button
-        type="button"
-        className="author-reference-direct-action"
-        aria-label={`Create ${label}`}
-        onClick={createResource}
-      >[+ CREATE]</button> : null}
+      >[EDIT]</button> : null}
     </div>
 
     {preview ? <div className="author-reference-preview">{preview}</div> : null}

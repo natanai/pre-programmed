@@ -27,13 +27,16 @@
 
 .inventory-author-resource-open > span {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .inventory-author-resource-open > small {
+  min-width: 0;
   color: var(--dos-muted);
+  overflow-wrap: anywhere;
+  text-align: right;
+  white-space: normal;
 }
 
 .inventory-author-resource-actions {
@@ -58,6 +61,7 @@
   align-items: center;
   gap: .45em;
   min-height: 2.35em;
+  margin: 0;
 }
 
 .inventory-slot-compatibility-control > label small {

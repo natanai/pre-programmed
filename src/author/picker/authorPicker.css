@@ -26,14 +26,17 @@
 
 .author-picker-title-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1em;
+  min-width: 0;
 }
 
 .author-picker-title-row strong {
-  font-weight: normal;
+  min-width: 0;
   color: var(--dos-bright);
+  font-weight: normal;
+  overflow-wrap: anywhere;
 }
 
 .author-picker-close,
@@ -123,12 +126,17 @@
 .author-picker-copy strong,
 .author-picker-copy small,
 .author-picker-meta {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .author-picker-copy small,
 .author-picker-meta { color: var(--dos-muted); }
+.author-picker-meta {
+  max-width: 12em;
+  line-height: 1.15;
+  text-align: right;
+}
 
 .author-picker-row-actions {
   display: flex;
@@ -204,7 +212,11 @@
     min-height: 50px;
     padding: .55em .65em;
   }
-  .author-picker-meta { font-size: .9em; }
+  .author-picker-meta {
+    max-width: none;
+    font-size: .9em;
+    text-align: left;
+  }
   .author-picker-row-actions { flex-direction: column; }
   .author-picker-secondary { min-width: 4.75em; min-height: 50px; }
   .author-picker-choices { gap: .3em .8em; padding: .45em .65em .6em; }
