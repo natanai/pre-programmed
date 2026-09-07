@@ -48,8 +48,9 @@ export function validateAuthorWorkspaceSpec(spec: AuthorWorkspaceSpec) {
 
     if ("label" in node && !node.label.trim()) errors.push(`${path} requires a label.`);
 
-    if (node.type === "field") {
+    if (node.type === "field" || node.type === "resource") {
       repeatedParentLabel(node, path, parentLabel);
+      if (node.type === "resource" && !node.kind.trim()) errors.push(`${path} requires a resource kind.`);
       return;
     }
 
