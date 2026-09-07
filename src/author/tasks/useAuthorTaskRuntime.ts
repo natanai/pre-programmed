@@ -65,23 +65,6 @@ export function useAuthorTaskRuntime() {
     return true;
   }, [commitTasks]);
 
-  const returnToTask = useCallback((taskId: string) => {
-    const current = tasksRef.current;
-    const targetIndex = current.findIndex((task) => task.id === taskId);
-    if (targetIndex < 0 || targetIndex === current.length - 1) return false;
-    const leaving = current.slice(targetIndex + 1);
-    const pendingCompletions = leaving
-      .slice()
-      .reverse()
-      .map((task) => completions.current.get(task.id))
-      .filter((completion): completion is AuthorTaskCompletion => Boolean(completion));
-    leaving.forEach((task) => completions.current.delete(task.id));
-    setLeaveConfirmation(null);
-    commitTasks(current.slice(0, targetIndex + 1));
-    pendingCompletions.forEach((completion) => queueMicrotask(() => completion(undefined)));
-    return true;
-  }, [commitTasks]);
-
   const completeTask = useCallback((taskId: string, result?: AuthorTaskResult) => {
     const current = tasksRef.current;
     const active = current.at(-1);
@@ -112,19 +95,6 @@ export function useAuthorTaskRuntime() {
     popTask(active.id);
   }, [popTask]);
 
-  const requestReturnTo = useCallback((taskId: string) => {
-    const current = tasksRef.current;
-    const targetIndex = current.findIndex((task) => task.id === taskId);
-    if (targetIndex < 0 || targetIndex === current.length - 1) return;
-    const leaving = current.slice(targetIndex + 1);
-    const leavingDirtyCount = leaving.filter((task) => task.dirty).length;
-    if (leavingDirtyCount) {
-      setLeaveConfirmation({ action: "return", dirtyCount: leavingDirtyCount, taskId });
-      return;
-    }
-    returnToTask(taskId);
-  }, [returnToTask]);
-
   const requestClose = useCallback(() => {
     const current = tasksRef.current;
     if (!current.length) return;
@@ -137,10 +107,9 @@ export function useAuthorTaskRuntime() {
   }, [closeAll]);
 
   const confirmLeave = useCallback(() => {
-    if (leaveConfirmation?.action === "back" && leaveConfirmation.taskId) popTask(leaveConfirmation.taskId);
-    else if (leaveConfirmation?.action === "return" && leaveConfirmation.taskId) returnToTask(leaveConfirmation.taskId);
+    if (leaveConfirmation?.action === "back") popTask(leaveConfirmation.taskId);
     else if (leaveConfirmation?.action === "close") closeAll();
-  }, [closeAll, leaveConfirmation, popTask, returnToTask]);
+  }, [closeAll, leaveConfirmation, popTask]);
 
   const cancelLeave = useCallback(() => setLeaveConfirmation(null), []);
 
@@ -157,7 +126,6 @@ export function useAuthorTaskRuntime() {
     completeTask,
     setTaskDirty,
     requestBack,
-    requestReturnTo,
     requestClose,
     confirmLeave,
     cancelLeave,
