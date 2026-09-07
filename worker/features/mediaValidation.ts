@@ -1,6 +1,6 @@
 import type { WorkerMutationValidator } from "./validationTypes";
 import { object } from "./validationHelpers";
-import { validateSynth } from "../../src/features/media/synth";
+import { MAX_SYNTH_BEND, validateSynth } from "../../src/features/media/synth";
 import type { SynthSound } from "../../src/features/media/model";
 import { MAX_GENERATED_MEDIA_BYTES } from "../../src/features/media/mutations";
 import { parseVectorGrid, VECTOR_GRID_MAX_CELLS } from "../../src/features/media/vectorAsset";
@@ -21,7 +21,11 @@ function synthSound(value: unknown): value is SynthSound {
     && voice.steps.every((step) => object(step)
       && typeof step.active === "boolean"
       && typeof step.note === "string"
-      && typeof step.volume === "number"));
+      && typeof step.volume === "number"
+      && (step.bend === undefined || (typeof step.bend === "number"
+        && Number.isFinite(step.bend)
+        && step.bend >= -MAX_SYNTH_BEND
+        && step.bend <= MAX_SYNTH_BEND))));
 }
 
 function optionalDimension(value: unknown) {
@@ -32,8 +36,8 @@ export const mediaMutationValidator: WorkerMutationValidator = {
   types: ["synth.upsert", "synth.delete", "mediaAsset.upsert", "mediaAsset.delete"],
   validate(operation) {
     if (operation.type === "synth.upsert") {
-      if (!synthSound(operation.sound)) return "Synth sound is invalid.";
-      if (typeof operation.sound.id !== "string" || !operation.sound.id || typeof operation.sound.label !== "string" || !operation.sound.label.trim()) return "Synth sound identity is invalid.";
+      if (!synthSound(operation.sound)) return "Synth is invalid.";
+      if (typeof operation.sound.id !== "string" || !operation.sound.id || typeof operation.sound.label !== "string" || !operation.sound.label.trim()) return "Synth identity is invalid.";
       const errors = validateSynth(operation.sound);
       if (errors.length) return errors[0];
     }
@@ -80,7 +84,7 @@ export const mediaMutationValidator: WorkerMutationValidator = {
       }
     }
     if (operation.type === "synth.delete") {
-      return typeof operation.id === "string" && operation.id ? null : "Synth sound id is required.";
+      return typeof operation.id === "string" && operation.id ? null : "Synth id is required.";
     }
     if (operation.type === "mediaAsset.delete") {
       return typeof operation.id === "string" && operation.id ? null : "Media asset id is required.";
