@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type Dispatch, type ReactNode, type SetStateAction } from "react";
 import type { AuthorPersistResult } from "../../../author/persistence/authorProjectPersistence";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
@@ -40,7 +40,7 @@ const revealOptions: Array<{ value: InteractionChoiceVisibility; label: string; 
   { value: "typed", label: "TYPED ONLY", help: "Never suggest this choice. Typing the input directly still works." },
 ];
 
-type EditorScreen =
+export type InteractionEditorScreen =
   | { type: "overview" }
   | { type: "response"; outcomeId: string }
   | { type: "input-settings" };
@@ -128,25 +128,134 @@ export function InteractionEditor({
   const [draft, setDraft] = useState(() => normalizeInteractionAuthorDraft(initial, resolvedSourceNodeId, initialCommand, fallbackMode));
   const [newOutcomeIds, setNewOutcomeIds] = useState<Set<string>>(() => new Set());
   const [savedSignature, setSavedSignature] = useState(() => JSON.stringify(draft));
-  const [screen, setScreen] = useState<EditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
+  const [screen, setScreen] = useState<InteractionEditorScreen>(() => initialOutcomeId && draft.outcomes.some((outcome) => outcome.id === initialOutcomeId)
     ? { type: "response", outcomeId: initialOutcomeId }
     : { type: "overview" });
   const [saving, setSaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState("");
-  const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const draftSignature = JSON.stringify(draft);
+
+  useEffect(() => {
+    onDirtyChange(draftSignature !== savedSignature);
+    return () => onDirtyChange(false);
+  }, [draftSignature, savedSignature, onDirtyChange]);
+
+  const save = async (): Promise<boolean> => {
+    const prepared = prepareInteractionForSave(draft, fallbackMode, snapshot);
+    if ("issue" in prepared) {
+      setError(prepared.issue.message);
+      setScreen(prepared.issue.outcomeId
+        ? { type: "response", outcomeId: prepared.issue.outcomeId }
+        : { type: "overview" });
+      return false;
+    }
+
+    setError("");
+    setSaving(true);
+    try {
+      const { interaction } = prepared;
+      const result = await onSave(
+        [{ type: "interaction.upsert", interaction }],
+        interactionSaveDescription(interaction, Boolean(initial), fallbackMode, snapshot),
+      );
+      if (result.status === "saved" || result.status === "queued") {
+        setDraft(interaction);
+        setNewOutcomeIds(new Set());
+        setSavedSignature(JSON.stringify(interaction));
+        return true;
+      }
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!onRegisterSave) return;
+    onRegisterSave(save);
+    return () => onRegisterSave(null);
+  });
+
+  const footer = <div className="author-actions author-panel-footer guided-editor-footer">
+    <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
+    {screen.type === "overview" && initial ? confirmDelete ? <>
+      <span>Delete this {fallbackMode ? "invalid-input response" : draft.matchMode === "capture" ? "player-input capture" : "user input"}?</span>
+      <button type="button" onClick={() => void onSave(
+        [{ type: "interaction.delete", id: initial.id }],
+        fallbackMode ? "Deleted invalid-input response" : draft.matchMode === "capture" ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`,
+      )}>[CONFIRM DELETE]</button>
+      <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
+    </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
+  </div>;
+
+  return <InteractionComposer
+    snapshot={snapshot}
+    playState={playState}
+    draft={draft}
+    setDraft={setDraft}
+    fallbackMode={fallbackMode}
+    isNew={!initial}
+    screen={screen}
+    setScreen={setScreen}
+    newOutcomeIds={newOutcomeIds}
+    setNewOutcomeIds={setNewOutcomeIds}
+    error={error}
+    onClearError={() => setError("")}
+    onPreview={onPreview}
+    onCreateDestination={onCreateDestination}
+    onEditDestination={onEditDestination}
+    footer={footer}
+  />;
+}
+
+/**
+ * Controlled specialized interaction composer. It owns only sub-screen and
+ * response-composition presentation; callers own the canonical Interaction
+ * draft, dirty baseline, validation, and persistence lifecycle.
+ */
+export function InteractionComposer({
+  snapshot,
+  playState,
+  draft,
+  setDraft,
+  fallbackMode,
+  isNew,
+  screen,
+  setScreen,
+  newOutcomeIds,
+  setNewOutcomeIds,
+  error,
+  onClearError,
+  onPreview,
+  onCreateDestination,
+  onEditDestination,
+  footer,
+}: {
+  snapshot: ProjectSnapshot;
+  playState: PlayState;
+  draft: Interaction;
+  setDraft: Dispatch<SetStateAction<Interaction>>;
+  fallbackMode: boolean;
+  isNew: boolean;
+  screen: InteractionEditorScreen;
+  setScreen: Dispatch<SetStateAction<InteractionEditorScreen>>;
+  newOutcomeIds: Set<string>;
+  setNewOutcomeIds: Dispatch<SetStateAction<Set<string>>>;
+  error?: string;
+  onClearError?: () => void;
+  onPreview?: (value: AuthoredTextValue, speakerId: string | null, outcome: InteractionOutcome) => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
+  onEditDestination?: (nodeId: string) => void;
+  footer?: ReactNode;
+}) {
+  const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
   const captureMode = !fallbackMode && draft.matchMode === "capture";
   const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
   const sourcePlayState = sourceTraversalIndex >= 0
     ? { ...playState, currentNodeId: draft.sourceNodeId, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
     : { ...playState, currentNodeId: draft.sourceNodeId };
   const conversationCharacterId = resolveNodeConversationContext(snapshot, sourcePlayState, draft.sourceNodeId)?.characterId ?? null;
-
-  useEffect(() => {
-    onDirtyChange(draftSignature !== savedSignature);
-    return () => onDirtyChange(false);
-  }, [draftSignature, savedSignature, onDirtyChange]);
 
   const configureOutcome = (id: string, change: (outcome: InteractionOutcome) => InteractionOutcome) => {
     setDraft((current) => ({
@@ -194,48 +303,12 @@ export function InteractionEditor({
     return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destinationNodeId).join("") || "[A1]";
   };
 
-  const save = async (): Promise<boolean> => {
-    const prepared = prepareInteractionForSave(draft, fallbackMode, snapshot);
-    if ("issue" in prepared) {
-      setError(prepared.issue.message);
-      setScreen(prepared.issue.outcomeId
-        ? { type: "response", outcomeId: prepared.issue.outcomeId }
-        : { type: "overview" });
-      return false;
-    }
-
-    setError("");
-    setSaving(true);
-    try {
-      const { interaction } = prepared;
-      const result = await onSave(
-        [{ type: "interaction.upsert", interaction }],
-        interactionSaveDescription(interaction, Boolean(initial), fallbackMode, snapshot),
-      );
-      if (result.status === "saved" || result.status === "queued") {
-        setDraft(interaction);
-        setNewOutcomeIds(new Set());
-        setSavedSignature(JSON.stringify(interaction));
-        return true;
-      }
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!onRegisterSave) return;
-    onRegisterSave(save);
-    return () => onRegisterSave(null);
-  });
-
   const selectedOutcome = "outcomeId" in screen
     ? draft.outcomes.find((outcome) => outcome.id === screen.outcomeId)
     : undefined;
 
   const back = () => {
-    setError("");
+    onClearError?.();
     setScreen({ type: "overview" });
   };
 
@@ -259,7 +332,7 @@ export function InteractionEditor({
         snapshot={snapshot}
         conversationCharacterId={conversationCharacterId}
         notationForOutcome={notationForOutcome}
-        autoFocusWording={!initial}
+        autoFocusWording={isNew}
         onWording={(wording) => setDraft({ ...draft, wording })}
         onMatchMode={(matchMode) => setDraft({ ...draft, matchMode })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
@@ -281,7 +354,7 @@ export function InteractionEditor({
         index={draft.outcomes.findIndex((outcome) => outcome.id === selectedOutcome.id)}
         total={draft.outcomes.length}
         notation={notationForOutcome(selectedOutcome)}
-        autoFocusText={!initial || newOutcomeIds.has(selectedOutcome.id)}
+        autoFocusText={isNew || newOutcomeIds.has(selectedOutcome.id)}
         conversationCharacterId={conversationCharacterId}
         onPreview={onPreview ? (value, speakerId) => onPreview(value, speakerId, selectedOutcome) : undefined}
         playState={sourcePlayState}
@@ -299,14 +372,7 @@ export function InteractionEditor({
       {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
     </div>
 
-    <div className="author-actions author-panel-footer guided-editor-footer">
-      <button type="button" onClick={() => void save()} disabled={saving}>[{saving ? "SAVING..." : "SAVE"}]</button>
-      {screen.type === "overview" && initial ? confirmDelete ? <>
-        <span>Delete this {fallbackMode ? "invalid-input response" : captureMode ? "player-input capture" : "user input"}?</span>
-        <button type="button" onClick={() => void onSave([{ type: "interaction.delete", id: initial.id }], fallbackMode ? "Deleted invalid-input response" : captureMode ? "Deleted player-input capture" : `Deleted user input ${initial.wording || initial.aliases[0]}`)}>[CONFIRM DELETE]</button>
-        <button type="button" onClick={() => setConfirmDelete(false)}>[KEEP]</button>
-      </> : <button type="button" onClick={() => setConfirmDelete(true)}>[DELETE INPUT]</button> : null}
-    </div>
+    {footer ?? null}
   </section>;
 }
 
