@@ -1,4 +1,41 @@
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
+import { configuredAssetStore } from "../ui/assetStore";
+import { AssetExplorer } from "./AssetExplorer";
+
+export const mediaAssetsWorkspace = defineAuthorWorkspace({
+  id: "media-assets",
+  matches: (route) => route.type === "feature" && route.feature === "media" && route.workspace === "assets",
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => {
+    const assets = configuredAssetStore.list(context.snapshot);
+    return {
+      id: "media-assets",
+      title: "Media assets",
+      context: `${assets.length} asset${assets.length === 1 ? "" : "s"}`,
+      blocks: [{
+        type: "custom",
+        id: "media-assets-explorer",
+        role: "specialized-control",
+        content: <AssetExplorer
+          snapshot={context.snapshot}
+          onOpenAsset={(assetId, kind, authoringMode) => context.pushTask({
+            type: "feature",
+            feature: "media",
+            workspace: authoringMode === "vector-grid" ? "vector-asset" : "asset",
+            data: { assetId, kind },
+          })}
+          onNewVector={() => context.pushTask({
+            type: "feature",
+            feature: "media",
+            workspace: "vector-asset",
+            data: { kind: "image" },
+          })}
+          onOpenReference={(route) => context.pushTask(route)}
+        />,
+      }],
+    };
+  },
+});
 
 export const mediaSynthLibraryWorkspace = defineAuthorWorkspace({
   id: "media-synth-library",
@@ -44,4 +81,7 @@ export const mediaSynthLibraryWorkspace = defineAuthorWorkspace({
   },
 });
 
-export const MEDIA_STRUCTURED_WORKSPACES = [mediaSynthLibraryWorkspace] as const;
+export const MEDIA_STRUCTURED_WORKSPACES = [
+  mediaAssetsWorkspace,
+  mediaSynthLibraryWorkspace,
+] as const;
