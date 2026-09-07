@@ -63,12 +63,6 @@ function actionChoice(action: CommandAction) {
   return `application:${action.operation}`;
 }
 
-function actionLabel(action: CommandAction) {
-  if (action.type === "response") return "Respond with text";
-  if (action.type === "target-operation") return action.operation ? `Target · ${action.operation}` : "Target operation";
-  return APPLICATION_COMMAND_CAPABILITIES.find((capability) => capability.operation === action.operation)?.label ?? action.operation;
-}
-
 function defaultResponseAction(): CommandAction {
   return {
     type: "response",
@@ -91,44 +85,6 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
       <span><strong>TARGET NAMES + ALIASES</strong><small>Player vocabulary supplied by semantic target owners.</small></span><span>{enabledSources}/{targetProviders().length} ›</span>
     </button>
   </div>;
-}
-
-function PlayerInteractionsWorkspace({ context }: { context: AuthorWorkspaceContext }) {
-  return <section className="author-panel author-panel-frame command-settings-workspace player-interactions-workspace">
-    <header><span>PLAYER INTERACTIONS</span><span>PROJECT-WIDE</span></header>
-    <div className="author-panel-body command-settings-list">
-      <h3>PLAYER COMMANDS</h3>
-      <button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}>
-        <span><strong>PLAYER COMMANDS</strong><small>Reusable typed commands that work across the game.</small></span><span>{context.snapshot.settings.commands.commands.length} ›</span>
-      </button>
-      <h3>TARGET OWNERS</h3>
-      {targetProviders().map((provider) => <button
-        type="button"
-        key={provider.kind}
-        disabled={!provider.authorResourceKind || !context.resources.canOpenList(provider.authorResourceKind)}
-        onClick={() => provider.authorResourceKind && context.resources.openList(provider.authorResourceKind)}
-      >
-        <span><strong>{provider.label.toUpperCase()}</strong><small>{provider.description}</small></span><span>›</span>
-      </button>)}
-    </div>
-  </section>;
-}
-
-function ReferenceSourcesWorkspace({ context }: { context: AuthorWorkspaceContext }) {
-  const providers = targetProviders();
-  const configured = context.snapshot.settings.commands.referenceSources;
-  return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>TARGET NAMES + ALIASES</span><span>{configured.filter((source) => source.enabled).length} ENABLED</span></header>
-    <div className="author-panel-body command-settings-list">
-      {providers.map((provider) => {
-        const setting = configured.find((candidate) => candidate.sourceKind === provider.kind);
-        const count = provider.candidates({ snapshot: context.snapshot, state: context.playState }).length;
-        return <button type="button" key={provider.kind} onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "reference-source", data: { sourceKind: provider.kind } })}>
-          <span><strong>{provider.label.toUpperCase()}</strong><small>{provider.description}</small></span><span>{setting?.enabled ? "ON" : "OFF"} · {count} ›</span>
-        </button>;
-      })}
-    </div>
-  </section>;
 }
 
 function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspaceContext; sourceKind: string }) {
@@ -194,20 +150,6 @@ function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspa
         : null}
       <button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
     </div>
-  </section>;
-}
-
-function CommandGrammarWorkspace({ context }: { context: AuthorWorkspaceContext }) {
-  const commands = context.snapshot.settings.commands.commands;
-  return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>PLAYER COMMANDS</span><span>{commands.length} {commands.length === 1 ? "COMMAND" : "COMMANDS"}</span></header>
-    <div className="author-panel-body command-settings-list">
-      {commands.map((command) => <button type="button" key={command.id} onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: command.id } })}>
-        <span><strong>{command.label}</strong><small>{command.patterns.join(" · ") || "no player inputs"}</small><small>ACTION · {actionLabel(command.action)}</small></span><span>{command.enabled ? "ON" : "OFF"} ›</span>
-      </button>)}
-      {!commands.length ? <div className="command-settings-empty">NO PLAYER COMMANDS.</div> : null}
-    </div>
-    <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}>[+ PLAYER COMMAND]</button></div>
   </section>;
 }
 
@@ -487,22 +429,6 @@ function CommandEditor({ context, commandId, initialOperation = "", resourceTask
   </section>;
 }
 
-function TargetBehaviorsWorkspace({ context, sourceKind, operation, commandLabel }: { context: AuthorWorkspaceContext; sourceKind: string; operation: string; commandLabel: string }) {
-  const adapter = context.resolveCommandTarget(sourceKind);
-  const targets = adapter?.list(context.snapshot, operation) ?? [];
-  return <section className="author-panel author-panel-frame command-settings-workspace target-behaviors-workspace">
-    <header><span>{commandLabel || operation.toUpperCase()} · TARGET BEHAVIOR</span></header>
-    <div className="author-panel-body command-settings-list">
-      {targets.map((target) => <button type="button" key={target.id} onClick={() => adapter && context.pushTask(adapter.editRoute(target.id, operation))}>
-        <span><strong>{target.label}</strong><small>{target.available ? "available" : "not available"} · {target.responseCount} response{target.responseCount === 1 ? "" : "s"}</small></span><span>›</span>
-      </button>)}
-      {!adapter ? <div className="command-settings-empty">NO AUTHORING ROUTE FOR THIS TARGET TYPE.</div> : null}
-      {adapter && !targets.length ? <div className="command-settings-empty">NO {adapter.label.toUpperCase()}S EXIST YET.</div> : null}
-    </div>
-    {adapter?.createRoute ? <div className="author-actions author-panel-footer"><button type="button" onClick={() => context.pushTask(adapter.createRoute!(operation))}>[+ CREATE {adapter.label.toUpperCase()}]</button></div> : null}
-  </section>;
-}
-
 export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSection[] = [{
   id: "commands",
   label: "PLAYER LANGUAGE",
@@ -513,11 +439,7 @@ export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSec
 
 export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "commands") return null;
-  if (route.workspace === "references") return <ReferenceSourcesWorkspace context={context} />;
   if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
-  if (route.workspace === "grammar" || route.workspace === "capabilities") return <CommandGrammarWorkspace context={context} />;
   if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} resourceTask={route.data?.resourceTask} />;
-  if (route.workspace === "interactions") return <PlayerInteractionsWorkspace context={context} />;
-  if (route.workspace === "target-behaviors") return <TargetBehaviorsWorkspace context={context} sourceKind={route.data?.sourceKind ?? ""} operation={route.data?.operation ?? ""} commandLabel={route.data?.commandLabel ?? ""} />;
   return null;
 }
