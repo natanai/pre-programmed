@@ -1,0 +1,90 @@
+name: Apply State group resource migration
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Migrate State group picker to semantic resource node
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/features/state/author/workspaces.tsx')
+          text = path.read_text()
+
+          old_import = 'import { ReferenceField } from "../../../author/resources/ReferenceField";\n'
+          if text.count(old_import) != 1:
+              raise SystemExit('Expected one direct ReferenceField import')
+          text = text.replace(old_import, '')
+
+          old = '''          {
+            type: "custom",
+            id: `${id}-group-picker`,
+            role: "resource-picker",
+            content: <ReferenceField
+              kind="state-group"
+              value={presentation?.groupId ?? ""}
+              allowEmpty={false}
+              placeholder="choose or create a group"
+              onChange={(groupId) => setPresentation({
+                groupId,
+                order: presentation?.order ?? 0,
+                visibleWhen: presentation?.visibleWhen ?? ALWAYS,
+              })}
+            />,
+          },'''
+          new = '''          {
+            type: "resource" as const,
+            id: `${id}-group-picker`,
+            label: "Group",
+            kind: "state-group",
+            value: presentation?.groupId ?? "",
+            allowEmpty: false,
+            placeholder: "choose or create a group",
+            onChange: (groupId: string) => setPresentation({
+              groupId,
+              order: presentation?.order ?? 0,
+              visibleWhen: presentation?.visibleWhen ?? ALWAYS,
+            }),
+          },'''
+          if text.count(old) != 1:
+              raise SystemExit('Expected one State player-presentation custom resource picker')
+          text = text.replace(old, new)
+
+          if 'ReferenceField' in text:
+              raise SystemExit('Direct ReferenceField usage remains in State workspaces')
+          if 'role: "resource-picker"' in text:
+              raise SystemExit('Legacy resource-picker escape hatch remains in State workspaces')
+
+          path.write_text(text)
+          PY
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify repository
+        run: npm run verify
+      - name: Commit verified migration and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/apply-state-group-resource-migration.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/features/state/author/workspaces.tsx .github/workflows/apply-state-group-resource-migration.yml
+          git commit -m 'refactor: use semantic resource for state groups'
+          git push origin HEAD:author-ux-integration-refactor
