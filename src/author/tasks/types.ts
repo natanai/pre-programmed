@@ -21,6 +21,13 @@ export type AuthorResourceResult = {
   label: string;
 };
 
+/** Confirmed owner-task deletion of one canonical Author resource. */
+export type AuthorResourceDeletedResult = {
+  type: "resource-deleted";
+  kind: string;
+  id: string;
+};
+
 /**
  * Open result envelope for recursively composed Author work.
  *
@@ -34,7 +41,7 @@ export type AuthorCapabilityResult = {
   value?: AuthorTaskValue;
 };
 
-export type AuthorTaskResult = AuthorResourceResult | AuthorCapabilityResult | { type: "saved" };
+export type AuthorTaskResult = AuthorResourceResult | AuthorResourceDeletedResult | AuthorCapabilityResult | { type: "saved" };
 
 export type AuthorTaskEntry = {
   id: string;
