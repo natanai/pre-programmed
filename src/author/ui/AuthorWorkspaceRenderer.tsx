@@ -113,6 +113,18 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
     </details>;
   }
 
+  if (node.type === "action-row") {
+    return <div className="author-ui-action-row">
+      {node.actions.map((action) => <button
+        type="button"
+        className={action.tone === "danger" ? "danger" : undefined}
+        disabled={action.disabled}
+        onClick={action.onAction}
+        key={action.id}
+      >[{action.label}]</button>)}
+    </div>;
+  }
+
   if (node.type === "status") {
     return <div className={`author-ui-status author-ui-status-${node.tone ?? "info"}`} role={node.tone === "error" ? "alert" : "status"}>{node.text}</div>;
   }
