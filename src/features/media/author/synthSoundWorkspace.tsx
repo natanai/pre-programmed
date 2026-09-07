@@ -202,10 +202,11 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
         }],
       },
       {
-        type: "disclosure",
+        type: "section",
         id: "synth-advanced",
         label: "Shape + sequence",
         summary: `wave · envelope · ${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
+        importance: "primary",
         children: [{
           type: "custom",
           id: "synth-sequencer",
