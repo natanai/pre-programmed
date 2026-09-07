@@ -55,8 +55,9 @@ function defaultSignature(value: unknown) {
 
 /**
  * Shared controller for data-first workspaces. Draft state, dirty state, Save
- * registration, contextual Back, and rendering are generic; only draft
- * creation/spec/persistence stay with the feature definition.
+ * registration, and rendering are generic; only draft creation/spec/persistence
+ * stay with the feature definition. Author task Back/X navigation remains owned
+ * by the shared workspace host so structured feature editors do not duplicate it.
  *
  * Save cannot be an implicit Author exit here. A completion result is honored
  * only when the task actually has an Author parent; root exit belongs to X.
@@ -117,11 +118,6 @@ export function StructuredAuthorWorkspace<TDraft>({
         label: definition.saveLabel ?? "SAVE",
         disabled: !dirty || !validForSave,
         onAction: () => { void save(); },
-      }] : []),
-      ...(context.hasParentTask ? [{
-        id: "author-core-back",
-        label: "BACK",
-        onAction: context.leaveCurrentTask,
       }] : []),
       ...(authoredSpec.actions ?? []),
     ],
