@@ -32,13 +32,22 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
       autoFocus: node.autoFocus,
       enterKeyHint: node.enterKeyHint,
       inputMode: node.inputMode,
+      autoCapitalize: node.autoCapitalize,
+      autoCorrect: node.autoCorrect,
+      spellCheck: node.spellCheck,
       onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => node.onChange(event.target.value),
     };
     return <label className="author-ui-field" htmlFor={node.id}>
       <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
       {node.control === "textarea"
         ? <textarea {...common} rows={node.rows ?? 4} />
-        : <input {...common} type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"} />}
+        : <input
+            {...common}
+            type={node.control === "number" ? "number" : node.control === "search" ? "search" : "text"}
+            min={node.min}
+            max={node.max}
+            step={node.step}
+          />}
       {node.help ? <small className="author-ui-help">{node.help}</small> : null}
     </label>;
   }

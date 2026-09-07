@@ -18,6 +18,12 @@ export type AuthorUiField = {
   autoFocus?: boolean;
   enterKeyHint?: "enter" | "done" | "go" | "next" | "previous" | "search" | "send";
   inputMode?: "none" | "text" | "tel" | "url" | "email" | "numeric" | "decimal" | "search";
+  min?: number;
+  max?: number;
+  step?: number;
+  autoCapitalize?: "none" | "sentences" | "words" | "characters";
+  autoCorrect?: "on" | "off";
+  spellCheck?: boolean;
 };
 
 export type AuthorUiResource = {

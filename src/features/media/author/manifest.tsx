@@ -6,7 +6,6 @@ import { configuredAssetStore } from "../ui/assetStore";
 import { MediaAssetEditor } from "./MediaAssetEditor";
 import { MediaImageReferencePreview } from "./MediaImageReferencePreview";
 import { VectorAssetEditor } from "./VectorAssetEditor";
-import { SynthEditor } from "./SynthPanel";
 import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
@@ -227,34 +226,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
           }
           return result;
         }}
-      />;
-    }
-
-    if (route.type === "feature" && route.feature === "media" && route.workspace === "synth-sound") {
-      const soundId = route.data?.soundId ?? "new";
-      const sound = soundId === "new"
-        ? undefined
-        : context.snapshot.synthSounds.find((candidate) => candidate.id === soundId);
-      const resourceTask = route.data?.resourceTask;
-      return <SynthEditor
-        snapshot={context.snapshot}
-        initial={sound}
-        onSave={async (operations, description) => {
-          const result = await context.persist(operations, description);
-          if (resourceTask && (result.status === "saved" || result.status === "queued")) {
-            const operation = operations.find((candidate) => candidate.type === "synth.upsert");
-            if (operation?.type === "synth.upsert") context.completeTask({
-              type: "resource",
-              kind: resourceTask,
-              id: operation.sound.id,
-              value: operation.sound.id,
-              label: operation.sound.label || operation.sound.key || "Untitled sound",
-            });
-          }
-          return result;
-        }}
-        onCancel={context.leaveCurrentTask}
-        setWorkspaceDirty={context.setWorkspaceDirty}
       />;
     }
 
