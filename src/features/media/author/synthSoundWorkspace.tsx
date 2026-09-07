@@ -203,7 +203,7 @@ export const synthSoundWorkspace = defineAuthorWorkspace<SynthSoundWorkspaceDraf
       },
       {
         type: "section",
-        id: "synth-advanced",
+        id: "synth-shape-sequence",
         label: "Shape + sequence",
         summary: `wave · envelope · ${sound.voices.length} voice${sound.voices.length === 1 ? "" : "s"} · ${sequenceLength} steps`,
         importance: "primary",
