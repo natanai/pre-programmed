@@ -150,11 +150,12 @@ Do only in behavior-preserving, independently verified slices.
 - [x] Reduce Radix-specific startup/presentation knowledge in `App.tsx` through a feature-owned runtime presentation controller.
   - `useRadixRuntimePresentation` owns startup sequence selection, active run state, sequence reconciliation, synth resolution, completion, effect-triggered runs, and Radix surface rendering.
   - App retains only generic launch-blocking coordination and the controller's narrow capabilities.
-- [ ] Finish moving Narrative player presentation/execution semantics behind Narrative-owned runtime contracts.
+- [x] Move Narrative player presentation/execution semantics behind Narrative-owned runtime contracts without hiding legitimate composition-root dispatch.
   - [x] `useNarrativePlayerSurface` owns current node, anchor, graph notation, fallback interaction/notation, choice visibility, and immediate/menu choice derivation.
   - [x] `resolveNodeOpeningPresentation` and memoized `useNarrativeContinuation` own node/interaction prose interpolation, text-notation compilation, speaker resolution, authored source identity, and follow-up prose payloads while App retains timing/state setters.
-  - [x] `executeInteraction` now returns the selected outcome's narration/dialogue performances, so App no longer reinterprets the outcome through `interactionOutcomeProse`.
-  - [ ] Re-audit the remaining direct Narrative imports in App and decide whether `executeInteraction` itself should remain a composition-root call or move behind a higher-level player-runtime contribution.
+  - [x] `executeInteraction` returns the selected outcome's narration/dialogue performances, so App no longer reinterprets the outcome through `interactionOutcomeProse`.
+  - [x] Interaction execution now returns the exact narration/dialogue presentation source while keeping effect-event provenance outcome-level; App no longer assigns Narrative prose sections itself.
+  - [x] Re-audit concluded `executeInteraction(...)` is an appropriate composition-root call: App dispatches a parsed Interaction into its owning runtime but no longer contains the feature-specific interpretation around that call. Do not add an abstraction whose only purpose is hiding this import.
 - [ ] Consolidate complete play-session lifecycle ownership under Session.
 - [ ] Re-audit direct feature imports/branches in App after each extraction.
 
@@ -203,7 +204,8 @@ Full `npm run verify` has passed after:
 - branch-native audit and removal of the obsolete `custom` `resource-picker` role;
 - full Player Command structured migration and removal of Commands from the legacy Author exception list;
 - Narrative Interaction duplicate task-chrome cleanup;
-- Media specialized-editor task-chrome cleanup and deletion of the superseded Synth list component.
+- Media specialized-editor task-chrome cleanup and deletion of the superseded Synth list component;
+- Interaction narration/dialogue provenance extraction from App into Narrative runtime, with effect provenance preserved separately.
 
 One-shot workflows are used only for mechanically editing large files when connector reads are chunked. They assert exact source shape, run full `npm run verify`, commit only on success, and remove themselves. Failed assertions therefore leave the intended source change uncommitted.
 
@@ -245,10 +247,10 @@ Latest comparison on 2026-09-06:
 - base / merge-base: `02d5ac8cb77556094bf6c83c8c9721d0c8940c1c`
 - branch: `author-ux-integration-refactor`
 - status: ahead of `main`
-- ahead: **110 commits** before this checkpoint staging update
+- ahead: **116 commits** before this checkpoint staging update
 - behind: **0 commits**
-- current pre-checkpoint source head: `7b3d87519df674450c06cc3a3fa76fd8ccb5e6ce` (`ux: remove duplicate media task chrome`).
-- `App.tsx` diff versus main is now net smaller: 86 additions / 211 deletions as of the latest comparison, despite installing Radix and Narrative integration points.
+- current pre-checkpoint source head: `a43f6b2a18c5573820f0f1b63619c461c8b58931` (`refactor: keep interaction prose provenance in narrative runtime`).
+- `App.tsx` remains net smaller than main: 87 additions / 219 deletions as of the latest comparison, despite installing Radix and Narrative integration points.
 - No project mutation formats, durable persistence formats, Worker persistence, or gameplay save schema changed in the Radix/Narrative presentation extractions.
 
 ## Change log
@@ -323,6 +325,8 @@ Latest comparison on 2026-09-06:
 - Added memoized `useNarrativeContinuation` so React effect dependencies retain stable payload identity and do not replay follow-up prose on unrelated renders.
 - App retains the timing effects and React presentation state setters but consumes resolved Narrative payloads instead of calculating interpolation, notation compilation, conversation speaker, or authored source identity itself.
 - Expanded `InteractionExecution` with narration/dialogue performances and removed App's second interpretation of the selected outcome via `interactionOutcomeProse`.
+- Moved the remaining Interaction prose-section provenance decision into Narrative runtime: displayed text gets narration/dialogue source identity there, while effect events retain their outcome-level source.
+- Re-audited App and accepted direct `executeInteraction(...)` as the composition-root dispatch boundary; App no longer contains Narrative-specific interpretation around that call.
 - Every source and App-wiring slice above passed full `npm run verify` before/while committing.
 
 ## Resume here
@@ -333,7 +337,7 @@ At the start of every session:
 2. compare branch to current `main` and record any incoming divergence before editing;
 3. inspect the latest branch verification run; keep the head green before moving into a higher-risk slice;
 4. for Narrative Interaction or Media specialized editors, migrate only by moving real draft/save lifecycle into the shared structured controller; do not wrap the existing stateful editor wholesale as `custom` merely to remove an exception id;
-5. re-audit remaining direct Narrative imports in App and decide whether the current `executeInteraction` composition-root call is an acceptable boundary before another runtime extraction;
+5. treat the Narrative runtime/App boundary as settled unless new feature-specific interpretation is added to App; `executeInteraction(...)` itself is an intentional composition-root dispatch call;
 6. do not begin the broader Session lifecycle move until the remaining lower-risk Author/runtime slices are stable; Session crosses saved-game compatibility and autosave semantics;
 7. after every App/runtime extraction, re-audit direct feature imports/branches and require a fresh full verification checkpoint;
 8. before merge: run final full verification, perform the manual Author acceptance route, and **delete `.github/workflows/verify-author-ux-refactor.yml`**;
