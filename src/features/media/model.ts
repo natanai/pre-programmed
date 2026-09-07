@@ -19,6 +19,8 @@ export type SynthSound = {
   label: string;
   tempo: number;
   loop: boolean;
+  /** Total sequence plays when looping. Older recipes may omit this and default to two plays. */
+  loopCount?: number;
   voices: SynthVoice[];
 };
 
