@@ -4,12 +4,21 @@
   min-width: 0;
 }
 
+.author-reference-control-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: .45em;
+  min-width: 0;
+}
+
 .author-reference-trigger {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: .65em;
   width: 100%;
+  min-width: 0;
   min-height: 2.75em;
   padding: .45em .6em !important;
   border: 1px solid var(--dos-line) !important;
@@ -21,6 +30,17 @@
 
 .author-reference-trigger[aria-expanded="true"] {
   border-color: var(--dos-text) !important;
+}
+
+.author-reference-direct-edit {
+  min-width: 4.5em;
+  min-height: 2.75em;
+  padding: .35em .25em !important;
+  border: 0 !important;
+  background: #000 !important;
+  color: var(--dos-text) !important;
+  font: inherit;
+  white-space: nowrap;
 }
 
 .author-reference-kind {
@@ -123,22 +143,17 @@
   white-space: nowrap;
 }
 
-.author-reference-empty {
-  color: var(--dos-muted);
-  line-height: 1.35;
-}
-
-.author-reference-return-help {
-  color: var(--dos-muted);
-  line-height: 1.35;
-}
-
 @media (max-width: 640px), (pointer: coarse) {
   .author-reference-trigger,
+  .author-reference-direct-edit,
   .author-reference-options > button,
   .author-reference-actions button {
     min-height: 3em;
     font-size: max(16px, 1em);
+  }
+
+  .author-reference-direct-edit {
+    min-width: 4.75em;
   }
 
   .author-reference-chooser {
