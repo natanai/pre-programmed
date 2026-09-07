@@ -163,7 +163,6 @@
   text-decoration: none;
 }
 
-.author-task-return,
 .author-workspace-stack-heading {
   color: var(--dos-muted);
   font-size: .78em;

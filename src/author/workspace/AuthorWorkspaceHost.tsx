@@ -265,8 +265,6 @@ export function AuthorWorkspaceHost({
   const resources = buildAuthorResourceTools(shared.snapshot, pushTaskWithReturnFocus);
   const taskLabels = tasks.map((task) => ({ id: task.id, label: describeAuthorTask(task.route, shared.snapshot), dirty: task.dirty }));
   const activeTask = tasks.find((task) => task.id === activeTaskId) ?? tasks.at(-1);
-  const parentLabel = taskLabels.at(-2)?.label;
-  const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
   const taskShared = { ...shared, pushTask: pushTaskWithReturnFocus, runtime: authorRuntime };
   const returnToCleanAncestor = (targetIndex: number) => {
     const leaving = tasks.slice(targetIndex + 1);
@@ -328,13 +326,11 @@ export function AuthorWorkspaceHost({
 
           <div className="author-workspace-navigation-context">
             {taskTrail("Author task trail")}
-            {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
           </div>
 
           {stackOpen ? <div className="author-workspace-stack-panel">
             <span className="author-workspace-stack-heading">TASK STACK · {taskLabels.length} {taskLabels.length === 1 ? "TASK" : "TASKS"}</span>
             {taskTrail("Full Author task stack")}
-            {returnsToParent ? <span className="author-task-return">SAVE RETURNS TO {parentLabel}</span> : null}
           </div> : null}
         </nav>
         <div className="author-workspace-content">
