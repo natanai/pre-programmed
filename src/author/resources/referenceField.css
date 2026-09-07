@@ -32,7 +32,12 @@
   border-color: var(--dos-text) !important;
 }
 
-.author-reference-direct-edit {
+.author-reference-field.is-returned .author-reference-trigger {
+  border-color: var(--dos-bright) !important;
+  box-shadow: inset .2em 0 0 var(--dos-bright);
+}
+
+.author-reference-direct-action {
   min-width: 4.5em;
   min-height: 2.75em;
   padding: .35em .25em !important;
@@ -145,14 +150,14 @@
 
 @media (max-width: 640px), (pointer: coarse) {
   .author-reference-trigger,
-  .author-reference-direct-edit,
+  .author-reference-direct-action,
   .author-reference-options > button,
   .author-reference-actions button {
     min-height: 3em;
     font-size: max(16px, 1em);
   }
 
-  .author-reference-direct-edit {
+  .author-reference-direct-action {
     min-width: 4.75em;
   }
 
