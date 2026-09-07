@@ -235,7 +235,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
           </div>
         </section>
       </div> : <div className="workspace-view workspace-history-view">
-        <div className="workspace-native-list revisions" aria-label="Project revision history">
+        <div className="workspace-native-list" aria-label="Project revision history">
           {filteredRevisions.map((revision) => <article className="workspace-native-row workspace-revision-row" key={revision.revision}>
             <span className="workspace-row-copy">
               <strong>R{revision.revision} · {revision.description}</strong>

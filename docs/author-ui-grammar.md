@@ -67,6 +67,20 @@ AFTER → [STAY HERE] [CREATE NEW] [LINK EXISTING]
 
 rather than a stack of headings that mirrors object nesting.
 
+## Scroll ownership
+
+A full Author task has one primary vertical scroll owner. Ordinary task content and primary durable lists should use the height made available by the shared Author shell rather than imposing arbitrary fixed `max-height` values and creating nested vertical scrollbars.
+
+The shared task body owns ordinary vertical overflow. When a specialized workspace intentionally allocates its remaining height to one primary list, use layout such as `minmax(0, 1fr)` and let that list be the explicit remaining-space scroll owner. Do not approximate available height with magic `em` caps.
+
+A nested scroll region is appropriate only when the nested region is semantically subordinate or spatially independent, for example:
+
+- an autocomplete, picker, popover, or short search-result chooser that must stay local to its triggering control;
+- a specialized two-dimensional work surface such as a drawing canvas that needs independent pan/zoom overflow; or
+- a deliberate live-player surface whose bounded presentation is part of play rather than a full Author task.
+
+Those nested regions should still size against their actual container or usable visual viewport where practical. A primary resource list, history list, settings page, or other main Author content area should not introduce a second scrollbar merely because an older prototype used a fixed height.
+
 ## Labels describe information, not DOM depth
 
 Fields keep accessible names. A visible label may be accessibility-only when the surrounding choice and placeholder already make the purpose unambiguous.

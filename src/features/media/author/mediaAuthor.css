@@ -213,19 +213,81 @@
   accent-color: currentColor;
 }
 
-.asset-explorer {
+/* Primary Media lists belong to the task body. They intentionally do not own a nested vertical scrollbar. */
+.media-asset-explorer {
+  display: grid;
+  align-content: start;
+  gap: .55em;
+  min-width: 0;
   container-type: inline-size;
 }
-.asset-explorer .asset-list > button {
-  align-items: start;
-  justify-content: stretch;
-}
-.asset-explorer .asset-list > button > * {
+.media-asset-explorer > input { margin: 0; }
+.media-asset-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .75em;
   min-width: 0;
 }
-.asset-explorer .asset-list code {
+.media-asset-filters > button {
+  min-height: 2.35em;
+  padding: .25em 0 !important;
+  color: var(--dos-muted) !important;
+}
+.media-asset-filters > button[aria-pressed="true"] {
+  color: var(--dos-bright) !important;
+  text-decoration: underline;
+  text-underline-offset: .2em;
+}
+.media-asset-actions { margin-top: 0; }
+.media-asset-warning {
+  display: grid;
+  gap: .3em;
+  margin: 0;
+  padding: .5em;
+  border: 1px solid var(--dos-line);
+  color: var(--dos-warn);
+}
+.media-asset-warning button {
+  display: grid;
+  gap: .15em;
+  padding: .35em !important;
+  border: 0;
+  background: #050505;
+  color: inherit;
+  text-align: left;
+  font: inherit;
   overflow-wrap: anywhere;
 }
+.media-asset-warning button small { color: var(--dos-muted); }
+.media-asset-list {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  margin: 0 0 .1em;
+  background: #333;
+}
+.media-asset-list > button {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: start;
+  justify-content: stretch;
+  gap: 1em;
+  width: 100%;
+  min-width: 0;
+  padding: .45em !important;
+  border: 0;
+  background: #050505;
+  color: #ccc;
+  font: inherit;
+  text-align: left;
+}
+.media-asset-list > button > * { min-width: 0; }
+.media-asset-list > button span:nth-child(2) { color: #888; }
+.media-asset-list code {
+  color: var(--dos-text);
+  overflow-wrap: anywhere;
+}
+.media-asset-empty { color: var(--dos-muted); }
 
 .vector-controls label { display: grid; gap: .3em; }
 .media-asset-preview { display: grid; place-items: center; min-height: 8em; padding: .5em; border: 1px dotted var(--dos-line); }
@@ -335,7 +397,7 @@
 }
 
 @container (max-width: 42rem) {
-  .asset-explorer .asset-list > button { grid-template-columns: minmax(0, 1fr); gap: .25em; }
+  .media-asset-list > button { grid-template-columns: minmax(0, 1fr); gap: .25em; }
 }
 
 @container vector-editor (max-width: 42rem) {
@@ -361,7 +423,8 @@
   .voice-tabs button,
   .synth-length-actions > button,
   .synth-volume-controls > button,
-  .synth-step-detail-actions > button { min-height: 2.9em; }
+  .synth-step-detail-actions > button,
+  .media-asset-filters > button { min-height: 2.9em; }
   .synth-step-direct { min-height: 5.15em; padding: .5em; }
   .synth-envelope-rail input[type="range"],
   .synth-volume-range { min-height: 3.25em; }
