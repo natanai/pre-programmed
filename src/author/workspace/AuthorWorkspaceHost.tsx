@@ -152,7 +152,6 @@ export function AuthorWorkspaceHost({
   onConfirmLeave,
   onCancelLeave,
   requestClose,
-  requestReturnTo,
   ...shared
 }: SharedTaskProps & {
   tasks: AuthorTaskEntry[];
@@ -161,7 +160,6 @@ export function AuthorWorkspaceHost({
   onConfirmLeave: () => void;
   onCancelLeave: () => void;
   requestClose: () => void;
-  requestReturnTo: (taskId: string) => void;
 }) {
   const [stackOpen, setStackOpen] = useState(false);
   const [previewing, setPreviewing] = useState(false);
@@ -248,13 +246,24 @@ export function AuthorWorkspaceHost({
   const parentLabel = taskLabels.at(-2)?.label;
   const returnsToParent = activeTask?.route.type === "feature" && Boolean(activeTask.route.data?.resourceTask) && parentLabel;
   const taskShared = { ...shared, runtime: authorRuntime };
+  const returnToCleanAncestor = (targetIndex: number) => {
+    const leaving = tasks.slice(targetIndex + 1);
+    if (!leaving.length || leaving.some((task) => task.dirty)) return;
+    leaving.forEach(() => shared.requestBack());
+  };
   const taskTrail = (label: string) => <ol className="author-task-trail" aria-label={label}>
     {taskLabels.map((task, index) => {
       const active = index === taskLabels.length - 1;
+      const blockedByDirtyDescendant = !active && tasks.slice(index + 1).some((candidate) => candidate.dirty);
       return <li key={task.id} aria-current={active ? "page" : undefined}>
         {active
           ? <span>{task.label}</span>
-          : <button type="button" onClick={() => requestReturnTo(task.id)}>{task.label}</button>}
+          : <button
+              type="button"
+              disabled={blockedByDirtyDescendant}
+              title={blockedByDirtyDescendant ? "Save or leave nested changes before returning here." : `Return to ${task.label}`}
+              onClick={() => returnToCleanAncestor(index)}
+            >{task.label}</button>}
       </li>;
     })}
   </ol>;
@@ -326,15 +335,13 @@ export function AuthorWorkspaceHost({
             <p id="author-leave-copy">
               {leaveConfirmation.action === "close"
                 ? `${leaveConfirmation.dirtyCount} Author ${leaveConfirmation.dirtyCount === 1 ? "task has" : "tasks have"} unsaved work. Save all work before returning to play, or discard it.`
-                : leaveConfirmation.action === "return"
-                  ? `${leaveConfirmation.dirtyCount} nested Author ${leaveConfirmation.dirtyCount === 1 ? "task contains" : "tasks contain"} unsaved changes.`
-                  : "This Author task contains unsaved changes."}
+                : "This Author task contains unsaved changes."}
             </p>
             {saveAllError ? <p className="author-leave-error" role="alert">{saveAllError}</p> : null}
             <div className="author-leave-actions">
               <button type="button" autoFocus disabled={savingAll} onClick={() => { setSaveAllError(""); onCancelLeave(); }}>[KEEP EDITING]</button>
               {leaveConfirmation.action === "close" ? <button type="button" disabled={savingAll} onClick={() => void saveAllAndReturn()}>[{savingAll ? "SAVING ALL..." : "SAVE ALL & RETURN"}]</button> : null}
-              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : leaveConfirmation.action === "return" ? "DISCARD & RETURN" : "DISCARD CHANGES"}]</button>
+              <button type="button" disabled={savingAll} onClick={onConfirmLeave}>[{leaveConfirmation.action === "close" ? "DISCARD ALL & RETURN" : "DISCARD CHANGES"}]</button>
             </div>
           </section>
         </div> : null}
