@@ -1,0 +1,40 @@
+name: Finalize Author refactor docs
+
+on:
+  push:
+    branches:
+      - author-ux-integration-refactor
+    paths:
+      - .github/scripts/finalize-author-refactor-docs.py
+      - .github/workflows/finalize-author-refactor-docs.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: author-ux-integration-refactor
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/finalize-author-refactor-docs.py
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
+      - name: Commit verified cleanup and remove temporary tooling
+        run: |
+          rm .github/scripts/finalize-author-refactor-docs.py
+          rm .github/workflows/finalize-author-refactor-docs.yml
+          git add -A
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --cached --quiet; then
+            echo "No finalization changes to commit"
+            exit 1
+          fi
+          git commit -m "docs: finalize author refactor architecture"
+          git push origin HEAD:author-ux-integration-refactor
