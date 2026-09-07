@@ -10,6 +10,7 @@ import type { AuthorResourceProvider } from "../resources/types";
 import { ProjectSettingsWorkspace } from "../settings/ProjectSettingsWorkspace";
 import type { AuthorTaskRoute } from "../tasks/types";
 import { StructuredAuthorWorkspace } from "../ui/workspaceDefinition";
+import { WorkspacePanel } from "../workspace/WorkspacePanel";
 import { projectAuthorFeature } from "./projectManifest";
 import type {
   AuthorFeatureManifest,
@@ -27,7 +28,6 @@ export const LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS = new Set([
   "narrative",
   "media",
   "commands",
-  "project",
 ]);
 
 /** Single composition registry for Author-capable feature modules. */
@@ -101,6 +101,19 @@ export function renderAuthorFeatureWorkspace(
   route: AuthorTaskRoute,
   context: AuthorWorkspaceContext,
 ) {
+  if (route.type === "workspace") {
+    return <WorkspacePanel
+      token={context.authorToken}
+      snapshot={context.snapshot}
+      playState={context.playState}
+      initialView={route.view === "history" ? "history" : "navigation"}
+      onSnapshot={context.onSnapshot}
+      onRestore={context.onRestore}
+      onEditNode={(nodeId) => context.resources.edit("node", nodeId)}
+      onClose={context.leaveCurrentTask}
+    />;
+  }
+
   if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") {
     const sections = AUTHOR_FEATURES.flatMap((feature) => feature.projectSettings ?? []);
     return <ProjectSettingsWorkspace route={route} sections={sections} context={context} />;
