@@ -50,6 +50,45 @@ export const commandInteractionsWorkspace = defineAuthorWorkspace({
   }),
 });
 
+export const commandGrammarWorkspace = defineAuthorWorkspace({
+  id: "commands-grammar",
+  matches: (route) => route.type === "feature" && route.feature === "commands" && (route.workspace === "grammar" || route.workspace === "capabilities"),
+  createDraft: () => ({}),
+  buildSpec: ({ context }) => {
+    const commands = context.snapshot.settings.commands.commands;
+    return {
+      id: "commands-grammar",
+      title: "Player commands",
+      context: `${commands.length} command${commands.length === 1 ? "" : "s"}`,
+      blocks: [
+        ...(commands.length ? [{
+          type: "action-row" as const,
+          id: "commands-grammar-list",
+          actions: commands.map((command) => ({
+            id: `commands-grammar:${command.id}`,
+            label: `${command.label || "UNTITLED"} · ${command.enabled ? "ON" : "OFF"} · ${command.patterns[0] || "NO INPUT"}`,
+            onAction: () => context.pushTask({
+              type: "feature",
+              feature: "commands",
+              workspace: "command",
+              data: { commandId: command.id },
+            }),
+          })),
+        }] : [{
+          type: "status" as const,
+          id: "commands-grammar-empty",
+          text: "NO PLAYER COMMANDS.",
+        }]),
+      ],
+      actions: [{
+        id: "commands-grammar-create",
+        label: "+ PLAYER COMMAND",
+        onAction: () => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } }),
+      }],
+    };
+  },
+});
+
 export const commandReferenceSourcesWorkspace = defineAuthorWorkspace({
   id: "commands-reference-sources",
   matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "references",
@@ -136,6 +175,7 @@ export const commandTargetBehaviorsWorkspace = defineAuthorWorkspace({
 
 export const COMMAND_STRUCTURED_WORKSPACES = [
   commandInteractionsWorkspace,
+  commandGrammarWorkspace,
   commandReferenceSourcesWorkspace,
   commandTargetBehaviorsWorkspace,
 ] as const;
