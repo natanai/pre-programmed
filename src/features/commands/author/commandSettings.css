@@ -1,5 +1,4 @@
 .command-settings-overview,
-.command-reference-editor,
 .command-editor-body,
 .command-editor-form {
   width: 100%;
@@ -81,12 +80,10 @@
   touch-action: pan-y;
 }
 
-.command-reference-editor h3,
 .command-slot-editor h3 {
   margin: .4rem 0 0;
 }
 
-.command-reference-candidates,
 .command-slot-editor,
 .command-target-action,
 .command-target-setup {
@@ -94,7 +91,6 @@
   gap: .7rem;
 }
 
-.command-reference-candidate,
 .command-slot-row {
   display: grid;
   gap: .45rem;
@@ -102,32 +98,6 @@
   border: 1px solid var(--dos-line);
 }
 
-.command-reference-candidate-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: .75rem;
-  min-width: 0;
-}
-
-.command-reference-candidate-heading > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-  color: var(--dos-bright);
-}
-
-.command-reference-candidate-heading > button {
-  flex: none;
-  min-height: 2.5em;
-  padding: .3em .45em;
-  border: 0;
-  background: transparent;
-  color: var(--dos-bright);
-  font: inherit;
-  cursor: pointer;
-}
-
-.command-reference-candidate > label,
 .command-slot-editor > label,
 .command-editor-body > label,
 .command-editor-form > label,
@@ -136,7 +106,6 @@
   gap: .35rem;
 }
 
-.command-reference-candidates textarea,
 .command-editor-body textarea,
 .command-editor-body input,
 .command-editor-body select,
@@ -250,11 +219,6 @@
 
   .command-settings-overview > button > span:last-child {
     margin-left: auto;
-  }
-
-  .command-reference-candidate-heading > button {
-    min-height: 2.75em;
-    min-width: 4.75em;
   }
 
   .command-slot-editor > label:not(:last-child) {

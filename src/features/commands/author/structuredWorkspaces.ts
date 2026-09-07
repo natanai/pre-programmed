@@ -1,8 +1,13 @@
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import { SEMANTIC_REFERENCE_PROVIDERS } from "../../../engine/references/catalog";
+import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "../../../engine/references/catalog";
+import { persistCommands, referenceSetting, updateReferenceSetting } from "./settingsPersistence";
 
 function targetProviders() {
   return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
+}
+
+function aliasLines(value: string) {
+  return value.split("\n").map((line) => line.trim()).filter(Boolean);
 }
 
 export const commandInteractionsWorkspace = defineAuthorWorkspace({
@@ -128,6 +133,115 @@ export const commandReferenceSourcesWorkspace = defineAuthorWorkspace({
   },
 });
 
+export const commandReferenceSourceWorkspace = defineAuthorWorkspace({
+  id: "commands-reference-source",
+  matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "reference-source",
+  createDraft: (route, context) => referenceSetting(
+    context.snapshot.settings.commands,
+    route.data?.sourceKind ?? "",
+  ),
+  buildSpec: ({ context, draft, setDraft }) => {
+    const provider = semanticReferenceProvider(draft.sourceKind);
+    if (!provider) {
+      return {
+        id: "commands-reference-source",
+        title: "Target names",
+        blocks: [{
+          type: "status",
+          id: "commands-reference-source-unknown",
+          tone: "warning",
+          text: "UNKNOWN TARGET TYPE.",
+        }],
+      };
+    }
+
+    const candidates = provider.candidates({ snapshot: context.snapshot, state: context.playState });
+    return {
+      id: "commands-reference-source",
+      title: `Target names · ${provider.label}`,
+      context: `${candidates.length} target${candidates.length === 1 ? "" : "s"}`,
+      blocks: [
+        {
+          type: "toggle",
+          id: "commands-reference-source-enabled",
+          label: "Recognize this target type",
+          checked: draft.enabled,
+          onChange: (enabled) => setDraft((current) => ({ ...current, enabled })),
+        },
+        {
+          type: "toggle",
+          id: "commands-reference-source-defaults",
+          label: "Use owner-supplied names, keys, tags, and contextual aliases",
+          checked: draft.includeDefaults,
+          onChange: (includeDefaults) => setDraft((current) => ({ ...current, includeDefaults })),
+        },
+        {
+          type: "section",
+          id: "commands-reference-source-aliases",
+          label: "Custom aliases",
+          importance: "primary",
+          children: candidates.length
+            ? candidates.map((candidate) => ({
+              type: "section" as const,
+              id: `commands-reference-source-candidate:${candidate.id}`,
+              label: candidate.label,
+              summary: candidate.detail,
+              children: [
+                ...(candidate.author && context.resources.canEdit(candidate.author.resourceKind, candidate.author.resourceId)
+                  ? [{
+                    type: "action-row" as const,
+                    id: `commands-reference-source-edit:${candidate.id}`,
+                    actions: [{
+                      id: `commands-reference-source-edit-action:${candidate.id}`,
+                      label: "EDIT SOURCE",
+                      onAction: () => context.resources.edit(candidate.author!.resourceKind, candidate.author!.resourceId),
+                    }],
+                  }]
+                  : []),
+                {
+                  type: "field" as const,
+                  id: `commands-reference-source-aliases:${candidate.id}`,
+                  label: "Additional names",
+                  control: "textarea" as const,
+                  rows: 2,
+                  value: (draft.aliases[candidate.id] ?? []).join("\n"),
+                  placeholder: "one additional player name per line",
+                  onChange: (value: string) => setDraft((current) => ({
+                    ...current,
+                    aliases: {
+                      ...current.aliases,
+                      [candidate.id]: aliasLines(value),
+                    },
+                  })),
+                },
+              ],
+            }))
+            : [{
+              type: "status" as const,
+              id: "commands-reference-source-empty",
+              text: `NO ${provider.label.toUpperCase()} TARGETS EXIST YET.`,
+            }],
+        },
+      ],
+      actions: provider.authorResourceKind && context.resources.canCreate(provider.authorResourceKind)
+        ? [{
+          id: "commands-reference-source-create",
+          label: `+ CREATE ${provider.label.toUpperCase()}`,
+          onAction: () => context.resources.create(provider.authorResourceKind!, () => undefined),
+        }]
+        : [],
+    };
+  },
+  canSave: ({ draft }) => Boolean(semanticReferenceProvider(draft.sourceKind)),
+  save: async ({ context, draft }) => {
+    const provider = semanticReferenceProvider(draft.sourceKind);
+    if (!provider) return { accepted: false };
+    const commands = updateReferenceSetting(context.snapshot.settings.commands, draft);
+    const result = await persistCommands(context, commands, `Changed ${provider.label} player vocabulary`);
+    return { accepted: result.status === "saved" || result.status === "queued" };
+  },
+});
+
 export const commandTargetBehaviorsWorkspace = defineAuthorWorkspace({
   id: "commands-target-behaviors",
   matches: (route) => route.type === "feature" && route.feature === "commands" && route.workspace === "target-behaviors",
@@ -177,5 +291,6 @@ export const COMMAND_STRUCTURED_WORKSPACES = [
   commandInteractionsWorkspace,
   commandGrammarWorkspace,
   commandReferenceSourcesWorkspace,
+  commandReferenceSourceWorkspace,
   commandTargetBehaviorsWorkspace,
 ] as const;

@@ -7,7 +7,8 @@ import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/ca
 import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { SEMANTIC_REFERENCE_PROVIDERS, semanticReferenceProvider } from "../../../engine/references/catalog";
 import { AuthoredTextEditor } from "../../narrative/author/AuthoredTextEditor";
-import type { CommandAction, CommandDefinition, CommandProjectSettings, CommandSlotDefinition, ReferenceSourceSetting } from "../model";
+import type { CommandAction, CommandDefinition, CommandProjectSettings, CommandSlotDefinition } from "../model";
+import { persistCommands, referenceSetting, updateReferenceSetting } from "./settingsPersistence";
 import "./commandSettings.css";
 
 const OPERATION_ID_PATTERN = /^[a-z][a-z0-9_.-]{0,63}$/;
@@ -33,28 +34,6 @@ function patternHasSlot(pattern: string, slotName: string) {
 
 function targetProviders() {
   return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
-}
-
-function referenceSetting(commands: CommandProjectSettings, sourceKind: string): ReferenceSourceSetting {
-  return structuredClone(commands.referenceSources.find((setting) => setting.sourceKind === sourceKind) ?? {
-    sourceKind,
-    enabled: false,
-    includeDefaults: true,
-    aliases: {},
-  });
-}
-
-function updateReferenceSetting(commands: CommandProjectSettings, setting: ReferenceSourceSetting): CommandProjectSettings {
-  return {
-    ...commands,
-    referenceSources: commands.referenceSources.some((candidate) => candidate.sourceKind === setting.sourceKind)
-      ? commands.referenceSources.map((candidate) => candidate.sourceKind === setting.sourceKind ? setting : candidate)
-      : [...commands.referenceSources, setting],
-  };
-}
-
-async function persistCommands(context: AuthorWorkspaceContext, commands: CommandProjectSettings, description: string) {
-  return context.persist([{ type: "project.settings", settings: { ...context.snapshot.settings, commands } }], description);
 }
 
 function actionChoice(action: CommandAction) {
@@ -85,72 +64,6 @@ function CommandsOverview({ context }: { context: AuthorWorkspaceContext }) {
       <span><strong>TARGET NAMES + ALIASES</strong><small>Player vocabulary supplied by semantic target owners.</small></span><span>{enabledSources}/{targetProviders().length} ›</span>
     </button>
   </div>;
-}
-
-function ReferenceSourceEditor({ context, sourceKind }: { context: AuthorWorkspaceContext; sourceKind: string }) {
-  const provider = semanticReferenceProvider(sourceKind);
-  const initial = referenceSetting(context.snapshot.settings.commands, sourceKind);
-  const [draft, setDraft] = useState(initial);
-  const [baseline, setBaseline] = useState(JSON.stringify(initial));
-  const [saving, setSaving] = useState(false);
-  const dirty = JSON.stringify(draft) !== baseline;
-  const candidates = provider?.candidates({ snapshot: context.snapshot, state: context.playState }) ?? [];
-
-  useEffect(() => {
-    context.setWorkspaceDirty(dirty);
-    return () => context.setWorkspaceDirty(false);
-  }, [context.setWorkspaceDirty, dirty]);
-
-  const save = async (): Promise<boolean> => {
-    if (!provider) return false;
-    setSaving(true);
-    try {
-      const result = await persistCommands(context, updateReferenceSetting(context.snapshot.settings.commands, draft), `Changed ${provider.label} player vocabulary`);
-      if (result.status === "saved" || result.status === "queued") {
-        setBaseline(JSON.stringify(draft));
-        context.setWorkspaceDirty(false);
-        return true;
-      }
-      return false;
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  useEffect(() => {
-    context.registerWorkspaceSave(provider ? save : null);
-    return () => context.registerWorkspaceSave(null);
-  });
-
-  if (!provider) return <section className="author-panel author-panel-frame"><header>REFERENCE SOURCE</header><p>UNKNOWN SOURCE.</p></section>;
-
-  return <section className="author-panel author-panel-frame command-settings-workspace">
-    <header><span>TARGET NAMES · {provider.label.toUpperCase()}</span></header>
-    <div className="author-panel-body command-reference-editor">
-      <label className="check-label"><input type="checkbox" checked={draft.enabled} onChange={(event) => setDraft({ ...draft, enabled: event.target.checked })} /> recognize this target type</label>
-      <label className="check-label"><input type="checkbox" checked={draft.includeDefaults} onChange={(event) => setDraft({ ...draft, includeDefaults: event.target.checked })} /> use owner-supplied names / keys / tags / contextual aliases</label>
-      <h3>CUSTOM ALIASES</h3>
-      <div className="command-reference-candidates">
-        {candidates.map((candidate) => <div className="command-reference-candidate" key={candidate.id}>
-          <div className="command-reference-candidate-heading">
-            <span>{candidate.label}{candidate.detail ? <small>{candidate.detail}</small> : null}</span>
-            {candidate.author && context.resources.canEdit(candidate.author.resourceKind, candidate.author.resourceId)
-              ? <button type="button" onClick={() => context.resources.edit(candidate.author!.resourceKind, candidate.author!.resourceId)}>[EDIT]</button>
-              : null}
-          </div>
-          <label>ADDITIONAL NAMES
-            <textarea rows={2} value={(draft.aliases[candidate.id] ?? []).join("\n")} placeholder="one additional player name per line" onChange={(event) => setDraft({ ...draft, aliases: { ...draft.aliases, [candidate.id]: patternLines(event.target.value) } })} />
-          </label>
-        </div>)}
-      </div>
-    </div>
-    <div className="author-actions author-panel-footer">
-      {provider.authorResourceKind && context.resources.canCreate(provider.authorResourceKind)
-        ? <button type="button" onClick={() => context.resources.create(provider.authorResourceKind!, () => undefined)}>[+ CREATE {provider.label.toUpperCase()}]</button>
-        : null}
-      <button type="button" disabled={!dirty || saving} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE"}]</button>
-    </div>
-  </section>;
 }
 
 function CommandEditor({ context, commandId, initialOperation = "", resourceTask }: { context: AuthorWorkspaceContext; commandId: string; initialOperation?: string; resourceTask?: string }) {
@@ -439,7 +352,6 @@ export const COMMAND_PROJECT_SETTINGS_SECTION: readonly AuthorProjectSettingsSec
 
 export function renderCommandSettingsWorkspace(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   if (route.type !== "feature" || route.feature !== "commands") return null;
-  if (route.workspace === "reference-source") return <ReferenceSourceEditor context={context} sourceKind={route.data?.sourceKind ?? ""} />;
   if (route.workspace === "command") return <CommandEditor context={context} commandId={route.data?.commandId ?? "new"} initialOperation={route.data?.operation ?? ""} resourceTask={route.data?.resourceTask} />;
   return null;
 }
