@@ -61,24 +61,33 @@ function patternsFor(draft: CommandWorkspaceDraft) {
   return patternLines(draft.patternsText);
 }
 
+function commandWithPatterns(command: CommandDefinition, patternsText: string): CommandDefinition {
+  const patterns = patternLines(patternsText);
+  const names = placeholderNames(patterns);
+  const slots = names.map((name) => command.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
+  const action = command.action.type === "target-operation"
+    && command.action.targetSlot
+    && !names.includes(command.action.targetSlot)
+    ? { ...command.action, targetSlot: "" }
+    : command.action;
+  return { ...command, patterns, slots, action };
+}
+
 function slotsFor(draft: CommandWorkspaceDraft): CommandSlotDefinition[] {
-  const names = placeholderNames(patternsFor(draft));
-  return names.map((name) => draft.command.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
+  return commandWithPatterns(draft.command, draft.patternsText).slots;
 }
 
 function commandForSave(draft: CommandWorkspaceDraft): CommandDefinition {
   return {
-    ...draft.command,
+    ...commandWithPatterns(draft.command, draft.patternsText),
     label: draft.command.label.trim(),
-    patterns: patternsFor(draft),
-    slots: slotsFor(draft),
   };
 }
 
 function commandProblem(draft: CommandWorkspaceDraft) {
-  const command = draft.command;
-  const patterns = patternsFor(draft);
-  const slots = slotsFor(draft);
+  const command = commandWithPatterns(draft.command, draft.patternsText);
+  const patterns = command.patterns;
+  const slots = command.slots;
   const targetAction = command.action.type === "target-operation" ? command.action : null;
   const targetSlot = targetAction ? slots.find((slot) => slot.name === targetAction.targetSlot) : undefined;
   const targetPatternsWithoutSlot = targetAction?.targetSlot
@@ -97,11 +106,7 @@ function commandProblem(draft: CommandWorkspaceDraft) {
 }
 
 function commandSignature(draft: CommandWorkspaceDraft) {
-  return JSON.stringify({
-    ...draft.command,
-    patterns: patternsFor(draft),
-    slots: slotsFor(draft),
-  });
+  return JSON.stringify(commandWithPatterns(draft.command, draft.patternsText));
 }
 
 function persistableCommands(
@@ -127,8 +132,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
   createDraft: (route, context) => {
     const commandId = route.data?.commandId ?? "new";
     const initialOperation = route.data?.operation ?? "";
-    const existing = context.snapshot.settings.commands.commands.find((command) => command.id === commandId);
-    const command: CommandDefinition = structuredClone(existing ?? {
+    const source: CommandDefinition = structuredClone(context.snapshot.settings.commands.commands.find((command) => command.id === commandId) ?? {
       id: crypto.randomUUID(),
       label: "",
       enabled: true,
@@ -138,9 +142,11 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
         ? { type: "target-operation", operation: initialOperation, targetSlot: "" }
         : defaultResponseAction(),
     });
+    const patternsText = source.patterns.join("\n");
+    const command = commandWithPatterns(source, patternsText);
     return {
       command,
-      patternsText: command.patterns.join("\n"),
+      patternsText,
       saving: false,
       saveError: "",
       confirmDelete: false,
@@ -198,7 +204,6 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
   buildSpec: ({ context, draft, setDraft, saveCurrentDraft }) => {
     const command = draft.command;
     const patterns = patternsFor(draft);
-    const slotNames = placeholderNames(patterns);
     const slots = slotsFor(draft);
     const persisted = context.snapshot.settings.commands.commands.find((candidate) => candidate.id === command.id);
     const providers = targetProviders();
@@ -250,6 +255,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
         patternsText: nextPatterns.join("\n"),
         command: {
           ...current.command,
+          patterns: nextPatterns,
           label: current.command.label.trim() ? current.command.label : operation,
           slots: nextSlots,
           action: action ? { ...action, targetSlot: slotName } : current.command.action,
@@ -355,7 +361,11 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
         value: draft.patternsText,
         placeholder: "one accepted player input per line",
         help: "Use {name} anywhere a player-supplied value belongs; each brace name creates a separate value.",
-        onChange: (patternsText) => change((current) => ({ ...current, patternsText })),
+        onChange: (patternsText) => change((current) => ({
+          ...current,
+          patternsText,
+          command: commandWithPatterns(current.command, patternsText),
+        })),
       },
     ];
 
@@ -401,10 +411,11 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
           }
         }
         return {
-          type: "section" as const,
+          type: "disclosure" as const,
           id: `command-slot:${slot.name}`,
           label: `{${slot.name}}`,
           summary: "What can this player-supplied value name?",
+          defaultOpen: slots.length === 1,
           children,
         };
       });
