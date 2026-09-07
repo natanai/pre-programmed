@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import type { AuthorWorkspaceContext } from "../src/author/features/types";
+import { afterEach, describe, expect, it } from "vitest";
 import {
   authorCommitPending,
   authorNavigationAllowed,
@@ -8,7 +7,7 @@ import {
   withAuthorCommit,
 } from "../src/author/tasks/commitState";
 import {
-  completeAuthorResourceDeletion,
+  authorResourceDeletionResult,
   reconciledAuthorReferenceValue,
 } from "../src/author/resources/completion";
 
@@ -52,52 +51,49 @@ describe("Author durable commit lock", () => {
 });
 
 describe("Author resource deletion completion", () => {
-  it("does not change a parent reference for failed, conflicted, cancelled, or unrelated child completion", () => {
-    expect(reconciledAuthorReferenceValue("state-group", "stats", undefined)).toBeUndefined();
-    expect(reconciledAuthorReferenceValue("state-group", "stats", { type: "saved" })).toBeUndefined();
-    expect(reconciledAuthorReferenceValue("state-group", "stats", {
+  const stats = { id: "group-id", value: "stats", label: "Stats" };
+  const other = { id: "other-id", value: "other", label: "Other" };
+
+  it("derives deletion only from an accepted before/after resource contract", () => {
+    expect(authorResourceDeletionResult("state-group", [stats, other], [other])).toEqual({
       type: "resource-deleted",
       kind: "state-group",
-      id: "other",
+      id: "group-id",
+      value: "stats",
+    });
+  });
+
+  it("does not report deletion when the resource survives a reset or when the change is ambiguous", () => {
+    expect(authorResourceDeletionResult("media-image", [stats], [stats])).toBeUndefined();
+    expect(authorResourceDeletionResult("state-group", [stats, other], [])).toBeUndefined();
+  });
+
+  it("does not change a parent reference for failed, conflicted, cancelled, or unrelated child completion", () => {
+    expect(reconciledAuthorReferenceValue("state-group", "stats", "group-id", undefined)).toBeUndefined();
+    expect(reconciledAuthorReferenceValue("state-group", "stats", "group-id", { type: "saved" })).toBeUndefined();
+    expect(reconciledAuthorReferenceValue("state-group", "stats", "group-id", {
+      type: "resource-deleted",
+      kind: "state-group",
+      id: "other-id",
+      value: "other",
     })).toBeUndefined();
   });
 
   it("clears a parent reference only for the matching confirmed deletion result", () => {
-    expect(reconciledAuthorReferenceValue("state-group", "stats", {
+    expect(reconciledAuthorReferenceValue("state-group", "stats", "group-id", {
       type: "resource-deleted",
       kind: "state-group",
-      id: "stats",
+      id: "group-id",
+      value: "stats",
     })).toBe("");
   });
 
-  it("returns a typed deletion result from a nested owner and preserves root completion behavior", () => {
-    const nestedComplete = vi.fn();
-    const nestedLeave = vi.fn();
-    const nestedContext = {
-      hasParentTask: true,
-      completeTask: nestedComplete,
-      leaveCurrentTask: nestedLeave,
-    } as unknown as AuthorWorkspaceContext;
-
-    completeAuthorResourceDeletion(nestedContext, "state-group", "stats");
-    expect(nestedComplete).toHaveBeenCalledTimes(1);
-    expect(nestedComplete).toHaveBeenCalledWith({
+  it("also matches by stable id when a resource value differs from its id", () => {
+    expect(reconciledAuthorReferenceValue("variable", "health", "variable-uuid", {
       type: "resource-deleted",
-      kind: "state-group",
-      id: "stats",
-    });
-    expect(nestedLeave).not.toHaveBeenCalled();
-
-    const rootComplete = vi.fn();
-    const rootLeave = vi.fn();
-    const rootContext = {
-      hasParentTask: false,
-      completeTask: rootComplete,
-      leaveCurrentTask: rootLeave,
-    } as unknown as AuthorWorkspaceContext;
-
-    completeAuthorResourceDeletion(rootContext, "state-group", "stats");
-    expect(rootComplete).not.toHaveBeenCalled();
-    expect(rootLeave).toHaveBeenCalledTimes(1);
+      kind: "variable",
+      id: "variable-uuid",
+      value: "old-health-key",
+    })).toBe("");
   });
 });
