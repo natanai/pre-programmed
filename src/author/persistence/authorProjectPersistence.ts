@@ -34,6 +34,7 @@ const browserLocalPersistence: AuthorLocalPersistence = {
 };
 
 let synchronizationTail: Promise<void> = Promise.resolve();
+const latestOwnSynchronization = new WeakMap<ProjectPersistence, ProjectSnapshot>();
 
 async function serializeSynchronization<T>(work: () => Promise<T>) {
   const predecessor = synchronizationTail;
@@ -50,6 +51,28 @@ async function serializeSynchronization<T>(work: () => Promise<T>) {
 function ordered(entries: QueuedMutation[]) {
   return [...entries].sort((left, right) =>
     left.queuedAt.localeCompare(right.queuedAt) || left.id.localeCompare(right.id));
+}
+
+function sameProjectContent(left: ProjectSnapshot, right: ProjectSnapshot) {
+  const { revision: _leftRevision, ...leftContent } = left;
+  const { revision: _rightRevision, ...rightContent } = right;
+  return JSON.stringify(leftContent) === JSON.stringify(rightContent);
+}
+
+function rememberOwnSynchronization(persistence: ProjectPersistence, snapshot: ProjectSnapshot) {
+  latestOwnSynchronization.set(persistence, structuredClone(snapshot));
+}
+
+function rebaseAfterOwnSynchronization(
+  persistence: ProjectPersistence,
+  mutation: ProjectMutation,
+  previousSnapshot: ProjectSnapshot,
+) {
+  const synchronized = latestOwnSynchronization.get(persistence);
+  if (!synchronized
+    || synchronized.revision <= mutation.expectedRevision
+    || !sameProjectContent(synchronized, previousSnapshot)) return mutation;
+  return { ...mutation, expectedRevision: synchronized.revision };
 }
 
 async function flushEntries({
@@ -73,7 +96,10 @@ async function flushEntries({
     flushedCount += 1;
   }
 
-  if (flushedCount) await local.saveCachedSnapshot(snapshot);
+  if (flushedCount) {
+    await local.saveCachedSnapshot(snapshot);
+    rememberOwnSynchronization(persistence, snapshot);
+  }
   return { snapshot, flushedCount };
 }
 
@@ -96,7 +122,7 @@ export async function persistAuthorMutation({
     await local.saveCachedSnapshot(optimisticSnapshot);
     const earlier = ordered(await local.listQueuedMutations());
     const queued = await local.queueMutation(mutation);
-    let mutationToWrite = mutation;
+    let mutationToWrite = rebaseAfterOwnSynchronization(persistence, mutation, previousSnapshot);
 
     try {
       // A later edit may depend on an earlier locally saved resource. Flush
@@ -109,6 +135,7 @@ export async function persistAuthorMutation({
       }
 
       const snapshot = await persistence.writeProject(mutationToWrite, { authorization });
+      rememberOwnSynchronization(persistence, snapshot);
       if (queued.stored) await local.removeQueuedMutation(queued.id);
       await local.saveCachedSnapshot(snapshot);
       return { status: "saved", snapshot };
@@ -152,9 +179,9 @@ export async function flushQueuedAuthorMutations({
   authorization: string;
   local?: AuthorLocalPersistence;
 }) {
-  return serializeSynchronization(async () => {
+  return withAuthorCommit(() => serializeSynchronization(async () => {
     const entries = await local.listQueuedMutations();
     if (!entries.length) return { snapshot: null, flushedCount: 0 };
     return flushEntries({ entries, persistence, authorization, local });
-  });
+  }));
 }
