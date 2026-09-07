@@ -9,13 +9,15 @@ import type { SynthSound, SynthStep } from "../model";
 import {
   addSynthVoice,
   duplicateSynthVoice,
+  MAX_SYNTH_LOOP_COUNT,
   MAX_SYNTH_STEPS,
   MAX_SYNTH_VOICES,
+  MIN_SYNTH_LOOP_COUNT,
   removeSynthVoice,
   resizeSynthSequence,
   synthSequenceLength,
 } from "../synth";
-import { playSynthSound, playSynthStep } from "../ui/synthPlayback";
+import { playSynthSound, playSynthStep, type SynthPlaybackSession } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 
 const PITCHES = [2, 3, 4, 5, 6, 7].flatMap((octave) =>
@@ -88,14 +90,66 @@ export function SynthSequencer({ sound, onChange }: {
   onChange: (sound: SynthSound) => void;
 }) {
   const [voiceIndex, setVoiceIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const playbackRef = useRef<SynthPlaybackSession | null>(null);
+  const playbackRequest = useRef(0);
+  const loopCount = sound.loopCount ?? MIN_SYNTH_LOOP_COUNT;
 
   useEffect(() => {
     setVoiceIndex((current) => Math.max(0, Math.min(current, sound.voices.length - 1)));
   }, [sound.voices.length]);
 
+  useEffect(() => () => {
+    playbackRequest.current += 1;
+    playbackRef.current?.stop();
+    playbackRef.current = null;
+  }, []);
+
   const setTempo = (tempo: number) => {
     if (!Number.isFinite(tempo)) return;
     onChange({ ...sound, tempo: clamp(Math.round(tempo), 30, 300) });
+  };
+
+  const setLoopCount = (count: number) => {
+    if (!Number.isFinite(count)) return;
+    onChange({
+      ...sound,
+      loop: true,
+      loopCount: clamp(Math.round(count), MIN_SYNTH_LOOP_COUNT, MAX_SYNTH_LOOP_COUNT),
+    });
+  };
+
+  const toggleLoop = () => {
+    onChange({
+      ...sound,
+      loop: !sound.loop,
+      ...(sound.loop ? {} : { loopCount }),
+    });
+  };
+
+  const stopPlayback = () => {
+    playbackRequest.current += 1;
+    playbackRef.current?.stop();
+    playbackRef.current = null;
+    setIsPlaying(false);
+  };
+
+  const play = async () => {
+    stopPlayback();
+    const request = playbackRequest.current;
+    const session = await playSynthSound(sound);
+    if (!session) return;
+    if (request !== playbackRequest.current) {
+      session.stop();
+      return;
+    }
+    playbackRef.current = session;
+    setIsPlaying(true);
+    await session.finished;
+    if (request === playbackRequest.current && playbackRef.current === session) {
+      playbackRef.current = null;
+      setIsPlaying(false);
+    }
   };
 
   const addVoice = () => {
@@ -118,7 +172,12 @@ export function SynthSequencer({ sound, onChange }: {
 
   return <div className="synth-sequencer">
     <div className="synth-transport" role="group" aria-label="Synth transport and tempo">
-      <button type="button" className="synth-play" onClick={() => { void playSynthSound(sound); }}>[▶ PLAY]</button>
+      <button
+        type="button"
+        className="synth-play"
+        aria-label={isPlaying ? "Stop Synth preview" : "Play Synth preview"}
+        onClick={isPlaying ? stopPlayback : () => { void play(); }}
+      >{isPlaying ? "[■ STOP]" : "[▶ PLAY]"}</button>
       <div className="synth-tempo-control">
         <span>BPM</span>
         <button type="button" onClick={() => setTempo(sound.tempo - 5)} aria-label="Decrease tempo by 5 BPM">[-5]</button>
@@ -138,8 +197,33 @@ export function SynthSequencer({ sound, onChange }: {
         type="button"
         className="synth-loop-toggle"
         aria-pressed={sound.loop}
-        onClick={() => onChange({ ...sound, loop: !sound.loop })}
+        onClick={toggleLoop}
       >[{sound.loop ? "LOOP ✓" : "LOOP ○"}]</button>
+      {sound.loop ? <div className="synth-tempo-control" role="group" aria-label="Total Synth loop plays">
+        <span>PLAYS</span>
+        <button
+          type="button"
+          disabled={loopCount <= MIN_SYNTH_LOOP_COUNT}
+          onClick={() => setLoopCount(loopCount - 1)}
+          aria-label="Decrease total loop plays"
+        >[-]</button>
+        <input
+          type="number"
+          min={MIN_SYNTH_LOOP_COUNT}
+          max={MAX_SYNTH_LOOP_COUNT}
+          step={1}
+          inputMode="numeric"
+          aria-label={`Total Synth plays while looping, from ${MIN_SYNTH_LOOP_COUNT} to ${MAX_SYNTH_LOOP_COUNT}`}
+          value={loopCount}
+          onChange={(event) => setLoopCount(Number(event.target.value))}
+        />
+        <button
+          type="button"
+          disabled={loopCount >= MAX_SYNTH_LOOP_COUNT}
+          onClick={() => setLoopCount(loopCount + 1)}
+          aria-label="Increase total loop plays"
+        >[+]</button>
+      </div> : null}
     </div>
 
     <div className="synth-voice-strip">
