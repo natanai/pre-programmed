@@ -17,5 +17,55 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - name: Assert refactor architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if grep -RInE 'renderWorkspace|LEGACY_AUTHOR_WORKSPACE_FEATURE_IDS' src; then
+            echo 'Legacy feature workspace rendering remains in src/'
+            exit 1
+          fi
+
+          if grep -RIn 'resource-picker' src; then
+            echo 'Obsolete custom resource-picker role remains in src/'
+            exit 1
+          fi
+
+          if grep -RIn 'SAVE RETURNS TO' src; then
+            echo 'Redundant nested-return helper copy remains in src/'
+            exit 1
+          fi
+
+          for removed in \
+            src/features/media/author/MediaAssetEditor.tsx \
+            src/features/media/author/SynthPanel.tsx \
+            src/features/media/author/VectorAssetEditor.tsx; do
+            if [[ -e "$removed" ]]; then
+              echo "Superseded editor still exists: $removed"
+              exit 1
+            fi
+          done
+
+          if [[ -d .github/scripts ]]; then
+            echo 'Temporary migration scripts remain under .github/scripts/'
+            find .github/scripts -maxdepth 1 -type f -print
+            exit 1
+          fi
+
+          unexpected_workflows="$(find .github/workflows -maxdepth 1 -type f \
+            ! -name 'build-portable-windows.yml' \
+            ! -name 'deploy.yml' \
+            ! -name 'verify-author-ux-refactor.yml' -print)"
+          if [[ -n "$unexpected_workflows" ]]; then
+            echo 'Unexpected temporary workflow(s) remain:'
+            printf '%s\n' "$unexpected_workflows"
+            exit 1
+          fi
+
+          if find public/assets -type f \( -name 'hillstyle.svg.asset.json' -o -name 'hillstyleg.svg.asset.json' \) | grep -q .; then
+            echo 'Unrelated asset metadata leaked into the refactor branch'
+            exit 1
+          fi
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
