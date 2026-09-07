@@ -21,6 +21,21 @@ function primeRunningContext(context: AudioContext) {
   primedContext = context;
 }
 
+/**
+ * Media owns one reusable procedural AudioContext. Synth playback, step audition,
+ * and other procedural consumers share it so tactile authoring never creates a
+ * burst of independent browser audio contexts.
+ */
+export async function runningProceduralAudioContext() {
+  const context = audioContext();
+  if (context.state === "suspended") {
+    try { await context.resume(); } catch { return null; }
+  }
+  if (context.state !== "running") return null;
+  primeRunningContext(context);
+  return context;
+}
+
 export function scheduleSynthVoice(
   context: AudioContext,
   destination: AudioNode,
@@ -66,12 +81,7 @@ export function proceduralAudioReady() {
  * audible boot sound of its own.
  */
 export async function unlockProceduralAudio() {
-  const context = audioContext();
-  if (context.state === "suspended") {
-    try { await context.resume(); } catch { /* browser gesture policy: a later gesture may resume it */ }
-  }
-  if (context.state === "running") primeRunningContext(context);
-  return context.state === "running";
+  return Boolean(await runningProceduralAudioContext());
 }
 
 export type ProceduralToneSession = {
@@ -88,11 +98,8 @@ export async function createProceduralToneSession(
   sound: SynthSound | undefined,
   volume: number,
 ): Promise<ProceduralToneSession | null> {
-  const context = audioContext();
-  if (context.state === "suspended") {
-    try { await context.resume(); } catch { return null; }
-  }
-  if (context.state !== "running") return null;
+  const context = await runningProceduralAudioContext();
+  if (!context) return null;
 
   const selected = sound?.voices.find((voice) => voice.waveform !== "noise") ?? sound?.voices[0];
   const waveform = selected && selected.waveform !== "noise" ? selected.waveform : "triangle";
