@@ -11,6 +11,7 @@ import {
   ProjectWriteRejectedError,
   type ProjectPersistence,
 } from "../../platform/persistence/projectPersistence";
+import { withAuthorCommit } from "../tasks/commitState";
 
 export type AuthorPersistResult =
   | { status: "saved"; snapshot: ProjectSnapshot }
@@ -91,7 +92,7 @@ export async function persistAuthorMutation({
   previousSnapshot: ProjectSnapshot;
   local?: AuthorLocalPersistence;
 }): Promise<AuthorPersistResult> {
-  return serializeSynchronization(async () => {
+  return withAuthorCommit(() => serializeSynchronization(async () => {
     await local.saveCachedSnapshot(optimisticSnapshot);
     const earlier = ordered(await local.listQueuedMutations());
     const queued = await local.queueMutation(mutation);
@@ -139,7 +140,7 @@ export async function persistAuthorMutation({
       await local.saveCachedSnapshot(previousSnapshot);
       return { status: "failed", snapshot: previousSnapshot };
     }
-  });
+  }));
 }
 
 export async function flushQueuedAuthorMutations({
