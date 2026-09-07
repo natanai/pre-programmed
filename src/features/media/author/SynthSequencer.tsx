@@ -30,6 +30,13 @@ const WAVEFORMS = [
   { value: "noise", label: "NOISE" },
 ] as const;
 
+const VOICE_SHAPES = [
+  { id: "tight", label: "TIGHT", attack: 0, release: 0.05 },
+  { id: "punch", label: "PUNCH", attack: 0, release: 0.12 },
+  { id: "soft", label: "SOFT", attack: 0.06, release: 0.18 },
+  { id: "ring", label: "RING", attack: 0.01, release: 0.4 },
+] as const;
+
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -228,14 +235,28 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
           >[{waveform.label}]</button>)}
         </div>
       </div>
-      <div className="synth-envelope-settings">
-        <label>ATTACK
-          <input type="number" step="0.01" min={0} max={1} value={voice.attack} onChange={(event) => updateVoice({ ...voice, attack: Number(event.target.value) })} />
-        </label>
-        <label>RELEASE
-          <input type="number" step="0.01" min={0} max={1} value={voice.release} onChange={(event) => updateVoice({ ...voice, release: Number(event.target.value) })} />
-        </label>
+      <div className="synth-shape-editor">
+        <span>SHAPE</span>
+        <div className="synth-shape-options">
+          {VOICE_SHAPES.map((shape) => <button
+            type="button"
+            key={shape.id}
+            aria-pressed={voice.attack === shape.attack && voice.release === shape.release}
+            onClick={() => updateVoice({ ...voice, attack: shape.attack, release: shape.release }, true)}
+          >[{shape.label}]</button>)}
+        </div>
       </div>
+      <details className="synth-envelope-disclosure">
+        <summary>EXACT ENVELOPE · A {voice.attack.toFixed(2)} · R {voice.release.toFixed(2)}</summary>
+        <div className="synth-envelope-settings">
+          <label>ATTACK
+            <input type="number" step="0.01" min={0} max={1} value={voice.attack} onChange={(event) => updateVoice({ ...voice, attack: Number(event.target.value) })} />
+          </label>
+          <label>RELEASE
+            <input type="number" step="0.01" min={0} max={1} value={voice.release} onChange={(event) => updateVoice({ ...voice, release: Number(event.target.value) })} />
+          </label>
+        </div>
+      </details>
     </div>
 
     <div className="synth-step-pads" role="list" aria-label={`Voice ${voiceIndex + 1} sequence steps`}>
