@@ -11,7 +11,7 @@ import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 import { MEDIA_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
-  if (snapshot.synthSounds.some((sound) => sound.id === resource.id)) return {
+  if (snapshot.synthSounds.some((synth) => synth.id === resource.id)) return {
     type: "feature",
     feature: "media",
     workspace: "synth-sound",
@@ -40,14 +40,14 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "media") return null;
     if (route.workspace === "assets") return "Media assets";
-    if (route.workspace === "synth") return "Synth sounds";
+    if (route.workspace === "synth") return "Synths";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
       const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
       return asset?.name || (route.workspace === "vector-asset" ? "New vector" : "Repository Media");
     }
     if (route.workspace === "synth-sound") {
-      const sound = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
-      return sound?.label || sound?.key || "New synth sound";
+      const synth = snapshot.synthSounds.find((candidate) => candidate.id === route.data?.soundId);
+      return synth?.label || synth?.key || "New Synth";
     }
     return null;
   },
@@ -60,13 +60,13 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   resources: [
     {
       kind: "synth-sound",
-      label: "Synth Sound",
-      pluralLabel: "Synth Sounds",
-      list: (snapshot) => snapshot.synthSounds.map((sound) => ({
-        id: sound.id,
-        value: sound.id,
-        label: sound.label || sound.key || "Untitled sound",
-        detail: `${sound.key} · D1 synth`,
+      label: "Synth",
+      pluralLabel: "Synths",
+      list: (snapshot) => snapshot.synthSounds.map((synth) => ({
+        id: synth.id,
+        value: synth.id,
+        label: synth.label || synth.key || "Untitled Synth",
+        detail: `${synth.key} · D1 procedural`,
       })),
       createRoute: () => ({
         type: "feature",
@@ -83,15 +83,15 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     },
     {
       kind: "media-sound",
-      label: "Sound",
-      pluralLabel: "Sounds",
+      label: "Audio Source",
+      pluralLabel: "Audio Sources",
       searchable: false,
       list: (snapshot) => [
-        ...snapshot.synthSounds.map((sound) => ({
-          id: sound.id,
-          value: sound.id,
-          label: sound.label || sound.key || "Untitled sound",
-          detail: "synth · D1",
+        ...snapshot.synthSounds.map((synth) => ({
+          id: synth.id,
+          value: synth.id,
+          label: synth.label || synth.key || "Untitled Synth",
+          detail: "Synth · D1 procedural",
         })),
         ...configuredAssetStore.list(snapshot, "audio")
           .filter((asset) => asset.available && asset.contentSource === "repository")
@@ -99,7 +99,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
             id: asset.id,
             value: asset.id,
             label: asset.name,
-            detail: `${asset.mimeType} · repository file`,
+            detail: `${asset.mimeType} · repository audio`,
           })),
       ],
       createRoute: () => ({
@@ -153,6 +153,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   ],
   terminalShortcuts: [
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
-    { commands: ["/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
+    { commands: ["/synth", "synth", "/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
   ],
 };
