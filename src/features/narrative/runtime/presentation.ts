@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { authoredSource, type AuthoredSourceIdentity } from "../../../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import { interactionOutcomeProse } from "../interactionProse";
@@ -159,4 +160,17 @@ export function resolveNarrativeContinuation(
     interactionDialogue,
     secondaryProsePending: nodeDialoguePending || interactionDialoguePending,
   };
+}
+
+/** Keep continuation payload identities stable until their authored inputs change. */
+export function useNarrativeContinuation(
+  snapshot: ProjectSnapshot | null,
+  state: PlayState | null,
+  activeNodeId: string | undefined,
+  activeSource: AuthoredSourceIdentity | undefined,
+) {
+  return useMemo(
+    () => resolveNarrativeContinuation(snapshot, state, activeNodeId, activeSource),
+    [activeNodeId, activeSource, snapshot, state],
+  );
 }
