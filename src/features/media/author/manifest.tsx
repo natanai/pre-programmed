@@ -12,6 +12,7 @@ import { mediaAuthorSearch, mediaAuthorTools } from "./tools";
 import { mediaSearchDocuments } from "./search";
 import { audioEffectAdapter, artEffectAdapter, synthEffectAdapter } from "./ruleAdapters";
 import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
+import { MEDIA_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function routeDimension(value: string | undefined) {
   if (!value) return undefined;
@@ -55,6 +56,7 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   searchDocuments: [mediaSearchDocuments],
   tools: mediaAuthorTools,
   search: mediaAuthorSearch,
+  workspaces: [...MEDIA_STRUCTURED_WORKSPACES],
   resources: [
     {
       kind: "synth-sound",
