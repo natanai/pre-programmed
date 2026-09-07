@@ -140,15 +140,24 @@
 .media-asset-preview audio { width: min(100%, 30em); }
 .media-asset-preview img { max-width: 100%; max-height: 18em; object-fit: contain; }
 
+/* The semantic Author renderer owns the task; Media only makes its specialized drawing control responsive to the space it is given. */
+.author-ui-custom:has(> .vector-editor-layout) {
+  container: vector-editor / inline-size;
+  min-width: 0;
+}
+
 .vector-editor-layout {
   display: grid;
   grid-template-columns: minmax(14em, 1fr) minmax(13em, .65fr);
   gap: 1em;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   align-items: start;
 }
 .vector-drawing-column,
 .vector-controls,
-.vector-canvas-settings { display: grid; align-content: start; gap: .75em; min-width: 0; }
+.vector-canvas-settings { display: grid; align-content: start; gap: .75em; min-width: 0; max-width: 100%; }
 .vector-zoom-row,
 .vector-preset-row,
 .vector-size-row {
@@ -156,14 +165,24 @@
   flex-wrap: wrap;
   align-items: end;
   gap: .45em .75em;
+  min-width: 0;
 }
 .vector-zoom-row { color: var(--dos-muted); }
 .vector-zoom-row button,
 .vector-preset-row button,
 .vector-size-row button { min-height: 2.5em; }
+.vector-preset-row button,
+.vector-size-row button {
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
+}
 .vector-zoom-row button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; text-underline-offset: .2em; }
 .vector-canvas-viewport {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   max-height: min(70dvh, 48rem);
   overflow: auto;
   overscroll-behavior: contain;
@@ -191,26 +210,38 @@
   padding: .6em;
   border: 1px dotted var(--dos-line);
 }
-.vector-canvas-settings > span { color: var(--dos-bright); }
+.vector-canvas-settings > span { color: var(--dos-bright); line-height: 1.2; overflow-wrap: anywhere; }
 .vector-size-row > label {
   flex: 1 1 6em;
   min-width: 5em;
   margin: 0;
 }
-.vector-size-row input[type="number"] { min-width: 5em; }
+.vector-size-row input[type="number"] { width: 100%; min-width: 0; max-width: 100%; }
 .vector-controls input[type="color"] { min-height: 3em; padding: .15em; }
+.vector-controls > small { line-height: 1.2; overflow-wrap: anywhere; }
 .vector-tool-row { margin-top: 0; }
 .vector-tool-row button[aria-pressed="true"] { color: var(--dos-bright); text-decoration: underline; text-underline-offset: .2em; }
 
 @container (max-width: 42rem) {
   .asset-explorer .asset-list > button { grid-template-columns: minmax(0, 1fr); gap: .25em; }
-  .vector-editor-layout { grid-template-columns: 1fr; }
+}
+
+@container vector-editor (max-width: 42rem) {
+  .vector-editor-layout { grid-template-columns: minmax(0, 1fr); }
   .vector-canvas-viewport { max-height: min(56dvh, 36rem); }
+  .vector-preset-row > button { flex: 1 1 12em; }
+  .vector-size-row > button { flex: 1 1 100%; }
 }
 
 @media (max-width: 700px) {
   .synth-structure-controls { align-items: stretch; }
   .synth-step-pads { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  /* Viewport fallback keeps the vector maker usable even if container queries are unavailable. */
+  .vector-editor-layout { grid-template-columns: minmax(0, 1fr); }
+  .vector-canvas-viewport { max-height: min(56dvh, 36rem); }
+  .vector-preset-row > button { flex: 1 1 12em; }
+  .vector-size-row > button { flex: 1 1 100%; }
 }
 
 @media (pointer: coarse) {
