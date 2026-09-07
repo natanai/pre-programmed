@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  flushQueuedAuthorMutations,
   persistAuthorMutation,
   type AuthorLocalPersistence,
 } from "../src/author/persistence/authorProjectPersistence";
 import { applyOperations } from "../src/engine/project/mutations";
 import type { MutationOperation, ProjectMutation, ProjectSnapshot } from "../src/engine/project/model";
 import {
+  ProjectRevisionConflictError,
   ProjectWriteRejectedError,
   type ProjectPersistence,
 } from "../src/platform/persistence/projectPersistence";
@@ -14,6 +16,16 @@ import { node, project } from "./fixtures";
 
 function mutation(description: string, expectedRevision: number, operations: MutationOperation[]): ProjectMutation {
   return { description, expectedRevision, operations };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
 }
 
 function localStore(initial: QueuedMutation[] = []) {
@@ -82,6 +94,67 @@ describe("Author project persistence", () => {
       ["Saved dependent edit", 11],
     ]);
     expect(remote.snapshot().nodes.map((entry) => entry.id)).toEqual(["a", "b", "c"]);
+    expect(queue.queued()).toEqual([]);
+  });
+
+  it("rebases a foreground save after this browser's background queue flush advances the revision", async () => {
+    const hosted = project({ revision: 10 });
+    const earlier = mutation("Created dependency", 10, [{ type: "node.upsert", node: node("b", 2) }]);
+    const localSnapshot = applyOperations(hosted, earlier.operations);
+    const current = mutation("Saved dependent edit", 10, [{ type: "node.upsert", node: node("c", 3) }]);
+    const optimistic = applyOperations(localSnapshot, current.operations);
+    const queue = localStore([{ id: "earlier", mutation: earlier, queuedAt: new Date(1_000).toISOString() }]);
+    const firstWriteStarted = deferred<void>();
+    const releaseFirstWrite = deferred<void>();
+    let server = structuredClone(hosted);
+    const writes: ProjectMutation[] = [];
+    let writeCount = 0;
+    const persistence: ProjectPersistence = {
+      async readProject() {
+        return structuredClone(server);
+      },
+      async writeProject(value) {
+        writes.push(structuredClone(value));
+        if (writeCount === 0) {
+          writeCount += 1;
+          firstWriteStarted.resolve();
+          await releaseFirstWrite.promise;
+        }
+        if (value.expectedRevision !== server.revision) {
+          throw new ProjectRevisionConflictError(`Expected ${value.expectedRevision}; current ${server.revision}`);
+        }
+        server = { ...applyOperations(server, value.operations), revision: server.revision + 1 };
+        return structuredClone(server);
+      },
+    };
+
+    const background = flushQueuedAuthorMutations({
+      persistence,
+      authorization: "token",
+      local: queue.local,
+    });
+    await firstWriteStarted.promise;
+
+    const foreground = persistAuthorMutation({
+      persistence,
+      authorization: "token",
+      mutation: current,
+      optimisticSnapshot: optimistic,
+      previousSnapshot: localSnapshot,
+      local: queue.local,
+    });
+
+    releaseFirstWrite.resolve();
+    const [flushResult, saveResult] = await Promise.all([background, foreground]);
+
+    expect(flushResult.flushedCount).toBe(1);
+    expect(saveResult.status).toBe("saved");
+    expect(writes.map((entry) => [entry.description, entry.expectedRevision])).toEqual([
+      ["Created dependency", 10],
+      ["Saved dependent edit", 11],
+    ]);
+    expect(server.nodes.map((entry) => entry.id)).toEqual(["a", "b", "c"]);
+    expect(server.revision).toBe(12);
     expect(queue.queued()).toEqual([]);
   });
 
