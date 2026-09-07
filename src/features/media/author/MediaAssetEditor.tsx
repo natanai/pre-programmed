@@ -120,8 +120,7 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
   const lifecycleLabel = repositoryAvailable ? "RESET REPOSITORY METADATA" : "DELETE BROKEN DEFINITION";
   const lifecycleDisabled = saving || (!repositoryAvailable && usages.length > 0);
 
-  return <section className="author-panel author-panel-frame media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>{kind === "audio" ? "SOUND" : "IMAGE"} FILE · {draft?.name ?? "REPOSITORY"}</span></header>
+  return <section className="media-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <div className="author-panel-body">
       <p className="field-help">File Media lives in the installation's assets folder: <code>public/assets/</code> in a repository build or <code>assets/</code> beside the portable executable. Author rules store only its stable Media ID. Synths and vector SVGs created inside Author mode use project persistence.</p>
 
@@ -161,7 +160,6 @@ export function MediaAssetEditor({ snapshot, kind, initial, onSave, onCancel, se
     <div className="author-actions author-panel-footer">
       {repositoryAvailable ? <button type="button" disabled={!draft || !dirty || saving || !draft.name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE METADATA"}]</button> : null}
       {repositoryAvailable && initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID RECEIPT]</button> : null}
-      <button type="button" onClick={onCancel}>[CLOSE]</button>
       {initial && hasProjectMetadata ? <button
         type="button"
         className="danger"

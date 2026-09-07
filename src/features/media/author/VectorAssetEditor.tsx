@@ -302,8 +302,7 @@ export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeig
     aspectRatio: `${document.width} / ${document.height}`,
   } as CSSProperties;
 
-  return <section className="author-panel author-panel-frame vector-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>VECTOR ASSET · {name || "NEW"}</span></header>
+  return <section className="vector-asset-editor" onPointerDown={(event) => event.stopPropagation()}>
     <div className="author-panel-body vector-editor-body">
       <p className="field-help">The canvas uses logical drawing cells, not output pixels. Saving serializes the same grid to scalable SVG, so 32×32, 48×64, and custom canvases remain sharp at player zoom.</p>
       <div className="vector-editor-layout">
@@ -365,7 +364,6 @@ export function VectorAssetEditor({ snapshot, initial, initialWidth, initialHeig
     <div className="author-actions author-panel-footer">
       <button type="button" disabled={saving || loading || !dirty || !name.trim()} onClick={() => void save()}>[{saving ? "SAVING..." : "SAVE VECTOR"}]</button>
       {initial ? <button type="button" disabled={saving || dirty} title={dirty ? "Save changes before exporting." : undefined} onClick={() => void exportAsset()}>[EXPORT + ID]</button> : null}
-      <button type="button" onClick={onCancel}>[CANCEL]</button>
       {initial && hasProjectMetadata ? <button
         type="button"
         className="danger"

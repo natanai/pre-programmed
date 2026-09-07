@@ -21,24 +21,6 @@ import { playSynthSound } from "../ui/synthPlayback";
 import "./mediaAuthor.css";
 import { referencesTo } from "../../../author/references/projectReferences";
 
-/** List workspace. Editing a sound is a child Author route rather than hidden local navigation. */
-export function SynthPanel({ snapshot, onOpenSound, onNewSound }: {
-  snapshot: ProjectSnapshot;
-  onOpenSound: (sound: SynthSound) => void;
-  onNewSound: () => void;
-}) {
-  return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>TINY SYNTH</span></header>
-    <div className="author-panel-body synth-panel-body">
-      <div className="definition-list synth-definition-list">
-        {snapshot.synthSounds.map((sound) => <button type="button" key={sound.id} onClick={() => onOpenSound(sound)}><span>{sound.label}</span><span>{sound.voices.length} voice{sound.voices.length === 1 ? "" : "s"} · {sound.tempo} bpm</span></button>)}
-      </div>
-      {!snapshot.synthSounds.length ? <div className="workspace-empty">NO SYNTH SOUNDS YET.</div> : null}
-      <button type="button" className="synth-create" onClick={onNewSound}>[+ SOUND]</button>
-    </div>
-  </section>;
-}
-
 export function SynthEditor({ snapshot, initial, onSave, onCancel, setWorkspaceDirty }: {
   snapshot: ProjectSnapshot;
   initial?: SynthSound;
@@ -95,8 +77,7 @@ export function SynthEditor({ snapshot, initial, onSave, onCancel, setWorkspaceD
     } finally { setSaving(false); }
   };
 
-  return <section className="author-panel author-panel-frame synth-panel" onPointerDown={(event) => event.stopPropagation()}>
-    <header><span>SOUND · {draft.label || "NEW"}</span></header>
+  return <section className="synth-panel" onPointerDown={(event) => event.stopPropagation()}>
     <div className="author-panel-body synth-panel-body">
       <div className="synth-editor focused-synth-editor">
         <section className="synth-section">
