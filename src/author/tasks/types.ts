@@ -43,8 +43,9 @@ export type AuthorTaskEntry = {
 };
 
 export type AuthorLeaveConfirmation = {
-  action: "back" | "close";
+  action: "back" | "return" | "close";
   dirtyCount: number;
+  /** Active task for Back, or ancestor destination for Return. */
   taskId?: string;
 };
 
