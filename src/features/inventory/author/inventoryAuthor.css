@@ -313,9 +313,9 @@
 }
 .body-slot-definition-row strong,
 .body-slot-definition-row small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .body-slot-definition-row strong { color: var(--dos-bright); font-weight: 400; }
 .body-slot-definition-row small { color: var(--dos-muted); }
