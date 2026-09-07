@@ -5,12 +5,27 @@ import { mediaAssetDimensions, type MediaAssetAuthoringMode, type MediaAssetKind
 import { buildProjectReferences, missingProjectReferences } from "../../../author/references/projectReferences";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 
-function dimensionLabel(asset: ReturnType<typeof configuredAssetStore.list>[number]) {
+type AssetFilter = "all" | "images" | "audio" | "vectors";
+type ListedAsset = ReturnType<typeof configuredAssetStore.list>[number];
+
+function dimensionLabel(asset: ListedAsset) {
   const dimensions = mediaAssetDimensions(asset);
   if (!dimensions) return "";
   return dimensions.unit === "px"
     ? ` · ${dimensions.width}×${dimensions.height} px`
     : ` · ${dimensions.width}×${dimensions.height} units`;
+}
+
+function matchesAssetFilter(asset: ListedAsset, filter: AssetFilter) {
+  if (filter === "all") return true;
+  if (filter === "audio") return asset.kind === "audio";
+  if (filter === "vectors") return asset.authoringMode === "vector-grid";
+  return asset.kind === "image" && asset.authoringMode !== "vector-grid";
+}
+
+function assetSearchText(asset: ListedAsset) {
+  const sourceKind = asset.authoringMode === "vector-grid" ? "vector" : asset.kind;
+  return `${asset.name} ${asset.id} ${asset.mimeType} ${sourceKind} ${asset.contentSource}`.toLowerCase();
 }
 
 export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenReference }: {
@@ -20,16 +35,41 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
   onOpenReference: (route: AuthorTaskRoute) => void;
 }) {
   const [query, setQuery] = useState("");
-  const assets = configuredAssetStore.list(snapshot).filter((asset) => asset.name.toLowerCase().includes(query.toLowerCase()));
+  const [filter, setFilter] = useState<AssetFilter>("all");
+  const allAssets = configuredAssetStore.list(snapshot);
+  const normalizedQuery = query.trim().toLowerCase();
+  const assets = allAssets.filter((asset) => matchesAssetFilter(asset, filter)
+    && (!normalizedQuery || assetSearchText(asset).includes(normalizedQuery)));
+  const counts: Record<AssetFilter, number> = {
+    all: allAssets.length,
+    images: allAssets.filter((asset) => matchesAssetFilter(asset, "images")).length,
+    audio: allAssets.filter((asset) => matchesAssetFilter(asset, "audio")).length,
+    vectors: allAssets.filter((asset) => matchesAssetFilter(asset, "vectors")).length,
+  };
   const projectReferences = buildProjectReferences(snapshot);
   const mediaReferences = projectReferences.filter((reference) =>
     reference.resourceKind === "media-audio" || reference.resourceKind === "media-image" || reference.resourceKind === "media-sound");
   const missing = missingProjectReferences(snapshot).filter((reference) =>
     reference.resourceKind === "media-audio" || reference.resourceKind === "media-image" || reference.resourceKind === "media-sound");
 
+  const filters: Array<{ id: AssetFilter; label: string }> = [
+    { id: "all", label: "ALL" },
+    { id: "images", label: "IMAGES" },
+    { id: "audio", label: "AUDIO" },
+    { id: "vectors", label: "VECTORS" },
+  ];
+
   return <div className="asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
     <input aria-label="Find media assets" placeholder="audio or image" value={query} onChange={(event) => setQuery(event.target.value)} />
-    <div className="author-actions">
+    <div className="asset-filters" role="group" aria-label="Filter media assets">
+      {filters.map((option) => <button
+        type="button"
+        key={option.id}
+        aria-pressed={filter === option.id}
+        onClick={() => setFilter(option.id)}
+      >{option.label} {counts[option.id]}</button>)}
+    </div>
+    <div className="author-actions asset-actions">
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
     </div>
     <div className="field-help">GENERATED MEDIA → D1 · FILE MEDIA → public/assets/</div>
@@ -53,6 +93,6 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
         <code>{asset.id}</code>
       </button>;
     })}</div>
-    {!assets.length ? <span>NO ASSETS MATCH.</span> : null}
+    {!assets.length ? <span className="asset-empty">{normalizedQuery ? "NO ASSETS MATCH." : `NO ${filter === "all" ? "MEDIA" : filter.toUpperCase()} ASSETS.`}</span> : null}
   </div>;
 }
