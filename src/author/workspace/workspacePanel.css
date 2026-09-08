@@ -6,9 +6,12 @@
 .workspace-native-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto auto auto;
   gap: .65em;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .workspace-tabs { margin-top: 0; }
@@ -55,10 +58,10 @@
 }
 .workspace-run-navigation-view {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   gap: .65em;
 }
-.workspace-history-view { display: grid; grid-template-rows: minmax(0, 1fr); }
+.workspace-history-view { display: grid; grid-template-rows: auto; }
 
 .workspace-run-tools {
   display: grid;
@@ -94,11 +97,9 @@
 
 .workspace-native-list {
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   border: 1px solid var(--dos-line);
   background: #000;
-  -webkit-overflow-scrolling: touch;
 }
 .workspace-native-row {
   display: grid;
@@ -165,14 +166,9 @@
 @container (max-width: 560px) {
   .workspace-search-row { grid-template-columns: 1fr; gap: .25em; }
   .workspace-search-row > label { font-size: .9em; }
-  .workspace-current-node { grid-template-columns: 1fr; gap: .15em; }
-  .workspace-current-node small,
-  .workspace-current-node strong,
-  .workspace-current-node > span { grid-column: 1; }
-  .workspace-current-node > span { white-space: normal; line-height: 1.2; }
   .workspace-bookmark-create { grid-template-columns: 1fr; }
   .workspace-bookmark-create button { width: 100%; }
-  .workspace-native-row { min-height: 4em; padding: .6em; }
+  .workspace-native-row { grid-template-columns: 1fr; min-height: 4em; padding: .6em; }
   .workspace-row-copy strong,
   .workspace-row-copy small { white-space: normal; }
   .workspace-undo-confirm { grid-template-columns: 1fr 1fr; }
