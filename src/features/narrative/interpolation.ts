@@ -8,6 +8,7 @@ export type InterpolationContext = {
   snapshot: ProjectSnapshot;
   state: PlayState;
   now?: number;
+  authorMode?: boolean;
 };
 
 /** Narrative text is one consumer of the engine-wide semantic reference runtime. */
