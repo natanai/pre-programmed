@@ -14,13 +14,14 @@ type ActiveRadixPresentation = {
   sequenceId: string;
   runKey: string;
   startup: boolean;
+  runtimeSeed?: number;
   source?: AuthoredSourceIdentity;
 };
 
 export type RadixRuntimePresentation = {
   active: boolean;
   startup: boolean;
-  beginStartup(project: ProjectSnapshot): boolean;
+  beginStartup(project: ProjectSnapshot, runtimeSeed?: number, restart?: boolean): boolean;
   suppressStartup(): void;
   showSequence(sequenceId: string, source?: AuthoredSourceIdentity): void;
   surface: ReactNode;
@@ -74,7 +75,8 @@ export function useRadixRuntimePresentation({
     startupCompleteRef.current();
   }, [launchBlockingRef, setActive]);
 
-  const beginStartup = useCallback((project: ProjectSnapshot) => {
+  const beginStartup = useCallback((project: ProjectSnapshot, runtimeSeed?: number, restart = false) => {
+    if (restart) startupAttemptedRef.current = false;
     if (startupAttemptedRef.current) return launchBlockingRef.current;
     startupAttemptedRef.current = true;
     const startup = project.settings.radix.startup;
@@ -88,6 +90,7 @@ export function useRadixRuntimePresentation({
       sequenceId: sequence.id,
       runKey: crypto.randomUUID(),
       startup: true,
+      runtimeSeed,
     });
     return true;
   }, [launchBlockingRef, setActive]);
@@ -125,6 +128,7 @@ export function useRadixRuntimePresentation({
   const surface = activePresentation && sequence ? <RadixSequenceSurface
     sequence={sequence}
     synth={synth}
+    runtimeSeed={activePresentation.runtimeSeed}
     runKey={activePresentation.runKey}
     source={activePresentation.source}
     authorMode={authorMode}
