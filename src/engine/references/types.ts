@@ -40,6 +40,8 @@ export type SemanticReferenceContext = {
   snapshot: ProjectSnapshot;
   state: PlayState;
   now?: number;
+  /** Author presentation keeps canonical authored identity; Play uses resolved run identity. */
+  authorMode?: boolean;
 };
 
 /**
