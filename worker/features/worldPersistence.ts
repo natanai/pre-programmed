@@ -35,12 +35,12 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 43,
+      id: 44,
       name: "world-character-aliases",
       sql: `
         ALTER TABLE entity_definitions ADD COLUMN aliases_json TEXT NOT NULL DEFAULT '[]';
 
-        UPDATE project_meta SET schema_version = 43 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 44 WHERE id = 1;
       `,
     },
   ],
