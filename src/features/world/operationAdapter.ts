@@ -1,5 +1,6 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
+import { resolvedCharacterName } from "./playState";
 
 export const WORLD_ENTITY_OPERATION_TARGET_KIND = "world.entity";
 
@@ -11,12 +12,14 @@ export const WORLD_AUTHOR_OPERATION_DEFINITIONS: readonly AuthorOperationDefinit
 
 export const WORLD_ENTITY_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
   kind: WORLD_ENTITY_OPERATION_TARGET_KIND,
-  resolve(snapshot, _state, target) {
+  resolve(snapshot, state, target) {
     const entity = snapshot.entities.find((candidate) => candidate.id === target.id);
     if (!entity) return null;
     return {
       definitionId: entity.id,
-      label: entity.name || entity.key,
+      label: entity.type === "character"
+        ? resolvedCharacterName(entity, state)
+        : entity.name || entity.key,
       interactable: entity.interactable ?? false,
       operations: entity.operations ?? [],
       hooks: entity.hooks ?? [],
