@@ -1,21 +1,49 @@
-import type { SemanticReferenceCandidate, SemanticReferenceProvider } from "../../engine/references/types";
+import type {
+  SemanticReferenceCandidate,
+  SemanticReferenceContext,
+  SemanticReferenceProvider,
+} from "../../engine/references/types";
 import {
   resolveActiveNodeConversationContext,
   resolveActiveNodeLocationContext,
 } from "../narrative/sceneContext";
-import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
 import type { EntityDefinition } from "./model";
+import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
+import { characterNameForPresentation } from "./playState";
 
-function entityCandidate(entity: EntityDefinition): SemanticReferenceCandidate {
+function uniqueAliases(values: readonly string[]) {
+  const seen = new Set<string>();
+  return values.filter((value) => {
+    const normalized = value.trim().toLocaleLowerCase();
+    if (!normalized || seen.has(normalized)) return false;
+    seen.add(normalized);
+    return true;
+  });
+}
+
+function entityCandidate(
+  entity: EntityDefinition,
+  context: SemanticReferenceContext,
+): SemanticReferenceCandidate {
+  const presentedName = entity.type === "character"
+    ? characterNameForPresentation(entity, context.state, context.authorMode === true)
+    : entity.name;
   return {
     id: entity.id,
     key: entity.key || entity.name || entity.id,
+    // Discovery and Author ownership always stay canonical even when the Play projection differs.
     label: entity.name || entity.key || entity.id,
     detail: entity.type,
-    aliases: [entity.name, entity.key, ...entity.tags].filter(Boolean),
+    aliases: uniqueAliases([
+      entity.name,
+      entity.key,
+      ...(entity.aliases ?? []),
+      presentedName,
+      ...entity.tags,
+    ]),
     defaultProjection: "name",
     projections: {
-      name: entity.name,
+      name: presentedName,
       key: entity.key,
       description: entity.description,
     },
@@ -24,7 +52,19 @@ function entityCandidate(entity: EntityDefinition): SemanticReferenceCandidate {
   };
 }
 
-const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state }) => {
+function playerCharacterTargetCandidate(
+  entity: EntityDefinition,
+  context: SemanticReferenceContext,
+): SemanticReferenceCandidate {
+  const candidate = entityCandidate(entity, { ...context, authorMode: false });
+  const resolvedName = String(candidate.projections.name ?? "");
+  return {
+    ...candidate,
+    aliases: uniqueAliases([resolvedName, ...entity.tags]),
+  };
+}
+
+const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state, authorMode }) => {
   const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
   const active = resolveActiveNodeLocationContext(snapshot, state);
   const entity = active
@@ -52,12 +92,16 @@ const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ sn
   }];
 };
 
-const currentConversationCharacterCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state }) => {
+const currentConversationCharacterCandidates: SemanticReferenceProvider["candidates"] = (context) => {
+  const { snapshot, state } = context;
   const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
   const active = resolveActiveNodeConversationContext(snapshot, state);
   const entity = active
     ? snapshot.entities.find((candidate) => candidate.id === active.characterId && candidate.type === "character")
     : undefined;
+  const presentedName = entity
+    ? characterNameForPresentation(entity, state, context.authorMode === true)
+    : "";
   return [{
     id: "current",
     key: "current-conversation-character",
@@ -68,7 +112,7 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
     aliases: ["conversation character", "current character", "current speaker", "speaker"],
     defaultProjection: "name",
     projections: {
-      name: entity?.name ?? "",
+      name: presentedName,
       key: entity?.key ?? "",
       description: entity?.description ?? "",
     },
@@ -87,8 +131,8 @@ const availableConversationCharacterTargets: SemanticReferenceProvider["candidat
     candidate.id === active.characterId && candidate.type === "character");
   if (!entity) return [];
   return [
-    entityCandidate(entity),
-    ...currentConversationCharacterCandidates(context),
+    playerCharacterTargetCandidate(entity, context),
+    ...currentConversationCharacterCandidates({ ...context, authorMode: false }),
   ];
 };
 
@@ -104,7 +148,7 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     targetable: true,
     candidates: (context) => [
       ...currentLocationCandidates(context),
-      ...context.snapshot.entities.filter((entity) => entity.type === "location").map(entityCandidate),
+      ...context.snapshot.entities.filter((entity) => entity.type === "location").map((entity) => entityCandidate(entity, context)),
     ],
     projectResource: (id, snapshot) => id !== "current" && snapshot.entities.some((entity) => entity.id === id && entity.type === "location")
       ? { resourceKind: "location", resourceId: id }
@@ -123,7 +167,7 @@ export const WORLD_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
     targetCandidates: availableConversationCharacterTargets,
     candidates: (context) => [
       ...currentConversationCharacterCandidates(context),
-      ...context.snapshot.entities.filter((entity) => entity.type === "character").map(entityCandidate),
+      ...context.snapshot.entities.filter((entity) => entity.type === "character").map((entity) => entityCandidate(entity, context)),
     ],
     projectResource: (id, snapshot) => id !== "current" && snapshot.entities.some((entity) => entity.id === id && entity.type === "character")
       ? { resourceKind: "character", resourceId: id }
