@@ -6,9 +6,10 @@ import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { resolveRadixSeed } from "./algorithm";
 
 function startupSequence(snapshot: ProjectSnapshot) {
-  const startup = snapshot.settings.radix.startup;
-  if (!startup.enabled) return undefined;
-  return snapshot.settings.radix.sequences.find((candidate) => candidate.id === startup.sequenceId);
+  const radix = snapshot.settings.radix;
+  const startup = radix?.startup;
+  if (!startup?.enabled) return undefined;
+  return radix.sequences.find((candidate) => candidate.id === startup.sequenceId);
 }
 
 /** Resolve the one initialization seed before any seeded world feature runs. */
