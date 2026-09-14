@@ -14,6 +14,9 @@ export const worldMutationValidator: WorkerMutationValidator = {
     if (entity.type !== undefined && !["character", "location"].includes(String(entity.type))) {
       return "World entity type is invalid.";
     }
+    if (entity.aliases !== undefined && (!Array.isArray(entity.aliases) || entity.aliases.some((alias) => typeof alias !== "string"))) {
+      return "World entity aliases are invalid.";
+    }
     return validateOperationCapabilities(entity) ?? validateHooks(entity);
   },
 };
