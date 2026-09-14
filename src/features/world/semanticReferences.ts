@@ -60,6 +60,8 @@ function playerCharacterTargetCandidate(
   const resolvedName = String(candidate.projections.name ?? "");
   return {
     ...candidate,
+    // Player grammar should expose only this world's Character identity, not canonical/unused names.
+    key: resolvedName,
     aliases: uniqueAliases([resolvedName, ...entity.tags]),
   };
 }
