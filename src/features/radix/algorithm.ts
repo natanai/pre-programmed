@@ -1,3 +1,9 @@
+import {
+  createSeededRandom,
+  hashInitializationText,
+  normalizeInitializationSeed,
+  randomInitializationSeed,
+} from "../../engine/runtime/initializationRandom";
 import type { RadixSequenceDefinition, SortAlgorithm } from "./model";
 
 export type RadixSortEvent =
@@ -7,45 +13,20 @@ export type RadixSortEvent =
   | { type: "pass"; digit: number; accesses: number }
   | { type: "complete"; accesses: number };
 
-function hashText(text: string) {
-  let hash = 2166136261 >>> 0;
-  const bytes = new TextEncoder().encode(text);
-  for (const byte of bytes) {
-    hash ^= byte;
-    hash = Math.imul(hash, 16777619) >>> 0;
-  }
-  return hash || 1;
-}
-
-function randomSeed() {
-  const values = new Uint32Array(1);
-  crypto.getRandomValues(values);
-  return values[0] || 1;
-}
-
 export function resolveRadixSeed(sequence: RadixSequenceDefinition, runtimeSeed?: number) {
-  if (sequence.seedMode === "text") return hashText(sequence.seedValue);
+  if (sequence.seedMode === "text") return hashInitializationText(sequence.seedValue);
   if (sequence.seedMode === "number") {
     const parsed = Number(sequence.seedValue);
-    return Number.isFinite(parsed) ? (Math.trunc(parsed) >>> 0) || 1 : hashText(sequence.seedValue);
+    return Number.isFinite(parsed)
+      ? normalizeInitializationSeed(parsed)
+      : hashInitializationText(sequence.seedValue);
   }
-  return runtimeSeed || randomSeed();
-}
-
-function seededRandom(seed: number) {
-  let state = seed >>> 0 || 1;
-  return () => {
-    state += 0x6D2B79F5;
-    let value = state;
-    value = Math.imul(value ^ value >>> 15, value | 1);
-    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
-    return ((value ^ value >>> 14) >>> 0) / 4294967296;
-  };
+  return runtimeSeed ? normalizeInitializationSeed(runtimeSeed) : randomInitializationSeed();
 }
 
 export function createSeededArray(size: number, seed: number) {
   const values = Array.from({ length: size }, (_, index) => index + 1);
-  const random = seededRandom(seed);
+  const random = createSeededRandom(seed);
   for (let index = values.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(random() * (index + 1));
     [values[index], values[swapIndex]] = [values[swapIndex], values[index]];
