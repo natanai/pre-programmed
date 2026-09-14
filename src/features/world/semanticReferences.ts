@@ -64,7 +64,7 @@ function playerCharacterTargetCandidate(
   };
 }
 
-const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state, authorMode }) => {
+const currentLocationCandidates: SemanticReferenceProvider["candidates"] = ({ snapshot, state }) => {
   const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
   const active = resolveActiveNodeLocationContext(snapshot, state);
   const entity = active
