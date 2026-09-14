@@ -5,10 +5,11 @@ import type { MediaMutationOperation } from "../../features/media/mutations";
 import type { MediaProjectSlice } from "../../features/media/projectSlice";
 import type { NarrativeMutationOperation } from "../../features/narrative/mutations";
 import type { NarrativePlayStateSlice, NarrativeProjectSlice } from "../../features/narrative/projectSlice";
+import type { RadixPlayStateSlice } from "../../features/radix/projectSlice";
 import type { StateMutationOperation } from "../../features/state/mutations";
 import type { StatePlayStateSlice, StateProjectSlice } from "../../features/state/projectSlice";
 import type { WorldMutationOperation } from "../../features/world/mutations";
-import type { WorldProjectSlice } from "../../features/world/projectSlice";
+import type { WorldPlayStateSlice, WorldProjectSlice } from "../../features/world/projectSlice";
 import type { ProjectSettings } from "./settings";
 
 export type CoreProjectSnapshot = {
@@ -39,7 +40,9 @@ export type CorePlayState = {
  */
 export type PlayState =
   & CorePlayState
+  & RadixPlayStateSlice
   & NarrativePlayStateSlice
+  & WorldPlayStateSlice
   & StatePlayStateSlice
   & InventoryPlayStateSlice
   & CommandsPlayStateSlice;
