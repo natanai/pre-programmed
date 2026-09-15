@@ -204,8 +204,23 @@ export const interactionWorkspace = defineAuthorWorkspace<InteractionWorkspaceDr
           speakerId,
           events: previewEventsForEffects(outcome.effects, context.snapshot),
         })}
-        onCreateDestination={(onCreated) => context.resources.create("node", (resource) => onCreated(resource.id))}
-        onEditDestination={(nodeId) => context.resources.edit("node", nodeId)}
+        onCreateDestination={(onCreated) => context.pushTask({
+          type: "feature",
+          feature: "narrative",
+          workspace: "node",
+          data: {
+            resourceTask: "node",
+            inheritContextFromNodeId: interaction.sourceNodeId,
+          },
+        }, (result) => {
+          if (result?.type === "resource" && result.kind === "node") onCreated(result.id);
+        })}
+        onEditDestination={(nodeId) => context.resources.edit(
+          "node",
+          nodeId,
+          undefined,
+          { inheritContextFromNodeId: interaction.sourceNodeId },
+        )}
       />,
     }];
 

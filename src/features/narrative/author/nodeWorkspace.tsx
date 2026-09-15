@@ -118,19 +118,34 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
 
     const traversalIndex = context.playState.traversal.lastIndexOf(draft.node.id);
-    const snapshotWithDraft = nodeExists ? {
+    const inheritContextFromNodeId = data?.inheritContextFromNodeId;
+    const inheritedFromTraversalIndex = inheritContextFromNodeId
+      ? context.playState.traversal.lastIndexOf(inheritContextFromNodeId)
+      : -1;
+    const snapshotWithDraft = {
       ...context.snapshot,
-      nodes: context.snapshot.nodes.map((node) => node.id === draft.node.id ? draft.node : node),
-    } : context.snapshot;
-    const currentTraversalState = traversalIndex >= 0 ? {
+      nodes: nodeExists
+        ? context.snapshot.nodes.map((node) => node.id === draft.node.id ? draft.node : node)
+        : [...context.snapshot.nodes, draft.node],
+    };
+
+    // A destination may be authored before runtime has entered it. Preserve the
+    // parent interaction's real path so Continue previews what traversal will inherit.
+    const contextualTraversal = inheritedFromTraversalIndex >= 0
+      ? [...context.playState.traversal.slice(0, inheritedFromTraversalIndex + 1), draft.node.id]
+      : traversalIndex >= 0
+        ? context.playState.traversal.slice(0, traversalIndex + 1)
+        : null;
+    const currentTraversalState = contextualTraversal ? {
       ...context.playState,
       currentNodeId: draft.node.id,
-      traversal: context.playState.traversal.slice(0, traversalIndex + 1),
+      traversal: contextualTraversal,
     } : null;
-    const inheritedTraversalState = traversalIndex > 0 ? {
+    const inheritedTraversal = contextualTraversal?.slice(0, -1) ?? [];
+    const inheritedTraversalState = inheritedTraversal.length ? {
       ...context.playState,
-      currentNodeId: context.playState.traversal[traversalIndex - 1],
-      traversal: context.playState.traversal.slice(0, traversalIndex),
+      currentNodeId: inheritedTraversal[inheritedTraversal.length - 1],
+      traversal: inheritedTraversal,
     } : null;
     const resolvedContext = currentTraversalState
       ? resolveActiveNodeContext(snapshotWithDraft, currentTraversalState)
@@ -144,6 +159,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const inheritedAnchor = inheritedTraversalState
       ? resolveActiveNodeAnchor(snapshotWithDraft, inheritedTraversalState)
       : null;
+    const pathContextKnown = Boolean(currentTraversalState);
 
     const resolvedLocationId = resolvedContext?.location?.locationId
       ?? (locationMode === "set" ? draft.node.locationId : null);
@@ -153,10 +169,18 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const conversationName = entityName(context, resolvedConversationId, "character");
     const locationLabel = locationMode === "clear"
       ? "NO LOCATION"
-      : locationName || (locationMode === "continue" ? "LOCATION AT RUNTIME" : "LOCATION NEEDED");
+      : locationName
+        ? locationName
+        : locationMode === "continue"
+          ? pathContextKnown ? "NO LOCATION ON THIS PATH" : "LOCATION AT RUNTIME"
+          : "LOCATION NEEDED";
     const conversationLabel = conversationMode === "clear"
       ? "NO CONVERSATION"
-      : conversationName ? `WITH ${conversationName}` : (conversationMode === "continue" ? "NO CONVERSATION ON THIS PATH" : "CHARACTER NEEDED");
+      : conversationName
+        ? `WITH ${conversationName}`
+        : conversationMode === "continue"
+          ? pathContextKnown ? "NO CONVERSATION ON THIS PATH" : "CONVERSATION AT RUNTIME"
+          : "CHARACTER NEEDED";
 
     const locationReferenceId = locationMode === "set"
       ? draft.node.locationId ?? ""
