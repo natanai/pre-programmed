@@ -5,7 +5,9 @@ import {
   reconcileInventoryPlayStateAfterProjectChange,
 } from "../../features/inventory/playState";
 import { initializeNarrativePlayState } from "../../features/narrative/playState";
+import { initializeRadixPlayState, reconcileRadixPlayState } from "../../features/radix/playState";
 import { initializeStatePlayState, reconcileStatePlayState } from "../../features/state/playState";
+import { initializeWorldPlayState, reconcileWorldPlayState } from "../../features/world/playState";
 import type { AuthorBookmark, PlayState, ProjectSnapshot } from "./model";
 
 /**
@@ -17,7 +19,10 @@ import type { AuthorBookmark, PlayState, ProjectSnapshot } from "./model";
  */
 export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()): PlayState {
   let state = { sessionStartedAt: now } as PlayState;
+  // Radix resolves the one world-initialization seed before any seeded feature runs.
+  state = initializeRadixPlayState(snapshot, state);
   state = initializeNarrativePlayState(snapshot, state);
+  state = initializeWorldPlayState(snapshot, state);
   state = initializeStatePlayState(snapshot, state, now);
   state = initializeCommandsPlayState(state);
   state = initializeInventoryPlayState(snapshot, state);
@@ -26,7 +31,9 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
 
 /** Reconcile durable play state through the features that currently require it. */
 export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, now = Date.now()): PlayState {
-  let nextState = reconcileStatePlayState(snapshot, state, now);
+  let nextState = reconcileRadixPlayState(snapshot, state);
+  nextState = reconcileWorldPlayState(snapshot, nextState);
+  nextState = reconcileStatePlayState(snapshot, nextState, now);
   nextState = reconcileInventoryPlayState(snapshot, nextState);
   return nextState;
 }

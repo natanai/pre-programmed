@@ -74,6 +74,7 @@ import { executeInteraction } from "./features/narrative/runtime";
 import { compileTextNotation } from "./features/narrative/textNotation";
 import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
 import { useRadixRuntimePresentation } from "./features/radix/runtime/useRadixRuntimePresentation";
+import { characterNameForPresentation } from "./features/world/playState";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -172,7 +173,7 @@ export default function App() {
   const narrativeSurface = useNarrativePlayerSurface(snapshot, playState);
   const currentNode = narrativeSurface.currentNode;
   const activeNodeAnchor = narrativeSurface.anchor;
-  const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource);
+  const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource, authorMode && authorView);
   const nodeDialoguePending = narrativeContinuation.nodeDialoguePending;
   const interactionDialoguePending = narrativeContinuation.interactionDialoguePending;
   const secondaryProsePending = narrativeContinuation.secondaryProsePending;
@@ -261,7 +262,7 @@ export default function App() {
   function showNode(project: ProjectSnapshot, node: GameNode, state: PlayState) {
     if (launchPresentationBlockingRef.current) return;
     firedCueIds.current = new Set();
-    const presentation = resolveNodeOpeningPresentation(project, state, node);
+    const presentation = resolveNodeOpeningPresentation(project, state, node, authorMode && authorView);
     setActiveText(presentation.text);
     setActiveNodeId(node.id);
     setActiveSpeakerId(presentation.speakerId);
@@ -357,7 +358,6 @@ export default function App() {
   const startNewGame = () => {
     if (!snapshot) return;
     playSessionDecisionRef.current = "new";
-    radixPresentation.suppressStartup();
     const state = createEmptyPlayState(snapshot);
     setPlayState(state);
     setTranscript([]);
@@ -374,8 +374,9 @@ export default function App() {
     setPendingDestinationNodeId(null);
     firedCueIds.current = new Set();
     completedPendingDestination.current = "";
+    const launchOwnsPresentation = radixPresentation.beginStartup(snapshot, state.initializationSeed, true);
     const node = snapshot.nodes.find((node) => node.id === snapshot.startNodeId);
-    if (node) showNode(snapshot, node, state);
+    if (!launchOwnsPresentation && node) showNode(snapshot, node, state);
     setPendingPlaySession(null);
     setPlaySessionReady(true);
     void clearPlaySession();
@@ -415,7 +416,7 @@ export default function App() {
       if (cached && !cancelled) {
         setConnectionState("ready");
         const state = createEmptyPlayState(cached);
-        const launchOwnsPresentation = radixPresentation.beginStartup(cached);
+        const launchOwnsPresentation = radixPresentation.beginStartup(cached, state.initializationSeed);
         setSnapshot(cached);
         setPlayState(state);
         const node = cached.nodes.find((item) => item.id === cached.startNodeId);
@@ -431,13 +432,14 @@ export default function App() {
         });
         if (cancelled) return;
         setConnectionState("ready");
-        const launchOwnsPresentation = radixPresentation.beginStartup(project);
+        const initialState = cached ? null : createEmptyPlayState(project);
+        const launchOwnsPresentation = radixPresentation.beginStartup(project, initialState?.initializationSeed);
         setSnapshot(project);
         setPlayState((existing) => {
           const existingCompatible = Boolean(existing && project.nodes.some((node) => node.id === existing.currentNodeId));
           const state = existing && existingCompatible
             ? reconcilePlayState(project, existing)
-            : createEmptyPlayState(project);
+            : initialState ?? createEmptyPlayState(project);
           const decision = playSessionDecisionRef.current;
           const shouldRefreshPresentation = !decision
             || !existingCompatible
@@ -953,6 +955,8 @@ export default function App() {
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}>
               <SpeakerPrefix
                 snapshot={snapshot}
+                state={playState}
+                authorMode={authorExperience}
                 speakerId={line.speakerId}
                 onEdit={authorExperience && line.speakerId ? () => openAuthorResource("character", line.speakerId!) : undefined}
               />
@@ -967,6 +971,8 @@ export default function App() {
           {activeText ? <div className="story-line">
             <SpeakerPrefix
               snapshot={snapshot}
+              state={playState}
+              authorMode={authorExperience}
               speakerId={activeSpeakerId}
               onEdit={authorExperience && activeSpeakerId ? () => openAuthorResource("character", activeSpeakerId!) : undefined}
             />
@@ -1118,13 +1124,20 @@ export default function App() {
   </main>;
 }
 
-function SpeakerPrefix({ snapshot, speakerId, onEdit }: { snapshot: ProjectSnapshot; speakerId?: string | null; onEdit?: () => void }) {
+function SpeakerPrefix({ snapshot, state, authorMode, speakerId, onEdit }: {
+  snapshot: ProjectSnapshot;
+  state: PlayState;
+  authorMode: boolean;
+  speakerId?: string | null;
+  onEdit?: () => void;
+}) {
   if (!speakerId) return null;
   const speaker = snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId);
   if (!speaker) return null;
+  const name = characterNameForPresentation(speaker, state, authorMode);
   return onEdit
-    ? <button type="button" className="story-speaker-edit" onClick={onEdit}>{speaker.name}: </button>
-    : <span>{speaker.name}: </span>;
+    ? <button type="button" className="story-speaker-edit" onClick={onEdit}>{name}: </button>
+    : <span>{name}: </span>;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {

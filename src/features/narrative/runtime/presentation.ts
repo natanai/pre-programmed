@@ -34,9 +34,10 @@ export function resolveNodeOpeningPresentation(
   snapshot: ProjectSnapshot,
   state: PlayState,
   node: GameNode,
+  authorMode = false,
 ): NarrativeResolvedText {
-  const narration = interpolateText(node.text, { snapshot, state });
-  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state });
+  const narration = interpolateText(node.text, { snapshot, state, authorMode });
+  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state, authorMode });
   const beginsWithDialogue = !narration && Boolean(dialogue);
   const rawText = beginsWithDialogue ? dialogue : narration;
   const performance = beginsWithDialogue
@@ -56,8 +57,9 @@ function resolveNodeDialoguePresentation(
   snapshot: ProjectSnapshot,
   state: PlayState,
   node: GameNode,
+  authorMode: boolean,
 ): NarrativeResolvedText | null {
-  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state });
+  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state, authorMode });
   if (!dialogue) return null;
   const compiled = compileTextNotation(
     dialogue,
@@ -77,9 +79,10 @@ function resolveInteractionDialoguePresentation(
   state: PlayState,
   interaction: Interaction,
   outcome: InteractionOutcome,
+  authorMode: boolean,
 ): NarrativeResolvedText | null {
   const prose = interactionOutcomeProse(outcome);
-  const dialogue = interpolateText(prose.dialogueText, { snapshot, state });
+  const dialogue = interpolateText(prose.dialogueText, { snapshot, state, authorMode });
   if (!dialogue) return null;
   const compiled = compileTextNotation(dialogue, prose.dialoguePerformance);
   const conversation = resolveNodeConversationContext(snapshot, state, interaction.sourceNodeId);
@@ -107,6 +110,7 @@ export function resolveNarrativeContinuation(
   state: PlayState | null,
   activeNodeId: string | undefined,
   activeSource: AuthoredSourceIdentity | undefined,
+  authorMode = false,
 ): NarrativeContinuation {
   const empty: NarrativeContinuation = {
     node: null,
@@ -131,7 +135,7 @@ export function resolveNarrativeContinuation(
     && node.dialogueText?.trim(),
   );
   const nodeDialogue = nodeDialoguePending && node
-    ? resolveNodeDialoguePresentation(snapshot, state, node)
+    ? resolveNodeDialoguePresentation(snapshot, state, node, authorMode)
     : null;
 
   const interaction = activeSource?.resourceKind === "interaction"
@@ -147,7 +151,7 @@ export function resolveNarrativeContinuation(
     && interactionProse?.dialogueText.trim(),
   );
   const interactionDialogue = interactionDialoguePending && interaction && outcome
-    ? resolveInteractionDialoguePresentation(snapshot, state, interaction, outcome)
+    ? resolveInteractionDialoguePresentation(snapshot, state, interaction, outcome, authorMode)
     : null;
 
   return {
@@ -168,9 +172,10 @@ export function useNarrativeContinuation(
   state: PlayState | null,
   activeNodeId: string | undefined,
   activeSource: AuthoredSourceIdentity | undefined,
+  authorMode = false,
 ) {
   return useMemo(
-    () => resolveNarrativeContinuation(snapshot, state, activeNodeId, activeSource),
-    [activeNodeId, activeSource, snapshot, state],
+    () => resolveNarrativeContinuation(snapshot, state, activeNodeId, activeSource, authorMode),
+    [activeNodeId, activeSource, authorMode, snapshot, state],
   );
 }

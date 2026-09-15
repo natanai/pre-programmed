@@ -51,7 +51,18 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
 });
 
 function newEntity(type: EntityDefinition["type"]): EntityDefinition {
-  return { id: crypto.randomUUID(), key: "", type, name: "", description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
+  return { id: crypto.randomUUID(), key: "", type, name: "", aliases: [], description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
+}
+
+function normalizedAliases(entity: EntityDefinition) {
+  const canonical = entity.name.trim().toLocaleLowerCase();
+  const seen = new Set<string>();
+  return (entity.aliases ?? []).map((alias) => alias.trim()).filter((alias) => {
+    const key = alias.toLocaleLowerCase();
+    if (!alias || key === canonical || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
@@ -89,16 +100,31 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
           importance: "primary",
           children: [
             { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
-            ...(draft.type === "character" ? [{
-              type: "resource" as const,
-              id: "world-character-portrait",
-              label: "Portrait",
-              kind: "media-image",
-              value: draft.portraitAssetId ?? "",
-              placeholder: "No portrait",
-              showPreview: true,
-              onChange: (portraitAssetId: string) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null })),
-            }] : []),
+            ...(draft.type === "character" ? [
+              {
+                type: "field" as const,
+                id: "world-character-aliases",
+                label: "Aliases",
+                control: "textarea" as const,
+                rows: 4,
+                value: (draft.aliases ?? []).join("\n"),
+                placeholder: "one alternate name per line",
+                onChange: (value: string) => setDraft((current) => ({
+                  ...current,
+                  aliases: value.split(/\r?\n/).map((alias) => alias.trim()).filter(Boolean),
+                })),
+              },
+              {
+                type: "resource" as const,
+                id: "world-character-portrait",
+                label: "Portrait",
+                kind: "media-image",
+                value: draft.portraitAssetId ?? "",
+                placeholder: "No portrait",
+                showPreview: true,
+                onChange: (portraitAssetId: string) => setDraft((current) => ({ ...current, portraitAssetId: portraitAssetId || null })),
+              },
+            ] : []),
             { type: "field", id: "world-entity-key", label: "Key", value: draft.key, placeholder: "generated from name", onChange: (key) => setDraft((current) => ({ ...current, key })) },
             { type: "field", id: "world-entity-description", label: "Description", control: "textarea", rows: 4, value: draft.description, onChange: (description) => setDraft((current) => ({ ...current, description })) },
             { type: "field", id: "world-entity-tags", label: "Tags", value: draft.tags.join(", "), placeholder: "comma separated", onChange: (value) => setDraft((current) => ({ ...current, tags: value.split(",").map((tag) => tag.trim()).filter(Boolean) })) },
@@ -166,8 +192,8 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
       fallback: draft.type,
     });
     const saved = draft.type === "character"
-      ? { ...draft, key }
-      : { ...draft, key, portraitAssetId: null };
+      ? { ...draft, key, aliases: normalizedAliases(draft) }
+      : { ...draft, key, aliases: [], portraitAssetId: null };
     const result = await context.persist([{ type: "entity.upsert", entity: saved }], `Save ${saved.type} ${saved.name || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
