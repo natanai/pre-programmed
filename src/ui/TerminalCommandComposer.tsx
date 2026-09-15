@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useId,
   useImperativeHandle,
   useLayoutEffect,
   useMemo,
@@ -12,6 +13,8 @@ import {
 export type TerminalCommandChoice = {
   id: string;
   text: string;
+  /** Optional authored copy for the expanded suggestion menu's info affordance. */
+  menuHelpText?: string | null;
 };
 
 export type TerminalCommandAnchor = {
@@ -82,7 +85,9 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const caretMarkerRef = useRef<HTMLSpanElement>(null);
     const composingRef = useRef(false);
     const caretFrameRef = useRef(0);
+    const menuHelpId = useId();
     const [menuOpen, setMenuOpen] = useState(false);
+    const [menuHelpOpen, setMenuHelpOpen] = useState(false);
     const [caretIndex, setCaretIndex] = useState(0);
 
     const field = () => secret ? secretInputRef.current : textareaRef.current;
@@ -95,6 +100,13 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       () => mergeChoices(immediateChoices, menuChoices, menuOpen),
       [immediateChoices, menuChoices, menuOpen],
     );
+    const menuHelpText = useMemo(() => {
+      for (const choice of menuChoices) {
+        const text = choice.menuHelpText?.trim();
+        if (text) return text;
+      }
+      return null;
+    }, [menuChoices]);
 
     const syncSelection = () => {
       const current = field();
@@ -197,6 +209,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const submit = () => {
       if (composingRef.current) return;
       setMenuOpen(false);
+      setMenuHelpOpen(false);
       onSubmit(value);
     };
 
@@ -215,6 +228,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       const next = normalizeTerminalDraft(choice.text);
       onChange(next);
       setMenuOpen(false);
+      setMenuHelpOpen(false);
       window.requestAnimationFrame(() => {
         const current = field();
         if (!current) return;
@@ -229,7 +243,9 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     };
 
     const toggleMenu = () => {
-      setMenuOpen((open) => !open);
+      const nextOpen = !menuOpen;
+      setMenuOpen(nextOpen);
+      if (!nextOpen) setMenuHelpOpen(false);
       window.requestAnimationFrame(() => {
         const current = field();
         if (current && !window.matchMedia(COARSE_POINTER_QUERY).matches) {
@@ -310,7 +326,7 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
             {!secret && menuChoices.length ? <button
               type="button"
               className="terminal-command-toggle"
-              aria-label={menuOpen ? "Hide available options" : "Show available options"}
+              aria-label={menuOpen ? "Hide suggestions" : "Show suggestions"}
               aria-expanded={menuOpen}
               onPointerDown={(event) => {
                 event.stopPropagation();
@@ -319,9 +335,32 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
               onClick={toggleMenu}
             >{menuOpen ? "▲" : "▼"}</button> : null}
 
-            {!secret && choices.length ? <div className="terminal-command-choices" aria-label="Available commands">
+            {!secret && choices.length ? <div
+              className="terminal-command-choices"
+              aria-label="Suggested inputs"
+              data-has-help={menuOpen && menuHelpText ? "true" : "false"}
+            >
+              {menuOpen && menuHelpText ? <div
+                className="terminal-command-menu-help"
+                data-open={menuHelpOpen ? "true" : "false"}
+              >
+                <button
+                  type="button"
+                  className="terminal-command-menu-help-trigger"
+                  aria-label="About these suggestions"
+                  aria-describedby={menuHelpId}
+                  aria-expanded={menuHelpOpen}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={() => setMenuHelpOpen((open) => !open)}
+                  onBlur={() => setMenuHelpOpen(false)}
+                >[i]</button>
+                <div id={menuHelpId} className="terminal-command-menu-help-tooltip" role="tooltip">
+                  {menuHelpText}
+                </div>
+              </div> : null}
               {choices.map((choice) => <button
                 type="button"
+                className="terminal-command-choice"
                 key={choice.id}
                 onPointerDown={(event) => event.preventDefault()}
                 onClick={() => insertChoice(choice)}
