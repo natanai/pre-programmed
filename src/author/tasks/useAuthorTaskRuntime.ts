@@ -43,15 +43,11 @@ export function useAuthorTaskRuntime() {
   const dirtyCount = tasks.filter((task) => task.dirty).length;
   const hasTasks = tasks.length > 0;
 
-  useEffect(() => {
-    setPlayerRuntimePaused(hasTasks);
-    return () => {
-      if (hasTasks) setPlayerRuntimePaused(false);
-    };
-  }, [hasTasks]);
+  useEffect(() => () => setPlayerRuntimePaused(false), []);
 
   const commitTasks = useCallback((next: AuthorTaskEntry[]) => {
     tasksRef.current = next;
+    setPlayerRuntimePaused(next.length > 0);
     setTasks(next);
   }, []);
 
