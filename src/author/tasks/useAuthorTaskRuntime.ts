@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { setPlayerRuntimePaused } from "../../engine/runtime/playerRuntimePause";
 import { authorNavigationAllowed } from "./commitState";
 import { popActiveAuthorTask, setAuthorTaskDirtyState } from "./taskStack";
 import type {
@@ -40,9 +41,13 @@ export function useAuthorTaskRuntime() {
   const completions = useRef(new Map<string, AuthorTaskCompletion>());
   const activeTask = tasks.at(-1) ?? null;
   const dirtyCount = tasks.filter((task) => task.dirty).length;
+  const hasTasks = tasks.length > 0;
+
+  useEffect(() => () => setPlayerRuntimePaused(false), []);
 
   const commitTasks = useCallback((next: AuthorTaskEntry[]) => {
     tasksRef.current = next;
+    setPlayerRuntimePaused(next.length > 0);
     setTasks(next);
   }, []);
 
@@ -144,7 +149,7 @@ export function useAuthorTaskRuntime() {
     tasks,
     activeTask,
     activeTaskId: activeTask?.id ?? null,
-    hasTasks: tasks.length > 0,
+    hasTasks,
     depth: tasks.length,
     hasDirty: dirtyCount > 0,
     leaveConfirmation,

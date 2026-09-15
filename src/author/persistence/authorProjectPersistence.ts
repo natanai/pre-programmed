@@ -179,9 +179,13 @@ export async function flushQueuedAuthorMutations({
   authorization: string;
   local?: AuthorLocalPersistence;
 }) {
-  return withAuthorCommit(() => serializeSynchronization(async () => {
+  // This is passive recovery work, not an author-initiated commit. It must not
+  // toggle global commit-pending state because doing so marks every Author
+  // workspace inert and browsers immediately evict focus from active fields.
+  // Persistence serialization below already prevents it racing project writes.
+  return serializeSynchronization(async () => {
     const entries = await local.listQueuedMutations();
     if (!entries.length) return { snapshot: null, flushedCount: 0 };
     return flushEntries({ entries, persistence, authorization, local });
-  }));
+  });
 }
