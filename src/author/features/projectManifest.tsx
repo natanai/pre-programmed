@@ -16,7 +16,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   id: "project",
   describeTask(route) {
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
-    if (route.type === "feature" && route.feature === "project" && route.workspace === "terminal-settings") return "Terminal prompt";
+    if (route.type === "feature" && route.feature === "project" && route.workspace === "terminal-settings") return "Terminal settings";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "transfer") return "Project file";
     return null;
   },
