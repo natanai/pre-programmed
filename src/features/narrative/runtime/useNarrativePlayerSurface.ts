@@ -8,6 +8,8 @@ import type { GameNode, Interaction } from "../model";
 export type NarrativePlayerChoice = {
   id: string;
   text: string;
+  /** Project-authored copy for the expanded suggestion menu's info affordance. */
+  menuHelpText?: string | null;
 };
 
 export type NarrativePlayerSurface = {
@@ -20,10 +22,11 @@ export type NarrativePlayerSurface = {
   promptChoices: NarrativePlayerChoice[];
 };
 
-function playerChoice(interaction: Interaction): NarrativePlayerChoice {
+function playerChoice(interaction: Interaction, menuHelpText: string | null = null): NarrativePlayerChoice {
   return {
     id: interaction.id,
     text: interaction.aliases[0] || interaction.wording,
+    menuHelpText,
   };
 }
 
@@ -73,11 +76,11 @@ export function useNarrativePlayerSurface(
     const visibleInputs = currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, state, interaction));
     const immediateChoices = visibleInputs
       .filter((interaction) => interaction.choiceVisibility === "immediate")
-      .map(playerChoice)
+      .map((interaction) => playerChoice(interaction))
       .filter((choice) => choice.text);
     const promptChoices = visibleInputs
       .filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt")
-      .map(playerChoice)
+      .map((interaction) => playerChoice(interaction, snapshot.settings.suggestionMenuHelpText))
       .filter((choice) => choice.text);
 
     return {

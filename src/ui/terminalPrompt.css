@@ -238,6 +238,7 @@
 }
 
 .terminal-command-choices {
+  position: relative;
   grid-column: 1 / -1;
   display: grid;
   max-height: min(12em, 38dvh);
@@ -257,7 +258,7 @@
   left: 0;
 }
 
-.terminal-command-choices button {
+.terminal-command-choice {
   min-height: 2em;
   margin: 0;
   padding: .5em .25em;
@@ -275,16 +276,88 @@
   cursor: pointer;
 }
 
-.terminal-command-choices button:last-child {
+.terminal-command-choice:last-child {
   border-bottom: 0;
 }
 
-.terminal-command-choices button:hover,
-.terminal-command-choices button:focus-visible,
-.terminal-command-choices button:active {
+.terminal-command-choice:hover,
+.terminal-command-choice:focus-visible,
+.terminal-command-choice:active {
   background: #000;
   color: #fff !important;
   outline: 0;
+}
+
+.terminal-command-menu-help {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2em;
+  pointer-events: none;
+}
+
+.terminal-command-menu-help-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 2em;
+  height: 2em;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #000;
+  opacity: .55;
+  font: inherit;
+  font-size: .78em;
+  line-height: 1;
+  text-align: center;
+  cursor: help;
+  pointer-events: auto;
+}
+
+.terminal-command-menu-help-trigger:hover,
+.terminal-command-menu-help-trigger:focus-visible,
+.terminal-command-menu-help[data-open="true"] .terminal-command-menu-help-trigger {
+  background: transparent;
+  color: #000 !important;
+  opacity: 1;
+  outline: 1px dotted #000;
+  outline-offset: -3px;
+}
+
+.terminal-command-menu-help-tooltip {
+  position: absolute;
+  z-index: 5;
+  top: 1.75em;
+  right: .25em;
+  left: .25em;
+  display: none;
+  margin: 0;
+  padding: .45em .55em;
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  font: inherit;
+  font-size: .86em;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  pointer-events: auto;
+}
+
+.terminal-command-menu-help:hover .terminal-command-menu-help-tooltip,
+.terminal-command-menu-help:focus-within .terminal-command-menu-help-tooltip,
+.terminal-command-menu-help[data-open="true"] .terminal-command-menu-help-tooltip {
+  display: block;
+}
+
+.terminal-command-menu-help + .terminal-command-choice {
+  padding-right: 2.25em;
 }
 
 .terminal-node-anchor {
@@ -332,8 +405,12 @@ button.terminal-node-anchor:active {
   .terminal-command-mirror,
   .terminal-command-toggle,
   .terminal-command-submit,
-  .terminal-command-choices button {
+  .terminal-command-choice {
     font-size: max(16px, 1em);
+  }
+
+  .terminal-command-menu-help-trigger {
+    font-size: max(12px, .78em);
   }
 }
 

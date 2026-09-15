@@ -19,11 +19,14 @@ import type { ProjectMutation, ProjectSnapshot } from "./model";
 export type ProjectSettings = {
   /** Player-facing terminal prompt for this game/project. */
   terminalPrompt: string;
+  /** Optional authored copy exposed from the expanded terminal suggestion menu's info affordance. */
+  suggestionMenuHelpText: string | null;
 } & CommandsProjectSettingsSlice
   & RadixProjectSettingsSlice;
 
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   terminalPrompt: "U:\\>",
+  suggestionMenuHelpText: null,
   ...structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS),
   ...structuredClone(DEFAULT_RADIX_PROJECT_SETTINGS),
 };
@@ -35,11 +38,15 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
  */
 export function normalizeProjectSettings(value: unknown): ProjectSettings {
   const root = value && typeof value === "object" ? value as Record<string, unknown> : {};
+  const suggestionMenuHelpText = typeof root.suggestionMenuHelpText === "string" && root.suggestionMenuHelpText.trim()
+    ? root.suggestionMenuHelpText.trim().slice(0, 1000)
+    : null;
 
   return {
     terminalPrompt: typeof root.terminalPrompt === "string" && root.terminalPrompt.trim()
       ? root.terminalPrompt.slice(0, 32)
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
+    suggestionMenuHelpText,
     ...normalizeCommandsProjectSettings(root),
     ...normalizeRadixProjectSettings(root),
   };
