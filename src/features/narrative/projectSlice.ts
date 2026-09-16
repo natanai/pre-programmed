@@ -8,6 +8,8 @@ export type NarrativeProjectSlice = {
 
 export type NarrativePlayStateSlice = {
   currentNodeId: string;
+  /** Specific opening requested by the transition that entered currentNodeId; null means AUTO. */
+  currentNodeOpeningId: string | null;
   traversal: string[];
   attempts: Record<string, number>;
   visitedNodeIds: string[];
