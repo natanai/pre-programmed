@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../graph";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { Interaction } from "../model";
-import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
+import { nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
 import "./structureNavigator.css";
 
 function interactionLabel(interaction: Interaction) {
@@ -122,7 +122,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         {jumpResults.length ? jumpResults.map((node) => <div className="structure-jump-result-row" key={node.id}>
           <button type="button" className="structure-jump-result-main" onClick={() => jumpToNode(node.id)}>
             <span className="structure-jump-copy">
-              <strong>#{node.nodeNumber} · {nodeAuthorLabel(node)}</strong>
+              <strong>{nodeAuthorTitle(node)}</strong>
               <small>{nodePreview(snapshot, node.id) || "No entry text"}</small>
             </span>
             <span className="structure-jump-notation">{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</span>
@@ -146,7 +146,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
           <small className="structure-arrival">{arrivedBy ? `VIA ${interactionLabel(arrivedBy)}` : columnIndex === 0 ? rootLabel : "HERE"}</small>
           <button type="button" className="structure-node" onClick={() => onOpenNode(node.id)}>
-            <span>#{node.nodeNumber} · {nodeAuthorLabel(node)}{nodePreview(snapshot, node.id, 56) ? ` — ${nodePreview(snapshot, node.id, 56)}` : ""}</span>
+            <span>{nodeAuthorTitle(node)}{nodePreview(snapshot, node.id, 56) ? ` — ${nodePreview(snapshot, node.id, 56)}` : ""}</span>
             <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</strong>
           </button>
           <div className="structure-level-meta">
@@ -172,7 +172,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
                     : nodePreview(snapshot, destination.id, 46);
                   return <div className="structure-destination-row" key={outcome.id}>
                     <button type="button" className="branch-destination" onClick={() => setPath([...path.slice(0, columnIndex + 1), destination.id])}>
-                      <span>{outcomeIndex + 1}. → #{destination.nodeNumber} · {nodeAuthorLabel(destination)}{entryPreview ? ` — ${entryPreview}` : ""}{specificOpening ? " [SPECIFIC ENTRY]" : " [AUTO]"}</span>
+                      <span>{outcomeIndex + 1}. → {nodeAuthorTitle(destination)}{entryPreview ? ` — ${entryPreview}` : ""}{specificOpening ? " [SPECIFIC ENTRY]" : " [AUTO]"}</span>
                       <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, destination.id).join("")}</strong>
                     </button>
                     <button type="button" className="structure-reference-edit" aria-label={`Edit destination Node #${destination.nodeNumber}`} onClick={() => onOpenNode(destination.id)}>[EDIT]</button>
