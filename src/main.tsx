@@ -6,6 +6,7 @@ import "./ui/terminalPrompt.css";
 import "./ui/notificationLayout.css";
 import "./author/authorWorkspaceShell.css";
 import "./author/authorDesktopSuite.css";
+import "./ui/enginePortalSurfaces.css";
 import { installAuthorNumberInputScrubbing } from "./author/ui/authorNumberInputScrubbing";
 import { primeProjectSnapshot } from "./data/api";
 import { saveCachedSnapshot } from "./data/localProject";
