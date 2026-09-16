@@ -34,6 +34,19 @@
   cursor: pointer;
 }
 
+/* The app-wide button hover treatment draws a dotted outline outside the
+ * button box. These rows live inside a scrolling grid, so that outside outline
+ * gets clipped and reads as stray dots/partial lines. Keep pointer hover clean;
+ * keyboard focus still gets a complete, inset focus rectangle. */
+.author-input-row > button:hover {
+  outline: 0;
+}
+
+.author-input-row > button:focus-visible {
+  outline: 1px solid var(--dos-bright);
+  outline-offset: -2px;
+}
+
 .author-input-edit {
   min-width: 2.75em;
   padding-inline: .35em;
