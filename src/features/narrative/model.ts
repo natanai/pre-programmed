@@ -27,36 +27,49 @@ export type NodeAnchor = {
   text: string;
 };
 
-export type GameNode = {
+/**
+ * One player-facing presentation owned by a Node. Openings are stable,
+ * addressable children of the Node; their prose is presentation, never Node identity.
+ */
+export type NodeOpening = {
   id: string;
+  order: number;
+  condition: Condition;
+  narrationText: string;
+  dialogueText: string;
+  narrationPerformance: TextPerformance;
+  dialoguePerformance: TextPerformance;
+};
+
+export type GameNode = {
+  /** Stable graph identity. Links always target this id, never prose or labels. */
+  id: string;
+  /** Stable author locator used for exact-number search. */
   nodeNumber: number;
-  /** Optional narration shown before this Node's conversation character speaks. */
-  text: string;
-  /** Optional line spoken by the traversal-derived conversation character. */
-  dialogueText?: string;
+  /** Private, renameable author-facing name; never shown to the player. */
+  authorLabel: string;
+  /** Ordered conditional presentations evaluated whenever traversal enters this Node. */
+  openings: NodeOpening[];
   ending: boolean;
   tags: string[];
-  /**
-   * Legacy input only. Current Node persistence strips this former Speaker field
-   * after migrating its text/identity into conversation + dialogue.
-   */
-  characterId?: string | null;
   /** Location selected when `locationMode` is `set`. */
   locationId: string | null;
-  /** Missing legacy values mean Set when a locationId exists, otherwise Continue. */
+  /** Missing historical values mean Set when a locationId exists, otherwise Continue. */
   locationMode?: NodeLocationMode;
   /** Character selected when `conversationMode` is `set`. */
   conversationCharacterId?: string | null;
-  /** Missing values mean Continue, so branching Nodes inherit the path that reached them. */
+  /** Missing historical values mean Continue, so branching Nodes inherit the path that reached them. */
   conversationMode?: NodeConversationMode;
-  /** Persistent player-facing anchor context. Missing legacy values mean Continue. */
+  /** Persistent player-facing anchor context. Missing historical values mean Continue. */
   anchor?: NodeAnchor;
   /** Effects executed once whenever runtime traversal enters this Node. */
   entryEffects?: Effect[];
-  /** Narration delivery. */
-  performance: TextPerformance;
-  /** Dialogue delivery; missing legacy values use the normal default performance. */
-  dialoguePerformance?: TextPerformance;
+};
+
+export type NodeEntryTarget = {
+  nodeId: string;
+  /** Null means AUTO: let the destination Node select its opening from current conditions. */
+  openingId: string | null;
 };
 
 export type InteractionDisposition = "stay" | "transition";
@@ -86,13 +99,14 @@ export type InteractionOutcome = {
   dialoguePerformance?: TextPerformance;
   effects: Effect[];
   disposition: InteractionDisposition;
-  destinationNodeId: string | null;
+  /** Node destination; opening id is optional so AUTO remains the default traversal behavior. */
+  destination: NodeEntryTarget | null;
 };
 
 export type Interaction = {
   id: string;
   sourceNodeId: string;
-  /** Durable authored position among the source Node's valid-input siblings. Legacy snapshots may omit it. */
+  /** Durable authored position among the source Node's valid-input siblings. Historical snapshots may omit it. */
   order?: number;
   wording: string;
   matchMode?: InteractionMatchMode;
