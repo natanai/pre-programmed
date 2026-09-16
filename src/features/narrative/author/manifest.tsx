@@ -3,6 +3,7 @@ import { normalizePlayerInput } from "../../../engine/input/normalize";
 import { buildGraphIndex } from "../graph";
 import { createDraftInteraction } from "../drafts";
 import type { Interaction } from "../model";
+import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
 import { AuthorInputSurface } from "./AuthorInputSurface";
 import { interactionWorkspace } from "./interactionWorkspace";
 import { nodeWorkspace } from "./nodeWorkspace";
@@ -27,7 +28,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
     if (route.workspace === "structure") return "Story structure";
     if (route.workspace === "node") {
       const node = snapshot.nodes.find((candidate) => candidate.id === route.data?.nodeId);
-      return node ? `Node #${node.nodeNumber}` : "New node";
+      return node ? `Node #${node.nodeNumber} · ${nodeAuthorLabel(node)}` : "New node";
     }
     if (route.workspace === "interaction") {
       const interaction = snapshot.interactions.find((candidate) => candidate.id === route.data?.interactionId);
@@ -47,12 +48,16 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
       kind: "node",
       label: "Node",
       pluralLabel: "Nodes",
-      list: (snapshot) => snapshot.nodes.map((node) => ({
-        id: node.id,
-        value: node.id,
-        label: `Node #${node.nodeNumber}`,
-        detail: node.text.trim().slice(0, 80),
-      })),
+      list: (snapshot) => snapshot.nodes.map((node) => {
+        const openings = [...node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+        const previews = openings.map((opening) => nodeOpeningSnippet(opening, 54)).filter(Boolean);
+        return {
+          id: node.id,
+          value: node.id,
+          label: `Node #${node.nodeNumber} · ${nodeAuthorLabel(node)}`,
+          detail: previews.length ? previews.join(" · ") : "No entry text",
+        };
+      }),
       createRoute: () => ({
         type: "feature",
         feature: "narrative",
