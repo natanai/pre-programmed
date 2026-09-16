@@ -332,7 +332,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       `,
     },
     {
-      id: 44,
+      id: 45,
       name: "narrative-node-entry-openings",
       sql: `
         ALTER TABLE nodes ADD COLUMN author_label TEXT NOT NULL DEFAULT '';
@@ -376,7 +376,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         ALTER TABLE node_details DROP COLUMN dialogue_text;
         ALTER TABLE node_details DROP COLUMN dialogue_performance_json;
 
-        UPDATE project_meta SET schema_version = 44 WHERE id = 1;
+        UPDATE project_meta SET schema_version = 45 WHERE id = 1;
       `,
     },
   ],
