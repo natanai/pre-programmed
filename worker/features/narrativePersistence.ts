@@ -5,7 +5,7 @@ import {
   normalizeNodeContext,
 } from "../../src/features/narrative/sceneContext";
 import { normalizeInteractionOutcomeProse } from "../../src/features/narrative/interactionProse";
-import type { GameNode, Interaction, TextPerformance } from "../../src/features/narrative/model";
+import type { GameNode, Interaction, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
@@ -18,18 +18,12 @@ function groupRows<T>(rows: T[], key: (row: T) => string) {
 
 const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
 
-type LegacyNodeMutation = GameNode & { characterId?: string | null };
-
 type NodeRow = {
   id: string;
   node_number: number;
-  text: string;
-  characters_per_second: number;
+  author_label: string;
   ending: number | null;
   tags_json: string | null;
-  performance_json: string | null;
-  dialogue_text: string | null;
-  dialogue_performance_json: string | null;
   entry_effects_json: string | null;
   location_id: string | null;
   location_mode: "set" | "continue" | "clear" | null;
@@ -37,6 +31,17 @@ type NodeRow = {
   conversation_character_id: string | null;
   anchor_mode: "set" | "continue" | "clear" | null;
   anchor_text: string | null;
+};
+
+type OpeningRow = {
+  id: string;
+  node_id: string;
+  order_index: number;
+  condition_json: string;
+  narration_text: string;
+  dialogue_text: string;
+  narration_performance_json: string;
+  dialogue_performance_json: string;
 };
 
 type InteractionRow = {
@@ -73,6 +78,7 @@ type OutcomeRow = {
   effects_json: string;
   disposition: "stay" | "transition";
   destination_node_id: string | null;
+  destination_opening_id: string | null;
 };
 
 function migrateLegacyMediaEffects(value: unknown) {
@@ -101,17 +107,12 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
 }
 
 function normalizeNodeForPersistence(value: GameNode): GameNode {
-  const legacy = value as LegacyNodeMutation;
-  const legacySpeakerText = Boolean(legacy.characterId && value.dialogueText === undefined);
-  const performance = value.performance ?? DEFAULT_TEXT_PERFORMANCE;
   return normalizeNodeContext({
     ...value,
-    text: legacySpeakerText ? "" : value.text,
-    dialogueText: legacySpeakerText ? value.text : value.dialogueText ?? "",
-    performance: legacySpeakerText ? DEFAULT_TEXT_PERFORMANCE : performance,
-    dialoguePerformance: legacySpeakerText
-      ? performance
-      : value.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE,
+    authorLabel: value.authorLabel.trim(),
+    openings: [...value.openings]
+      .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
+      .map((opening, order) => ({ ...opening, order })),
   });
 }
 
@@ -330,21 +331,73 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 43 WHERE id = 1;
       `,
     },
+    {
+      id: 44,
+      name: "narrative-node-entry-openings",
+      sql: `
+        ALTER TABLE nodes ADD COLUMN author_label TEXT NOT NULL DEFAULT '';
+
+        CREATE TABLE node_openings (
+          id TEXT PRIMARY KEY,
+          node_id TEXT NOT NULL,
+          order_index INTEGER NOT NULL DEFAULT 0,
+          condition_json TEXT NOT NULL DEFAULT '{"type":"always"}',
+          narration_text TEXT NOT NULL DEFAULT '',
+          dialogue_text TEXT NOT NULL DEFAULT '',
+          narration_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}',
+          dialogue_performance_json TEXT NOT NULL DEFAULT '{"charactersPerSecond":18,"cues":[]}',
+          FOREIGN KEY (node_id) REFERENCES nodes(id) ON DELETE CASCADE
+        );
+
+        INSERT INTO node_openings (
+          id, node_id, order_index, condition_json, narration_text, dialogue_text,
+          narration_performance_json, dialogue_performance_json
+        )
+        SELECT
+          'node-opening:' || n.id || ':default',
+          n.id,
+          0,
+          '{"type":"always"}',
+          n.text,
+          COALESCE(d.dialogue_text, ''),
+          COALESCE(d.performance_json, json_object('charactersPerSecond', n.characters_per_second, 'cues', json('[]'))),
+          COALESCE(d.dialogue_performance_json, '{"charactersPerSecond":18,"cues":[]}')
+        FROM nodes n
+        LEFT JOIN node_details d ON d.node_id = n.id;
+
+        CREATE INDEX node_openings_node_order ON node_openings(node_id, order_index, id);
+
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN destination_opening_id TEXT REFERENCES node_openings(id);
+
+        ALTER TABLE nodes DROP COLUMN text;
+        ALTER TABLE nodes DROP COLUMN characters_per_second;
+        ALTER TABLE node_details DROP COLUMN performance_json;
+        ALTER TABLE node_details DROP COLUMN dialogue_text;
+        ALTER TABLE node_details DROP COLUMN dialogue_performance_json;
+
+        UPDATE project_meta SET schema_version = 44 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
-    const [meta, nodes, interactions, choiceVisibilityConditions, aliases, outcomes] = await Promise.all([
+    const [meta, nodes, openings, interactions, choiceVisibilityConditions, aliases, outcomes] = await Promise.all([
       db.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").first<{ start_node_id: string }>(),
       db.prepare(
-        `SELECT n.id, n.node_number, n.text, n.characters_per_second,
-                d.ending, d.tags_json, d.performance_json, d.dialogue_text, d.dialogue_performance_json,
-                d.entry_effects_json, d.anchor_mode, d.anchor_text,
+        `SELECT n.id, n.node_number, n.author_label,
+                d.ending, d.tags_json, d.entry_effects_json, d.anchor_mode, d.anchor_text,
                 c.location_id, c.location_mode, c.conversation_mode, c.conversation_character_id
            FROM nodes n
            LEFT JOIN node_details d ON d.node_id = n.id
            LEFT JOIN node_context c ON c.node_id = n.id
           ORDER BY n.node_number`,
       ).all<NodeRow>(),
+      db.prepare(
+        `SELECT id, node_id, order_index, condition_json, narration_text, dialogue_text,
+                narration_performance_json, dialogue_performance_json
+           FROM node_openings ORDER BY node_id, order_index, id`,
+      ).all<OpeningRow>(),
       db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
@@ -353,12 +406,14 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         .all<AliasRow>(),
       db.prepare(
         `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_dialogue_text, response_speaker_id,
-                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition, destination_node_id
+                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition,
+                destination_node_id, destination_opening_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
     ]);
 
     if (!meta) throw new Error("Project has not been initialized.");
+    const openingGroups = groupRows(openings.results, (row) => row.node_id);
     const choiceVisibilityByInteraction = new Map(
       choiceVisibilityConditions.results.map((row) => [row.interaction_id, row.condition_json]),
     );
@@ -368,40 +423,29 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
     return {
       startNodeId: meta.start_node_id,
       nodes: nodes.results.map((row): GameNode => {
-        const performance = migrateLegacyMediaCues(parseJson(row.performance_json, {
-          charactersPerSecond: row.characters_per_second,
-          cues: [],
-        }));
-        const dialoguePerformance = migrateLegacyMediaCues(parseJson(
-          row.dialogue_performance_json,
-          DEFAULT_TEXT_PERFORMANCE,
-        ));
         const locationMode = row.location_mode ?? (row.location_id ? "set" : "continue");
         const conversationMode = row.conversation_mode ?? "continue";
         return {
           id: row.id,
           nodeNumber: row.node_number,
-          text: row.text,
-          dialogueText: row.dialogue_text ?? "",
+          authorLabel: row.author_label ?? "",
+          openings: (openingGroups.get(row.id) ?? []).map((opening): NodeOpening => ({
+            id: opening.id,
+            order: opening.order_index,
+            condition: parseJson(opening.condition_json, { type: "always" }),
+            narrationText: opening.narration_text,
+            dialogueText: opening.dialogue_text,
+            narrationPerformance: migrateLegacyMediaCues(parseJson(opening.narration_performance_json, DEFAULT_TEXT_PERFORMANCE)),
+            dialoguePerformance: migrateLegacyMediaCues(parseJson(opening.dialogue_performance_json, DEFAULT_TEXT_PERFORMANCE)),
+          })),
           ending: Boolean(row.ending),
           tags: parseJson(row.tags_json, []),
           locationId: locationMode === "set" ? row.location_id : null,
           locationMode,
           conversationMode,
           conversationCharacterId: conversationMode === "set" ? row.conversation_character_id : null,
-          anchor: {
-            mode: row.anchor_mode ?? "continue",
-            text: row.anchor_text ?? "",
-          },
+          anchor: { mode: row.anchor_mode ?? "continue", text: row.anchor_text ?? "" },
           entryEffects: migrateLegacyMediaEffects(parseJson(row.entry_effects_json, [])) as GameNode["entryEffects"],
-          performance: {
-            charactersPerSecond: performance.charactersPerSecond ?? row.characters_per_second,
-            cues: performance.cues ?? [],
-          },
-          dialoguePerformance: {
-            charactersPerSecond: dialoguePerformance.charactersPerSecond ?? 18,
-            cues: dialoguePerformance.cues ?? [],
-          },
         };
       }),
       interactions: interactions.results.map((row): Interaction => ({
@@ -428,13 +472,12 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             charactersPerSecond: outcome.response_characters_per_second,
             cues: [],
           })),
-          dialoguePerformance: migrateLegacyMediaCues(parseJson(
-            outcome.response_dialogue_performance_json,
-            DEFAULT_TEXT_PERFORMANCE,
-          )),
+          dialoguePerformance: migrateLegacyMediaCues(parseJson(outcome.response_dialogue_performance_json, DEFAULT_TEXT_PERFORMANCE)),
           effects: migrateLegacyMediaEffects(parseJson(outcome.effects_json, [])) as Interaction["outcomes"][number]["effects"],
           disposition: outcome.disposition,
-          destinationNodeId: outcome.destination_node_id,
+          destination: outcome.destination_node_id
+            ? { nodeId: outcome.destination_node_id, openingId: outcome.destination_opening_id }
+            : null,
         })),
       })),
     };
@@ -446,31 +489,27 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       const anchor = node.anchor ?? { mode: "continue" as const, text: "" };
       const locationMode = nodeLocationMode(node);
       const conversationMode = nodeConversationMode(node);
-      const dialoguePerformance = node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE;
+      const openingIds = node.openings.map((opening) => opening.id);
+      const deleteRemovedOpenings = openingIds.length
+        ? db.prepare(`DELETE FROM node_openings WHERE node_id = ? AND id NOT IN (${openingIds.map(() => "?").join(", ")})`).bind(node.id, ...openingIds)
+        : db.prepare("DELETE FROM node_openings WHERE node_id = ?").bind(node.id);
       return [
         db.prepare(
-          `INSERT INTO nodes (id, node_number, text, characters_per_second, updated_at)
-           VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-           ON CONFLICT(id) DO UPDATE SET node_number=excluded.node_number, text=excluded.text,
-             characters_per_second=excluded.characters_per_second, updated_at=CURRENT_TIMESTAMP`,
-        ).bind(node.id, node.nodeNumber, node.text, node.performance.charactersPerSecond),
+          `INSERT INTO nodes (id, node_number, author_label, updated_at)
+           VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+           ON CONFLICT(id) DO UPDATE SET node_number=excluded.node_number, author_label=excluded.author_label,
+             updated_at=CURRENT_TIMESTAMP`,
+        ).bind(node.id, node.nodeNumber, node.authorLabel),
         db.prepare(
-          `INSERT INTO node_details
-             (node_id, ending, tags_json, performance_json, dialogue_text, dialogue_performance_json,
-              entry_effects_json, anchor_mode, anchor_text)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `INSERT INTO node_details (node_id, ending, tags_json, entry_effects_json, anchor_mode, anchor_text)
+           VALUES (?, ?, ?, ?, ?, ?)
            ON CONFLICT(node_id) DO UPDATE SET ending=excluded.ending, tags_json=excluded.tags_json,
-             performance_json=excluded.performance_json, dialogue_text=excluded.dialogue_text,
-             dialogue_performance_json=excluded.dialogue_performance_json,
              entry_effects_json=excluded.entry_effects_json, anchor_mode=excluded.anchor_mode,
              anchor_text=excluded.anchor_text`,
         ).bind(
           node.id,
           Number(node.ending),
           JSON.stringify(node.tags),
-          JSON.stringify(node.performance),
-          node.dialogueText ?? "",
-          JSON.stringify(dialoguePerformance),
           JSON.stringify(node.entryEffects ?? []),
           anchor.mode,
           anchor.text,
@@ -489,6 +528,26 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           conversationMode,
           nodeConversationCharacterId(node),
         ),
+        ...node.openings.map((opening) => db.prepare(
+          `INSERT INTO node_openings
+             (id, node_id, order_index, condition_json, narration_text, dialogue_text,
+              narration_performance_json, dialogue_performance_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(id) DO UPDATE SET node_id=excluded.node_id, order_index=excluded.order_index,
+             condition_json=excluded.condition_json, narration_text=excluded.narration_text,
+             dialogue_text=excluded.dialogue_text, narration_performance_json=excluded.narration_performance_json,
+             dialogue_performance_json=excluded.dialogue_performance_json`,
+        ).bind(
+          opening.id,
+          node.id,
+          opening.order,
+          JSON.stringify(opening.condition),
+          opening.narrationText,
+          opening.dialogueText,
+          JSON.stringify(opening.narrationPerformance),
+          JSON.stringify(opening.dialoguePerformance),
+        )),
+        deleteRemovedOpenings,
       ];
     }
 
@@ -533,8 +592,9 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           return db.prepare(
             `INSERT INTO interaction_outcomes
              (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text, response_speaker_id,
-              response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition, destination_node_id, author_status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json,
+              disposition, destination_node_id, destination_opening_id, author_status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ).bind(
             outcome.id,
             value.id,
@@ -549,7 +609,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             JSON.stringify(dialoguePerformance),
             JSON.stringify(outcome.effects),
             outcome.disposition,
-            outcome.destinationNodeId,
+            outcome.destination?.nodeId ?? null,
+            outcome.destination?.openingId ?? null,
             outcome.authorStatus ?? "configured",
           );
         }),
@@ -577,6 +638,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       db.prepare("DELETE FROM interaction_outcomes"),
       db.prepare("DELETE FROM interaction_choice_visibility_conditions"),
       db.prepare("DELETE FROM interactions"),
+      db.prepare("DELETE FROM node_openings"),
       db.prepare("DELETE FROM node_context"),
       db.prepare("DELETE FROM node_details"),
       db.prepare("DELETE FROM nodes WHERE id <> (SELECT start_node_id FROM project_meta WHERE id = 1)"),
