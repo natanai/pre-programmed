@@ -1,6 +1,6 @@
 import { authoredSource, type AuthoredSourceIdentity } from "../../engine/presentation/authoredSource";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { evaluateCondition } from "../../engine/rules/conditions";
+import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
@@ -77,9 +77,13 @@ export function executeInteraction(
     attempts: { ...initialState.attempts, [eventKey]: attempt },
   };
   const scope = { kind: "node" as const, id: interaction.sourceNodeId };
-  const outcome = [...interaction.outcomes]
-    .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
-    .find((candidate) => evaluateCondition(candidate.condition, { snapshot, state, eventKey, scope })) ?? null;
+  const outcome = selectConditionalCandidate(interaction.outcomes, {
+    snapshot,
+    state,
+    eventKey,
+    occurrence: attempt,
+    scope,
+  });
 
   if (!outcome) return {
     state,
@@ -102,8 +106,8 @@ export function executeInteraction(
   });
   state = execution.state;
 
-  if (outcome.disposition === "transition" && outcome.destinationNodeId) {
-    state = transitionState(state, outcome.destinationNodeId);
+  if (outcome.disposition === "transition" && outcome.destination) {
+    state = transitionState(state, outcome.destination);
   }
 
   const interactionEvents = execution.events.map((event) => {
