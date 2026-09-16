@@ -10,7 +10,7 @@ import {
   resolveNodeOpeningPresentation,
 } from "../src/features/narrative/runtime/presentation";
 import { transitionState } from "../src/features/narrative/effectRuntime";
-import { executeSqlScript, MIGRATION_SCRIPTS, splitSqlStatements } from "../worker/db/migrations";
+import { MIGRATION_SCRIPTS, splitSqlStatements } from "../worker/db/migrations";
 import { WORKER_FEATURE_PERSISTENCE } from "../worker/features/catalog";
 import { narrativeReferenceIssues } from "../worker/features/narrativeIntegrity";
 import { interaction, node, project } from "./fixtures";
@@ -170,15 +170,18 @@ describe("Node entry responses", () => {
   });
 
   it("reports cross-Node opening targets and duplicate opening ownership as graph integrity damage", () => {
-    const left = withOpenings(node("left", 1), [opening("shared-opening", 0, { type: "always" }, "Left")]);
+    const left = withOpenings(node("left", 1), [
+      opening("left-only", 0, { type: "always" }, "Left"),
+      opening("duplicate-opening", 1, { type: "always" }, "Left duplicate"),
+    ]);
     const right = withOpenings(node("right", 2), [
       opening("right-opening", 0, { type: "always" }, "Right"),
-      opening("shared-opening", 1, { type: "always" }, "Duplicate"),
+      opening("duplicate-opening", 1, { type: "always" }, "Right duplicate"),
     ]);
     const link = interaction("go", left.id, right.id, ["go"]);
     link.outcomes[0] = {
       ...link.outcomes[0],
-      destination: { nodeId: right.id, openingId: left.openings[0].id },
+      destination: { nodeId: right.id, openingId: "left-only" },
     };
     const snapshot = project({ startNodeId: left.id, nodes: [left, right], interactions: [link] });
     const messages = narrativeReferenceIssues(snapshot).map((issue) => issue.message);
@@ -267,6 +270,3 @@ describe("Node entry responses", () => {
     }
   });
 });
-
-// Keep the imported async helper exercised by TypeScript without adding a second migration runner.
-void executeSqlScript;
