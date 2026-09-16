@@ -4,6 +4,7 @@ export function initializeNarrativePlayState(snapshot: ProjectSnapshot, state: P
   return {
     ...state,
     currentNodeId: snapshot.startNodeId,
+    currentNodeOpeningId: null,
     traversal: [snapshot.startNodeId],
     attempts: {},
     visitedNodeIds: [snapshot.startNodeId],
