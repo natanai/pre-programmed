@@ -15,13 +15,13 @@ function innermostColorCue(cues: TextCue[], index: number) {
     .sort((left, right) => right.start - left.start || (left.end - left.start) - (right.end - right.start))[0];
 }
 
-function opacityAt(cues: TextCue[], index: number) {
+function opacityFromTransparency(cues: TextCue[], index: number) {
   const values = cues
-    .filter((cue) => cue.type === "opacity" && rangeContains(cue, index))
+    .filter((cue) => cue.type === "transparency" && rangeContains(cue, index))
     .map(cueNumber)
     .filter((value): value is number => value !== null);
   if (!values.length) return undefined;
-  return values.reduce((result, value) => result * Math.max(0, Math.min(100, value)) / 100, 1);
+  return values.reduce((result, value) => result * (1 - Math.max(0, Math.min(100, value)) / 100), 1);
 }
 
 function disappearAt(cues: TextCue[], index: number, presentedAt: number) {
@@ -72,7 +72,7 @@ export function RenderedPerformanceText({
         .map((cue) => `cue-${cue.type}`))]
       : [];
     const colorCue = innermostColorCue(performance.cues, index);
-    const opacity = opacityAt(performance.cues, index);
+    const opacity = opacityFromTransparency(performance.cues, index);
     const deadline = disappearAt(performance.cues, index, presentedAt);
     const hidden = deadline !== undefined && deadline <= now;
     const style: CSSProperties = {

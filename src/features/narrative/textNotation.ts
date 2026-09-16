@@ -6,7 +6,7 @@ export type CompiledTextPerformance = {
   performance: TextPerformance;
 };
 
-type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed" | "opacity" | "color" | "disappear";
+type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed" | "transparency" | "color" | "disappear";
 
 type OpenScope = {
   code: ScopeCode;
@@ -47,8 +47,8 @@ function scopeHeadAt(rawText: string, index: number): ScopeHead | null {
   const speed = source.match(/^\/speed(\d{1,3})\{/);
   if (speed) return { code: "speed", rawLength: speed[0].length, value: Number(speed[1]) };
 
-  const opacity = source.match(/^\/opacity(\d{1,3})\{/);
-  if (opacity) return { code: "opacity", rawLength: opacity[0].length, value: Number(opacity[1]) };
+  const transparency = source.match(/^\/transparency(\d{1,3})\{/);
+  if (transparency) return { code: "transparency", rawLength: transparency[0].length, value: Number(transparency[1]) };
 
   const disappear = source.match(/^\/disappear(\d{1,4}(?:\.\d{1,3})?)\{/);
   if (disappear) return { code: "disappear", rawLength: disappear[0].length, value: Number(disappear[1]) };
@@ -62,11 +62,11 @@ function scopeHeadAt(rawText: string, index: number): ScopeHead | null {
 }
 
 function parameterScopeSyntaxIssue(rawText: string, index: number): string | null {
-  const malformed = rawText.slice(index).match(/^\/(speed|opacity|disappear|color)([^{}]*)\{/i);
+  const malformed = rawText.slice(index).match(/^\/(speed|transparency|disappear|color)([^{}]*)\{/i);
   if (!malformed) return null;
   switch (malformed[1].toLowerCase()) {
     case "speed": return "Speed must be an integer from 1 to 120, for example /speed30{text}.";
-    case "opacity": return "Opacity must be an integer from 0 to 100, for example /opacity50{text}.";
+    case "transparency": return "Transparency must be an integer from 0 to 100, for example /transparency50{text}.";
     case "disappear": return `Disappear time must be between 0 and ${MAX_DISAPPEAR_SECONDS} seconds, for example /disappear3{text}.`;
     case "color": return "Color must be a 3- or 6-digit HEX value, for example /color#FF8800{text}.";
     default: return null;
@@ -89,8 +89,8 @@ export function validateTextNotation(rawText: string): TextNotationIssue[] {
       if (scope.code === "speed" && (Number(scope.value) < 1 || Number(scope.value) > 120)) {
         issues.push({ index, message: `Inline speed at character ${index + 1} must be between 1 and 120.` });
       }
-      if (scope.code === "opacity" && (Number(scope.value) < 0 || Number(scope.value) > 100)) {
-        issues.push({ index, message: `Inline opacity at character ${index + 1} must be between 0 and 100.` });
+      if (scope.code === "transparency" && (Number(scope.value) < 0 || Number(scope.value) > 100)) {
+        issues.push({ index, message: `Inline transparency at character ${index + 1} must be between 0 and 100.` });
       }
       if (scope.code === "disappear" && (Number(scope.value) < 0 || Number(scope.value) > MAX_DISAPPEAR_SECONDS)) {
         issues.push({ index, message: `Disappear time at character ${index + 1} must be between 0 and ${MAX_DISAPPEAR_SECONDS} seconds.` });
@@ -147,7 +147,7 @@ function clampSpeed(value: number) {
   return Math.max(1, Math.min(120, Math.round(value)));
 }
 
-function clampOpacity(value: number) {
+function clampTransparency(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
 
@@ -187,8 +187,8 @@ function scopeCues(scope: OpenScope, end: number, baseSpeed: number, sequence: n
       return [generatedCue(id("shake"), "shake", scope.outputStart, end)];
     case "speed":
       return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(Number(scope.value ?? baseSpeed)))];
-    case "opacity":
-      return [generatedCue(id("opacity"), "opacity", scope.outputStart, end, clampOpacity(Number(scope.value ?? 100)))];
+    case "transparency":
+      return [generatedCue(id("transparency"), "transparency", scope.outputStart, end, clampTransparency(Number(scope.value ?? 0)))];
     case "color":
       return [generatedCue(id("color"), "color", scope.outputStart, end, normalizeHexColor(String(scope.value ?? "#FFFFFF")))];
     case "disappear":

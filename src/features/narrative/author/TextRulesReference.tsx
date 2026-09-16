@@ -1,6 +1,6 @@
 import "./textRulesReference.css";
 
-export type InlineTextRule = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed" | "opacity" | "color" | "disappear" | "pause" | "literal-slash";
+export type InlineTextRule = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed" | "transparency" | "color" | "disappear" | "pause" | "literal-slash";
 
 export type InlineFeatureCommandAction = {
   code: string;
@@ -43,7 +43,7 @@ export function TextRulesReference({
       {onApply ? <div className="text-rule-group">
         <strong>APPEARANCE</strong>
         <div className="text-rule-actions" aria-label="Insert appearance command">
-          <button type="button" onClick={() => onApply("opacity")}>[OPACITY]</button>
+          <button type="button" onClick={() => onApply("transparency")}>[TRANSPARENCY]</button>
           <button type="button" onClick={() => onApply("color")}>[COLOR]</button>
           <button type="button" onClick={() => onApply("disappear")}>[DISAPPEAR]</button>
         </div>
@@ -69,7 +69,7 @@ export function TextRulesReference({
         <span><strong>/speed30&#123;text&#125;</strong> 30 chars/sec</span>
         <span><strong>/b&#123;text&#125;</strong> blink</span>
         <span><strong>/i&#123;text&#125;</strong> instant</span>
-        <span><strong>/opacity50&#123;text&#125;</strong> 50% opacity</span>
+        <span><strong>/transparency50&#123;text&#125;</strong> 50% transparent</span>
         <span><strong>/color#FF8800&#123;text&#125;</strong> HEX color</span>
         <span><strong>/disappear3&#123;text&#125;</strong> disappear after 3 sec</span>
         <span><strong>/p</strong> short pause</span>

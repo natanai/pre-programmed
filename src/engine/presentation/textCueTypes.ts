@@ -9,7 +9,7 @@ export type CoreTextCueType =
   | "shake"
   | "blink"
   | "instant"
-  | "opacity"
+  | "transparency"
   | "color"
   | "disappear";
 
