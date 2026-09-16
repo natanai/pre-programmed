@@ -30,11 +30,15 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
       ));
       const referencedItems = snapshot.items.filter((item) => referencedItemIds.has(item.id));
       const prose = node.text || node.dialogueText || "";
+      const nodeNumber = String(node.nodeNumber);
+      const paddedNodeNumber = nodeNumber.padStart(3, "0");
       return {
         id: node.id,
         kind: "node" as const,
-        label: `#${String(node.nodeNumber).padStart(3, "0")} ${prose.slice(0, 90)}`,
+        label: `#${paddedNodeNumber} ${prose.slice(0, 90)}`,
         searchText: [
+          nodeNumber,
+          paddedNodeNumber,
           node.text,
           node.dialogueText ?? "",
           ...node.tags,
