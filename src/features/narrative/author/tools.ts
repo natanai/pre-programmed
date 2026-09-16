@@ -9,7 +9,7 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => [{
   tool: {
     id: "structure",
     label: "STRUCTURE",
-    description: "Browse nodes, links, and authored interactions.",
+    description: "Browse Nodes, entry routes, and authored interactions.",
     onSelect: () => context.pushTask({ type: "feature", feature: "narrative", workspace: "structure" }),
   },
 }];
@@ -25,11 +25,11 @@ export const narrativeAuthorSearch: AuthorSearchContributor = (context) => {
   });
   return [
     {
-      id: "narrative:node-text-rules",
+      id: "narrative:node-entry-responses",
       groupLabel: `NODE #${currentNode.nodeNumber}`,
-      label: "NODE TEXT + TEXT RULES",
-      description: `Edit Node #${currentNode.nodeNumber} prose, speaker, location, timing, and presentation.`,
-      searchText: "current node writing narration speaker character voice performance pause fast speed shout hit emphasis notation cue rules",
+      label: "NODE ENTRY RESPONSES",
+      description: `Edit Node #${currentNode.nodeNumber}'s conditional entry prose, conversation delivery, timing, and presentation.`,
+      searchText: "current node entry opening openings response responses writing narration dialogue speaker character voice performance pause fast speed shout hit emphasis notation cue rules condition first second time",
       onSelect: editNode,
     },
     {
