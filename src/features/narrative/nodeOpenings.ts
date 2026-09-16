@@ -18,15 +18,25 @@ export function createNodeOpening(order = 0): NodeOpening {
   };
 }
 
+export function orderedNodeOpenings(node: Pick<GameNode, "openings">) {
+  return [...node.openings].sort((left, right) => left.order - right.order || left.id.localeCompare(right.id));
+}
+
+/** Deterministic author/search fallback only; runtime AUTO selection uses conditions. */
+export function defaultNodeOpening(node: Pick<GameNode, "openings">) {
+  return orderedNodeOpenings(node)[0] ?? null;
+}
+
+export function nodeOpeningText(opening: Pick<NodeOpening, "narrationText" | "dialogueText">) {
+  return opening.narrationText || opening.dialogueText || "";
+}
+
 export function nodeEntryCount(state: Pick<PlayState, "traversal">, nodeId: string) {
   return state.traversal.reduce((count, traversedNodeId) => count + Number(traversedNodeId === nodeId), 0);
 }
 
 export function nodeOpeningSnippet(opening: NodeOpening, maxLength = 90) {
-  const text = [opening.narrationText, opening.dialogueText]
-    .find((value) => value.trim())
-    ?.trim()
-    .replace(/\s+/g, " ") ?? "";
+  const text = nodeOpeningText(opening).trim().replace(/\s+/g, " ");
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
