@@ -9,7 +9,7 @@ import { makeId } from "../../../engine/project/id";
 import type { Condition } from "../../../engine/rules/model";
 import { resolveActiveNodeAnchor } from "../anchor";
 import type { GameNode, NodeAnchor, NodeContextMode, NodeOpening } from "../model";
-import { createNodeOpening, nodeOpeningSnippet } from "../nodeOpenings";
+import { createNodeOpening, nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
 import { nextNodeNumber } from "../nodeNumber";
 import {
   nodeConversationCharacterId,
@@ -115,6 +115,7 @@ function OpeningEditor({
   conversationCharacterId,
   references,
   autoFocus,
+  focusSection,
   onChange,
   onMove,
   onRemove,
@@ -129,6 +130,7 @@ function OpeningEditor({
   conversationCharacterId: string | null;
   references: number;
   autoFocus: boolean;
+  focusSection?: "narration" | "dialogue";
   onChange: (opening: NodeOpening) => void;
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
@@ -158,7 +160,7 @@ function OpeningEditor({
           playState={playState}
           label="NARRATION"
           rows={6}
-          autoFocus={autoFocus && !conversationCharacterId}
+          autoFocus={autoFocus && (focusSection === "narration" || (!focusSection && !conversationCharacterId))}
           onChange={(value) => onChange({ ...opening, narrationText: value.text, narrationPerformance: value.performance })}
           onPreview={(value) => onPreview({ text: value.text, performance: value.performance, speakerId: null })}
         />
@@ -168,7 +170,7 @@ function OpeningEditor({
           playState={playState}
           label={dialogueLabel}
           rows={6}
-          autoFocus={autoFocus && Boolean(conversationCharacterId)}
+          autoFocus={autoFocus && (focusSection === "dialogue" || (!focusSection && Boolean(conversationCharacterId)))}
           onChange={(value) => onChange({ ...opening, dialogueText: value.text, dialoguePerformance: value.performance })}
           onPreview={(value) => onPreview({ text: value.text, performance: value.performance, speakerId: conversationCharacterId })}
         /> : null}
@@ -211,6 +213,10 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const anchor = nodeAnchor(draft.node);
     const entryEffects = draft.node.entryEffects ?? [];
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
+    const focusedOpeningId = data?.openingId;
+    const focusedSection = data?.section === "narration" || data?.section === "dialogue"
+      ? data.section
+      : undefined;
 
     const traversalIndex = context.playState.traversal.lastIndexOf(draft.node.id);
     const inheritContextFromNodeId = data?.inheritContextFromNodeId;
@@ -324,7 +330,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
 
     return {
       id: "narrative.node",
-      title: `NODE #${draft.node.nodeNumber}${draft.node.authorLabel.trim() ? ` · ${draft.node.authorLabel.trim().toUpperCase()}` : ""}`,
+      title: nodeAuthorTitle(draft.node).toUpperCase(),
       blocks: [
         {
           type: "custom",
@@ -364,6 +370,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             <small>AUTO entry evaluates these in order and uses the first matching condition. Other responses may explicitly target one opening by its stable identity.</small>
             {orderedOpenings.map((opening, index) => {
               const references = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.filter((outcome) => outcome.destination?.nodeId === draft.node.id && outcome.destination.openingId === opening.id).length, 0);
+              const focused = focusedOpeningId === opening.id;
               return <OpeningEditor
                 key={opening.id}
                 opening={opening}
@@ -374,7 +381,8 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
                 conversationName={conversationName}
                 conversationCharacterId={resolvedConversationId}
                 references={references}
-                autoFocus={!data?.nodeId && index === 0}
+                autoFocus={focusedOpeningId ? focused : !data?.nodeId && index === 0}
+                focusSection={focused ? focusedSection : undefined}
                 onChange={(value) => updateOpening(opening.id, value)}
                 onMove={(direction) => moveOpening(opening.id, direction)}
                 onRemove={() => removeOpening(opening.id)}
@@ -480,7 +488,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         kind: "node",
         id: draft.node.id,
         value: draft.node.id,
-        label: `Node #${draft.node.nodeNumber}${node.authorLabel ? ` · ${node.authorLabel}` : ""}`,
+        label: nodeAuthorTitle(node),
       } : undefined,
     };
   },
