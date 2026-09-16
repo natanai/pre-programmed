@@ -74,7 +74,7 @@
   align-items: center;
   justify-content: space-between;
   gap: .75em;
-  padding: .55em .7em;
+  padding: .48em .65em;
   cursor: pointer;
   list-style: none;
 }
@@ -128,6 +128,23 @@
 .node-anchor-body {
   padding: .7em;
   border-top: 1px dashed var(--dos-line);
+}
+
+/* Node authoring should present controls, not repeat architecture documentation. */
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] .author-ui-custom[data-author-ui-role="specialized-control"] > .guided-section > h3 + small {
+  display: none;
+}
+
+/* A single Entry Response is already expanded, so its second summary/header only
+   repeats information and consumes scarce vertical space. Multiple variants keep
+   their summaries because those are the selector for each conditional response. */
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > details.guided-section:only-of-type > summary {
+  display: none;
+}
+
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > details.guided-section:only-of-type {
+  margin-top: 0;
+  padding-top: 0;
 }
 
 @media (pointer: coarse) {
