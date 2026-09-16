@@ -81,7 +81,6 @@ export function resumeAuthorBookmark(snapshot: ProjectSnapshot, bookmark: Author
   return resumePlayState(snapshot, {
     ...bookmark.playState,
     currentNodeId: bookmark.nodeId,
-    currentNodeOpeningId: null,
     traversal: [...bookmark.traversal],
   }, bookmark.createdAt, now);
 }
