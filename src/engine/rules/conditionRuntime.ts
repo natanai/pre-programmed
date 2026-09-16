@@ -6,6 +6,11 @@ export type ConditionContext = {
   snapshot: ProjectSnapshot;
   state: PlayState;
   eventKey?: string;
+  /**
+   * Explicit occurrence for the authored thing currently being selected.
+   * When omitted, attempt conditions retain their event-key-backed behavior.
+   */
+  occurrence?: number;
   scope?: RuleScope;
 };
 

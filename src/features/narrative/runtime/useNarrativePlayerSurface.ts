@@ -37,10 +37,10 @@ function notationForInput(
   interaction: Interaction,
 ) {
   if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
-  const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
+  const first = [...interaction.outcomes].sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))[0];
   if (!first) return "[D]";
-  if (first.disposition === "stay" || !first.destinationNodeId) return "[H]";
-  return notationForNode(snapshot, graph, state.currentNodeId, state.traversal, first.destinationNodeId).join("") || "[A1]";
+  if (first.disposition === "stay" || !first.destination) return "[H]";
+  return notationForNode(snapshot, graph, state.currentNodeId, state.traversal, first.destination.nodeId).join("") || "[A1]";
 }
 
 /**

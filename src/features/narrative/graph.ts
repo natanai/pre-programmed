@@ -25,9 +25,9 @@ export function buildGraphIndex(snapshot: ProjectSnapshot): GraphIndex {
   const incoming = new Map(snapshot.nodes.map((node) => [node.id, new Set<string>()]));
   for (const interaction of snapshot.interactions) {
     for (const outcome of interaction.outcomes) {
-      if (outcome.disposition !== "transition" || !outcome.destinationNodeId) continue;
-      outgoing.get(interaction.sourceNodeId)?.add(outcome.destinationNodeId);
-      incoming.get(outcome.destinationNodeId)?.add(interaction.sourceNodeId);
+      if (outcome.disposition !== "transition" || !outcome.destination) continue;
+      outgoing.get(interaction.sourceNodeId)?.add(outcome.destination.nodeId);
+      incoming.get(outcome.destination.nodeId)?.add(interaction.sourceNodeId);
     }
   }
   return { outgoing, incoming, byId: new Map(snapshot.nodes.map((node) => [node.id, node])) };

@@ -24,7 +24,10 @@ export function evaluateCondition(condition: Condition, context: ConditionContex
       return !evaluateCondition(condition.condition, context);
     case "attempt": {
       const eventKey = condition.eventKey || context.eventKey || "";
-      return compareValues(state.attempts[eventKey] ?? 0, condition.operator, condition.value);
+      const occurrence = condition.eventKey
+        ? state.attempts[condition.eventKey] ?? 0
+        : context.occurrence ?? state.attempts[eventKey] ?? 0;
+      return compareValues(occurrence, condition.operator, condition.value);
     }
     case "state":
       return compareValues(state[condition.field], condition.operator, condition.value);

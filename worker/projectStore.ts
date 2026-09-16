@@ -5,6 +5,7 @@ import type {
   RevisionSummary,
 } from "../src/engine/project/model";
 import { applyOperations } from "../src/engine/project/mutations";
+import { normalizeProjectSnapshot } from "../src/engine/project/settings";
 import { parseJson } from "./db/json";
 import { ensureSchema } from "./db/schema";
 import {
@@ -119,7 +120,10 @@ export async function undo(db: D1Database, expectedRevision: number) {
   }>(target.payload, {});
   if (!payload.beforeSnapshot) return json({ error: "This revision cannot be undone." }, { status: 409 });
   const current = await getProjectSnapshot(db);
-  const statements = projectRestoreStatements(db, payload.beforeSnapshot);
+  // Revisions can outlive schema migrations. Translate historical snapshots once
+  // at the restore boundary so feature persistence never needs legacy Node paths.
+  const beforeSnapshot = normalizeProjectSnapshot(payload.beforeSnapshot as Parameters<typeof normalizeProjectSnapshot>[0]);
+  const statements = projectRestoreStatements(db, beforeSnapshot);
   if (payload.beforeFeatureData) {
     statements.push(...workerPortableFeatureRestoreStatements(db, payload.beforeFeatureData));
   }

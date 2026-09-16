@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { normalizeProjectSnapshot } from "../src/engine/project/settings";
 import { collectD1Backup, collectProjectBackup, type BackupDatabase } from "../worker/backup";
 import { handleApi } from "../worker/index";
 import { migratePortableProject } from "../worker/portableProject";
@@ -65,10 +66,108 @@ describe("canonical project backup", () => {
       bookmarks: [],
       featureData: {},
     });
+    const normalized = normalizeProjectSnapshot({ ...portableSnapshot, revision: 0 });
+    const { revision: _normalizedRevision, ...normalizedPortable } = normalized;
 
-    expect(document.version).toBe(2);
-    expect(document.project).toEqual(portableSnapshot);
+    expect(document.version).toBe(3);
+    expect(document.project).toEqual(normalizedPortable);
     expect(document).not.toHaveProperty("bookmarks");
     expect(JSON.stringify(document)).not.toMatch(/workers\.dev|cloudflare|PORTABLE_EXECUTABLE_DIR|database_id|account_id|natanai/i);
+  });
+
+  it("migrates portable v2 Node prose and destination ids into canonical entry responses", () => {
+    const snapshot = project({ revision: 42 });
+    const { revision: _revision, ...portableSnapshot } = snapshot;
+    const performance = { charactersPerSecond: 23, cues: [] };
+    const dialoguePerformance = { charactersPerSecond: 17, cues: [] };
+    const legacyProject = {
+      ...portableSnapshot,
+      schemaVersion: 44,
+      nodes: [
+        {
+          id: "a",
+          nodeNumber: 1,
+          text: "Do you have a question?",
+          dialogueText: "Ask away.",
+          ending: false,
+          tags: [],
+          locationId: null,
+          locationMode: "continue",
+          conversationCharacterId: null,
+          conversationMode: "continue",
+          anchor: { mode: "continue", text: "" },
+          entryEffects: [],
+          performance,
+          dialoguePerformance,
+        },
+        {
+          id: "b",
+          nodeNumber: 2,
+          text: "Anything else?",
+          dialogueText: "",
+          ending: false,
+          tags: [],
+          locationId: null,
+          locationMode: "continue",
+          conversationCharacterId: null,
+          conversationMode: "continue",
+          anchor: { mode: "continue", text: "" },
+          entryEffects: [],
+          performance,
+          dialoguePerformance,
+        },
+      ],
+      interactions: [{
+        id: "ask-again",
+        sourceNodeId: "a",
+        order: 0,
+        wording: "again",
+        matchMode: "command",
+        choiceVisibility: "prompt",
+        choiceVisibleWhen: { type: "always" },
+        aliases: ["again"],
+        tags: [],
+        notes: "",
+        outcomes: [{
+          id: "ask-again-default",
+          order: 0,
+          label: "default",
+          authorStatus: "configured",
+          condition: { type: "always" },
+          responseText: "",
+          dialogueText: "",
+          speakerId: null,
+          responsePerformance: performance,
+          dialoguePerformance,
+          effects: [],
+          disposition: "transition",
+          destinationNodeId: "b",
+        }],
+      }],
+    };
+
+    const document = migratePortableProject({
+      format: "pre-programmed-project",
+      version: 2,
+      exportedAt: "2026-09-15T00:00:00.000Z",
+      sourceSchemaVersion: 44,
+      project: legacyProject,
+      featureData: {},
+    });
+
+    expect(document.version).toBe(3);
+    expect(document.project.nodes[0]).not.toHaveProperty("text");
+    expect(document.project.nodes[0]).not.toHaveProperty("dialogueText");
+    expect(document.project.nodes[0].openings).toEqual([{
+      id: "node-opening:a:default",
+      order: 0,
+      condition: { type: "always" },
+      narrationText: "Do you have a question?",
+      dialogueText: "Ask away.",
+      narrationPerformance: performance,
+      dialoguePerformance,
+    }]);
+    expect(document.project.interactions[0].outcomes[0]).not.toHaveProperty("destinationNodeId");
+    expect(document.project.interactions[0].outcomes[0].destination).toEqual({ nodeId: "b", openingId: null });
   });
 });

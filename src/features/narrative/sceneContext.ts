@@ -16,47 +16,25 @@ export type ActiveNodeContext = {
   conversation: ActiveNodeConversationContext | null;
 };
 
-type LegacyNodeContext = {
-  characterId?: string | null;
-  presentCharacters?: { mode?: NodeContextMode; characterIds?: string[] };
-  conversation?: { mode?: NodeContextMode; characterIds?: string[] };
-};
-
-/** Historical location ids meant "set here"; a missing location means Continue. */
+/** Historical location ids are normalized at the project boundary before runtime. */
 export function nodeLocationMode(node: Pick<GameNode, "locationId" | "locationMode">): NodeLocationMode {
   return node.locationMode ?? (node.locationId ? "set" : "continue");
 }
 
-/** Read the short-lived multi-character/speaker prototype without preserving it as a current model. */
 export function nodeConversationMode(node: GameNode): NodeContextMode {
-  if (node.conversationMode) return node.conversationMode;
-  const legacy = node as GameNode & LegacyNodeContext;
-  if (legacy.characterId) return "set";
-  return legacy.conversation?.mode ?? "continue";
+  return node.conversationMode ?? "continue";
 }
 
 export function nodeConversationCharacterId(node: GameNode): string | null {
-  if (nodeConversationMode(node) !== "set") return null;
-  if (node.conversationCharacterId) return node.conversationCharacterId;
-  const legacy = node as GameNode & LegacyNodeContext;
-  return legacy.characterId
-    || legacy.conversation?.characterIds?.find((id) => typeof id === "string" && Boolean(id.trim()))
-    || null;
+  return nodeConversationMode(node) === "set" ? node.conversationCharacterId ?? null : null;
 }
 
 /** Canonical persisted shape: only Where and Conversation travel with the Node path. */
 export function normalizeNodeContext(node: GameNode): GameNode {
-  const legacy = node as GameNode & LegacyNodeContext;
-  const {
-    characterId: _legacySpeaker,
-    presentCharacters: _legacyPresence,
-    conversation: _legacyConversation,
-    ...current
-  } = legacy;
   const locationMode = nodeLocationMode(node);
   const conversationMode = nodeConversationMode(node);
   return {
-    ...current,
+    ...node,
     locationMode,
     locationId: locationMode === "set" ? node.locationId : null,
     conversationMode,

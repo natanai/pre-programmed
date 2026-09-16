@@ -1,5 +1,6 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
+import { nodeOpeningSnippet } from "../../features/narrative/nodeOpenings";
 import { normalizeCommand } from "../../features/narrative/parser";
 import { nodeConversationCharacterId } from "../../features/narrative/sceneContext";
 import { getAuthorSearchDocumentContributions } from "../features/registry";
@@ -29,19 +30,27 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
         )),
       ));
       const referencedItems = snapshot.items.filter((item) => referencedItemIds.has(item.id));
-      const prose = node.text || node.dialogueText || "";
+      const primaryOpening = [...node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id))[0];
+      const preview = primaryOpening ? nodeOpeningSnippet(primaryOpening) : "";
       const nodeNumber = String(node.nodeNumber);
       const paddedNodeNumber = nodeNumber.padStart(3, "0");
+      const authorName = node.authorLabel.trim();
       return {
         id: node.id,
         kind: "node" as const,
-        label: `#${paddedNodeNumber} ${prose.slice(0, 90)}`,
+        label: `#${paddedNodeNumber}${authorName ? ` ${authorName}` : ""}${preview ? ` — ${preview}` : ""}`,
         searchText: [
           nodeNumber,
           paddedNodeNumber,
-          node.text,
-          node.dialogueText ?? "",
+          node.authorLabel,
           ...node.tags,
+          ...node.openings.flatMap((opening) => [
+            opening.narrationText,
+            opening.dialogueText,
+            JSON.stringify(opening.condition),
+            JSON.stringify(opening.narrationPerformance.cues),
+            JSON.stringify(opening.dialoguePerformance.cues),
+          ]),
           ...interactions.flatMap((interaction) => [
             interaction.wording,
             interaction.notes,
@@ -56,8 +65,6 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
               outcome.speakerId ?? "",
             ]),
           ]),
-          JSON.stringify(node.performance.cues),
-          JSON.stringify(node.dialoguePerformance?.cues ?? []),
           ...context.flatMap((entity) => [entity.key, entity.name, entity.description, ...entity.tags]),
           ...referencedItems.flatMap((item) => [item.key, item.name, item.description, ...item.tags]),
         ].join(" "),

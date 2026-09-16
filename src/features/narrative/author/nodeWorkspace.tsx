@@ -1,12 +1,15 @@
 import { EffectsEditor } from "../../../author/EffectsEditor";
+import { OutcomeConditionEditor } from "../../../author/outcomes/OutcomeComposer";
 import type { AuthorWorkspaceContext } from "../../../author/features/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
+import type { Condition } from "../../../engine/rules/model";
 import { resolveActiveNodeAnchor } from "../anchor";
-import type { GameNode, NodeAnchor, NodeContextMode, TextPerformance } from "../model";
+import type { GameNode, NodeAnchor, NodeContextMode, NodeOpening } from "../model";
+import { createNodeOpening, nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
 import { nextNodeNumber } from "../nodeNumber";
 import {
   nodeConversationCharacterId,
@@ -24,14 +27,9 @@ type NodeWorkspaceDraft = {
 };
 
 const CONTINUE_ANCHOR: NodeAnchor = { mode: "continue", text: "" };
-const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
 
 function nodeAnchor(node: GameNode): NodeAnchor {
   return node.anchor ?? CONTINUE_ANCHOR;
-}
-
-function nodeDialoguePerformance(node: GameNode): TextPerformance {
-  return node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE;
 }
 
 function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
@@ -45,8 +43,8 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
   return {
     id: makeId(),
     nodeNumber: nextNodeNumber(context.snapshot),
-    text: "",
-    dialogueText: "",
+    authorLabel: "",
+    openings: [createNodeOpening(0)],
     ending: false,
     tags: [],
     locationId: null,
@@ -55,8 +53,6 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     conversationMode: "continue",
     anchor: { ...CONTINUE_ANCHOR },
     entryEffects: [],
-    performance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
-    dialoguePerformance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
   } satisfies GameNode;
 }
 
@@ -88,6 +84,107 @@ function entityName(context: AuthorWorkspaceContext, id: string | null | undefin
   return entity?.name || entity?.key || "missing resource";
 }
 
+function conditionSummary(condition: Condition): string {
+  switch (condition.type) {
+    case "always": return "Always";
+    case "attempt": {
+      if (condition.operator === "eq" && condition.value === 1) return "First entry";
+      if (condition.operator === "eq" && condition.value === 2) return "Second entry";
+      if (condition.operator === "gte" && condition.value === 2) return "Second entry +";
+      return `Entry ${condition.operator} ${condition.value}`;
+    }
+    case "variable": return `${condition.key || "variable"} ${condition.operator} ${String(condition.value)}`;
+    case "flag": return `${condition.key || "flag"} is ${condition.value ? "true" : "false"}`;
+    case "has_item": return "Has item";
+    case "lacks_item": return "Lacks item";
+    case "visited": return condition.value ? "Visited node" : "Has not visited node";
+    case "state": return `${condition.field} ${condition.operator} ${condition.value}`;
+    case "all": return `All of ${condition.conditions.length}`;
+    case "any": return `Any of ${condition.conditions.length}`;
+    case "not": return `Not: ${conditionSummary(condition.condition)}`;
+  }
+}
+
+function OpeningEditor({
+  opening,
+  index,
+  total,
+  snapshot,
+  playState,
+  conversationName,
+  conversationCharacterId,
+  references,
+  autoFocus,
+  focusSection,
+  onChange,
+  onMove,
+  onRemove,
+  onPreview,
+}: {
+  opening: NodeOpening;
+  index: number;
+  total: number;
+  snapshot: AuthorWorkspaceContext["snapshot"];
+  playState: AuthorWorkspaceContext["playState"];
+  conversationName: string;
+  conversationCharacterId: string | null;
+  references: number;
+  autoFocus: boolean;
+  focusSection?: "narration" | "dialogue";
+  onChange: (opening: NodeOpening) => void;
+  onMove: (direction: -1 | 1) => void;
+  onRemove: () => void;
+  onPreview: AuthorWorkspaceContext["runtime"]["preview"];
+}) {
+  const showDialogue = Boolean(conversationCharacterId || opening.dialogueText.trim());
+  const dialogueLabel = conversationName
+    ? `${conversationName.toUpperCase()} SAYS`
+    : "DIALOGUE — SET A CONVERSATION CHARACTER";
+  const snippet = nodeOpeningSnippet(opening, 72) || "No entry text";
+  return <details className="guided-section" open={total === 1 || autoFocus}>
+    <summary>
+      <strong>{index + 1}. {snippet}</strong>
+      <small>{conditionSummary(opening.condition)}</small>
+    </summary>
+    <div className="node-focused-form">
+      <OutcomeConditionEditor
+        condition={opening.condition}
+        snapshot={snapshot}
+        onChange={(condition) => onChange({ ...opening, condition })}
+        language="time"
+      />
+      <div className={`narrative-prose-grid${showDialogue ? " has-dialogue" : ""}`}>
+        <AuthoredTextEditor
+          value={{ text: opening.narrationText, performance: opening.narrationPerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label="NARRATION"
+          rows={6}
+          autoFocus={autoFocus && (focusSection === "narration" || (!focusSection && !conversationCharacterId))}
+          onChange={(value) => onChange({ ...opening, narrationText: value.text, narrationPerformance: value.performance })}
+          onPreview={(value) => onPreview({ text: value.text, performance: value.performance, speakerId: null })}
+        />
+        {showDialogue ? <AuthoredTextEditor
+          value={{ text: opening.dialogueText, performance: opening.dialoguePerformance }}
+          snapshot={snapshot}
+          playState={playState}
+          label={dialogueLabel}
+          rows={6}
+          autoFocus={autoFocus && (focusSection === "dialogue" || (!focusSection && Boolean(conversationCharacterId)))}
+          onChange={(value) => onChange({ ...opening, dialogueText: value.text, dialoguePerformance: value.performance })}
+          onPreview={(value) => onPreview({ text: value.text, performance: value.performance, speakerId: conversationCharacterId })}
+        /> : null}
+      </div>
+      <div className="guided-response-actions">
+        <button type="button" disabled={index === 0} onClick={() => onMove(-1)}>[MOVE UP]</button>
+        <button type="button" disabled={index === total - 1} onClick={() => onMove(1)}>[MOVE DOWN]</button>
+        <button type="button" disabled={total === 1 || references > 0} onClick={onRemove}>[REMOVE OPENING]</button>
+      </div>
+      {references > 0 ? <small>This opening is explicitly targeted by {references} response{references === 1 ? "" : "s"}. Reassign those links before removing it.</small> : null}
+    </div>
+  </details>;
+}
+
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
   id: "narrative.node",
   matches(route) {
@@ -102,8 +199,8 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     return {
       node: {
         ...normalizeNodeContext(node),
-        dialogueText: node.dialogueText ?? "",
-        dialoguePerformance: structuredClone(nodeDialoguePerformance(node)),
+        authorLabel: node.authorLabel,
+        openings: structuredClone(node.openings),
         anchor: { ...nodeAnchor(node) },
         entryEffects: structuredClone(node.entryEffects ?? []),
       },
@@ -116,6 +213,10 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const anchor = nodeAnchor(draft.node);
     const entryEffects = draft.node.entryEffects ?? [];
     const nodeExists = context.snapshot.nodes.some((node) => node.id === draft.node.id);
+    const focusedOpeningId = data?.openingId;
+    const focusedSection = data?.section === "narration" || data?.section === "dialogue"
+      ? data.section
+      : undefined;
 
     const traversalIndex = context.playState.traversal.lastIndexOf(draft.node.id);
     const inheritContextFromNodeId = data?.inheritContextFromNodeId;
@@ -129,8 +230,6 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         : [...context.snapshot.nodes, draft.node],
     };
 
-    // A destination may be authored before runtime has entered it. Preserve the
-    // parent interaction's real path so Continue previews what traversal will inherit.
     const contextualTraversal = inheritedFromTraversalIndex >= 0
       ? [...context.playState.traversal.slice(0, inheritedFromTraversalIndex + 1), draft.node.id]
       : traversalIndex >= 0
@@ -139,12 +238,14 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const currentTraversalState = contextualTraversal ? {
       ...context.playState,
       currentNodeId: draft.node.id,
+      currentNodeOpeningId: null,
       traversal: contextualTraversal,
     } : null;
     const inheritedTraversal = contextualTraversal?.slice(0, -1) ?? [];
     const inheritedTraversalState = inheritedTraversal.length ? {
       ...context.playState,
       currentNodeId: inheritedTraversal[inheritedTraversal.length - 1],
+      currentNodeOpeningId: null,
       traversal: inheritedTraversal,
     } : null;
     const resolvedContext = currentTraversalState
@@ -189,12 +290,6 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       ? nodeConversationCharacterId(draft.node) ?? ""
       : conversationMode === "continue" ? inheritedContext?.conversation?.characterId ?? "" : "";
 
-    const dialogueText = draft.node.dialogueText ?? "";
-    const showDialogueEditor = Boolean(resolvedConversationId || dialogueText.trim());
-    const dialogueLabel = conversationName
-      ? `${conversationName.toUpperCase()} SAYS`
-      : "DIALOGUE — SET A CONVERSATION CHARACTER";
-
     const nodeInteractions = context.snapshot.interactions.filter((interaction) => interaction.sourceNodeId === draft.node.id);
     const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
     const invalidInput = nodeInteractions.find((interaction) => interaction.matchMode === "fallback");
@@ -209,9 +304,33 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       onOpenInvalid={() => context.pushTask(inputRoute(draft.node.id, invalidInput?.id, true))}
     /> : null;
 
+    const updateOpening = (openingId: string, opening: NodeOpening) => setDraft((current) => ({
+      ...current,
+      node: {
+        ...current.node,
+        openings: current.node.openings.map((candidate) => candidate.id === openingId ? opening : candidate),
+      },
+    }));
+    const moveOpening = (openingId: string, direction: -1 | 1) => setDraft((current) => {
+      const openings = [...current.node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+      const index = openings.findIndex((opening) => opening.id === openingId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= openings.length) return current;
+      [openings[index], openings[target]] = [openings[target], openings[index]];
+      return { ...current, node: { ...current.node, openings: openings.map((opening, order) => ({ ...opening, order })) } };
+    });
+    const removeOpening = (openingId: string) => setDraft((current) => ({
+      ...current,
+      node: {
+        ...current.node,
+        openings: current.node.openings.filter((opening) => opening.id !== openingId).map((opening, order) => ({ ...opening, order })),
+      },
+    }));
+    const orderedOpenings = [...draft.node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+
     return {
       id: "narrative.node",
-      title: `NODE #${draft.node.nodeNumber}`,
+      title: nodeAuthorTitle(draft.node).toUpperCase(),
       blocks: [
         {
           type: "custom",
@@ -225,63 +344,18 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             <div className="node-context-fields">
               <div className="node-context-cell">
                 <strong>WHERE IS THIS HAPPENING?</strong>
-                <ReferenceField
-                  kind="location"
-                  value={locationReferenceId}
-                  allowEmpty={false}
-                  onChange={(locationId) => setDraft((current) => ({
-                    ...current,
-                    node: { ...current.node, locationMode: "set", locationId: locationId || null },
-                  }))}
-                  placeholder="choose location"
-                />
+                <ReferenceField kind="location" value={locationReferenceId} allowEmpty={false} onChange={(locationId) => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "set", locationId: locationId || null } }))} placeholder="choose location" />
                 <div className="node-context-actions">
-                  <button
-                    type="button"
-                    disabled={locationMode === "continue"}
-                    onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "continue", locationId: null } }))}
-                  >[CONTINUE FROM PATH]</button>
-                  <button
-                    type="button"
-                    disabled={locationMode === "clear"}
-                    onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "clear", locationId: null } }))}
-                  >[NO LOCATION]</button>
+                  <button type="button" disabled={locationMode === "continue"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "continue", locationId: null } }))}>[CONTINUE FROM PATH]</button>
+                  <button type="button" disabled={locationMode === "clear"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, locationMode: "clear", locationId: null } }))}>[NO LOCATION]</button>
                 </div>
               </div>
-
               <div className="node-context-cell">
                 <strong>IS THIS A CONVERSATION? IF SO, WITH WHO?</strong>
-                <ReferenceField
-                  kind="character"
-                  value={conversationReferenceId}
-                  allowEmpty={false}
-                  onChange={(characterId) => setDraft((current) => ({
-                    ...current,
-                    node: {
-                      ...current.node,
-                      conversationMode: "set",
-                      conversationCharacterId: characterId || null,
-                    },
-                  }))}
-                  placeholder="choose character"
-                />
+                <ReferenceField kind="character" value={conversationReferenceId} allowEmpty={false} onChange={(characterId) => setDraft((current) => ({ ...current, node: { ...current.node, conversationMode: "set", conversationCharacterId: characterId || null } }))} placeholder="choose character" />
                 <div className="node-context-actions">
-                  <button
-                    type="button"
-                    disabled={conversationMode === "continue"}
-                    onClick={() => setDraft((current) => ({
-                      ...current,
-                      node: { ...current.node, conversationMode: "continue", conversationCharacterId: null },
-                    }))}
-                  >[CONTINUE FROM PATH]</button>
-                  <button
-                    type="button"
-                    disabled={conversationMode === "clear"}
-                    onClick={() => setDraft((current) => ({
-                      ...current,
-                      node: { ...current.node, conversationMode: "clear", conversationCharacterId: null },
-                    }))}
-                  >[END CONVERSATION]</button>
+                  <button type="button" disabled={conversationMode === "continue"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, conversationMode: "continue", conversationCharacterId: null } }))}>[CONTINUE FROM PATH]</button>
+                  <button type="button" disabled={conversationMode === "clear"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, conversationMode: "clear", conversationCharacterId: null } }))}>[END CONVERSATION]</button>
                 </div>
               </div>
             </div>
@@ -289,61 +363,41 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         },
         {
           type: "custom",
-          id: "node-prose",
+          id: "node-openings",
           role: "specialized-control",
-          content: <div className={`narrative-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
-            <AuthoredTextEditor
-              value={{ text: draft.node.text, performance: draft.node.performance }}
-              snapshot={context.snapshot}
-              playState={context.playState}
-              label="NARRATION"
-              rows={6}
-              autoFocus={!data?.nodeId && !resolvedConversationId}
-              onChange={(value) => setDraft((current) => ({
-                ...current,
-                node: { ...current.node, text: value.text, performance: value.performance },
-              }))}
-              onPreview={(value) => context.runtime.preview({
-                text: value.text,
-                performance: value.performance,
-                speakerId: null,
-              })}
-            />
-            {showDialogueEditor ? <AuthoredTextEditor
-              value={{ text: dialogueText, performance: nodeDialoguePerformance(draft.node) }}
-              snapshot={context.snapshot}
-              playState={context.playState}
-              label={dialogueLabel}
-              rows={6}
-              autoFocus={!data?.nodeId && Boolean(resolvedConversationId)}
-              onChange={(value) => setDraft((current) => ({
-                ...current,
-                node: { ...current.node, dialogueText: value.text, dialoguePerformance: value.performance },
-              }))}
-              onPreview={(value) => context.runtime.preview({
-                text: value.text,
-                performance: value.performance,
-                speakerId: resolvedConversationId,
-              })}
-            /> : null}
-          </div>,
+          content: <section className="guided-section">
+            <h3>ENTRY RESPONSES</h3>
+            <small>AUTO entry evaluates these in order and uses the first matching condition. Other responses may explicitly target one opening by its stable identity.</small>
+            {orderedOpenings.map((opening, index) => {
+              const references = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.filter((outcome) => outcome.destination?.nodeId === draft.node.id && outcome.destination.openingId === opening.id).length, 0);
+              const focused = focusedOpeningId === opening.id;
+              return <OpeningEditor
+                key={opening.id}
+                opening={opening}
+                index={index}
+                total={orderedOpenings.length}
+                snapshot={snapshotWithDraft}
+                playState={currentTraversalState ?? context.playState}
+                conversationName={conversationName}
+                conversationCharacterId={resolvedConversationId}
+                references={references}
+                autoFocus={focusedOpeningId ? focused : !data?.nodeId && index === 0}
+                focusSection={focused ? focusedSection : undefined}
+                onChange={(value) => updateOpening(opening.id, value)}
+                onMove={(direction) => moveOpening(opening.id, direction)}
+                onRemove={() => removeOpening(opening.id)}
+                onPreview={context.runtime.preview}
+              />;
+            })}
+            <button type="button" className="guided-add" onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, openings: [...current.node.openings, createNodeOpening(current.node.openings.length)] } }))}>[+ ADD ENTRY RESPONSE]</button>
+          </section>,
         },
         {
           type: "section",
           id: "node-input-handling",
           label: "INPUT HANDLING",
           summary: inputSummary,
-          children: nodeExists ? [{
-            type: "custom",
-            id: "node-input-list",
-            role: "results",
-            content: inputRows,
-          }] : [{
-            type: "status",
-            id: "node-input-save-first",
-            tone: "info",
-            text: "Save this Node before configuring its node-specific inputs and invalid response.",
-          }],
+          children: nodeExists ? [{ type: "custom", id: "node-input-list", role: "results", content: inputRows }] : [{ type: "status", id: "node-input-save-first", tone: "info", text: "Save this Node before configuring its node-specific inputs and invalid response." }],
         },
         {
           type: "custom",
@@ -351,56 +405,15 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           role: "specialized-control",
           content: <details className="node-anchor-strip">
             <summary>
-              <span>ANCHOR <strong>{anchor.mode === "set"
-                ? clip(anchor.text) || "text needed"
-                : anchor.mode === "clear"
-                  ? "—"
-                  : resolvedAnchor?.text ? clip(resolvedAnchor.text) : "—"}</strong></span>
+              <span>ANCHOR <strong>{anchor.mode === "set" ? clip(anchor.text) || "text needed" : anchor.mode === "clear" ? "—" : resolvedAnchor?.text ? clip(resolvedAnchor.text) : "—"}</strong></span>
               <span>[EDIT]</span>
             </summary>
             <div className="node-anchor-body">
-              {anchor.mode === "set" ? <ValueMentionField
-                snapshot={context.snapshot}
-                playState={context.playState}
-                multiline
-                rows={3}
-                value={anchor.text}
-                placeholder="Persistent context shown beneath the player input"
-                onValueChange={(text) => setDraft((current) => ({
-                  ...current,
-                  node: { ...current.node, anchor: { mode: "set", text } },
-                }))}
-              /> : <small>{anchor.mode === "continue"
-                ? `Inherited from the path${inheritedAnchor?.text ? ` — ${clip(inheritedAnchor.text)}` : " — none"}.`
-                : "No anchor is active after this Node."}</small>}
+              {anchor.mode === "set" ? <ValueMentionField snapshot={context.snapshot} playState={context.playState} multiline rows={3} value={anchor.text} placeholder="Persistent context shown beneath the player input" onValueChange={(text) => setDraft((current) => ({ ...current, node: { ...current.node, anchor: { mode: "set", text } } }))} /> : <small>{anchor.mode === "continue" ? `Inherited from the path${inheritedAnchor?.text ? ` — ${clip(inheritedAnchor.text)}` : " — none"}.` : "No anchor is active after this Node."}</small>}
               <div className="node-context-actions">
-                <button
-                  type="button"
-                  disabled={anchor.mode === "set"}
-                  onClick={() => setDraft((current) => ({
-                    ...current,
-                    node: {
-                      ...current.node,
-                      anchor: { mode: "set", text: inheritedAnchor?.text ?? "" },
-                    },
-                  }))}
-                >[SET ANCHOR]</button>
-                <button
-                  type="button"
-                  disabled={anchor.mode === "continue"}
-                  onClick={() => setDraft((current) => ({
-                    ...current,
-                    node: { ...current.node, anchor: { mode: "continue", text: "" } },
-                  }))}
-                >[CONTINUE FROM PATH]</button>
-                <button
-                  type="button"
-                  disabled={anchor.mode === "clear"}
-                  onClick={() => setDraft((current) => ({
-                    ...current,
-                    node: { ...current.node, anchor: { mode: "clear", text: "" } },
-                  }))}
-                >[CLEAR]</button>
+                <button type="button" disabled={anchor.mode === "set"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, anchor: { mode: "set", text: inheritedAnchor?.text ?? "" } } }))}>[SET ANCHOR]</button>
+                <button type="button" disabled={anchor.mode === "continue"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, anchor: { mode: "continue", text: "" } } }))}>[CONTINUE FROM PATH]</button>
+                <button type="button" disabled={anchor.mode === "clear"} onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, anchor: { mode: "clear", text: "" } } }))}>[CLEAR]</button>
               </div>
             </div>
           </details>,
@@ -410,37 +423,21 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           id: "node-entry-effects",
           label: "ON ENTER",
           summary: entryEffects.length ? `${entryEffects.length} effect${entryEffects.length === 1 ? "" : "s"}` : "No entry effects",
-          children: [{
-            type: "custom",
-            id: "node-entry-effects-editor",
-            role: "specialized-control",
-            content: <div className="node-focused-form">
-              <small>These effects run whenever player traversal enters this Node. They use the same canonical effect definitions as responses, rules, and operations.</small>
-              <EffectsEditor
-                effects={entryEffects}
-                snapshot={context.snapshot}
-                onChange={(effects) => setDraft((current) => ({
-                  ...current,
-                  node: { ...current.node, entryEffects: effects },
-                }))}
-              />
-            </div>,
-          }],
+          children: [{ type: "custom", id: "node-entry-effects-editor", role: "specialized-control", content: <div className="node-focused-form">
+            <small>These effects run whenever player traversal enters this Node. They use the same canonical effect definitions as responses, rules, and operations.</small>
+            <EffectsEditor effects={entryEffects} snapshot={context.snapshot} onChange={(effects) => setDraft((current) => ({ ...current, node: { ...current.node, entryEffects: effects } }))} />
+          </div> }],
         },
         {
           type: "disclosure",
           id: "node-organization",
           label: "ORGANIZATION",
-          summary: draft.node.tags.length ? `${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : "No tags",
-          children: [{
-            type: "custom",
-            id: "node-organization-fields",
-            role: "specialized-control",
-            content: <div className="node-focused-form">
-              <label>AUTHOR TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
-              <small>Tags are for Author search and organization. They do not change gameplay.</small>
-            </div>,
-          }],
+          summary: draft.node.authorLabel.trim() || (draft.node.tags.length ? `${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : "Untitled"),
+          children: [{ type: "custom", id: "node-organization-fields", role: "specialized-control", content: <div className="node-focused-form">
+            <label>NODE NAME <input value={draft.node.authorLabel} placeholder={`Node #${draft.node.nodeNumber}`} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, authorLabel: event.target.value } }))} /></label>
+            <small>Private author-facing name. Renaming it never changes entry text or links.</small>
+            <label>AUTHOR TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
+          </div> }],
         },
         {
           type: "choice",
@@ -461,18 +458,20 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const anchor = nodeAnchor(draft.node);
     const locationMode = nodeLocationMode(draft.node);
     const conversationMode = nodeConversationMode(draft.node);
-    return (anchor.mode !== "set" || Boolean(anchor.text.trim()))
+    const dialogueExists = draft.node.openings.some((opening) => opening.dialogueText.trim());
+    return draft.node.openings.length > 0
+      && (anchor.mode !== "set" || Boolean(anchor.text.trim()))
       && (locationMode !== "set" || Boolean(draft.node.locationId))
       && (conversationMode !== "set" || Boolean(nodeConversationCharacterId(draft.node)))
-      && !(conversationMode === "clear" && Boolean(draft.node.dialogueText?.trim()));
+      && !(conversationMode === "clear" && dialogueExists);
   },
   async save({ draft, context, route }) {
     const data = routeData(route);
     const anchor = nodeAnchor(draft.node);
-    const node = {
+    const node: GameNode = {
       ...normalizeNodeContext(draft.node),
-      dialogueText: draft.node.dialogueText ?? "",
-      dialoguePerformance: nodeDialoguePerformance(draft.node),
+      authorLabel: draft.node.authorLabel.trim(),
+      openings: [...draft.node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map((opening, order) => ({ ...opening, order })),
       anchor,
       entryEffects: draft.node.entryEffects ?? [],
     };
@@ -489,7 +488,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
         kind: "node",
         id: draft.node.id,
         value: draft.node.id,
-        label: `Node #${draft.node.nodeNumber}`,
+        label: nodeAuthorTitle(node),
       } : undefined,
     };
   },

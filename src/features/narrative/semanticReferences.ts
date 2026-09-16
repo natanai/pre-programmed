@@ -1,4 +1,5 @@
 import type { SemanticReferenceProvider } from "../../engine/references/types";
+import { defaultNodeOpening, nodeOpeningSnippet, nodeOpeningText, resolveNodeOpening } from "./nodeOpenings";
 
 export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvider[] = [
   {
@@ -11,6 +12,7 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
     defaultProjection: "label",
     candidates: ({ snapshot, state }) => {
       const current = snapshot.nodes.find((node) => node.id === state.currentNodeId);
+      const currentOpening = current ? resolveNodeOpening(snapshot, state, current) : null;
       return [
         {
           id: "current",
@@ -22,25 +24,30 @@ export const NARRATIVE_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceP
           projections: {
             label: current ? `Node #${current.nodeNumber}` : "",
             number: current?.nodeNumber ?? null,
-            text: current?.text ?? "",
+            text: currentOpening ? nodeOpeningText(currentOpening) : "",
           },
           author: current ? { resourceKind: "node", resourceId: current.id } : undefined,
           contextual: true,
         },
-        ...snapshot.nodes.map((node) => ({
-          id: node.id,
-          key: `node-${node.nodeNumber}`,
-          label: `Node #${node.nodeNumber}`,
-          detail: node.text.trim().replace(/\s+/g, " ").slice(0, 72),
-          aliases: [`node ${node.nodeNumber}`, `node-${node.nodeNumber}`],
-          defaultProjection: "label",
-          projections: {
+        ...snapshot.nodes.map((node) => {
+          const opening = node.id === current?.id && currentOpening
+            ? currentOpening
+            : defaultNodeOpening(node);
+          return {
+            id: node.id,
+            key: `node-${node.nodeNumber}`,
             label: `Node #${node.nodeNumber}`,
-            number: node.nodeNumber,
-            text: node.text,
-          },
-          author: { resourceKind: "node", resourceId: node.id },
-        })),
+            detail: opening ? nodeOpeningSnippet(opening, 72) : "No entry text",
+            aliases: [`node ${node.nodeNumber}`, `node-${node.nodeNumber}`],
+            defaultProjection: "label",
+            projections: {
+              label: `Node #${node.nodeNumber}`,
+              number: node.nodeNumber,
+              text: opening ? nodeOpeningText(opening) : "",
+            },
+            author: { resourceKind: "node", resourceId: node.id },
+          };
+        }),
       ];
     },
     projectResource: (id, snapshot) => id !== "current" && snapshot.nodes.some((node) => node.id === id)

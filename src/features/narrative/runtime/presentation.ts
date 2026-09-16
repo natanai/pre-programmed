@@ -3,14 +3,12 @@ import { authoredSource, type AuthoredSourceIdentity } from "../../../engine/pre
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import { interactionOutcomeProse } from "../interactionProse";
 import { interpolateText } from "../interpolation";
-import type { GameNode, Interaction, InteractionOutcome, TextPerformance } from "../model";
+import type { GameNode, Interaction, InteractionOutcome, NodeOpening, TextPerformance } from "../model";
+import { DEFAULT_NODE_TEXT_PERFORMANCE, resolveNodeOpening } from "../nodeOpenings";
 import { resolveActiveNodeConversationContext, resolveNodeConversationContext } from "../sceneContext";
 import { compileTextNotation } from "../textNotation";
 
-export const DEFAULT_NARRATIVE_TEXT_PERFORMANCE: TextPerformance = {
-  charactersPerSecond: 18,
-  cues: [],
-};
+export const DEFAULT_NARRATIVE_TEXT_PERFORMANCE: TextPerformance = DEFAULT_NODE_TEXT_PERFORMANCE;
 
 export type NarrativeResolvedText = {
   text: string;
@@ -21,6 +19,7 @@ export type NarrativeResolvedText = {
 
 export type NarrativeContinuation = {
   node: GameNode | null;
+  nodeOpening: NodeOpening | null;
   nodeDialoguePending: boolean;
   nodeDialogue: NarrativeResolvedText | null;
   interaction: Interaction | null;
@@ -36,20 +35,24 @@ export function resolveNodeOpeningPresentation(
   node: GameNode,
   authorMode = false,
 ): NarrativeResolvedText {
-  const narration = interpolateText(node.text, { snapshot, state, authorMode });
-  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state, authorMode });
+  const opening = resolveNodeOpening(snapshot, state, node);
+  const narration = interpolateText(opening?.narrationText ?? "", { snapshot, state, authorMode });
+  const dialogue = interpolateText(opening?.dialogueText ?? "", { snapshot, state, authorMode });
   const beginsWithDialogue = !narration && Boolean(dialogue);
   const rawText = beginsWithDialogue ? dialogue : narration;
   const performance = beginsWithDialogue
-    ? node.dialoguePerformance ?? DEFAULT_NARRATIVE_TEXT_PERFORMANCE
-    : node.performance;
+    ? opening?.dialoguePerformance ?? DEFAULT_NARRATIVE_TEXT_PERFORMANCE
+    : opening?.narrationPerformance ?? DEFAULT_NARRATIVE_TEXT_PERFORMANCE;
   const compiled = compileTextNotation(rawText, performance);
   const conversation = beginsWithDialogue ? resolveActiveNodeConversationContext(snapshot, state) : null;
   return {
     text: compiled.text,
     performance: compiled.performance,
     speakerId: conversation?.characterId ?? null,
-    source: authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }),
+    source: authoredSource("node", node.id, {
+      ...(opening ? { openingId: opening.id } : {}),
+      section: beginsWithDialogue ? "dialogue" : "narration",
+    }),
   };
 }
 
@@ -57,20 +60,18 @@ function resolveNodeDialoguePresentation(
   snapshot: ProjectSnapshot,
   state: PlayState,
   node: GameNode,
+  opening: NodeOpening,
   authorMode: boolean,
 ): NarrativeResolvedText | null {
-  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state, authorMode });
+  const dialogue = interpolateText(opening.dialogueText, { snapshot, state, authorMode });
   if (!dialogue) return null;
-  const compiled = compileTextNotation(
-    dialogue,
-    node.dialoguePerformance ?? DEFAULT_NARRATIVE_TEXT_PERFORMANCE,
-  );
+  const compiled = compileTextNotation(dialogue, opening.dialoguePerformance);
   const conversation = resolveActiveNodeConversationContext(snapshot, state);
   return {
     text: compiled.text,
     performance: compiled.performance,
     speakerId: conversation?.characterId ?? null,
-    source: authoredSource("node", node.id, { section: "dialogue" }),
+    source: authoredSource("node", node.id, { openingId: opening.id, section: "dialogue" }),
   };
 }
 
@@ -97,14 +98,7 @@ function resolveInteractionDialoguePresentation(
   };
 }
 
-/**
- * Resolve follow-up authored prose from the currently displayed source.
- *
- * `*Pending` intentionally follows the authored/raw dialogue checks used by the
- * legacy App orchestration. The compiled presentation may still be null when
- * interpolation resolves that authored dialogue to an empty string; preserving
- * that distinction keeps this extraction behavior-neutral.
- */
+/** Resolve follow-up authored prose from the currently displayed source. */
 export function resolveNarrativeContinuation(
   snapshot: ProjectSnapshot | null,
   state: PlayState | null,
@@ -114,6 +108,7 @@ export function resolveNarrativeContinuation(
 ): NarrativeContinuation {
   const empty: NarrativeContinuation = {
     node: null,
+    nodeOpening: null,
     nodeDialoguePending: false,
     nodeDialogue: null,
     interaction: null,
@@ -127,15 +122,20 @@ export function resolveNarrativeContinuation(
   const node = activeNodeId
     ? snapshot.nodes.find((candidate) => candidate.id === activeNodeId) ?? null
     : null;
+  const openingFromSource = node && activeSource?.resourceKind === "node" && activeSource.resourceId === node.id
+    ? node.openings.find((candidate) => candidate.id === activeSource.focus?.openingId) ?? null
+    : null;
+  const nodeOpening = openingFromSource ?? (node ? resolveNodeOpening(snapshot, state, node) : null);
   const nodeDialoguePending = Boolean(
     node
+    && nodeOpening
     && activeSource?.resourceKind === "node"
     && activeSource.resourceId === node.id
     && activeSource.focus?.section === "narration"
-    && node.dialogueText?.trim(),
+    && nodeOpening.dialogueText.trim(),
   );
-  const nodeDialogue = nodeDialoguePending && node
-    ? resolveNodeDialoguePresentation(snapshot, state, node, authorMode)
+  const nodeDialogue = nodeDialoguePending && node && nodeOpening
+    ? resolveNodeDialoguePresentation(snapshot, state, node, nodeOpening, authorMode)
     : null;
 
   const interaction = activeSource?.resourceKind === "interaction"
@@ -156,6 +156,7 @@ export function resolveNarrativeContinuation(
 
   return {
     node,
+    nodeOpening,
     nodeDialoguePending,
     nodeDialogue,
     interaction,

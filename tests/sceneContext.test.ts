@@ -54,7 +54,6 @@ describe("lightweight Node context", () => {
           locationId: null,
           conversationMode: "set",
           conversationCharacterId: marta.id,
-          dialogueText: "What do you want?",
           anchor: { mode: "continue", text: "" },
         },
         {

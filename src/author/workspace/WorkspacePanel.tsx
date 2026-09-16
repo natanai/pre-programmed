@@ -12,10 +12,35 @@ import type {
   ProjectSnapshot,
   RevisionSummary,
 } from "../../engine/project/model";
+import type { GameNode } from "../../features/narrative/model";
+import {
+  defaultNodeOpening,
+  nodeAuthorTitle,
+  nodeOpeningSnippet,
+  resolveNodeOpening,
+} from "../../features/narrative/nodeOpenings";
 import "./workspacePanel.css";
 import "./workspacePanelRunNavigation.css";
 
 type WorkspaceView = "navigation" | "history";
+
+function nodeSearchText(node: GameNode | undefined) {
+  if (!node) return "";
+  return [
+    node.nodeNumber,
+    node.authorLabel,
+    ...node.tags,
+    ...node.openings.flatMap((opening) => [opening.narrationText, opening.dialogueText]),
+  ].join(" ");
+}
+
+function nodeRunPreview(snapshot: ProjectSnapshot, state: PlayState, node: GameNode | undefined, maxLength = 110) {
+  if (!node) return "";
+  const opening = state.currentNodeId === node.id
+    ? resolveNodeOpening(snapshot, state, node)
+    : defaultNodeOpening(node);
+  return opening ? nodeOpeningSnippet(opening, maxLength) : "";
+}
 
 export function WorkspacePanel({ token, snapshot, playState, initialView = "navigation", onSnapshot, onRestore, onEditNode }: {
   token: string;
@@ -56,15 +81,24 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
   useEffect(() => { void refresh(); }, [token, snapshot.revision]);
 
   const currentNode = snapshot.nodes.find((node) => node.id === playState.currentNodeId);
+  const currentPreview = nodeRunPreview(snapshot, playState, currentNode);
   const previousNodeId = playState.traversal.length > 1 ? playState.traversal.at(-2) : undefined;
   const previousNode = previousNodeId
     ? snapshot.nodes.find((node) => node.id === previousNodeId)
     : undefined;
+  const previousTraversal = playState.traversal.slice(0, -1);
+  const previousState: PlayState | null = previousNodeId ? {
+    ...playState,
+    currentNodeId: previousNodeId,
+    currentNodeOpeningId: null,
+    traversal: previousTraversal,
+  } : null;
+  const previousPreview = previousState ? nodeRunPreview(snapshot, previousState, previousNode, 100) : "";
   const normalizedQuery = query.trim().toLowerCase();
   const filteredBookmarks = bookmarks.filter((bookmark) => {
     if (!normalizedQuery) return true;
     const node = snapshot.nodes.find((candidate) => candidate.id === bookmark.nodeId);
-    return `${bookmark.note} ${node?.nodeNumber ?? ""} ${node?.text ?? ""}`.toLowerCase().includes(normalizedQuery);
+    return `${bookmark.note} ${nodeSearchText(node)}`.toLowerCase().includes(normalizedQuery);
   });
   const filteredRevisions = revisions.filter((revision) => {
     if (!normalizedQuery) return true;
@@ -88,6 +122,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
     const navigationState: PlayState = {
       ...structuredClone(playState),
       currentNodeId: previousNodeId,
+      currentNodeOpeningId: null,
       traversal,
     };
     onRestore({
@@ -168,7 +203,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
             id="workspace-search"
             type="search"
             value={query}
-            placeholder={view === "navigation" ? "bookmark name, node, or scene text" : "revision or change description"}
+            placeholder={view === "navigation" ? "bookmark name, node, or entry text" : "revision or change description"}
             onChange={(event) => setQuery(event.target.value)}
             autoCapitalize="none"
             autoCorrect="off"
@@ -190,8 +225,8 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
         <div className="workspace-run-tools">
           <div className="workspace-current-node">
             <small>CURRENT NODE</small>
-            <strong>#{currentNode?.nodeNumber ?? "?"}</strong>
-            <span>{currentNode?.text.slice(0, 110) || "Current scene"}</span>
+            <strong>{currentNode ? nodeAuthorTitle(currentNode) : "Node #?"}</strong>
+            <span>{currentPreview || "Current scene"}</span>
             {currentNode ? <button type="button" onClick={() => onEditNode(currentNode.id)}>[EDIT NODE]</button> : null}
           </div>
           <div className="workspace-node-navigation">
@@ -201,7 +236,7 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
               </button>
               {previousNode ? <button type="button" onClick={() => onEditNode(previousNode.id)}>[EDIT #{previousNode.nodeNumber}]</button> : null}
             </div>
-            {previousNode ? <small>{previousNode.text.slice(0, 100) || "Previous scene"}</small> : <small>This run is already at the beginning of its traversal.</small>}
+            {previousNode ? <small>{previousPreview || "Previous scene"}</small> : <small>This run is already at the beginning of its traversal.</small>}
           </div>
         </div>
 
@@ -214,10 +249,11 @@ export function WorkspacePanel({ token, snapshot, playState, initialView = "navi
             {filteredBookmarks.map((bookmark) => {
               const node = snapshot.nodes.find((candidate) => candidate.id === bookmark.nodeId);
               const deleting = deletingBookmarkId === bookmark.id;
+              const preview = nodeRunPreview(snapshot, bookmark.playState, node, 90);
               return <article className="workspace-native-row workspace-bookmark-row" key={bookmark.id}>
                 <span className="workspace-row-copy">
-                  <strong>{bookmark.note || `Node #${node?.nodeNumber ?? "?"}`}</strong>
-                  <small>{node ? `#${node.nodeNumber} · ${node.text.slice(0, 90) || "Saved run state"}` : "SAVED NODE IS NOT PRESENT IN THIS PROJECT."}</small>
+                  <strong>{bookmark.note || (node ? nodeAuthorTitle(node) : "Missing Node")}</strong>
+                  <small>{node ? `${nodeAuthorTitle(node)}${preview ? ` · ${preview}` : " · Saved run state"}` : "SAVED NODE IS NOT PRESENT IN THIS PROJECT."}</small>
                   <small>{new Date(bookmark.createdAt).toLocaleString()}</small>
                 </span>
                 <span className="workspace-row-actions">
