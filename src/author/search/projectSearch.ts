@@ -143,7 +143,14 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
   ];
 }
 
-function textScore(query: string, document: SearchDocument) {
+function textScore(query: string, document: SearchDocument, snapshot: ProjectSnapshot) {
+  if (document.kind === "node") {
+    const node = snapshot.nodes.find((candidate) => candidate.id === document.id);
+    if (node) {
+      const nodeNumber = String(node.nodeNumber);
+      if (query === nodeNumber || query === nodeNumber.padStart(3, "0")) return 1000;
+    }
+  }
   const normalized = normalizeCommand(document.searchText);
   if (!query) return 0;
   if (normalized === query) return 1000;
@@ -169,7 +176,7 @@ export function searchProject(
   return documents
     .filter((document) => !kinds || kinds.includes(document.kind))
     .map((document): SearchResult => {
-      const lexicalScore = textScore(query, document);
+      const lexicalScore = textScore(query, document, snapshot);
       const distance = document.nodeId
         ? shortestDistance(graph, state.currentNodeId, document.nodeId)
         : null;
