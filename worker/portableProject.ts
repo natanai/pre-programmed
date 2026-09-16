@@ -1,4 +1,5 @@
 import type { ProjectSnapshot } from "../src/engine/project/model";
+import { normalizeProjectSnapshot } from "../src/engine/project/settings";
 import {
   collectWorkerPortableFeatureData,
   workerPortableFeatureRestoreStatements,
@@ -10,7 +11,7 @@ import {
 } from "./projectStore";
 
 export const PORTABLE_PROJECT_FORMAT = "pre-programmed-project" as const;
-export const PORTABLE_PROJECT_VERSION = 2 as const;
+export const PORTABLE_PROJECT_VERSION = 3 as const;
 
 type PortableProjectSnapshot = Omit<ProjectSnapshot, "revision">;
 
@@ -18,8 +19,8 @@ export type PortableProjectDocument = {
   format: typeof PORTABLE_PROJECT_FORMAT;
   /**
    * Portable release boundary, not a promise to preserve arbitrary prototype
-   * revisions. Future releases may migrate deliberate prior portable versions
-   * forward into the then-current canonical project model.
+   * revisions. Deliberate prior portable versions are migrated one-way into the
+   * current canonical project model before any runtime or Author code sees them.
    */
   version: typeof PORTABLE_PROJECT_VERSION;
   exportedAt: string;
@@ -32,14 +33,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function canonicalPortableProject(project: Record<string, unknown>): PortableProjectSnapshot {
+  const normalized = normalizeProjectSnapshot({
+    ...project,
+    revision: 0,
+  } as Parameters<typeof normalizeProjectSnapshot>[0]);
+  const { revision: _revision, ...portable } = normalized;
+  return portable;
+}
+
 function parseCurrent(value: Record<string, unknown>): PortableProjectDocument {
   if (!isRecord(value.project)) throw new Error("Portable project is missing project data.");
   if (!isRecord(value.featureData)) throw new Error("Portable project has invalid feature data.");
-  const project = value.project as unknown as PortableProjectSnapshot;
-  if (!Number.isInteger(project.schemaVersion) || !isRecord(project.settings)
-    || !Array.isArray(project.nodes) || !Array.isArray(project.interactions)) {
+  if (!Number.isInteger(value.project.schemaVersion) || !isRecord(value.project.settings)
+    || !Array.isArray(value.project.nodes) || !Array.isArray(value.project.interactions)) {
     throw new Error("Portable project does not contain a valid project snapshot.");
   }
+  const project = canonicalPortableProject(value.project);
   return {
     format: PORTABLE_PROJECT_FORMAT,
     version: PORTABLE_PROJECT_VERSION,
@@ -59,8 +69,8 @@ function parseVersionOne(value: Record<string, unknown>) {
 
 /**
  * Migrate only deliberate portable-project release formats. Version 1 carried
- * Author run bookmarks inside the authored game by mistake; migration discards
- * that installation-local state instead of importing it into another run.
+ * Author run bookmarks inside authored game data; version 2 still stored Node
+ * prose directly on the Node. Both are translated once at this import boundary.
  */
 export function migratePortableProject(value: unknown): PortableProjectDocument {
   if (!isRecord(value) || value.format !== PORTABLE_PROJECT_FORMAT || !Number.isInteger(value.version)) {
@@ -74,6 +84,8 @@ export function migratePortableProject(value: unknown): PortableProjectDocument 
     case 1:
       return parseVersionOne(value);
     case 2:
+      return parseCurrent(value);
+    case 3:
       return parseCurrent(value);
     default:
       throw new Error(`Portable project format ${version} is no longer supported by this engine release.`);
