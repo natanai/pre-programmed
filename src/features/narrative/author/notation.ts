@@ -13,12 +13,12 @@ export function notationForNarrativeInteraction(
   if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
   const first = [...interaction.outcomes].sort((left, right) => left.order - right.order)[0];
   if (!first) return "[D]";
-  if (first.disposition === "stay" || !first.destinationNodeId) return "[H]";
+  if (first.disposition === "stay" || !first.destination) return "[H]";
   return notationForNode(
     snapshot,
     graph,
     playState.currentNodeId,
     playState.traversal,
-    first.destinationNodeId,
+    first.destination.nodeId,
   ).join("") || "[A1]";
 }
