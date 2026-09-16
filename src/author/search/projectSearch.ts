@@ -1,6 +1,6 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { buildGraphIndex, notationForNode, shortestDistance } from "../../features/narrative/graph";
-import { nodeAuthorLabel, nodeOpeningSnippet } from "../../features/narrative/nodeOpenings";
+import { nodeOpeningSnippet } from "../../features/narrative/nodeOpenings";
 import { normalizeCommand } from "../../features/narrative/parser";
 import { nodeConversationCharacterId } from "../../features/narrative/sceneContext";
 import { getAuthorSearchDocumentContributions } from "../features/registry";
@@ -34,10 +34,11 @@ export function buildSearchIndex(snapshot: ProjectSnapshot): SearchDocument[] {
       const preview = primaryOpening ? nodeOpeningSnippet(primaryOpening) : "";
       const nodeNumber = String(node.nodeNumber);
       const paddedNodeNumber = nodeNumber.padStart(3, "0");
+      const authorName = node.authorLabel.trim();
       return {
         id: node.id,
         kind: "node" as const,
-        label: `#${paddedNodeNumber} ${nodeAuthorLabel(node)}${preview ? ` — ${preview}` : ""}`,
+        label: `#${paddedNodeNumber}${authorName ? ` ${authorName}` : ""}${preview ? ` — ${preview}` : ""}`,
         searchText: [
           nodeNumber,
           paddedNodeNumber,
