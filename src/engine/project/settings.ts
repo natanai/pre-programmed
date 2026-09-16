@@ -8,6 +8,10 @@ import {
   normalizeInventoryProjectSlice,
 } from "../../features/inventory/projectNormalization";
 import {
+  normalizeNarrativeMutationOperation,
+  normalizeNarrativeProjectSlice,
+} from "../../features/narrative/projectNormalization";
+import {
   DEFAULT_RADIX_PROJECT_SETTINGS,
   normalizeRadixProjectSettings,
   type RadixProjectSettingsSlice,
@@ -54,9 +58,11 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
 
 type SnapshotLike = Omit<
   ProjectSnapshot,
-  "settings" | "stateGroups" | "items" | "bodyBackgrounds" | "startingBodyBackgroundId"
+  "settings" | "nodes" | "interactions" | "stateGroups" | "items" | "bodyBackgrounds" | "startingBodyBackgroundId"
 > & {
   settings?: unknown;
+  nodes?: unknown;
+  interactions?: unknown;
   stateGroups?: ProjectSnapshot["stateGroups"];
   items?: unknown;
   bodyBackgrounds?: unknown;
@@ -64,13 +70,14 @@ type SnapshotLike = Omit<
 };
 
 /**
- * Accept cached snapshots written before newer optional project slices existed.
+ * Accept cached snapshots written before newer project slices existed.
  * Feature-owned normalizers carry their own one-way compatibility semantics;
- * this composition root only assembles the normalized snapshot.
+ * this composition root only assembles the normalized canonical snapshot.
  */
 export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapshot {
   const normalized = {
     ...snapshot,
+    ...normalizeNarrativeProjectSlice(snapshot),
     ...normalizeStateProjectSlice(snapshot),
     ...normalizeInventoryProjectSlice(snapshot),
     settings: normalizeProjectSettings(snapshot.settings),
@@ -85,6 +92,8 @@ export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapsho
 export function normalizeProjectMutationForReplay(mutation: ProjectMutation): ProjectMutation {
   return {
     ...mutation,
-    operations: mutation.operations.map(normalizeInventoryMutationOperation),
+    operations: mutation.operations
+      .map(normalizeNarrativeMutationOperation)
+      .map(normalizeInventoryMutationOperation),
   };
 }
