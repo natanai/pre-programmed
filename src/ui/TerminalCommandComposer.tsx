@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -9,6 +10,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 export type TerminalCommandChoice = {
   id: string;
@@ -83,11 +85,14 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const editorRef = useRef<HTMLDivElement>(null);
     const mirrorRef = useRef<HTMLDivElement>(null);
     const caretMarkerRef = useRef<HTMLSpanElement>(null);
+    const choicesRef = useRef<HTMLDivElement>(null);
+    const menuHelpTriggerRef = useRef<HTMLButtonElement>(null);
     const composingRef = useRef(false);
     const caretFrameRef = useRef(0);
     const menuHelpId = useId();
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuHelpOpen, setMenuHelpOpen] = useState(false);
+    const [menuHelpPosition, setMenuHelpPosition] = useState({ top: 0, left: 0, width: 0 });
     const [caretIndex, setCaretIndex] = useState(0);
 
     const field = () => secret ? secretInputRef.current : textareaRef.current;
@@ -205,6 +210,45 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       document.fonts?.ready.then(handleResize).catch(() => undefined);
       return () => window.removeEventListener("resize", handleResize);
     }, []);
+
+    useLayoutEffect(() => {
+      if (!menuHelpOpen || !menuHelpText) return;
+      const updatePosition = () => {
+        const trigger = menuHelpTriggerRef.current;
+        const choiceSurface = choicesRef.current;
+        if (!trigger || !choiceSurface) return;
+        const triggerRect = trigger.getBoundingClientRect();
+        const choiceRect = choiceSurface.getBoundingClientRect();
+        const viewportPadding = 8;
+        const availableWidth = Math.max(0, window.innerWidth - viewportPadding * 2);
+        const width = Math.min(Math.max(choiceRect.width, 280), availableWidth);
+        const preferredLeft = choiceRect.right - width;
+        const maxLeft = Math.max(viewportPadding, window.innerWidth - viewportPadding - width);
+        setMenuHelpPosition({
+          top: triggerRect.bottom + 4,
+          left: Math.min(Math.max(viewportPadding, preferredLeft), maxLeft),
+          width,
+        });
+      };
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    }, [menuHelpOpen, menuHelpText]);
+
+    useEffect(() => {
+      if (!menuHelpOpen) return;
+      const closeOnOutsidePointer = (event: PointerEvent) => {
+        const target = event.target;
+        if (target instanceof Node && menuHelpTriggerRef.current?.contains(target)) return;
+        setMenuHelpOpen(false);
+      };
+      document.addEventListener("pointerdown", closeOnOutsidePointer, true);
+      return () => document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+    }, [menuHelpOpen]);
 
     const submit = () => {
       if (composingRef.current) return;
@@ -336,27 +380,35 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
             >{menuOpen ? "▲" : "▼"}</button> : null}
 
             {!secret && choices.length ? <div
+              ref={choicesRef}
               className="terminal-command-choices"
               aria-label="Suggested inputs"
-              data-has-help={menuOpen && menuHelpText ? "true" : "false"}
             >
               {menuOpen && menuHelpText ? <div
                 className="terminal-command-menu-help"
                 data-open={menuHelpOpen ? "true" : "false"}
               >
                 <button
+                  ref={menuHelpTriggerRef}
                   type="button"
                   className="terminal-command-menu-help-trigger"
                   aria-label="About these suggestions"
-                  aria-describedby={menuHelpId}
+                  aria-describedby={menuHelpOpen ? menuHelpId : undefined}
                   aria-expanded={menuHelpOpen}
                   onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => setMenuHelpOpen((open) => !open)}
+                  onPointerEnter={() => {
+                    if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(true);
+                  }}
+                  onPointerLeave={() => {
+                    if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(false);
+                  }}
+                  onFocus={() => setMenuHelpOpen(true)}
                   onBlur={() => setMenuHelpOpen(false)}
+                  onClick={() => {
+                    if (window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen((open) => !open);
+                    else setMenuHelpOpen(true);
+                  }}
                 >[i]</button>
-                <div id={menuHelpId} className="terminal-command-menu-help-tooltip" role="tooltip">
-                  {menuHelpText}
-                </div>
               </div> : null}
               {choices.map((choice) => <button
                 type="button"
@@ -392,6 +444,38 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
         >{anchor.text}</button>
         : <div className="terminal-node-anchor">{anchor.text}</div>
       : null}
+
+      {menuHelpOpen && menuHelpText ? createPortal(
+        <div
+          id={menuHelpId}
+          role="tooltip"
+          style={{
+            position: "fixed",
+            zIndex: 2147483000,
+            top: menuHelpPosition.top,
+            left: menuHelpPosition.left,
+            boxSizing: "border-box",
+            width: menuHelpPosition.width,
+            maxHeight: `calc(100dvh - ${menuHelpPosition.top + 8}px)`,
+            overflowY: "auto",
+            margin: 0,
+            padding: ".55em .65em",
+            border: "1px solid #000",
+            background: "#fff",
+            color: "#000",
+            font: "inherit",
+            fontSize: ".86em",
+            lineHeight: 1.35,
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            pointerEvents: "none",
+            visibility: menuHelpPosition.width ? "visible" : "hidden",
+          }}
+        >
+          {menuHelpText}
+        </div>,
+        document.body,
+      ) : null}
     </div>;
   },
 );
