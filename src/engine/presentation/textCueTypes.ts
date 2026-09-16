@@ -8,7 +8,10 @@ export type CoreTextCueType =
   | "wave"
   | "shake"
   | "blink"
-  | "instant";
+  | "instant"
+  | "opacity"
+  | "color"
+  | "disappear";
 
 /** Explicit composition root for installed text-performance cue extensions. */
 export type TextCueType = CoreTextCueType | MediaTextCueType | RadixTextCueType;
