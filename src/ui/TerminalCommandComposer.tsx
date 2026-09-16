@@ -1,5 +1,6 @@
 import {
   forwardRef,
+  useEffect,
   useId,
   useImperativeHandle,
   useLayoutEffect,
@@ -9,6 +10,7 @@ import {
   type FormEvent,
   type KeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 
 export type TerminalCommandChoice = {
   id: string;
@@ -83,11 +85,14 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const editorRef = useRef<HTMLDivElement>(null);
     const mirrorRef = useRef<HTMLDivElement>(null);
     const caretMarkerRef = useRef<HTMLSpanElement>(null);
+    const choicesRef = useRef<HTMLDivElement>(null);
+    const menuHelpTriggerRef = useRef<HTMLButtonElement>(null);
     const composingRef = useRef(false);
     const caretFrameRef = useRef(0);
     const menuHelpId = useId();
     const [menuOpen, setMenuOpen] = useState(false);
     const [menuHelpOpen, setMenuHelpOpen] = useState(false);
+    const [menuHelpPosition, setMenuHelpPosition] = useState({ top: 0, left: 0, width: 0 });
     const [caretIndex, setCaretIndex] = useState(0);
 
     const field = () => secret ? secretInputRef.current : textareaRef.current;
@@ -206,6 +211,46 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
       return () => window.removeEventListener("resize", handleResize);
     }, []);
 
+    useLayoutEffect(() => {
+      if (!menuHelpOpen || !menuHelpText) return;
+      const updatePosition = () => {
+        const trigger = menuHelpTriggerRef.current;
+        const choiceSurface = choicesRef.current;
+        if (!trigger || !choiceSurface) return;
+        const triggerRect = trigger.getBoundingClientRect();
+        const choiceRect = choiceSurface.getBoundingClientRect();
+        const viewportPadding = 8;
+        const availableWidth = Math.max(0, window.innerWidth - viewportPadding * 2);
+        const width = Math.min(Math.max(choiceRect.width, 280), availableWidth);
+        const preferredLeft = choiceRect.right - width;
+        const maxLeft = Math.max(viewportPadding, window.innerWidth - viewportPadding - width);
+        const left = Math.min(Math.max(viewportPadding, preferredLeft), maxLeft);
+        setMenuHelpPosition({
+          top: triggerRect.bottom + 4,
+          left,
+          width,
+        });
+      };
+      updatePosition();
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition, true);
+      return () => {
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition, true);
+      };
+    }, [menuHelpOpen, menuHelpText]);
+
+    useEffect(() => {
+      if (!menuHelpOpen) return;
+      const closeOnOutsidePointer = (event: PointerEvent) => {
+        const target = event.target;
+        if (target instanceof Node && menuHelpTriggerRef.current?.contains(target)) return;
+        setMenuHelpOpen(false);
+      };
+      document.addEventListener("pointerdown", closeOnOutsidePointer, true);
+      return () => document.removeEventListener("pointerdown", closeOnOutsidePointer, true);
+    }, [menuHelpOpen]);
+
     const submit = () => {
       if (composingRef.current) return;
       setMenuOpen(false);
@@ -258,140 +303,179 @@ export const TerminalCommandComposer = forwardRef<TerminalCommandComposerHandle,
     const mirrorValue = secret ? "•".repeat(value.length) : value;
     const mirrorCaret = Math.min(caretIndex, mirrorValue.length);
 
-    return <div ref={stackRef} className="terminal-command-stack">
-      <form
-        className="prompt-line terminal-command-composer"
-        onSubmit={handleSubmit}
-        onPointerDown={(event) => event.stopPropagation()}
-        data-secret={secret ? "true" : "false"}
-      >
-        <span className="terminal-command-label">{label}</span>
-        <div className="terminal-command-control">
-          <div
-            className={`terminal-command-shell${menuOpen ? " menu-open" : ""}`}
-            data-has-menu={menuChoices.length ? "true" : "false"}
-          >
-            <div className="terminal-command-editor" ref={editorRef}>
-              {secret ? <input
-                ref={secretInputRef}
-                className="terminal-command-field terminal-command-secret"
-                type="password"
-                value={value}
-                onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
-                onKeyDown={handleKeyDown}
-                onSelect={queueCaretSync}
-                onKeyUp={queueCaretSync}
-                onClick={queueCaretSync}
-                onPointerUp={queueCaretSync}
-                onScroll={queueCaretSync}
-                onFocus={queueCaretSync}
-                onCompositionStart={() => { composingRef.current = true; }}
-                onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="send"
-                aria-label={ariaLabel}
-              /> : <textarea
-                ref={textareaRef}
-                className="terminal-command-field terminal-command-textarea"
-                rows={1}
-                value={value}
-                onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
-                onKeyDown={handleKeyDown}
-                onSelect={queueCaretSync}
-                onKeyUp={queueCaretSync}
-                onClick={queueCaretSync}
-                onPointerUp={queueCaretSync}
-                onScroll={queueCaretSync}
-                onFocus={queueCaretSync}
-                onCompositionStart={() => { composingRef.current = true; }}
-                onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
-                autoCapitalize="none"
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                enterKeyHint="send"
-                aria-label={ariaLabel}
-              />}
-              <div ref={mirrorRef} className="terminal-command-mirror" aria-hidden="true">
-                <span>{mirrorValue.slice(0, mirrorCaret)}</span>
-                <span ref={caretMarkerRef} className="terminal-command-caret-marker">​</span>
-                <span>{mirrorValue.slice(mirrorCaret) || "​"}</span>
+    return <>
+      <div ref={stackRef} className="terminal-command-stack">
+        <form
+          className="prompt-line terminal-command-composer"
+          onSubmit={handleSubmit}
+          onPointerDown={(event) => event.stopPropagation()}
+          data-secret={secret ? "true" : "false"}
+        >
+          <span className="terminal-command-label">{label}</span>
+          <div className="terminal-command-control">
+            <div
+              className={`terminal-command-shell${menuOpen ? " menu-open" : ""}`}
+              data-has-menu={menuChoices.length ? "true" : "false"}
+            >
+              <div className="terminal-command-editor" ref={editorRef}>
+                {secret ? <input
+                  ref={secretInputRef}
+                  className="terminal-command-field terminal-command-secret"
+                  type="password"
+                  value={value}
+                  onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+                  onKeyDown={handleKeyDown}
+                  onSelect={queueCaretSync}
+                  onKeyUp={queueCaretSync}
+                  onClick={queueCaretSync}
+                  onPointerUp={queueCaretSync}
+                  onScroll={queueCaretSync}
+                  onFocus={queueCaretSync}
+                  onCompositionStart={() => { composingRef.current = true; }}
+                  onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="send"
+                  aria-label={ariaLabel}
+                /> : <textarea
+                  ref={textareaRef}
+                  className="terminal-command-field terminal-command-textarea"
+                  rows={1}
+                  value={value}
+                  onChange={(event) => onChange(normalizeTerminalDraft(event.target.value))}
+                  onKeyDown={handleKeyDown}
+                  onSelect={queueCaretSync}
+                  onKeyUp={queueCaretSync}
+                  onClick={queueCaretSync}
+                  onPointerUp={queueCaretSync}
+                  onScroll={queueCaretSync}
+                  onFocus={queueCaretSync}
+                  onCompositionStart={() => { composingRef.current = true; }}
+                  onCompositionEnd={() => { composingRef.current = false; queueCaretSync(); }}
+                  autoCapitalize="none"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="send"
+                  aria-label={ariaLabel}
+                />}
+                <div ref={mirrorRef} className="terminal-command-mirror" aria-hidden="true">
+                  <span>{mirrorValue.slice(0, mirrorCaret)}</span>
+                  <span ref={caretMarkerRef} className="terminal-command-caret-marker">​</span>
+                  <span>{mirrorValue.slice(mirrorCaret) || "​"}</span>
+                </div>
+                <span className="terminal-command-caret" aria-hidden="true" />
               </div>
-              <span className="terminal-command-caret" aria-hidden="true" />
+
+              {!secret && menuChoices.length ? <button
+                type="button"
+                className="terminal-command-toggle"
+                aria-label={menuOpen ? "Hide suggestions" : "Show suggestions"}
+                aria-expanded={menuOpen}
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  if (!window.matchMedia(COARSE_POINTER_QUERY).matches) event.preventDefault();
+                }}
+                onClick={toggleMenu}
+              >{menuOpen ? "▲" : "▼"}</button> : null}
+
+              {!secret && choices.length ? <div
+                ref={choicesRef}
+                className="terminal-command-choices"
+                aria-label="Suggested inputs"
+              >
+                {menuOpen && menuHelpText ? <div
+                  className="terminal-command-menu-help"
+                  data-open={menuHelpOpen ? "true" : "false"}
+                >
+                  <button
+                    ref={menuHelpTriggerRef}
+                    type="button"
+                    className="terminal-command-menu-help-trigger"
+                    aria-label="About these suggestions"
+                    aria-describedby={menuHelpOpen ? menuHelpId : undefined}
+                    aria-expanded={menuHelpOpen}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    onPointerEnter={() => {
+                      if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(true);
+                    }}
+                    onPointerLeave={() => {
+                      if (!window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen(false);
+                    }}
+                    onFocus={() => setMenuHelpOpen(true)}
+                    onBlur={() => setMenuHelpOpen(false)}
+                    onClick={() => setMenuHelpOpen((open) => !open)}
+                  >[i]</button>
+                </div> : null}
+                {choices.map((choice) => <button
+                  type="button"
+                  className="terminal-command-choice"
+                  key={choice.id}
+                  onPointerDown={(event) => event.preventDefault()}
+                  onClick={() => insertChoice(choice)}
+                >{choice.text}</button>)}
+              </div> : null}
             </div>
 
-            {!secret && menuChoices.length ? <button
+            {!secret ? <button
               type="button"
-              className="terminal-command-toggle"
-              aria-label={menuOpen ? "Hide suggestions" : "Show suggestions"}
-              aria-expanded={menuOpen}
+              className="terminal-command-submit"
+              aria-label="Submit command"
+              title="Submit command"
               onPointerDown={(event) => {
+                event.preventDefault();
                 event.stopPropagation();
-                if (!window.matchMedia(COARSE_POINTER_QUERY).matches) event.preventDefault();
               }}
-              onClick={toggleMenu}
-            >{menuOpen ? "▲" : "▼"}</button> : null}
-
-            {!secret && choices.length ? <div
-              className="terminal-command-choices"
-              aria-label="Suggested inputs"
-              data-has-help={menuOpen && menuHelpText ? "true" : "false"}
-            >
-              {menuOpen && menuHelpText ? <div
-                className="terminal-command-menu-help"
-                data-open={menuHelpOpen ? "true" : "false"}
-              >
-                <button
-                  type="button"
-                  className="terminal-command-menu-help-trigger"
-                  aria-label="About these suggestions"
-                  aria-describedby={menuHelpId}
-                  aria-expanded={menuHelpOpen}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onClick={() => setMenuHelpOpen((open) => !open)}
-                  onBlur={() => setMenuHelpOpen(false)}
-                >[i]</button>
-                <div id={menuHelpId} className="terminal-command-menu-help-tooltip" role="tooltip">
-                  {menuHelpText}
-                </div>
-              </div> : null}
-              {choices.map((choice) => <button
-                type="button"
-                className="terminal-command-choice"
-                key={choice.id}
-                onPointerDown={(event) => event.preventDefault()}
-                onClick={() => insertChoice(choice)}
-              >{choice.text}</button>)}
-            </div> : null}
+              onClick={submit}
+            >↵</button> : null}
           </div>
+        </form>
 
-          {!secret ? <button
+        {!secret && anchor?.text ? anchor.onEdit
+          ? <button
             type="button"
-            className="terminal-command-submit"
-            aria-label="Submit command"
-            title="Submit command"
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-            }}
-            onClick={submit}
-          >↵</button> : null}
-        </div>
-      </form>
+            className="terminal-node-anchor terminal-node-anchor-editable"
+            aria-label="Edit anchor source"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={anchor.onEdit}
+          >{anchor.text}</button>
+          : <div className="terminal-node-anchor">{anchor.text}</div>
+        : null}
+      </div>
 
-      {!secret && anchor?.text ? anchor.onEdit
-        ? <button
-          type="button"
-          className="terminal-node-anchor terminal-node-anchor-editable"
-          aria-label="Edit anchor source"
-          onPointerDown={(event) => event.stopPropagation()}
-          onClick={anchor.onEdit}
-        >{anchor.text}</button>
-        : <div className="terminal-node-anchor">{anchor.text}</div>
-      : null}
-    </div>;
+      {menuHelpOpen && menuHelpText ? createPortal(
+        <div
+          id={menuHelpId}
+          role="tooltip"
+          style={{
+            position: "fixed",
+            zIndex: 2147483000,
+            top: menuHelpPosition.top,
+            left: menuHelpPosition.left,
+            boxSizing: "border-box",
+            width: menuHelpPosition.width,
+            maxHeight: `calc(100dvh - ${menuHelpPosition.top + 8}px)`,
+            overflowY: "auto",
+            margin: 0,
+            padding: ".55em .65em",
+            border: "1px solid #000",
+            background: "#fff",
+            color: "#000",
+            font: "inherit",
+            fontSize: ".86em",
+            lineHeight: 1.35,
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            pointerEvents: "none",
+            visibility: menuHelpPosition.width ? "visible" : "hidden",
+          }}
+        >
+          {menuHelpText}
+        </div>,
+        document.body,
+      ) : null}
+    </>;
   },
 );
