@@ -19,11 +19,6 @@ export function node(id: string, nodeNumber: number, ending = false): GameNode {
     ending,
     tags: [],
     locationId: null,
-    locationMode: "continue",
-    conversationCharacterId: null,
-    conversationMode: "continue",
-    anchor: { mode: "continue", text: "" },
-    entryEffects: [],
   };
 }
 
