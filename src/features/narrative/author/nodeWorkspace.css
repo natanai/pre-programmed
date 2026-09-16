@@ -131,7 +131,8 @@
 }
 
 /* Node authoring should present controls, not repeat architecture documentation. */
-.author-ui-workspace[data-author-ui-workspace="narrative.node"] .author-ui-custom[data-author-ui-role="specialized-control"] > .guided-section > h3 + small {
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] .author-ui-custom[data-author-ui-role="specialized-control"] > .guided-section > h3 + small,
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] .author-ui-disclosure .node-focused-form > small {
   display: none;
 }
 
