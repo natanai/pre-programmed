@@ -109,6 +109,9 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (
         typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128
       )) return "Interaction response speaker is invalid.";
+      if (candidate.disposition !== "stay" && candidate.disposition !== "transition") {
+        return "Interaction response disposition is invalid.";
+      }
       if (candidate.destination !== undefined && candidate.destination !== null) {
         if (!object(candidate.destination)
           || typeof candidate.destination.nodeId !== "string" || !candidate.destination.nodeId
@@ -116,6 +119,12 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
             && (typeof candidate.destination.openingId !== "string" || !candidate.destination.openingId))) {
           return "Interaction destination is invalid.";
         }
+      }
+      if (candidate.disposition === "transition" && !candidate.destination) {
+        return "Transition responses need a destination.";
+      }
+      if (candidate.disposition === "stay" && candidate.destination) {
+        return "Stay responses cannot store a destination.";
       }
     }
     return null;
