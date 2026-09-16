@@ -65,12 +65,28 @@ export function prepareInteractionForSave(
   }
 
   const incompleteTransition = draft.outcomes.find((outcome) =>
-    outcome.disposition === "transition" && !outcome.destinationNodeId);
+    outcome.disposition === "transition" && !outcome.destination);
   if (incompleteTransition) {
     return {
       issue: {
         message: "Choose an existing destination or create a new Node before saving.",
         outcomeId: incompleteTransition.id,
+      },
+    };
+  }
+
+  const invalidDestination = draft.outcomes.find((outcome) => {
+    if (outcome.disposition !== "transition" || !outcome.destination) return false;
+    const node = snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
+    if (!node) return true;
+    return Boolean(outcome.destination.openingId
+      && !node.openings.some((opening) => opening.id === outcome.destination?.openingId));
+  });
+  if (invalidDestination) {
+    return {
+      issue: {
+        message: "This response no longer points to a valid Node entry. Choose AUTO or one of that Node's current entry responses.",
+        outcomeId: invalidDestination.id,
       },
     };
   }
