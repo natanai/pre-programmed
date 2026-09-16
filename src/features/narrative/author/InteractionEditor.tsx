@@ -17,7 +17,8 @@ import {
 } from "../../../author/outcomes/OutcomeComposer";
 import { createDraftOutcome } from "../drafts";
 import { buildGraphIndex, notationForNode } from "../graph";
-import { interactionOutcomeProse, normalizeInteractionOutcomeProse } from "../interactionProse";
+import { interactionOutcomeProse } from "../interactionProse";
+import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
 import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
 export { aliasesForUserInput } from "./interactionAuthoring";
@@ -41,7 +42,7 @@ function conditionSummary(condition: Condition): string {
       if (condition.operator === "eq" && condition.value === 1) return "First time";
       if (condition.operator === "eq" && condition.value === 2) return "Second time";
       if (condition.operator === "gte" && condition.value === 2) return "Second time +";
-      return `Attempt ${condition.operator} ${condition.value}`;
+      return `Occurrence ${condition.operator} ${condition.value}`;
     }
     case "variable": return `${condition.key || "variable"} ${condition.operator} ${String(condition.value)}`;
     case "flag": return `${condition.key || "flag"} is ${condition.value ? "true" : "false"}`;
@@ -73,9 +74,12 @@ function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOut
 
 function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
   if (outcome.disposition === "stay") return "Stay here";
-  if (!outcome.destinationNodeId) return "Choose where to go";
-  const node = snapshot.nodes.find((candidate) => candidate.id === outcome.destinationNodeId);
-  return node ? `Node #${node.nodeNumber}` : "Linked node";
+  if (!outcome.destination) return "Choose where to go";
+  const node = snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
+  if (!node) return "Linked node";
+  if (!outcome.destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
+  const opening = node.openings.find((candidate) => candidate.id === outcome.destination?.openingId);
+  return `Node #${node.nodeNumber} · ${opening ? nodeOpeningSnippet(opening, 40) || "specific opening" : "missing opening"}`;
 }
 
 function secondaryAliases(wording: string, aliases: string[]) {
@@ -83,11 +87,6 @@ function secondaryAliases(wording: string, aliases: string[]) {
   return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
 }
 
-/**
- * Controlled specialized interaction composer. It owns only sub-screen and
- * response-composition presentation; callers own the canonical Interaction
- * draft, dirty baseline, validation, and persistence lifecycle.
- */
 export function InteractionComposer({
   snapshot,
   playState,
@@ -125,8 +124,8 @@ export function InteractionComposer({
   const captureMode = !fallbackMode && draft.matchMode === "capture";
   const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
   const sourcePlayState = sourceTraversalIndex >= 0
-    ? { ...playState, currentNodeId: draft.sourceNodeId, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
-    : { ...playState, currentNodeId: draft.sourceNodeId };
+    ? { ...playState, currentNodeId: draft.sourceNodeId, currentNodeOpeningId: null, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
+    : { ...playState, currentNodeId: draft.sourceNodeId, currentNodeOpeningId: null };
   const conversationCharacterId = resolveNodeConversationContext(snapshot, sourcePlayState, draft.sourceNodeId)?.characterId ?? null;
 
   const configureOutcome = (id: string, change: (outcome: InteractionOutcome) => InteractionOutcome) => {
@@ -171,8 +170,8 @@ export function InteractionComposer({
 
   const notationForOutcome = (outcome: InteractionOutcome) => {
     if (outcome.authorStatus === "draft") return "[D]";
-    if (outcome.disposition === "stay" || !outcome.destinationNodeId) return "[H]";
-    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destinationNodeId).join("") || "[A1]";
+    if (outcome.disposition === "stay" || !outcome.destination) return "[H]";
+    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destination.nodeId).join("") || "[A1]";
   };
 
   const selectedOutcome = "outcomeId" in screen
@@ -233,7 +232,7 @@ export function InteractionComposer({
         onCreateDestination={onCreateDestination ? () => onCreateDestination((nodeId) => configureOutcome(selectedOutcome.id, (outcome) => ({
           ...outcome,
           disposition: "transition",
-          destinationNodeId: nodeId,
+          destination: { nodeId, openingId: null },
         }))) : undefined}
         onEditDestination={onEditDestination}
         onChange={(change) => configureOutcome(selectedOutcome.id, change)}
@@ -243,7 +242,6 @@ export function InteractionComposer({
 
       {error ? <div className="author-message guided-editor-error" role="alert">{error}</div> : null}
     </div>
-
   </section>;
 }
 
@@ -477,16 +475,17 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
     () => searchProject(snapshot, documents, playState, existingNodeQuery, ["node"], 12),
     [snapshot, documents, playState, existingNodeQuery],
   );
-  const destinationNotation = outcome.destinationNodeId
-    ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destinationNodeId).join("") || "[A1]"
+  const destinationNotation = outcome.destination
+    ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destination.nodeId).join("") || "[A1]"
     : "[D]";
-  const destination = snapshot.nodes.find((node) => node.id === outcome.destinationNodeId);
+  const destination = snapshot.nodes.find((node) => node.id === outcome.destination?.nodeId);
+  const selectedOpening = destination?.openings.find((opening) => opening.id === outcome.destination?.openingId) ?? null;
   const selected = outcome.disposition === "stay" ? "stay" : "existing";
 
   const choose = (value: string) => {
     if (value === "stay") {
       setExistingNodeQuery("");
-      onChange((current) => ({ ...current, disposition: "stay", destinationNodeId: null }));
+      onChange((current) => ({ ...current, disposition: "stay", destination: null }));
       return;
     }
     if (value === "create") {
@@ -496,22 +495,60 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
     onChange((current) => ({ ...current, disposition: "transition" }));
   };
 
+  const chooseTarget = (nodeId: string, openingId: string | null) => {
+    setExistingNodeQuery("");
+    onChange((current) => ({
+      ...current,
+      disposition: "transition",
+      destination: { nodeId, openingId },
+    }));
+  };
+
   const existingResults = <>
-    {outcome.destinationNodeId ? <div className="selected-destination">
-      <span>LINKED {destinationNotation}: {destination?.text ?? outcome.destinationNodeId}</span>
+    {outcome.destination ? <div className="selected-destination">
+      <span>LINKED {destinationNotation}: {destination ? `${nodeAuthorLabel(destination)} · ${selectedOpening ? nodeOpeningSnippet(selectedOpening, 54) || "specific opening" : "AUTO"}` : outcome.destination.nodeId}</span>
       <span className="selected-destination-actions">
-        {onEditDestination ? <button type="button" onClick={() => onEditDestination(outcome.destinationNodeId!)}>[EDIT NODE]</button> : null}
-        <button type="button" onClick={() => onChange((current) => ({ ...current, destinationNodeId: null }))}>[UNLINK]</button>
+        {onEditDestination ? <button type="button" onClick={() => onEditDestination(outcome.destination!.nodeId)}>[EDIT NODE]</button> : null}
+        <button type="button" onClick={() => onChange((current) => ({ ...current, destination: null }))}>[UNLINK]</button>
       </span>
+      {destination ? <div className="guided-option-list" aria-label="Destination Node entry opening">
+        <button type="button" className="guided-option-row" aria-pressed={!outcome.destination.openingId} onClick={() => chooseTarget(destination.id, null)}>
+          <span>{!outcome.destination.openingId ? "[X]" : "[ ]"} AUTO</span>
+          <small>Let Node #{destination.nodeNumber} choose its opening from current conditions.</small>
+        </button>
+        {[...destination.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map((opening, index) => <button
+          type="button"
+          className="guided-option-row"
+          key={opening.id}
+          aria-pressed={outcome.destination?.openingId === opening.id}
+          onClick={() => chooseTarget(destination.id, opening.id)}
+        >
+          <span>{outcome.destination?.openingId === opening.id ? "[X]" : "[ ]"} {index + 1}. {nodeOpeningSnippet(opening, 64) || "No entry text"}</span>
+          <small>{conditionSummary(opening.condition)} · explicit selection bypasses this normal condition</small>
+        </button>)}
+      </div> : null}
     </div> : null}
     {existingNodeQuery.trim() ? <div className="search-strip guided-destination-results" role="listbox" aria-label="Existing destination matches">
-      {matches.length ? matches.map((result) => <div className="guided-destination-result" key={result.id}>
-        <button type="button" role="option" className="guided-destination-select" onClick={() => {
-          setExistingNodeQuery("");
-          onChange((current) => ({ ...current, disposition: "transition", destinationNodeId: result.id }));
-        }}><span>{result.label}</span><span>{result.notation.join("")}</span></button>
-        {onEditDestination ? <button type="button" className="guided-destination-edit" onClick={() => onEditDestination(result.id)}>[EDIT]</button> : null}
-      </div>) : <span className="search-empty">No existing node matches this search.</span>}
+      {matches.length ? matches.map((result) => {
+        const node = snapshot.nodes.find((candidate) => candidate.id === result.id);
+        if (!node) return null;
+        const openings = [...node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
+        return <div className="guided-destination-result" key={result.id}>
+          <button type="button" role="option" className="guided-destination-select" onClick={() => chooseTarget(node.id, null)}>
+            <span>{result.label}</span><span>{result.notation.join("")} · AUTO</span>
+          </button>
+          {openings.map((opening, index) => <button
+            type="button"
+            className="guided-destination-select"
+            key={opening.id}
+            onClick={() => chooseTarget(node.id, opening.id)}
+          >
+            <span>↳ {index + 1}. {nodeOpeningSnippet(opening, 72) || "No entry text"}</span>
+            <span>{conditionSummary(opening.condition)}</span>
+          </button>)}
+          {onEditDestination ? <button type="button" className="guided-destination-edit" onClick={() => onEditDestination(result.id)}>[EDIT]</button> : null}
+        </div>;
+      }) : <span className="search-empty">No existing node matches this search.</span>}
     </div> : null}
   </>;
 
@@ -547,7 +584,7 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
             control: "search",
             value: existingNodeQuery,
             onChange: setExistingNodeQuery,
-            placeholder: "Find an existing node…",
+            placeholder: "Find by node number, label, entry text, tags, or conditions…",
             inputMode: "search",
           },
           { type: "custom", id: `existing-results-${outcome.id}`, role: "results", content: existingResults },
