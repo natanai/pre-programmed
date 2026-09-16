@@ -30,8 +30,10 @@ export function nodeOpeningSnippet(opening: NodeOpening, maxLength = 90) {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
-export function nodeAuthorLabel(node: GameNode) {
-  return node.authorLabel.trim() || `Node #${node.nodeNumber}`;
+/** One canonical private Author title. Player prose never participates in Node identity. */
+export function nodeAuthorTitle(node: GameNode) {
+  const label = node.authorLabel.trim();
+  return `Node #${node.nodeNumber}${label ? ` · ${label}` : ""}`;
 }
 
 /**
