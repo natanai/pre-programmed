@@ -22,28 +22,12 @@
   border: 0;
 }
 
-.author-ui-workspace-header {
-  display: flex;
-  align-items: flex-start;
-  gap: .75em;
-  min-height: 2.2em;
-  line-height: 1.15;
-}
-
-.author-ui-workspace-header > span {
+.author-ui-workspace-context {
   min-width: 0;
-  overflow-wrap: anywhere;
-  white-space: normal;
-}
-
-.author-ui-workspace-header small {
-  min-width: 0;
-  max-width: 45%;
-  margin-left: auto;
   color: var(--dos-muted);
+  font-size: .82em;
   line-height: 1.15;
   overflow-wrap: anywhere;
-  text-align: right;
 }
 
 .author-ui-workspace-body,
@@ -290,7 +274,8 @@ html[data-keyboard-open="true"] .author-ui-choice-options > button {
 
 html[data-keyboard-open="true"] .author-ui-help,
 html[data-keyboard-open="true"] .author-ui-choice-options small,
-html[data-keyboard-open="true"] .author-ui-section-heading small {
+html[data-keyboard-open="true"] .author-ui-section-heading small,
+html[data-keyboard-open="true"] .author-ui-workspace-context {
   display: none;
 }
 
