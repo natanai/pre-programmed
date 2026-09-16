@@ -6,16 +6,23 @@ export type CompiledTextPerformance = {
   performance: TextPerformance;
 };
 
-type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed";
+type ScopeCode = "l" | "f" | "s" | "h" | "w" | "b" | "i" | "shake" | "speed" | "transparency" | "color" | "disappear";
 
 type OpenScope = {
   code: ScopeCode;
   outputStart: number;
   rawStart: number;
-  value?: number;
+  value?: TextCue["value"];
+};
+
+type ScopeHead = {
+  code: ScopeCode;
+  rawLength: number;
+  value?: TextCue["value"];
 };
 
 const DEFAULT_PAUSE_MS = 350;
+const MAX_DISAPPEAR_SECONDS = 3600;
 
 export type TextNotationIssue = {
   index: number;
@@ -24,6 +31,46 @@ export type TextNotationIssue = {
 
 function commandHeadAt(rawText: string, index: number) {
   return rawText.slice(index).match(/^\/([a-z][a-z0-9-]*)\{/i);
+}
+
+function normalizeHexColor(value: string) {
+  const raw = value.startsWith("#") ? value.slice(1) : value;
+  return `#${raw.toUpperCase()}`;
+}
+
+/** One parser owns the core scoped-text command grammar for both validation and compilation. */
+function scopeHeadAt(rawText: string, index: number): ScopeHead | null {
+  const source = rawText.slice(index);
+  const shake = source.match(/^\/shake\{/);
+  if (shake) return { code: "shake", rawLength: shake[0].length };
+
+  const speed = source.match(/^\/speed(\d{1,3})\{/);
+  if (speed) return { code: "speed", rawLength: speed[0].length, value: Number(speed[1]) };
+
+  const transparency = source.match(/^\/transparency(\d{1,3})\{/);
+  if (transparency) return { code: "transparency", rawLength: transparency[0].length, value: Number(transparency[1]) };
+
+  const disappear = source.match(/^\/disappear(\d{1,4}(?:\.\d{1,3})?)\{/);
+  if (disappear) return { code: "disappear", rawLength: disappear[0].length, value: Number(disappear[1]) };
+
+  const color = source.match(/^\/color(#?[0-9a-f]{3}(?:[0-9a-f]{3})?)\{/i);
+  if (color) return { code: "color", rawLength: color[0].length, value: normalizeHexColor(color[1]) };
+
+  const short = source.match(/^\/([lfshwbi])\{/);
+  if (short) return { code: short[1] as ScopeCode, rawLength: short[0].length };
+  return null;
+}
+
+function parameterScopeSyntaxIssue(rawText: string, index: number): string | null {
+  const malformed = rawText.slice(index).match(/^\/(speed|transparency|disappear|color)([^{}]*)\{/i);
+  if (!malformed) return null;
+  switch (malformed[1].toLowerCase()) {
+    case "speed": return "Speed must be an integer from 1 to 120, for example /speed30{text}.";
+    case "transparency": return "Transparency must be an integer from 0 to 100, for example /transparency50{text}.";
+    case "disappear": return `Disappear time must be between 0 and ${MAX_DISAPPEAR_SECONDS} seconds, for example /disappear3{text}.`;
+    case "color": return "Color must be a 3- or 6-digit HEX value, for example /color#FF8800{text}.";
+    default: return null;
+  }
 }
 
 /** Validate authored inline notation before it reaches the player. */
@@ -37,23 +84,28 @@ export function validateTextNotation(rawText: string): TextNotationIssue[] {
       continue;
     }
 
-    const longScope = rawText.slice(index).match(/^\/(shake|speed(\d{1,3}))\{/);
-    if (longScope) {
-      if (longScope[1].startsWith("speed")) {
-        const speed = Number(longScope[2]);
-        if (speed < 1 || speed > 120) {
-          issues.push({ index, message: `Inline speed at character ${index + 1} must be between 1 and 120.` });
-        }
+    const scope = scopeHeadAt(rawText, index);
+    if (scope) {
+      if (scope.code === "speed" && (Number(scope.value) < 1 || Number(scope.value) > 120)) {
+        issues.push({ index, message: `Inline speed at character ${index + 1} must be between 1 and 120.` });
       }
-      scopes.push({ index, code: longScope[1].startsWith("speed") ? "speed" : "shake" });
-      index += longScope[0].length - 1;
+      if (scope.code === "transparency" && (Number(scope.value) < 0 || Number(scope.value) > 100)) {
+        issues.push({ index, message: `Inline transparency at character ${index + 1} must be between 0 and 100.` });
+      }
+      if (scope.code === "disappear" && (Number(scope.value) < 0 || Number(scope.value) > MAX_DISAPPEAR_SECONDS)) {
+        issues.push({ index, message: `Disappear time at character ${index + 1} must be between 0 and ${MAX_DISAPPEAR_SECONDS} seconds.` });
+      }
+      scopes.push({ index, code: scope.code });
+      index += scope.rawLength - 1;
       continue;
     }
 
-    const scope = rawText.slice(index).match(/^\/([lfshwbi])\{/);
-    if (scope) {
-      scopes.push({ index, code: scope[1] as ScopeCode });
-      index += 2;
+    const parameterIssue = parameterScopeSyntaxIssue(rawText, index);
+    if (parameterIssue) {
+      issues.push({ index, message: `${parameterIssue} Character ${index + 1}.` });
+      const close = rawText.indexOf("}", index + 1);
+      if (close < 0) break;
+      index = close;
       continue;
     }
 
@@ -95,6 +147,14 @@ function clampSpeed(value: number) {
   return Math.max(1, Math.min(120, Math.round(value)));
 }
 
+function clampTransparency(value: number) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function clampDisappearSeconds(value: number) {
+  return Math.max(0, Math.min(MAX_DISAPPEAR_SECONDS, value));
+}
+
 function generatedCue(id: string, type: TextCue["type"], start: number, end: number, value?: TextCue["value"]): TextCue {
   return { id, type, start, end, ...(value === undefined ? {} : { value }) };
 }
@@ -126,7 +186,13 @@ function scopeCues(scope: OpenScope, end: number, baseSpeed: number, sequence: n
     case "shake":
       return [generatedCue(id("shake"), "shake", scope.outputStart, end)];
     case "speed":
-      return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(scope.value ?? baseSpeed))];
+      return [generatedCue(id("speed"), "speed", scope.outputStart, end, clampSpeed(Number(scope.value ?? baseSpeed)))];
+    case "transparency":
+      return [generatedCue(id("transparency"), "transparency", scope.outputStart, end, clampTransparency(Number(scope.value ?? 0)))];
+    case "color":
+      return [generatedCue(id("color"), "color", scope.outputStart, end, normalizeHexColor(String(scope.value ?? "#FFFFFF")))];
+    case "disappear":
+      return [generatedCue(id("disappear"), "disappear", scope.outputStart, end, clampDisappearSeconds(Number(scope.value ?? 0)))];
   }
 }
 
@@ -150,23 +216,15 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
       continue;
     }
 
-    const longScopeMatch = rawText.slice(index).match(/^\/(shake|speed(\d{1,3}))\{/);
-    if (longScopeMatch) {
-      const isSpeed = longScopeMatch[1].startsWith("speed");
+    const scopeHead = scopeHeadAt(rawText, index);
+    if (scopeHead) {
       scopes.push({
-        code: isSpeed ? "speed" : "shake",
+        code: scopeHead.code,
         outputStart: output.length,
         rawStart: index,
-        ...(isSpeed ? { value: Number(longScopeMatch[2]) } : {}),
+        ...(scopeHead.value === undefined ? {} : { value: scopeHead.value }),
       });
-      index += longScopeMatch[0].length;
-      continue;
-    }
-
-    const scopeMatch = rawText.slice(index).match(/^\/([lfshwbi])\{/);
-    if (scopeMatch) {
-      scopes.push({ code: scopeMatch[1] as ScopeCode, outputStart: output.length, rawStart: index });
-      index += 3;
+      index += scopeHead.rawLength;
       continue;
     }
 

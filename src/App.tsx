@@ -52,6 +52,7 @@ import type { EffectEvent } from "./engine/rules/effectRuntime";
 import { presentEffectEvents } from "./ui/effectPresentationCatalog";
 import { resolveNodeOpeningPresentation, useNarrativeContinuation } from "./features/narrative/runtime/presentation";
 import { useNarrativePlayerSurface } from "./features/narrative/runtime/useNarrativePlayerSurface";
+import { RenderedPerformanceText } from "./features/narrative/ui/RenderedPerformanceText";
 import { applyOperations } from "./engine/project/mutations";
 import {
   createEmptyPlayState,
@@ -151,6 +152,7 @@ export default function App() {
   const [activeSpeakerId, setActiveSpeakerId] = useState<string | null>(null);
   const [activeSource, setActiveSource] = useState<AuthoredSourceIdentity | undefined>();
   const [activePerformance, setActivePerformance] = useState<TextPerformance>({ ...DEFAULT_TEXT_PERFORMANCE });
+  const [activePresentedAt, setActivePresentedAt] = useState(() => Date.now());
   const [textSpeedMultiplier, setTextSpeedMultiplier] = useState(() => readDisplaySettings().textSpeedMultiplier);
   const [pendingDestinationNodeId, setPendingDestinationNodeId] = useState<string | null>(null);
   const [pendingPlaySession, setPendingPlaySession] = useState<PersistedPlaySession | null>(null);
@@ -209,6 +211,7 @@ export default function App() {
       setActiveSpeakerId(null);
       setActiveSource(undefined);
       setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
+      setActivePresentedAt(Date.now());
       setPendingDestinationNodeId(null);
     },
     onStartupComplete: () => {
@@ -268,6 +271,7 @@ export default function App() {
     setActiveSpeakerId(presentation.speakerId);
     setActiveSource(presentation.source);
     setActivePerformance(presentation.performance);
+    setActivePresentedAt(Date.now());
   }
 
   useEffect(() => {
@@ -280,6 +284,8 @@ export default function App() {
         text: activeText,
         nodeId: node.id,
         speakerId: activeSpeakerId,
+        performance: activePerformance,
+        presentedAt: activePresentedAt,
         source: activeSource,
       }]);
     }
@@ -288,7 +294,8 @@ export default function App() {
     setActiveSpeakerId(presentation.speakerId);
     setActiveSource(presentation.source);
     setActivePerformance(presentation.performance);
-  }, [typewriter.complete, nodeDialoguePending, narrativeContinuation.node, narrativeContinuation.nodeDialogue, activeText, activeSpeakerId, activeSource]);
+    setActivePresentedAt(Date.now());
+  }, [typewriter.complete, nodeDialoguePending, narrativeContinuation.node, narrativeContinuation.nodeDialogue, activeText, activeSpeakerId, activePerformance, activePresentedAt, activeSource]);
 
   useEffect(() => {
     const presentation = narrativeContinuation.interactionDialogue;
@@ -298,6 +305,8 @@ export default function App() {
         id: crypto.randomUUID(),
         text: activeText,
         speakerId: activeSpeakerId,
+        performance: activePerformance,
+        presentedAt: activePresentedAt,
         source: activeSource,
       }]);
     }
@@ -307,9 +316,10 @@ export default function App() {
     setActiveSpeakerId(presentation.speakerId);
     setActiveSource(presentation.source);
     setActivePerformance(presentation.performance);
+    setActivePresentedAt(Date.now());
   }, [
     typewriter.complete, interactionDialoguePending, narrativeContinuation.interactionDialogue,
-    activeText, activeSpeakerId, activeSource,
+    activeText, activeSpeakerId, activePerformance, activePresentedAt, activeSource,
   ]);
 
 
@@ -338,6 +348,7 @@ export default function App() {
       setActiveSpeakerId(session.presentation.activeSpeakerId);
       setActiveSource(session.presentation.activeSource ?? (resumedNodeId ? authoredSource("node", resumedNodeId) : undefined));
       setActivePerformance(session.presentation.activePerformance);
+      setActivePresentedAt(session.presentation.activePresentedAt ?? Date.parse(session.savedAt));
       setPendingDestinationNodeId(session.presentation.pendingDestinationNodeId && snapshot.nodes.some((node) => node.id === session.presentation.pendingDestinationNodeId)
         ? session.presentation.pendingDestinationNodeId
         : null);
@@ -346,6 +357,7 @@ export default function App() {
       setActiveNodeId(undefined);
       setActiveSpeakerId(null);
       setActiveSource(undefined);
+      setActivePresentedAt(Date.now());
       setPendingDestinationNodeId(null);
       const node = snapshot.nodes.find((candidate) => candidate.id === state.currentNodeId);
       if (node) showNode(snapshot, node, state);
@@ -371,6 +383,7 @@ export default function App() {
     setActiveSpeakerId(null);
     setActiveSource(undefined);
     setActivePerformance({ ...DEFAULT_TEXT_PERFORMANCE });
+    setActivePresentedAt(Date.now());
     setPendingDestinationNodeId(null);
     firedCueIds.current = new Set();
     completedPendingDestination.current = "";
@@ -390,9 +403,16 @@ export default function App() {
     const destination = snapshot.nodes.find((node) => node.id === pendingDestinationNodeId);
     setPendingDestinationNodeId(null);
     if (!destination) return;
-    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, speakerId: activeSpeakerId, source: activeSource }]);
+    setTranscript((lines) => [...lines, {
+      id: crypto.randomUUID(),
+      text: activeText,
+      speakerId: activeSpeakerId,
+      performance: activePerformance,
+      presentedAt: activePresentedAt,
+      source: activeSource,
+    }]);
     showNode(snapshot, destination, playState);
-  }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, snapshot, playState, activeText, activeSpeakerId, activeSource]);
+  }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, snapshot, playState, activeText, activeSpeakerId, activePerformance, activePresentedAt, activeSource]);
 
   useEffect(() => {
     let cancelled = false;
@@ -480,6 +500,7 @@ export default function App() {
           activeNodeId,
           activeSpeakerId,
           activePerformance,
+          activePresentedAt,
           pendingDestinationNodeId,
           activeSource,
         },
@@ -498,6 +519,7 @@ export default function App() {
     activeNodeId,
     activeSpeakerId,
     activePerformance,
+    activePresentedAt,
     pendingDestinationNodeId,
     activeSource,
   ]);
@@ -633,6 +655,8 @@ export default function App() {
       text: activeText,
       nodeId: activeNodeId,
       speakerId: activeSpeakerId,
+      performance: activePerformance,
+      presentedAt: activePresentedAt,
       source: activeSource,
     }]);
   };
@@ -691,6 +715,7 @@ export default function App() {
       setActiveSpeakerId(rawSpeakerId);
       setActiveSource(execution.source);
       setActivePerformance(compiled.performance);
+      setActivePresentedAt(Date.now());
       setPendingDestinationNodeId(destination?.id ?? null);
     } else if (destination) {
       setPendingDestinationNodeId(null);
@@ -952,6 +977,14 @@ export default function App() {
               />
               {lineEditable ? <button type="button" className="story-source-edit" onClick={() => openAuthorSource(lineSource)}>[EDIT SOURCE]</button> : null}
             </div>;
+            const renderedLineText = line.performance
+              ? <RenderedPerformanceText
+                text={line.text}
+                performance={line.performance}
+                presentedAt={line.presentedAt ?? 0}
+                animateDelivery={false}
+              />
+              : line.text;
             return <div className={line.command ? "command-line" : "story-line"} key={line.id}>
               <SpeakerPrefix
                 snapshot={snapshot}
@@ -961,8 +994,8 @@ export default function App() {
                 onEdit={authorExperience && line.speakerId ? () => openAuthorResource("character", line.speakerId!) : undefined}
               />
               {lineEditable && !line.command
-                ? <button type="button" className="story-inline-edit-target" onClick={() => openAuthorSource(lineSource)}>{line.text}</button>
-                : line.text}
+                ? <button type="button" className="story-inline-edit-target" onClick={() => openAuthorSource(lineSource)}>{renderedLineText}</button>
+                : renderedLineText}
               {anchoredNotifications.length ? <span className="inline-floating-notifications" aria-live="polite">{anchoredNotifications.map((item) => authorExperience && canEditAuthorSource(item.source)
                 ? <button type="button" className="notification-edit-target" key={item.id} onClick={() => openAuthorSource(item.source)}>{item.text}</button>
                 : <span key={item.id}>{item.text}</span>)}</span> : null}
@@ -977,8 +1010,8 @@ export default function App() {
               onEdit={authorExperience && activeSpeakerId ? () => openAuthorResource("character", activeSpeakerId!) : undefined}
             />
             {activePresentationEditable
-              ? <button type="button" className="story-inline-edit-target" onClick={() => openAuthorSource(activePresentationSource)}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} /></button>
-              : <RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} />}
+              ? <button type="button" className="story-inline-edit-target" onClick={() => openAuthorSource(activePresentationSource)}><RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} presentedAt={activePresentedAt} /></button>
+              : <RenderedPerformanceText text={typewriter.visibleText} performance={activePerformance} presentedAt={activePresentedAt} />}
           </div> : null}
         </div>
       </div>
@@ -1061,6 +1094,7 @@ export default function App() {
               setActiveSpeakerId(speakerId);
               setActiveSource(undefined);
               setActivePerformance(compiled.performance);
+              setActivePresentedAt(Date.now());
               setPendingDestinationNodeId(null);
               handleEffectEvents(events);
             },
@@ -1138,17 +1172,4 @@ function SpeakerPrefix({ snapshot, state, authorMode, speakerId, onEdit }: {
   return onEdit
     ? <button type="button" className="story-speaker-edit" onClick={onEdit}>{name}: </button>
     : <span>{name}: </span>;
-}
-
-function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {
-  const segments: Array<{ text: string; classes: string[] }> = [];
-  for (let index = 0; index < text.length; index += 1) {
-    const classes = performance.cues
-      .filter((cue) => ["wave", "shake", "blink"].includes(cue.type) && cue.start <= index && cue.end > index)
-      .map((cue) => `cue-${cue.type}`);
-    const previous = segments.at(-1);
-    if (previous && previous.classes.join(" ") === classes.join(" ")) previous.text += text[index];
-    else segments.push({ text: text[index], classes });
-  }
-  return <>{segments.map((segment, index) => <span key={index} className={segment.classes.join(" ")}>{segment.text}</span>)}</>;
 }
