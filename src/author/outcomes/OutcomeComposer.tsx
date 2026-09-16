@@ -24,8 +24,7 @@ export function OutcomeConditionEditor({ condition, snapshot, onChange, language
   language?: "time" | "attempt";
 }) {
   return <div className="outcome-condition-editor">
-    <p>Choose a quick {language === "time" ? "timing" : "attempt"} rule or build nested logic below.</p>
-    <div className="attempt-presets outcome-condition-presets">
+    <div className="attempt-presets outcome-condition-presets" aria-label={`${language === "time" ? "Timing" : "Attempt"} presets`}>
       <button type="button" onClick={() => onChange({ type: "always" })}>[ALWAYS]</button>
       <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 1 })}>[FIRST]</button>
       <button type="button" onClick={() => onChange({ type: "attempt", operator: "eq", value: 2 })}>[SECOND]</button>
