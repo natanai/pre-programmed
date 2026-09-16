@@ -80,7 +80,9 @@ The shared Author UI rules are documented in [`docs/author-ui-grammar.md`](docs/
 
 ### Nodes, input, and outcomes
 
-A node is a playable narrative state. Authored user input can select ordered outcomes. Outcomes can return text, use a speaker, apply effects, stay at the current node, or transition elsewhere. Conditions determine which outcome applies.
+A Node is a stable playable graph state, not a prose blob. Each Node owns ordered **Entry Responses** containing their condition, narration/dialogue, and text performance. AUTO entry uses the shared Engine Rules conditional selector and takes the first matching Entry Response; first/second/later-entry rules derive their occurrence from real traversal history rather than a second visit counter. Links always identify the destination Node and may optionally identify one stable Entry Response when the author deliberately wants to bypass AUTO selection. Player-facing prose and private Node names are never link identity.
+
+Authored user input uses the same conditional-selection machinery for its ordered response outcomes. Outcomes can return text, use a speaker, apply effects, stay at the current Node, or transition elsewhere. The condition vocabulary is shared across these systems rather than reimplemented by each authoring surface.
 
 ### State and operations
 
