@@ -1,0 +1,30 @@
+/*
+ * Portaled player UI leaves the .dos-terminal subtree, so it must inherit the
+ * engine's canonical typography from the document root rather than falling
+ * back to browser defaults.
+ */
+body {
+  font-family: "PreProgrammed VGA", monospace;
+}
+
+/*
+ * Top-level informational overlays are deliberately visually distinct from
+ * the white suggestion surface underneath them. They occupy the viewport
+ * layer, obscure the prompt/suggestions beneath them while open, and never
+ * participate in dropdown layout or scrolling.
+ */
+body > [role="tooltip"] {
+  top: 50% !important;
+  left: 50% !important;
+  width: min(42rem, calc(100vw - 2rem)) !important;
+  max-height: min(50dvh, 18em) !important;
+  transform: translate(-50%, -50%);
+  padding: .75em .85em !important;
+  border: 1px solid #fff !important;
+  background: #000 !important;
+  color: var(--dos-bright) !important;
+  font-family: "PreProgrammed VGA", monospace !important;
+  line-height: 1.2 !important;
+  white-space: pre-wrap !important;
+  overflow-wrap: anywhere;
+}
