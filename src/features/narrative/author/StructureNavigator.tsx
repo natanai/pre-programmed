@@ -2,12 +2,22 @@ import { useMemo, useState } from "react";
 import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../graph";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { Interaction } from "../model";
+import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
 import "./structureNavigator.css";
 
 function interactionLabel(interaction: Interaction) {
   if (interaction.matchMode === "fallback") return "INVALID INPUT";
   if (interaction.matchMode === "capture") return "CAPTURE PLAYER INPUT";
   return interaction.wording || interaction.aliases[0] || "UNTITLED INPUT";
+}
+
+function nodePreview(snapshot: ProjectSnapshot, nodeId: string, length = 90) {
+  const node = snapshot.nodes.find((candidate) => candidate.id === nodeId);
+  if (!node) return "";
+  const opening = [...node.openings]
+    .sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))
+    .find((candidate) => nodeOpeningSnippet(candidate));
+  return opening ? nodeOpeningSnippet(opening, length) : "";
 }
 
 export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInteraction, embedded = false }: {
@@ -33,7 +43,9 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
       searchText: [
         `#${node.nodeNumber}`,
         String(node.nodeNumber),
-        node.text,
+        node.authorLabel,
+        ...node.tags,
+        ...node.openings.flatMap((opening) => [opening.narrationText, opening.dialogueText, JSON.stringify(opening.condition)]),
         ...(interactionText.get(node.id) ?? []),
       ].join(" ").toLowerCase(),
     }));
@@ -96,7 +108,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
             id="structure-node-search"
             type="search"
             value={query}
-            placeholder="node text, input, or #"
+            placeholder="node #, name, entry text, or input"
             onChange={(event) => setQuery(event.target.value)}
             autoCapitalize="none"
             autoCorrect="off"
@@ -109,7 +121,10 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
       {normalizedQuery ? <div className="structure-jump-results" aria-label="Matching nodes">
         {jumpResults.length ? jumpResults.map((node) => <div className="structure-jump-result-row" key={node.id}>
           <button type="button" className="structure-jump-result-main" onClick={() => jumpToNode(node.id)}>
-            <span className="structure-jump-copy"><strong>#{node.nodeNumber}</strong><small>{node.text.slice(0, 90) || "Empty node"}</small></span>
+            <span className="structure-jump-copy">
+              <strong>#{node.nodeNumber} · {nodeAuthorLabel(node)}</strong>
+              <small>{nodePreview(snapshot, node.id) || "No entry text"}</small>
+            </span>
             <span className="structure-jump-notation">{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</span>
           </button>
           <button type="button" className="structure-reference-edit" aria-label={`Edit Node #${node.nodeNumber}`} onClick={() => onOpenNode(node.id)}>[EDIT]</button>
@@ -125,17 +140,18 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         if (!node) return null;
         const outgoing = snapshot.interactions.filter((interaction) => interaction.sourceNodeId === nodeId);
         const arrivalSource = columnIndex === 0 ? playState.traversal.at(-2) : path[columnIndex - 1];
-        const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.outcomes.some((outcome) => outcome.destinationNodeId === nodeId && interaction.sourceNodeId === arrivalSource)) : null;
+        const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.outcomes.some((outcome) => outcome.destination?.nodeId === nodeId && interaction.sourceNodeId === arrivalSource)) : null;
         const active = columnIndex === path.length - 1;
         const rootLabel = node.id === playState.currentNodeId ? "CURRENT NODE" : "BROWSED NODE";
         return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
           <small className="structure-arrival">{arrivedBy ? `VIA ${interactionLabel(arrivedBy)}` : columnIndex === 0 ? rootLabel : "HERE"}</small>
           <button type="button" className="structure-node" onClick={() => onOpenNode(node.id)}>
-            <span>#{node.nodeNumber} {node.text.slice(0, 70)}</span>
+            <span>#{node.nodeNumber} · {nodeAuthorLabel(node)}{nodePreview(snapshot, node.id, 56) ? ` — ${nodePreview(snapshot, node.id, 56)}` : ""}</span>
             <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, node.id).join("")}</strong>
           </button>
           <div className="structure-level-meta">
             <span>{outgoing.length} input{outgoing.length === 1 ? "" : "s"}</span>
+            <span>{node.openings.length} entr{node.openings.length === 1 ? "y" : "ies"}</span>
             {node.ending ? <span>[E] ENDING</span> : null}
           </div>
           <div className="structure-branches">
@@ -146,11 +162,17 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
               </div>
               <div className="structure-outcomes">
                 {interaction.outcomes.map((outcome, outcomeIndex) => {
-                  const destination = outcome.destinationNodeId && snapshot.nodes.find((candidate) => candidate.id === outcome.destinationNodeId);
+                  const destination = outcome.destination && snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
                   if (!destination) return <span className="stay-destination" key={outcome.id}>{outcomeIndex + 1}. ↺ stay</span>;
+                  const specificOpening = outcome.destination?.openingId
+                    ? destination.openings.find((opening) => opening.id === outcome.destination?.openingId)
+                    : null;
+                  const entryPreview = specificOpening
+                    ? nodeOpeningSnippet(specificOpening, 46)
+                    : nodePreview(snapshot, destination.id, 46);
                   return <div className="structure-destination-row" key={outcome.id}>
                     <button type="button" className="branch-destination" onClick={() => setPath([...path.slice(0, columnIndex + 1), destination.id])}>
-                      <span>{outcomeIndex + 1}. → #{destination.nodeNumber} {destination.text.slice(0, 46)}</span>
+                      <span>{outcomeIndex + 1}. → #{destination.nodeNumber} · {nodeAuthorLabel(destination)}{entryPreview ? ` — ${entryPreview}` : ""}{specificOpening ? " [SPECIFIC ENTRY]" : " [AUTO]"}</span>
                       <strong>{notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, destination.id).join("")}</strong>
                     </button>
                     <button type="button" className="structure-reference-edit" aria-label={`Edit destination Node #${destination.nodeNumber}`} onClick={() => onOpenNode(destination.id)}>[EDIT]</button>
