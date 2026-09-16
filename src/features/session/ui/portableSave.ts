@@ -7,10 +7,7 @@ import {
   type PersistedPlaySession,
 } from "../../../data/localPlaySession";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
-import { authoredSource } from "../../../engine/presentation/authoredSource";
-import { interpolateText } from "../../narrative/interpolation";
-import { resolveActiveNodeConversationContext } from "../../narrative/sceneContext";
-import { compileTextNotation } from "../../narrative/textNotation";
+import { resolveNodeOpeningPresentation } from "../../narrative/runtime/presentation";
 
 const PORTABLE_SAVE_FORMAT = "pre-programmed-player-save" as const;
 const PORTABLE_SAVE_VERSION = 1 as const;
@@ -43,24 +40,15 @@ function currentPresentation(
     };
   }
 
-  const narration = interpolateText(node.text, { snapshot, state });
-  const dialogue = interpolateText(node.dialogueText ?? "", { snapshot, state });
-  const beginsWithDialogue = !narration && Boolean(dialogue);
-  const performance = beginsWithDialogue
-    ? node.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE
-    : node.performance;
-  const compiled = compileTextNotation(beginsWithDialogue ? dialogue : narration, performance);
-  const conversation = beginsWithDialogue
-    ? resolveActiveNodeConversationContext(snapshot, state)
-    : null;
+  const presentation = resolveNodeOpeningPresentation(snapshot, state, node);
   return {
     transcript: previous?.presentation.transcript ?? [],
-    activeText: compiled.text,
+    activeText: presentation.text,
     activeNodeId: node.id,
-    activeSpeakerId: conversation?.characterId ?? null,
-    activePerformance: compiled.performance,
+    activeSpeakerId: presentation.speakerId,
+    activePerformance: presentation.performance,
     pendingDestinationNodeId: null,
-    activeSource: authoredSource("node", node.id, { section: beginsWithDialogue ? "dialogue" : "narration" }),
+    activeSource: presentation.source,
   };
 }
 
@@ -69,8 +57,9 @@ function currentPresentation(
  *
  * The normal browser autosave remains the primary live presentation source. A
  * short yield lets the existing autosave effect catch the `save` command before
- * export; if browser persistence is unavailable, the current node is rebuilt
- * from canonical project data instead of producing an unusable file.
+ * export; if browser persistence is unavailable, the current Node presentation
+ * is rebuilt through the same canonical Narrative presentation resolver used by
+ * live play instead of duplicating Node-opening selection here.
  */
 export async function buildPortablePlaySession(
   snapshot: ProjectSnapshot,
