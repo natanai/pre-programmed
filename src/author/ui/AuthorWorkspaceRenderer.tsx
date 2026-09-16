@@ -160,9 +160,9 @@ export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
 }
 
 /**
- * Canonical renderer for structured Author tasks.
- * Feature code supplies semantic intent only; this component owns task-level
- * title, body hierarchy, responsive presentation, and the one action footer.
+ * Canonical renderer for structured Author task bodies.
+ * The nested Author task shell owns the one visible task title/navigation header;
+ * feature workspaces own only their body hierarchy, optional context, and action footer.
  */
 export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWorkspaceSpec; busy?: boolean }) {
   assertValidAuthorWorkspaceSpec(spec);
@@ -171,14 +171,12 @@ export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWo
   return <section
     className="author-panel author-panel-frame author-ui-workspace"
     data-author-ui-workspace={spec.id}
+    aria-label={spec.title}
     aria-busy={locked || undefined}
     inert={locked || undefined}
   >
-    <header className="author-ui-workspace-header">
-      <span>{spec.title}</span>
-      {spec.context ? <small>{spec.context}</small> : null}
-    </header>
     <div className="author-panel-body author-ui-workspace-body">
+      {spec.context ? <small className="author-ui-workspace-context">{spec.context}</small> : null}
       <AuthorUiBlocks blocks={spec.blocks} />
     </div>
     {spec.actions?.length ? <div className="author-actions author-panel-footer author-ui-workspace-actions">
