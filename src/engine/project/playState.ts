@@ -4,7 +4,7 @@ import {
   reconcileInventoryPlayState,
   reconcileInventoryPlayStateAfterProjectChange,
 } from "../../features/inventory/playState";
-import { initializeNarrativePlayState } from "../../features/narrative/playState";
+import { initializeNarrativePlayState, reconcileNarrativePlayState } from "../../features/narrative/playState";
 import { initializeRadixPlayState, reconcileRadixPlayState } from "../../features/radix/playState";
 import { initializeStatePlayState, reconcileStatePlayState } from "../../features/state/playState";
 import { initializeWorldPlayState, reconcileWorldPlayState } from "../../features/world/playState";
@@ -31,7 +31,8 @@ export function createEmptyPlayState(snapshot: ProjectSnapshot, now = Date.now()
 
 /** Reconcile durable play state through the features that currently require it. */
 export function reconcilePlayState(snapshot: ProjectSnapshot, state: PlayState, now = Date.now()): PlayState {
-  let nextState = reconcileRadixPlayState(snapshot, state);
+  let nextState = reconcileNarrativePlayState(snapshot, state);
+  nextState = reconcileRadixPlayState(snapshot, nextState);
   nextState = reconcileWorldPlayState(snapshot, nextState);
   nextState = reconcileStatePlayState(snapshot, nextState, now);
   nextState = reconcileInventoryPlayState(snapshot, nextState);
@@ -80,6 +81,7 @@ export function resumeAuthorBookmark(snapshot: ProjectSnapshot, bookmark: Author
   return resumePlayState(snapshot, {
     ...bookmark.playState,
     currentNodeId: bookmark.nodeId,
+    currentNodeOpeningId: null,
     traversal: [...bookmark.traversal],
   }, bookmark.createdAt, now);
 }
