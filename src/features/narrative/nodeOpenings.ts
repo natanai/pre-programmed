@@ -36,6 +36,9 @@ export function nodeAuthorTitle(node: GameNode) {
   return `Node #${node.nodeNumber}${label ? ` · ${label}` : ""}`;
 }
 
+/** Shared display-label contract for existing Author consumers. */
+export const nodeAuthorLabel = nodeAuthorTitle;
+
 /**
  * Resolve exactly one Node-owned opening for the current entry.
  * A specific opening id is an explicit author override and therefore bypasses
