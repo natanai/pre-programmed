@@ -136,36 +136,20 @@
   display: none;
 }
 
-/* A single Entry Response is already expanded, so its second summary/header only
-   repeats information and consumes scarce vertical space. Multiple variants keep
-   their summaries because those are the selector for each conditional response. */
-.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > details.guided-section:only-of-type > summary {
+/* One unconditional/default Entry Response should remain visually equivalent to
+   the original direct prose editor. The shared disclosure row appears once there
+   is an actual set of variants to scan. */
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > .node-opening-disclosure:only-of-type {
+  border: 0;
+}
+
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > .node-opening-disclosure:only-of-type > summary {
   display: none;
 }
 
-.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > details.guided-section:only-of-type {
-  margin-top: 0;
+.author-ui-workspace[data-author-ui-workspace="narrative.node"] section.guided-section > .node-opening-disclosure:only-of-type > .author-inline-disclosure-body {
   padding-top: 0;
-}
-
-.node-opening-summary {
-  display: flex;
-  align-items: baseline;
-  gap: .75em;
-  min-width: 0;
-}
-
-.node-opening-summary > strong {
-  min-width: 0;
-  flex: 1 1 auto;
-  overflow-wrap: anywhere;
-}
-
-.node-opening-notation {
-  flex: 0 0 auto;
-  margin-left: auto;
-  color: var(--dos-dim);
-  white-space: nowrap;
+  border-top: 0;
 }
 
 @media (pointer: coarse) {
