@@ -57,9 +57,22 @@
 }
 
 .author-inline-disclosure-body {
+  display: grid;
+  align-content: start;
+  gap: .65em;
   min-width: 0;
   padding: .55em 0 .75em;
   border-top: 1px dotted var(--dos-line);
+}
+
+html[data-keyboard-open="true"] .author-inline-disclosure > summary {
+  min-height: 2.55em;
+  padding-block: .3em;
+}
+
+html[data-keyboard-open="true"] .author-inline-disclosure-body {
+  gap: .4em;
+  padding-block: .4em .55em;
 }
 
 @media (max-width: 640px), (pointer: coarse) {
