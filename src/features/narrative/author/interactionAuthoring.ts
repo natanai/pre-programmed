@@ -1,7 +1,7 @@
 import { ALWAYS } from "../../../engine/rules/model";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
-import type { Interaction, NodeEntryTarget } from "../model";
+import type { Interaction, NarrativeFlowStep, NodeEntryTarget } from "../model";
 import { normalizeInteractionOutcomeProse } from "../interactionProse";
 import { validateTextNotation } from "../textNotation";
 
@@ -12,7 +12,6 @@ export type InteractionSaveIssue = {
 
 export function interactionAuthorLabel(interaction: Interaction) {
   if (interaction.matchMode === "fallback") return "Invalid input response";
-  if (interaction.matchMode === "capture") return "Capture player input";
   return interaction.wording || interaction.aliases[0] || "New scene input";
 }
 
@@ -35,73 +34,46 @@ export function normalizeInteractionAuthorDraft(
   fallback: boolean,
 ) {
   const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
-  value.matchMode ??= fallback ? "fallback" : "command";
+  value.matchMode = fallback ? "fallback" : "command";
   value.choiceVisibility ??= fallback ? "typed" : "prompt";
   value.choiceVisibleWhen ??= ALWAYS;
   value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => normalizeInteractionOutcomeProse({
     ...outcome,
+    after: Array.isArray(outcome.after) ? outcome.after : [],
     authorStatus: outcome.authorStatus ?? "configured",
   })) : [createDraftOutcome()];
   return value;
 }
 
-function destinationExists(snapshot: ProjectSnapshot, destination: NodeEntryTarget | null) {
-  if (!destination) return false;
+function destinationExists(snapshot: ProjectSnapshot, destination: NodeEntryTarget) {
   const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
   if (!node) return false;
   return !destination.openingId || node.openings.some((opening) => opening.id === destination.openingId);
+}
+
+function invalidFlowDestination(snapshot: ProjectSnapshot, flow: NarrativeFlowStep[]) {
+  return flow.find((step) => step.type === "transition" && !destinationExists(snapshot, step.destination));
+}
+
+function flowTextInvalid(flow: NarrativeFlowStep[]) {
+  return flow.some((step) => step.type === "present" && (
+    validateTextNotation(step.responseText).length
+    || validateTextNotation(step.dialogueText).length
+  ));
 }
 
 export function prepareInteractionForSave(
   draft: Interaction,
   fallbackMode: boolean,
   snapshot: ProjectSnapshot,
-): { interaction: Interaction; captureMode: boolean } | { issue: InteractionSaveIssue } {
-  const captureMode = !fallbackMode && draft.matchMode === "capture";
+): { interaction: Interaction } | { issue: InteractionSaveIssue } {
   const userInputText = draft.wording.trim();
 
-  if (!fallbackMode && !captureMode && !userInputText) {
-    return { issue: { message: "Enter user-input-text or choose Capture player input." } };
+  if (!fallbackMode && !userInputText) {
+    return { issue: { message: "Enter user-input-text." } };
   }
 
-  if (captureMode && snapshot.interactions.some((interaction) =>
-    interaction.id !== draft.id
-    && interaction.sourceNodeId === draft.sourceNodeId
-    && interaction.matchMode === "capture")) {
-    return { issue: { message: "This node already has a Capture player input interaction. Edit that interaction instead." } };
-  }
-
-  const incompleteTransition = draft.outcomes.find((outcome) =>
-    !outcome.inputCapture && outcome.disposition === "transition" && !outcome.destination);
-  if (incompleteTransition) {
-    return {
-      issue: {
-        message: "Choose an existing destination or create a new Node before saving.",
-        outcomeId: incompleteTransition.id,
-      },
-    };
-  }
-
-  const incompleteCaptureTransition = draft.outcomes.find((outcome) =>
-    outcome.inputCapture?.disposition === "transition" && !outcome.inputCapture.destination);
-  if (incompleteCaptureTransition) {
-    return {
-      issue: {
-        message: "Choose where play continues after the captured input, or choose Stay here.",
-        outcomeId: incompleteCaptureTransition.id,
-      },
-    };
-  }
-
-  const invalidDestination = draft.outcomes.find((outcome) => {
-    if (!outcome.inputCapture && outcome.disposition === "transition" && outcome.destination) {
-      return !destinationExists(snapshot, outcome.destination);
-    }
-    if (outcome.inputCapture?.disposition === "transition" && outcome.inputCapture.destination) {
-      return !destinationExists(snapshot, outcome.inputCapture.destination);
-    }
-    return false;
-  });
+  const invalidDestination = draft.outcomes.find((outcome) => invalidFlowDestination(snapshot, outcome.after));
   if (invalidDestination) {
     return {
       issue: {
@@ -113,7 +85,8 @@ export function prepareInteractionForSave(
 
   const invalidText = draft.outcomes.find((outcome) =>
     validateTextNotation(outcome.responseText).length
-    || validateTextNotation(outcome.dialogueText ?? "").length);
+    || validateTextNotation(outcome.dialogueText ?? "").length
+    || flowTextInvalid(outcome.after));
   if (invalidText) {
     return {
       issue: {
@@ -124,26 +97,18 @@ export function prepareInteractionForSave(
   }
 
   return {
-    captureMode,
     interaction: {
       ...draft,
-      wording: fallbackMode || captureMode ? "" : userInputText,
-      matchMode: fallbackMode ? "fallback" : captureMode ? "capture" : "command",
-      choiceVisibility: fallbackMode || captureMode ? "typed" : draft.choiceVisibility,
-      choiceVisibleWhen: fallbackMode || captureMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
-      aliases: fallbackMode || captureMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
-      outcomes: draft.outcomes.map((outcome, index) => outcome.inputCapture
-        ? {
-            ...outcome,
-            order: index,
-            disposition: "stay",
-            destination: null,
-            inputCapture: {
-              ...outcome.inputCapture,
-              effects: [...outcome.inputCapture.effects],
-            },
-          }
-        : { ...outcome, order: index }),
+      wording: fallbackMode ? "" : userInputText,
+      matchMode: fallbackMode ? "fallback" : "command",
+      choiceVisibility: fallbackMode ? "typed" : draft.choiceVisibility,
+      choiceVisibleWhen: fallbackMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
+      aliases: fallbackMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
+      outcomes: draft.outcomes.map((outcome, index) => ({
+        ...outcome,
+        order: index,
+        after: structuredClone(outcome.after),
+      })),
     },
   };
 }
@@ -154,10 +119,8 @@ export function interactionSaveDescription(
   fallbackMode: boolean,
   snapshot: ProjectSnapshot,
 ) {
-  const captureMode = !fallbackMode && interaction.matchMode === "capture";
   const sourceNodeNumber = snapshot.nodes.find((node) => node.id === interaction.sourceNodeId)?.nodeNumber;
   if (fallbackMode) return `${existedBeforeSave ? "Changed" : "Created"} invalid-input response for node ${sourceNodeNumber}`;
-  if (captureMode) return `${existedBeforeSave ? "Changed" : "Created"} player-input capture for node ${sourceNodeNumber}`;
   return existedBeforeSave
     ? `Changed user input ${interaction.wording}`
     : `Created user input ${interaction.wording}`;

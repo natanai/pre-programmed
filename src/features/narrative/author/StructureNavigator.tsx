@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { flowDestination } from "../flow";
 import { buildGraphIndex, GRAPH_NOTATION_DEFINITIONS, notationForNode } from "../graph";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { Interaction } from "../model";
@@ -7,7 +8,6 @@ import "./structureNavigator.css";
 
 function interactionLabel(interaction: Interaction) {
   if (interaction.matchMode === "fallback") return "INVALID INPUT";
-  if (interaction.matchMode === "capture") return "CAPTURE PLAYER INPUT";
   return interaction.wording || interaction.aliases[0] || "UNTITLED INPUT";
 }
 
@@ -140,7 +140,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
         if (!node) return null;
         const outgoing = snapshot.interactions.filter((interaction) => interaction.sourceNodeId === nodeId);
         const arrivalSource = columnIndex === 0 ? playState.traversal.at(-2) : path[columnIndex - 1];
-        const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.outcomes.some((outcome) => outcome.destination?.nodeId === nodeId && interaction.sourceNodeId === arrivalSource)) : null;
+        const arrivedBy = arrivalSource ? snapshot.interactions.find((interaction) => interaction.sourceNodeId === arrivalSource && interaction.outcomes.some((outcome) => flowDestination(outcome.after)?.nodeId === nodeId)) : null;
         const active = columnIndex === path.length - 1;
         const rootLabel = node.id === playState.currentNodeId ? "CURRENT NODE" : "BROWSED NODE";
         return <section className={`structure-level${active ? " active" : ""}`} key={`${nodeId}:${columnIndex}`}>
@@ -162,10 +162,11 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
               </div>
               <div className="structure-outcomes">
                 {interaction.outcomes.map((outcome, outcomeIndex) => {
-                  const destination = outcome.destination && snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
+                  const target = flowDestination(outcome.after);
+                  const destination = target && snapshot.nodes.find((candidate) => candidate.id === target.nodeId);
                   if (!destination) return <span className="stay-destination" key={outcome.id}>{outcomeIndex + 1}. ↺ stay</span>;
-                  const specificOpening = outcome.destination?.openingId
-                    ? destination.openings.find((opening) => opening.id === outcome.destination?.openingId)
+                  const specificOpening = target?.openingId
+                    ? destination.openings.find((opening) => opening.id === target.openingId)
                     : null;
                   const entryPreview = specificOpening
                     ? nodeOpeningSnippet(specificOpening, 46)

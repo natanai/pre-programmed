@@ -10,30 +10,42 @@ function textPerformanceValid(value: unknown) {
 }
 
 function destinationValid(value: unknown) {
-  if (!object(value)
-    || typeof value.nodeId !== "string" || !value.nodeId
-    || (value.openingId !== null
-      && value.openingId !== undefined
-      && (typeof value.openingId !== "string" || !value.openingId))) {
+  return object(value)
+    && typeof value.nodeId === "string" && Boolean(value.nodeId)
+    && (value.openingId === null
+      || value.openingId === undefined
+      || (typeof value.openingId === "string" && Boolean(value.openingId)));
+}
+
+function flowValid(value: unknown) {
+  if (!Array.isArray(value)) return false;
+  const ids = new Set<string>();
+  for (const [index, step] of value.entries()) {
+    if (!object(step) || typeof step.id !== "string" || !step.id || ids.has(step.id)) return false;
+    ids.add(step.id as string);
+    if (step.type === "await_input") continue;
+    if (step.type === "effects") {
+      if (!effectsValid(step.effects)) return false;
+      continue;
+    }
+    if (step.type === "transition") {
+      if (!destinationValid(step.destination) || index !== value.length - 1) return false;
+      continue;
+    }
+    if (step.type === "present") {
+      if (typeof step.responseText !== "string" || step.responseText.length > 20000
+        || typeof step.dialogueText !== "string" || step.dialogueText.length > 20000
+        || !textPerformanceValid(step.responsePerformance)
+        || !textPerformanceValid(step.dialoguePerformance)
+        || (step.speakerId !== null && step.speakerId !== undefined
+          && (typeof step.speakerId !== "string" || step.speakerId.length > 128))) {
+        return false;
+      }
+      continue;
+    }
     return false;
   }
   return true;
-}
-
-function continuationValid(value: Record<string, unknown>, prefix: string) {
-  if (value.disposition !== "stay" && value.disposition !== "transition") {
-    return `${prefix} disposition is invalid.`;
-  }
-  if (value.destination !== undefined && value.destination !== null && !destinationValid(value.destination)) {
-    return `${prefix} destination is invalid.`;
-  }
-  if (value.disposition === "transition" && !value.destination) {
-    return `${prefix} transitions need a destination.`;
-  }
-  if (value.disposition === "stay" && value.destination) {
-    return `${prefix} Stay here behavior cannot store a destination.`;
-  }
-  return null;
 }
 
 export const narrativeMutationValidator: WorkerMutationValidator = {
@@ -56,7 +68,8 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
           || typeof candidate.narrationText !== "string" || candidate.narrationText.length > 20000
           || typeof candidate.dialogueText !== "string" || candidate.dialogueText.length > 20000
           || !textPerformanceValid(candidate.narrationPerformance)
-          || !textPerformanceValid(candidate.dialoguePerformance)) {
+          || !textPerformanceValid(candidate.dialoguePerformance)
+          || !flowValid(candidate.after)) {
           return "A Node entry response is invalid.";
         }
         if (openingIds.has(candidate.id as string)) return "Node entry response ids must be unique.";
@@ -118,12 +131,13 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
     if (interaction.order !== undefined && (!Number.isInteger(interaction.order) || (interaction.order as number) < 0)) return "Interaction order is invalid.";
     if (interaction.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(interaction.choiceVisibility))) return "Interaction choice visibility is invalid.";
     if (interaction.choiceVisibleWhen !== undefined && !conditionValid(interaction.choiceVisibleWhen)) return "Interaction choice visibility condition is invalid.";
-    if (interaction.matchMode !== undefined && !["command", "capture", "fallback"].includes(String(interaction.matchMode))) return "Interaction match mode is invalid.";
-    if (interaction.matchMode === "capture" && typeof interaction.wording === "string" && interaction.wording.trim()) return "Capture interactions cannot store fixed player wording.";
+    if (interaction.matchMode !== undefined && !["command", "fallback"].includes(String(interaction.matchMode))) return "Interaction match mode is invalid.";
 
     const outcomes = Array.isArray(interaction.outcomes) ? interaction.outcomes : [];
     for (const candidate of outcomes) {
-      if (!object(candidate) || !conditionValid(candidate.condition) || !effectsValid(candidate.effects)) return "A condition or effect sequence is invalid.";
+      if (!object(candidate) || !conditionValid(candidate.condition) || !effectsValid(candidate.effects) || !flowValid(candidate.after)) {
+        return "A condition, effect sequence, or continuation flow is invalid.";
+      }
       if (candidate.authorStatus !== undefined && !["draft", "configured"].includes(String(candidate.authorStatus))) return "Interaction outcome author status is invalid.";
       const performance = candidate.responsePerformance;
       const legacySpeed = candidate.responseCharactersPerSecond;
@@ -136,20 +150,6 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (
         typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128
       )) return "Interaction response speaker is invalid.";
-
-      const responseContinuationIssue = continuationValid(candidate, "Interaction response");
-      if (responseContinuationIssue) return responseContinuationIssue;
-
-      if (candidate.inputCapture !== undefined && candidate.inputCapture !== null) {
-        if (!object(candidate.inputCapture) || !effectsValid(candidate.inputCapture.effects)) {
-          return "Captured-input effects are invalid.";
-        }
-        const captureContinuationIssue = continuationValid(candidate.inputCapture, "Captured-input continuation");
-        if (captureContinuationIssue) return captureContinuationIssue;
-        if (candidate.disposition !== "stay" || candidate.destination) {
-          return "A response that captures the next player input cannot also continue before that input is submitted.";
-        }
-      }
     }
     return null;
   },

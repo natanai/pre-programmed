@@ -39,6 +39,8 @@ export type NodeOpening = {
   dialogueText: string;
   narrationPerformance: TextPerformance;
   dialoguePerformance: TextPerformance;
+  /** Ordered engine actions that continue after this opening finishes presenting. */
+  after: NarrativeFlowStep[];
 };
 
 export type GameNode = {
@@ -72,25 +74,45 @@ export type NodeEntryTarget = {
   openingId: string | null;
 };
 
-export type InteractionDisposition = "stay" | "transition";
 export type InteractionChoiceVisibility = "immediate" | "prompt" | "typed";
 /**
  * command: match authored wording/aliases.
- * capture: accept otherwise-unmatched player text at this node.
  * fallback: invalid-input response after every valid input mechanism declines it.
+ *
+ * Player-input capture is not an Interaction matching mode. It is an ordinary
+ * Narrative flow step so the same wait/effect/present/continue sequence can be
+ * nested after responses and Node openings.
  */
-export type InteractionMatchMode = "command" | "capture" | "fallback";
+export type InteractionMatchMode = "command" | "fallback";
 
-/**
- * One-shot continuation that consumes the player's next terminal submission.
- * The raw submission is exposed through the shared player-input runtime binding
- * while these effects run, then ordinary stay/transition continuation resumes.
- */
-export type InteractionInputCapture = {
-  effects: Effect[];
-  disposition: InteractionDisposition;
-  destination: NodeEntryTarget | null;
-};
+export type NarrativeFlowStep =
+  | {
+      id: string;
+      type: "await_input";
+    }
+  | {
+      id: string;
+      type: "effects";
+      effects: Effect[];
+    }
+  | {
+      id: string;
+      type: "present";
+      responseText: string;
+      dialogueText: string;
+      speakerId: string | null;
+      responsePerformance: TextPerformance;
+      dialoguePerformance: TextPerformance;
+    }
+  | {
+      id: string;
+      type: "transition";
+      destination: NodeEntryTarget;
+    };
+
+export type NarrativeFlowOwner =
+  | { type: "interaction-outcome"; interactionId: string; outcomeId: string }
+  | { type: "node-opening"; nodeId: string; openingId: string };
 
 export type InteractionOutcome = {
   id: string;
@@ -110,14 +132,11 @@ export type InteractionOutcome = {
   dialoguePerformance?: TextPerformance;
   effects: Effect[];
   /**
-   * Optional one-shot capture performed after this response. When present it
-   * owns the immediate continuation; `disposition`/`destination` are retained
-   * as the non-capture continuation shape for historical and ordinary outcomes.
+   * Ordered continuation owned by this response. Empty means stay here.
+   * AFTER presets are authoring shortcuts that compose this one flow rather
+   * than separate runtime behaviors.
    */
-  inputCapture?: InteractionInputCapture | null;
-  disposition: InteractionDisposition;
-  /** Node destination; opening id is optional so AUTO remains the default traversal behavior. */
-  destination: NodeEntryTarget | null;
+  after: NarrativeFlowStep[];
 };
 
 export type Interaction = {

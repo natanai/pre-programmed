@@ -3,7 +3,14 @@ import { authoredSource, type AuthoredSourceIdentity } from "../../../engine/pre
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import { interactionOutcomeProse } from "../interactionProse";
 import { interpolateText } from "../interpolation";
-import type { GameNode, Interaction, InteractionOutcome, NodeOpening, TextPerformance } from "../model";
+import type {
+  GameNode,
+  Interaction,
+  InteractionOutcome,
+  NarrativeFlowStep,
+  NodeOpening,
+  TextPerformance,
+} from "../model";
 import { DEFAULT_NODE_TEXT_PERFORMANCE, resolveNodeOpening } from "../nodeOpenings";
 import { resolveActiveNodeConversationContext, resolveNodeConversationContext } from "../sceneContext";
 import { compileTextNotation } from "../textNotation";
@@ -15,6 +22,8 @@ export type NarrativeResolvedText = {
   performance: TextPerformance;
   speakerId: string | null;
   source: AuthoredSourceIdentity;
+  /** Present only when this text is the selected Node opening. */
+  openingId?: string | null;
 };
 
 export type NarrativeContinuation = {
@@ -26,6 +35,8 @@ export type NarrativeContinuation = {
   outcome: InteractionOutcome | null;
   interactionDialoguePending: boolean;
   interactionDialogue: NarrativeResolvedText | null;
+  flowDialoguePending: boolean;
+  flowDialogue: NarrativeResolvedText | null;
   secondaryProsePending: boolean;
 };
 
@@ -49,6 +60,7 @@ export function resolveNodeOpeningPresentation(
     text: compiled.text,
     performance: compiled.performance,
     speakerId: conversation?.characterId ?? null,
+    openingId: opening?.id ?? null,
     source: authoredSource("node", node.id, {
       ...(opening ? { openingId: opening.id } : {}),
       section: beginsWithDialogue ? "dialogue" : "narration",
@@ -98,6 +110,74 @@ function resolveInteractionDialoguePresentation(
   };
 }
 
+function flowPresentFromSource(
+  snapshot: ProjectSnapshot,
+  activeSource: AuthoredSourceIdentity | undefined,
+): {
+  step: Extract<NarrativeFlowStep, { type: "present" }>;
+  sourceNodeId: string;
+  sourceResourceKind: "node" | "interaction";
+  sourceResourceId: string;
+  focus: Record<string, string>;
+} | null {
+  const stepId = activeSource?.focus?.flowStepId;
+  if (!activeSource || !stepId) return null;
+
+  if (activeSource.resourceKind === "interaction") {
+    const interaction = snapshot.interactions.find((candidate) => candidate.id === activeSource.resourceId);
+    const outcome = interaction?.outcomes.find((candidate) => candidate.id === activeSource.focus?.outcomeId);
+    const step = outcome?.after.find((candidate) => candidate.id === stepId);
+    if (!interaction || !outcome || step?.type !== "present") return null;
+    return {
+      step,
+      sourceNodeId: interaction.sourceNodeId,
+      sourceResourceKind: "interaction",
+      sourceResourceId: interaction.id,
+      focus: { outcomeId: outcome.id, flowStepId: step.id },
+    };
+  }
+
+  if (activeSource.resourceKind === "node") {
+    const node = snapshot.nodes.find((candidate) => candidate.id === activeSource.resourceId);
+    const opening = node?.openings.find((candidate) => candidate.id === activeSource.focus?.openingId);
+    const step = opening?.after.find((candidate) => candidate.id === stepId);
+    if (!node || !opening || step?.type !== "present") return null;
+    return {
+      step,
+      sourceNodeId: node.id,
+      sourceResourceKind: "node",
+      sourceResourceId: node.id,
+      focus: { openingId: opening.id, flowStepId: step.id },
+    };
+  }
+
+  return null;
+}
+
+function resolveFlowDialoguePresentation(
+  snapshot: ProjectSnapshot,
+  state: PlayState,
+  activeSource: AuthoredSourceIdentity | undefined,
+  authorMode: boolean,
+): NarrativeResolvedText | null {
+  if (activeSource?.focus?.section !== "flow-narration") return null;
+  const resolved = flowPresentFromSource(snapshot, activeSource);
+  if (!resolved || !resolved.step.dialogueText.trim()) return null;
+  const text = interpolateText(resolved.step.dialogueText, { snapshot, state, authorMode });
+  if (!text) return null;
+  const compiled = compileTextNotation(text, resolved.step.dialoguePerformance);
+  const conversation = resolveNodeConversationContext(snapshot, state, resolved.sourceNodeId);
+  return {
+    text: compiled.text,
+    performance: compiled.performance,
+    speakerId: conversation?.characterId ?? resolved.step.speakerId,
+    source: authoredSource(resolved.sourceResourceKind, resolved.sourceResourceId, {
+      ...resolved.focus,
+      section: "flow-dialogue",
+    }),
+  };
+}
+
 /** Resolve follow-up authored prose from the currently displayed source. */
 export function resolveNarrativeContinuation(
   snapshot: ProjectSnapshot | null,
@@ -115,6 +195,8 @@ export function resolveNarrativeContinuation(
     outcome: null,
     interactionDialoguePending: false,
     interactionDialogue: null,
+    flowDialoguePending: false,
+    flowDialogue: null,
     secondaryProsePending: false,
   };
   if (!snapshot || !state) return empty;
@@ -154,6 +236,9 @@ export function resolveNarrativeContinuation(
     ? resolveInteractionDialoguePresentation(snapshot, state, interaction, outcome, authorMode)
     : null;
 
+  const flowDialogue = resolveFlowDialoguePresentation(snapshot, state, activeSource, authorMode);
+  const flowDialoguePending = Boolean(flowDialogue);
+
   return {
     node,
     nodeOpening,
@@ -163,7 +248,9 @@ export function resolveNarrativeContinuation(
     outcome,
     interactionDialoguePending,
     interactionDialogue,
-    secondaryProsePending: nodeDialoguePending || interactionDialoguePending,
+    flowDialoguePending,
+    flowDialogue,
+    secondaryProsePending: nodeDialoguePending || interactionDialoguePending || flowDialoguePending,
   };
 }
 

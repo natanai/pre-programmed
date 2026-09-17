@@ -31,7 +31,6 @@ function interactionSignature(draft: InteractionWorkspaceDraft) {
 
 function interactionDeleteDescription(interaction: Interaction, fallbackMode: boolean) {
   if (fallbackMode) return "Deleted invalid-input response";
-  if (interaction.matchMode === "capture") return "Deleted player-input capture";
   return `Deleted user input ${interaction.wording || interaction.aliases[0]}`;
 }
 
@@ -228,7 +227,7 @@ export const interactionWorkspace = defineAuthorWorkspace<InteractionWorkspaceDr
       type: "status",
       id: "interaction-delete-confirmation",
       tone: "error",
-      text: `DELETE ${draft.fallbackMode ? "INVALID-INPUT RESPONSE" : interaction.matchMode === "capture" ? "PLAYER-INPUT CAPTURE" : "USER INPUT"}?`,
+      text: `DELETE ${draft.fallbackMode ? "INVALID-INPUT RESPONSE" : "USER INPUT"}?`,
     });
 
     const actions: AuthorUiAction[] = [];

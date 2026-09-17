@@ -1,4 +1,5 @@
-import type { GameNode, Interaction } from "./model";
+import type { RuntimeBindings } from "../../engine/rules/runtimeBindings";
+import type { GameNode, Interaction, NarrativeFlowOwner } from "./model";
 
 export type NarrativeProjectSlice = {
   startNodeId: string;
@@ -15,6 +16,16 @@ export type NarrativePlayStateSlice = {
   visitedNodeIds: string[];
   /** Per-run show/hide overrides for suggested player choices; never controls typed recognition. */
   interactionVisibility: Record<string, boolean>;
-  /** One response waiting to consume exactly the next player terminal submission. */
-  pendingInputCapture: { interactionId: string; outcomeId: string } | null;
+  /**
+   * Suspended Narrative continuation.
+   * input waits for one player submission; auto resumes after the current
+   * presentation finishes. Bindings are run-scoped data carried only while
+   * this flow is executing.
+   */
+  pendingNarrativeFlow: {
+    owner: NarrativeFlowOwner;
+    stepIndex: number;
+    mode: "input" | "auto";
+    bindings: RuntimeBindings;
+  } | null;
 };

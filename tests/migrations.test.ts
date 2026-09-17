@@ -71,6 +71,135 @@ describe("D1 migration safety", () => {
     }
   });
 
+  it("migrates the response-level capture prototype into the same editable flow preset", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const flowMigration = migrations.find((migration) => migration.id === 47);
+    expect(flowMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 47)) {
+        applyMigration(database, migration.sql);
+      }
+
+      const start = database.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").get() as { start_node_id: string };
+      database.prepare(`
+        INSERT INTO interactions
+          (id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes)
+        VALUES ('ask-name', ?, 0, 'ask name', 'command', 0, 'prompt', '[]', '')
+      `).run(start.start_node_id);
+      database.prepare(`
+        INSERT INTO interaction_outcomes
+          (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text,
+           response_speaker_id, response_characters_per_second, response_performance_json,
+           response_dialogue_performance_json, effects_json, input_capture_json, disposition,
+           destination_node_id, destination_opening_id, author_status)
+        VALUES (
+          'ask-name-default', 'ask-name', 0, 'default', '{"type":"always"}', 'Who are you?', '',
+          NULL, 18, '{"charactersPerSecond":18,"cues":[]}', '{"charactersPerSecond":18,"cues":[]}',
+          '[]',
+          '{"effects":[{"id":"save-name","type":"set_value","key":"player_name","value":{"kind":"binding","key":"input.raw"}}],"disposition":"stay","destination":null}',
+          'stay', NULL, NULL, 'configured'
+        )
+      `).run();
+
+      applyMigration(database, flowMigration!.sql);
+
+      const row = database.prepare(
+        "SELECT after_flow_json FROM interaction_outcomes WHERE id = 'ask-name-default'",
+      ).get() as { after_flow_json: string };
+      const flow = JSON.parse(row.after_flow_json) as Array<Record<string, unknown>>;
+
+      expect(flow.map((step) => step.type)).toEqual(["await_input", "effects", "present"]);
+      expect(flow[1]).toMatchObject({
+        effects: [{
+          type: "set_value",
+          key: "player_name",
+          value: { kind: "binding", key: "input.raw" },
+        }],
+      });
+      expect(flow[2]).toMatchObject({
+        type: "present",
+        responseText: "",
+        dialogueText: "",
+      });
+    } finally {
+      database.close();
+    }
+  });
+
+  it("migrates legacy Node-level input capture into the owning opening flow", () => {
+    const database = new DatabaseSync(":memory:");
+    const migrations = currentMigrations();
+    const flowMigration = migrations.find((migration) => migration.id === 47);
+    expect(flowMigration).toBeDefined();
+
+    try {
+      for (const migration of migrations.filter((migration) => migration.id < 47)) {
+        applyMigration(database, migration.sql);
+      }
+
+      const start = database.prepare("SELECT start_node_id FROM project_meta WHERE id = 1").get() as { start_node_id: string };
+      database.prepare(`
+        INSERT INTO interactions
+          (id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes)
+        VALUES ('legacy-name-capture', ?, 0, '', 'command', 1, 'typed', '[]', '')
+      `).run(start.start_node_id);
+      database.prepare(`
+        INSERT INTO interaction_outcomes
+          (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text,
+           response_speaker_id, response_characters_per_second, response_performance_json,
+           response_dialogue_performance_json, effects_json, input_capture_json, disposition,
+           destination_node_id, destination_opening_id, author_status)
+        VALUES (
+          'legacy-name-capture-default', 'legacy-name-capture', 0, 'default', '{"type":"always"}', '',
+          'Hello {{ref:state.variable:player-name|value}}.', NULL, 18,
+          '{"charactersPerSecond":18,"cues":[]}', '{"charactersPerSecond":30,"cues":[]}',
+          '[{"id":"save-name","type":"set_value","key":"player_name","value":{"kind":"binding","key":"input.raw"}}]',
+          NULL, 'transition', ?, NULL, 'configured'
+        )
+      `).run(start.start_node_id);
+
+      applyMigration(database, flowMigration!.sql);
+
+      const opening = database.prepare(`
+        SELECT after_flow_json
+        FROM node_openings
+        WHERE node_id = ?
+        ORDER BY order_index, id
+        LIMIT 1
+      `).get(start.start_node_id) as { after_flow_json: string };
+      const interaction = database.prepare(
+        "SELECT id FROM interactions WHERE id = 'legacy-name-capture'",
+      ).get();
+      const meta = database.prepare("SELECT schema_version FROM project_meta WHERE id = 1").get() as { schema_version: number };
+      const flow = JSON.parse(opening.after_flow_json) as Array<Record<string, unknown>>;
+
+      expect(flow.map((step) => step.type)).toEqual(["await_input", "effects", "present", "transition"]);
+      expect(flow[1]).toMatchObject({
+        type: "effects",
+        effects: [{
+          type: "set_value",
+          key: "player_name",
+          value: { kind: "binding", key: "input.raw" },
+        }],
+      });
+      expect(flow[2]).toMatchObject({
+        type: "present",
+        dialogueText: "Hello {{ref:state.variable:player-name|value}}.",
+        dialoguePerformance: { charactersPerSecond: 30, cues: [] },
+      });
+      expect(flow[3]).toMatchObject({
+        type: "transition",
+        destination: { nodeId: start.start_node_id, openingId: null },
+      });
+      expect(interaction).toBeUndefined();
+      expect(meta.schema_version).toBe(47);
+    } finally {
+      database.close();
+    }
+  });
+
   it("moves legacy speaker-authored interaction text into dialogue without losing its voice", () => {
     const database = new DatabaseSync(":memory:");
     const migrations = currentMigrations();

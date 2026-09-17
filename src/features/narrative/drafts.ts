@@ -14,8 +14,7 @@ export function createDraftOutcome(order = 0, responseText = ""): InteractionOut
     responsePerformance: { charactersPerSecond: 18, cues: [] },
     dialoguePerformance: { charactersPerSecond: 18, cues: [] },
     effects: [],
-    disposition: "stay",
-    destination: null,
+    after: [],
   };
 }
 

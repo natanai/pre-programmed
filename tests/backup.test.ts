@@ -166,8 +166,14 @@ describe("canonical project backup", () => {
       dialogueText: "Ask away.",
       narrationPerformance: performance,
       dialoguePerformance,
+      after: [],
     }]);
     expect(document.project.interactions[0].outcomes[0]).not.toHaveProperty("destinationNodeId");
-    expect(document.project.interactions[0].outcomes[0].destination).toEqual({ nodeId: "b", openingId: null });
+    expect(document.project.interactions[0].outcomes[0]).not.toHaveProperty("destination");
+    expect(document.project.interactions[0].outcomes[0].after).toEqual([{
+      id: "legacy-flow:ask-again-default:transition",
+      type: "transition",
+      destination: { nodeId: "b", openingId: null },
+    }]);
   });
 });

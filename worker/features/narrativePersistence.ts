@@ -5,7 +5,7 @@ import {
   normalizeNodeContext,
 } from "../../src/features/narrative/sceneContext";
 import { normalizeInteractionOutcomeProse } from "../../src/features/narrative/interactionProse";
-import type { GameNode, Interaction, InteractionInputCapture, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
+import type { GameNode, Interaction, NarrativeFlowStep, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
@@ -42,6 +42,7 @@ type OpeningRow = {
   dialogue_text: string;
   narration_performance_json: string;
   dialogue_performance_json: string;
+  after_flow_json: string;
 };
 
 type InteractionRow = {
@@ -50,7 +51,6 @@ type InteractionRow = {
   order_index: number;
   wording: string;
   match_mode: "command" | "fallback";
-  capture_input: number;
   choice_visibility: Interaction["choiceVisibility"];
   tags_json: string;
   notes: string;
@@ -76,10 +76,7 @@ type OutcomeRow = {
   response_performance_json: string;
   response_dialogue_performance_json: string;
   effects_json: string;
-  input_capture_json: string | null;
-  disposition: "stay" | "transition";
-  destination_node_id: string | null;
-  destination_opening_id: string | null;
+  after_flow_json: string;
 };
 
 function migrateLegacyMediaEffects(value: unknown) {
@@ -107,14 +104,30 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
   };
 }
 
-function parseInputCapture(value: string | null): InteractionInputCapture | null {
-  const capture = parseJson<InteractionInputCapture | null>(value, null);
-  if (!capture) return null;
-  return {
-    ...capture,
-    effects: migrateLegacyMediaEffects(capture.effects) as InteractionInputCapture["effects"],
-    destination: capture.destination ?? null,
-  };
+function parseFlow(value: string | null | undefined): NarrativeFlowStep[] {
+  const flow = parseJson<NarrativeFlowStep[]>(value, []);
+  if (!Array.isArray(flow)) return [];
+  const result: NarrativeFlowStep[] = [];
+  for (const step of flow) {
+    if (!step || typeof step !== "object") continue;
+    if (step.type === "effects") {
+      result.push({
+        ...step,
+        effects: migrateLegacyMediaEffects(step.effects) as Extract<NarrativeFlowStep, { type: "effects" }>["effects"],
+      });
+      continue;
+    }
+    if (step.type === "present") {
+      result.push({
+        ...step,
+        responsePerformance: migrateLegacyMediaCues(step.responsePerformance ?? DEFAULT_TEXT_PERFORMANCE),
+        dialoguePerformance: migrateLegacyMediaCues(step.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE),
+      });
+      continue;
+    }
+    result.push(step);
+  }
+  return result;
 }
 
 function normalizeNodeForPersistence(value: GameNode): GameNode {
@@ -400,6 +413,152 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 46 WHERE id = 1;
       `,
     },
+    {
+      id: 47,
+      name: "narrative-composable-after-flows",
+      sql: `
+        ALTER TABLE node_openings
+        ADD COLUMN after_flow_json TEXT NOT NULL DEFAULT '[]';
+
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN after_flow_json TEXT NOT NULL DEFAULT '[]';
+
+        -- Ordinary response continuations become transition steps.
+        UPDATE interaction_outcomes
+        SET after_flow_json = json_array(
+          json_object(
+            'id', 'migration47:' || id || ':transition',
+            'type', 'transition',
+            'destination', json_object(
+              'nodeId', destination_node_id,
+              'openingId', destination_opening_id
+            )
+          )
+        )
+        WHERE input_capture_json IS NULL
+          AND disposition = 'transition'
+          AND destination_node_id IS NOT NULL;
+
+        -- The short-lived response input-capture prototype becomes an ordered
+        -- wait/effects/transition flow. It has no special runtime representation.
+        UPDATE interaction_outcomes
+        SET after_flow_json = json_array(
+          json_object('id', 'migration47:' || id || ':await', 'type', 'await_input'),
+          json_object(
+            'id', 'migration47:' || id || ':effects',
+            'type', 'effects',
+            'effects', json(json_extract(input_capture_json, '$.effects'))
+          ),
+          json_object(
+            'id', 'migration47:' || id || ':present',
+            'type', 'present',
+            'responseText', '',
+            'dialogueText', '',
+            'speakerId', NULL,
+            'responsePerformance', json('{"charactersPerSecond":18,"cues":[]}'),
+            'dialoguePerformance', json('{"charactersPerSecond":18,"cues":[]}')
+          ),
+          json_object(
+            'id', 'migration47:' || id || ':transition',
+            'type', 'transition',
+            'destination', json_object(
+              'nodeId', json_extract(input_capture_json, '$.destination.nodeId'),
+              'openingId', json_extract(input_capture_json, '$.destination.openingId')
+            )
+          )
+        )
+        WHERE input_capture_json IS NOT NULL
+          AND json_extract(input_capture_json, '$.disposition') = 'transition'
+          AND json_extract(input_capture_json, '$.destination.nodeId') IS NOT NULL;
+
+        UPDATE interaction_outcomes
+        SET after_flow_json = json_array(
+          json_object('id', 'migration47:' || id || ':await', 'type', 'await_input'),
+          json_object(
+            'id', 'migration47:' || id || ':effects',
+            'type', 'effects',
+            'effects', json(COALESCE(json_extract(input_capture_json, '$.effects'), '[]'))
+          ),
+          json_object(
+            'id', 'migration47:' || id || ':present',
+            'type', 'present',
+            'responseText', '',
+            'dialogueText', '',
+            'speakerId', NULL,
+            'responsePerformance', json('{"charactersPerSecond":18,"cues":[]}'),
+            'dialoguePerformance', json('{"charactersPerSecond":18,"cues":[]}')
+          )
+        )
+        WHERE input_capture_json IS NOT NULL
+          AND NOT (
+            json_extract(input_capture_json, '$.disposition') = 'transition'
+            AND json_extract(input_capture_json, '$.destination.nodeId') IS NOT NULL
+          );
+
+        -- Legacy Node-level capture interactions become the owning opening's
+        -- continuation flow, then disappear from the Interaction model.
+        UPDATE node_openings
+        SET after_flow_json = (
+          SELECT CASE
+            WHEN io.disposition = 'transition' AND io.destination_node_id IS NOT NULL THEN json_array(
+              json_object('id', 'migration47:' || io.id || ':await', 'type', 'await_input'),
+              json_object('id', 'migration47:' || io.id || ':effects', 'type', 'effects', 'effects', json(io.effects_json)),
+              json_object(
+                'id', 'migration47:' || io.id || ':present',
+                'type', 'present',
+                'responseText', io.response_text,
+                'dialogueText', io.response_dialogue_text,
+                'speakerId', io.response_speaker_id,
+                'responsePerformance', json(io.response_performance_json),
+                'dialoguePerformance', json(io.response_dialogue_performance_json)
+              ),
+              json_object(
+                'id', 'migration47:' || io.id || ':transition',
+                'type', 'transition',
+                'destination', json_object(
+                  'nodeId', io.destination_node_id,
+                  'openingId', io.destination_opening_id
+                )
+              )
+            )
+            ELSE json_array(
+              json_object('id', 'migration47:' || io.id || ':await', 'type', 'await_input'),
+              json_object('id', 'migration47:' || io.id || ':effects', 'type', 'effects', 'effects', json(io.effects_json)),
+              json_object(
+                'id', 'migration47:' || io.id || ':present',
+                'type', 'present',
+                'responseText', io.response_text,
+                'dialogueText', io.response_dialogue_text,
+                'speakerId', io.response_speaker_id,
+                'responsePerformance', json(io.response_performance_json),
+                'dialoguePerformance', json(io.response_dialogue_performance_json)
+              )
+            )
+          END
+          FROM interactions i
+          JOIN interaction_outcomes io ON io.interaction_id = i.id
+          WHERE i.source_node_id = node_openings.node_id
+            AND i.capture_input = 1
+          ORDER BY io.order_index, io.id
+          LIMIT 1
+        )
+        WHERE order_index = (
+          SELECT MIN(first_opening.order_index)
+          FROM node_openings first_opening
+          WHERE first_opening.node_id = node_openings.node_id
+        )
+        AND EXISTS (
+          SELECT 1 FROM interactions i
+          WHERE i.source_node_id = node_openings.node_id
+            AND i.capture_input = 1
+        );
+
+        DELETE FROM interactions WHERE capture_input = 1;
+        DROP INDEX IF EXISTS interactions_one_capture_per_node;
+
+        UPDATE project_meta SET schema_version = 47 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -416,10 +575,10 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       ).all<NodeRow>(),
       db.prepare(
         `SELECT id, node_id, order_index, condition_json, narration_text, dialogue_text,
-                narration_performance_json, dialogue_performance_json
+                narration_performance_json, dialogue_performance_json, after_flow_json
            FROM node_openings ORDER BY node_id, order_index, id`,
       ).all<OpeningRow>(),
-      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
+      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
         .all<InteractionChoiceVisibilityRow>(),
@@ -427,8 +586,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         .all<AliasRow>(),
       db.prepare(
         `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_dialogue_text, response_speaker_id,
-                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, input_capture_json, disposition,
-                destination_node_id, destination_opening_id
+                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, after_flow_json
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
     ]);
@@ -458,6 +616,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             dialogueText: opening.dialogue_text,
             narrationPerformance: migrateLegacyMediaCues(parseJson(opening.narration_performance_json, DEFAULT_TEXT_PERFORMANCE)),
             dialoguePerformance: migrateLegacyMediaCues(parseJson(opening.dialogue_performance_json, DEFAULT_TEXT_PERFORMANCE)),
+            after: parseFlow(opening.after_flow_json),
           })),
           ending: Boolean(row.ending),
           tags: parseJson(row.tags_json, []),
@@ -474,7 +633,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         sourceNodeId: row.source_node_id,
         order: row.order_index,
         wording: row.wording,
-        matchMode: row.capture_input ? "capture" : row.match_mode ?? "command",
+        matchMode: row.match_mode ?? "command",
         choiceVisibility: row.choice_visibility,
         choiceVisibleWhen: parseJson(choiceVisibilityByInteraction.get(row.id), { type: "always" }),
         tags: parseJson(row.tags_json, []),
@@ -495,11 +654,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           })),
           dialoguePerformance: migrateLegacyMediaCues(parseJson(outcome.response_dialogue_performance_json, DEFAULT_TEXT_PERFORMANCE)),
           effects: migrateLegacyMediaEffects(parseJson(outcome.effects_json, [])) as Interaction["outcomes"][number]["effects"],
-          inputCapture: parseInputCapture(outcome.input_capture_json),
-          disposition: outcome.disposition,
-          destination: outcome.destination_node_id
-            ? { nodeId: outcome.destination_node_id, openingId: outcome.destination_opening_id }
-            : null,
+          after: parseFlow(outcome.after_flow_json),
         })),
       })),
     };
@@ -553,12 +708,12 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         ...node.openings.map((opening) => db.prepare(
           `INSERT INTO node_openings
              (id, node_id, order_index, condition_json, narration_text, dialogue_text,
-              narration_performance_json, dialogue_performance_json)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              narration_performance_json, dialogue_performance_json, after_flow_json)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET node_id=excluded.node_id, order_index=excluded.order_index,
              condition_json=excluded.condition_json, narration_text=excluded.narration_text,
              dialogue_text=excluded.dialogue_text, narration_performance_json=excluded.narration_performance_json,
-             dialogue_performance_json=excluded.dialogue_performance_json`,
+             dialogue_performance_json=excluded.dialogue_performance_json, after_flow_json=excluded.after_flow_json`,
         ).bind(
           opening.id,
           node.id,
@@ -568,6 +723,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           opening.dialogueText,
           JSON.stringify(opening.narrationPerformance),
           JSON.stringify(opening.dialoguePerformance),
+          JSON.stringify(opening.after),
         )),
         deleteRemovedOpenings,
       ];
@@ -575,7 +731,6 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
 
     if (operation.type === "interaction.upsert") {
       const value = operation.interaction;
-      const captureInput = value.matchMode === "capture";
       return [
         db.prepare(
           `INSERT INTO interactions
@@ -593,8 +748,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           value.sourceNodeId,
           value.sourceNodeId,
           value.wording,
-          captureInput ? "command" : value.matchMode ?? "command",
-          Number(captureInput),
+          value.matchMode ?? "command",
+          0,
           value.choiceVisibility ?? "prompt",
           JSON.stringify(value.tags),
           value.notes,
@@ -615,8 +770,8 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             `INSERT INTO interaction_outcomes
              (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text, response_speaker_id,
               response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, input_capture_json,
-              disposition, destination_node_id, destination_opening_id, author_status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+              disposition, destination_node_id, destination_opening_id, author_status, after_flow_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ).bind(
             outcome.id,
             value.id,
@@ -630,11 +785,12 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             JSON.stringify(performance),
             JSON.stringify(dialoguePerformance),
             JSON.stringify(outcome.effects),
-            outcome.inputCapture ? JSON.stringify(outcome.inputCapture) : null,
-            outcome.disposition,
-            outcome.destination?.nodeId ?? null,
-            outcome.destination?.openingId ?? null,
+            null,
+            "stay",
+            null,
+            null,
             outcome.authorStatus ?? "configured",
+            JSON.stringify(outcome.after),
           );
         }),
       ];

@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import { resolveActiveNodeAnchor } from "../anchor";
 import { isInteractionChoiceVisible } from "../choiceVisibility";
+import { flowDestination } from "../flow";
 import { buildGraphIndex, notationForNode } from "../graph";
 import type { GameNode, Interaction } from "../model";
 
@@ -39,8 +40,9 @@ function notationForInput(
   if (interaction.outcomes.some((outcome) => (outcome.authorStatus ?? "configured") === "draft")) return "[D]";
   const first = [...interaction.outcomes].sort((left, right) => left.order - right.order || left.id.localeCompare(right.id))[0];
   if (!first) return "[D]";
-  if (first.disposition === "stay" || !first.destination) return "[H]";
-  return notationForNode(snapshot, graph, state.currentNodeId, state.traversal, first.destination.nodeId).join("") || "[A1]";
+  const destination = flowDestination(first.after);
+  if (!destination) return "[H]";
+  return notationForNode(snapshot, graph, state.currentNodeId, state.traversal, destination.nodeId).join("") || "[A1]";
 }
 
 /**
@@ -73,7 +75,7 @@ export function useNarrativePlayerSurface(
     const fallbackInput = snapshot.interactions.find((interaction) =>
       interaction.sourceNodeId === state.currentNodeId && interaction.matchMode === "fallback",
     );
-    const visibleInputs = state.pendingInputCapture
+    const visibleInputs = state.pendingNarrativeFlow?.mode === "input"
       ? []
       : currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, state, interaction));
     const immediateChoices = visibleInputs
