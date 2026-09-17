@@ -8,6 +8,7 @@ import { AuthorInlineDisclosure } from "../../../author/ui/AuthorInlineDisclosur
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import { resolveActiveNodeAnchor } from "../anchor";
+import { captureFlowParts, flowDestination, flowDestinations } from "../flow";
 import type { GameNode, NodeAnchor, NodeContextMode, NodeOpening } from "../model";
 import { createNodeOpening, nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
 import { nextNodeNumber } from "../nodeNumber";
@@ -19,6 +20,7 @@ import {
   resolveActiveNodeContext,
 } from "../sceneContext";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
+import { NarrativeAfterEditor } from "./NarrativeAfterEditor";
 import { NodeInputList } from "./NodeInputList";
 import { notationForNodeOpeningCondition } from "./notation";
 import "./nodeWorkspace.css";
@@ -85,6 +87,17 @@ function entityName(context: AuthorWorkspaceContext, id: string | null | undefin
   return entity?.name || entity?.key || "missing resource";
 }
 
+function openingAfterSummary(snapshot: AuthorWorkspaceContext["snapshot"], opening: NodeOpening) {
+  const destination = flowDestination(opening.after);
+  const suffix = destination
+    ? (() => {
+        const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
+        return node ? `Node #${node.nodeNumber}` : "linked Node";
+      })()
+    : "stay here";
+  return captureFlowParts(opening.after) ? `Capture input · then ${suffix.toLocaleLowerCase()}` : suffix;
+}
+
 function OpeningEditor({
   opening,
   index,
@@ -100,6 +113,8 @@ function OpeningEditor({
   onMove,
   onRemove,
   onPreview,
+  onCreateDestination,
+  onEditDestination,
 }: {
   opening: NodeOpening;
   index: number;
@@ -115,6 +130,8 @@ function OpeningEditor({
   onMove: (direction: -1 | 1) => void;
   onRemove: () => void;
   onPreview: AuthorWorkspaceContext["runtime"]["preview"];
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
+  onEditDestination?: (nodeId: string) => void;
 }) {
   const showDialogue = Boolean(conversationCharacterId || opening.dialogueText.trim());
   const dialogueLabel = conversationName
@@ -156,6 +173,22 @@ function OpeningEditor({
           onPreview={(value) => onPreview({ text: value.text, performance: value.performance, speakerId: conversationCharacterId })}
         /> : null}
       </div>
+      <AuthorInlineDisclosure
+        label="AFTER"
+        summary={openingAfterSummary(snapshot, opening)}
+        className="node-opening-after-disclosure"
+      >
+        <NarrativeAfterEditor
+          snapshot={snapshot}
+          playState={playState}
+          flow={opening.after}
+          conversationCharacterId={conversationCharacterId}
+          onChange={(after) => onChange({ ...opening, after })}
+          onCreateDestination={onCreateDestination}
+          onEditDestination={onEditDestination}
+          onPreview={(value, speakerId) => onPreview({ text: value.text, performance: value.performance, speakerId })}
+        />
+      </AuthorInlineDisclosure>
       <div className="guided-response-actions">
         <button type="button" disabled={index === 0} onClick={() => onMove(-1)}>[MOVE UP]</button>
         <button type="button" disabled={index === total - 1} onClick={() => onMove(1)}>[MOVE DOWN]</button>
@@ -282,6 +315,25 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       }
       context.pushTask(inputRoute(draft.node.id, interactionId, fallback));
     };
+    const createDestination = (onCreated: (nodeId: string) => void) => {
+      context.pushTask({
+        type: "feature",
+        feature: "narrative",
+        workspace: "node",
+        data: {
+          resourceTask: "node",
+          inheritContextFromNodeId: draft.node.id,
+        },
+      }, (result) => {
+        if (result?.type === "resource" && result.kind === "node") onCreated(result.id);
+      });
+    };
+    const editDestination = (nodeId: string) => context.resources.edit(
+      "node",
+      nodeId,
+      undefined,
+      { inheritContextFromNodeId: draft.node.id },
+    );
     const inputRows = <NodeInputList
       snapshot={snapshotWithDraft}
       nodeId={draft.node.id}
@@ -357,11 +409,19 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             <h3>ENTRY RESPONSES</h3>
             <small>AUTO entry evaluates these in order and uses the first matching condition. Other responses may explicitly target one opening by its stable identity.</small>
             {orderedOpenings.map((opening, index) => {
-              const references = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.filter((outcome) => {
-                const direct = outcome.destination?.nodeId === draft.node.id && outcome.destination.openingId === opening.id;
-                const captured = outcome.inputCapture?.destination?.nodeId === draft.node.id && outcome.inputCapture.destination.openingId === opening.id;
-                return direct || captured;
-              }).length, 0);
+              const interactionReferences = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.reduce(
+                (outcomeCount, outcome) => outcomeCount + flowDestinations(outcome.after).filter(
+                  (destination) => destination.nodeId === draft.node.id && destination.openingId === opening.id,
+                ).length,
+                0,
+              ), 0);
+              const openingReferences = context.snapshot.nodes.reduce((count, node) => count + node.openings.reduce(
+                (openingCount, sourceOpening) => openingCount + flowDestinations(sourceOpening.after).filter(
+                  (destination) => destination.nodeId === draft.node.id && destination.openingId === opening.id,
+                ).length,
+                0,
+              ), 0);
+              const references = interactionReferences + openingReferences;
               const focused = focusedOpeningId === opening.id;
               return <OpeningEditor
                 key={opening.id}
@@ -379,6 +439,8 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
                 onMove={(direction) => moveOpening(opening.id, direction)}
                 onRemove={() => removeOpening(opening.id)}
                 onPreview={context.runtime.preview}
+                onCreateDestination={createDestination}
+                onEditDestination={editDestination}
               />;
             })}
             <button type="button" className="guided-add" onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, openings: [...current.node.openings, createNodeOpening(current.node.openings.length)] } }))}>[+ ADD ENTRY RESPONSE]</button>
