@@ -5,7 +5,7 @@ import {
   normalizeNodeContext,
 } from "../../src/features/narrative/sceneContext";
 import { normalizeInteractionOutcomeProse } from "../../src/features/narrative/interactionProse";
-import type { GameNode, Interaction, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
+import type { GameNode, Interaction, InteractionInputCapture, NodeOpening, TextPerformance } from "../../src/features/narrative/model";
 import { legacyAssetId } from "../../src/features/media/assetReference";
 import { parseJson } from "../db/json";
 import type { WorkerFeaturePersistence } from "./types";
@@ -76,6 +76,7 @@ type OutcomeRow = {
   response_performance_json: string;
   response_dialogue_performance_json: string;
   effects_json: string;
+  input_capture_json: string | null;
   disposition: "stay" | "transition";
   destination_node_id: string | null;
   destination_opening_id: string | null;
@@ -103,6 +104,16 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
         ? { ...cue, value: legacyAssetId(cue.value) }
         : cue
     )),
+  };
+}
+
+function parseInputCapture(value: string | null): InteractionInputCapture | null {
+  const capture = parseJson<InteractionInputCapture | null>(value, null);
+  if (!capture) return null;
+  return {
+    ...capture,
+    effects: migrateLegacyMediaEffects(capture.effects) as InteractionInputCapture["effects"],
+    destination: capture.destination ?? null,
   };
 }
 
@@ -379,6 +390,16 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 45 WHERE id = 1;
       `,
     },
+    {
+      id: 46,
+      name: "narrative-response-input-capture",
+      sql: `
+        ALTER TABLE interaction_outcomes
+        ADD COLUMN input_capture_json TEXT;
+
+        UPDATE project_meta SET schema_version = 46 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -406,7 +427,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         .all<AliasRow>(),
       db.prepare(
         `SELECT id, interaction_id, order_index, label, author_status, condition_json, response_text, response_dialogue_text, response_speaker_id,
-                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, disposition,
+                response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, input_capture_json, disposition,
                 destination_node_id, destination_opening_id
            FROM interaction_outcomes ORDER BY interaction_id, order_index, id`,
       ).all<OutcomeRow>(),
@@ -474,6 +495,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           })),
           dialoguePerformance: migrateLegacyMediaCues(parseJson(outcome.response_dialogue_performance_json, DEFAULT_TEXT_PERFORMANCE)),
           effects: migrateLegacyMediaEffects(parseJson(outcome.effects_json, [])) as Interaction["outcomes"][number]["effects"],
+          inputCapture: parseInputCapture(outcome.input_capture_json),
           disposition: outcome.disposition,
           destination: outcome.destination_node_id
             ? { nodeId: outcome.destination_node_id, openingId: outcome.destination_opening_id }
@@ -592,9 +614,9 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           return db.prepare(
             `INSERT INTO interaction_outcomes
              (id, interaction_id, order_index, label, condition_json, response_text, response_dialogue_text, response_speaker_id,
-              response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json,
+              response_characters_per_second, response_performance_json, response_dialogue_performance_json, effects_json, input_capture_json,
               disposition, destination_node_id, destination_opening_id, author_status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           ).bind(
             outcome.id,
             value.id,
@@ -608,6 +630,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             JSON.stringify(performance),
             JSON.stringify(dialoguePerformance),
             JSON.stringify(outcome.effects),
+            outcome.inputCapture ? JSON.stringify(outcome.inputCapture) : null,
             outcome.disposition,
             outcome.destination?.nodeId ?? null,
             outcome.destination?.openingId ?? null,
