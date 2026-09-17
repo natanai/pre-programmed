@@ -48,7 +48,7 @@ export function NodeInputList({
         onClick={() => onOpenInput(interaction.id)}
       >
         <span>
-          <strong>{interaction.matchMode === "capture" ? "CAPTURE PLAYER INPUT" : interaction.wording || interaction.aliases[0] || "UNTITLED INPUT"}</strong>
+          <strong>{interaction.wording || interaction.aliases[0] || "UNTITLED INPUT"}</strong>
           <small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"} · Node #{nodeNumber}</small>
         </span>
         <span aria-hidden="true">›</span>
