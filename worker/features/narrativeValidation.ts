@@ -20,7 +20,7 @@ function destinationValid(value: unknown) {
 function flowValid(value: unknown) {
   if (!Array.isArray(value)) return false;
   const ids = new Set<string>();
-  for (const step of value) {
+  for (const [index, step] of value.entries()) {
     if (!object(step) || typeof step.id !== "string" || !step.id || ids.has(step.id)) return false;
     ids.add(step.id as string);
     if (step.type === "await_input") continue;
@@ -29,7 +29,7 @@ function flowValid(value: unknown) {
       continue;
     }
     if (step.type === "transition") {
-      if (!destinationValid(step.destination)) return false;
+      if (!destinationValid(step.destination) || index !== value.length - 1) return false;
       continue;
     }
     if (step.type === "present") {
