@@ -1,0 +1,21 @@
+name: Verify capture input terminal repair
+
+on:
+  push:
+    branches:
+      - agent/capture-input-terminal-mode-repair
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
