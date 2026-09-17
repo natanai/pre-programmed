@@ -10,32 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Find legacy name capture paths
+      - name: Find narrative legacy continuation references
         run: |
-          node --input-type=module <<'NODE'
-          const response = await fetch('https://pre-programmed.natanai.workers.dev/api/project/snapshot', { cache: 'no-store' });
-          if (!response.ok) throw new Error(`snapshot ${response.status}`);
-          const snapshot = await response.json();
-          const nodes = Object.fromEntries(snapshot.nodes.map((node) => [node.id, {
-            id: node.id,
-            nodeNumber: node.nodeNumber,
-            openings: node.openings,
-          }]));
-          const hits = snapshot.interactions.filter((interaction) => {
-            const text = JSON.stringify(interaction).toLowerCase();
-            return interaction.matchMode === 'capture'
-              || text.includes('player_name')
-              || text.includes('your name')
-              || text.includes('what is your name')
-              || text.includes('who are you');
-          }).map((interaction) => ({
-            id: interaction.id,
-            sourceNode: nodes[interaction.sourceNodeId],
-            wording: interaction.wording,
-            aliases: interaction.aliases,
-            matchMode: interaction.matchMode,
-            choiceVisibility: interaction.choiceVisibility,
-            outcomes: interaction.outcomes,
-          }));
-          console.log(JSON.stringify({ revision: snapshot.revision, hits }, null, 2));
-          NODE
+          git grep -n -E 'inputCapture|pendingInputCapture|matchMode.*capture|capture_input|\.disposition|\.destination' -- src/features/narrative src/features/commands src/App.tsx worker/features/narrative* tests || true
