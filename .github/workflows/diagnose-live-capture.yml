@@ -10,21 +10,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Locate follow-up authored text
+      - name: Inspect all Node 17 inputs
         run: |
           node --input-type=module <<'NODE'
           const response = await fetch('https://pre-programmed.natanai.workers.dev/api/project/snapshot', { cache: 'no-store' });
           const snapshot = await response.json();
-          const matches = [];
-          for (const node of snapshot.nodes) {
-            for (const opening of node.openings ?? []) {
-              if (JSON.stringify(opening).toLowerCase().includes('ooooh')) matches.push({ type: 'opening', nodeId: node.id, nodeNumber: node.nodeNumber, opening });
-            }
-          }
-          for (const interaction of snapshot.interactions) {
-            for (const outcome of interaction.outcomes ?? []) {
-              if (JSON.stringify(outcome).toLowerCase().includes('ooooh')) matches.push({ type: 'outcome', interactionId: interaction.id, wording: interaction.wording, sourceNodeId: interaction.sourceNodeId, outcome });
-            }
-          }
-          console.log(JSON.stringify(matches, null, 2));
+          const node = snapshot.nodes.find((candidate) => candidate.nodeNumber === 17);
+          if (!node) throw new Error('Node 17 missing');
+          const interactions = snapshot.interactions
+            .filter((interaction) => interaction.sourceNodeId === node.id)
+            .map((interaction) => ({
+              id: interaction.id,
+              wording: interaction.wording,
+              aliases: interaction.aliases,
+              matchMode: interaction.matchMode,
+              choiceVisibility: interaction.choiceVisibility,
+              outcomes: interaction.outcomes.map((outcome) => ({
+                id: outcome.id,
+                order: outcome.order,
+                condition: outcome.condition,
+                responseText: outcome.responseText,
+                dialogueText: outcome.dialogueText,
+                effects: outcome.effects,
+                disposition: outcome.disposition,
+                destination: outcome.destination,
+                inputCapture: outcome.inputCapture,
+              })),
+            }));
+          console.log(JSON.stringify({ revision: snapshot.revision, node: { id: node.id, openings: node.openings }, interactions }, null, 2));
           NODE
