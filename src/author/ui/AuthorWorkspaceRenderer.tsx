@@ -163,13 +163,15 @@ export function AuthorUiBlocks({ blocks }: { blocks: AuthorUiNode[] }) {
  * Canonical renderer for structured Author task bodies.
  * The nested Author task shell owns the one visible task title/navigation header;
  * feature workspaces own only their body hierarchy, optional context, and action footer.
+ * Structured workspaces deliberately do not use the legacy three-row
+ * author-panel-frame because they have no feature-owned header row.
  */
 export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWorkspaceSpec; busy?: boolean }) {
   assertValidAuthorWorkspaceSpec(spec);
   const commitPending = useAuthorCommitPending();
   const locked = busy || commitPending;
   return <section
-    className="author-panel author-panel-frame author-ui-workspace"
+    className="author-panel author-ui-workspace"
     data-author-ui-workspace={spec.id}
     aria-label={spec.title}
     aria-busy={locked || undefined}
