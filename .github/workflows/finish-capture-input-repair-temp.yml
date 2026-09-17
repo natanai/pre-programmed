@@ -24,7 +24,8 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
       - name: Assert owner wiring
-        run: grep -Fq 'authoringContext={{ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING }}' src/features/narrative/author/InteractionEditor.tsx
+        run: |
+          grep -Fq 'authoringContext={{ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING }}' src/features/narrative/author/InteractionEditor.tsx
       - name: Commit verified repair
         run: |
           rm .github/workflows/finish-capture-input-repair-temp.yml
