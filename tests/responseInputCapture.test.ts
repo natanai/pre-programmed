@@ -4,6 +4,7 @@ import { makeSemanticReferenceToken } from "../src/engine/references/runtime";
 import { PLAYER_INPUT_BINDING, runtimeBinding } from "../src/engine/rules/runtimeBindings";
 import { buildGraphIndex } from "../src/features/narrative/graph";
 import {
+  armNarrativeFlow,
   resumeNarrativeFlowAfterPresentation,
   resumeNarrativeFlowWithInput,
 } from "../src/features/narrative/flowRuntime";
@@ -120,6 +121,52 @@ describe("composable Narrative input flow", () => {
     expect(captured.state.values.player_name).toBe("Quartz927");
     expect(captured.responseText).toBe("ooooh, Quartz927. I remember you.");
     expect(captured.state.pendingNarrativeFlow).toBeNull();
+  });
+
+  it("runs the same input flow when a Node opening owns it", () => {
+    const ask = node("ask", 1);
+    const next = node("next", 2);
+    ask.openings[0].after = [
+      { id: "node-wait", type: "await_input" },
+      {
+        id: "node-save",
+        type: "effects",
+        effects: [{
+          id: "node-save-name",
+          type: "set_value",
+          key: "player_name",
+          value: runtimeBinding(PLAYER_INPUT_BINDING),
+        }],
+      },
+      {
+        id: "node-reply",
+        type: "present",
+        responseText: `Hello, ${makeSemanticReferenceToken("state.variable", "player-name")}.`,
+        dialogueText: "",
+        speakerId: null,
+        responsePerformance: { charactersPerSecond: 18, cues: [] },
+        dialoguePerformance: { charactersPerSecond: 18, cues: [] },
+      },
+      { id: "node-next", type: "transition", destination: { nodeId: next.id, openingId: null } },
+    ];
+    const snapshot = project({
+      startNodeId: ask.id,
+      nodes: [ask, next],
+      variables: [nameVariable()],
+    });
+    const initial = createEmptyPlayState(snapshot, 0);
+    const armed = armNarrativeFlow(initial, {
+      type: "node-opening",
+      nodeId: ask.id,
+      openingId: ask.openings[0].id,
+    });
+    const waiting = resumeNarrativeFlowAfterPresentation(snapshot, armed)!;
+    const captured = resumeNarrativeFlowWithInput(snapshot, waiting.state, "Nat")!;
+
+    expect(captured.state.values.player_name).toBe("Nat");
+    expect(captured.responseText).toBe("Hello, Nat.");
+    const continued = resumeNarrativeFlowAfterPresentation(snapshot, captured.state)!;
+    expect(continued.state.currentNodeId).toBe(next.id);
   });
 
   it("indexes transitions from the same canonical flow used by runtime", () => {
