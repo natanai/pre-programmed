@@ -19,3 +19,35 @@ jobs:
           cache: npm
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
+      - name: Inspect live name-capture authoring
+        run: |
+          node --input-type=module <<'NODE'
+          const response = await fetch('https://pre-programmed.natanai.workers.dev/api/project/snapshot', { cache: 'no-store' });
+          if (!response.ok) throw new Error(`snapshot ${response.status}`);
+          const snapshot = await response.json();
+          const interestingText = /who are you|ooooh|please don.t tell anyone|are you god|do you love me/i;
+          const interactions = snapshot.interactions
+            .filter((interaction) => interestingText.test([
+              interaction.wording,
+              ...(interaction.aliases ?? []),
+              ...(interaction.outcomes ?? []).flatMap((outcome) => [outcome.responseText, outcome.dialogueText]),
+            ].filter(Boolean).join(' ')))
+            .map((interaction) => ({
+              id: interaction.id,
+              sourceNodeId: interaction.sourceNodeId,
+              wording: interaction.wording,
+              aliases: interaction.aliases,
+              outcomes: (interaction.outcomes ?? []).map((outcome) => ({
+                id: outcome.id,
+                responseText: outcome.responseText,
+                dialogueText: outcome.dialogueText,
+                effects: outcome.effects,
+                inputCapture: outcome.inputCapture,
+              })),
+            }));
+          const variables = (snapshot.variables ?? [])
+            .filter((variable) => /name/i.test(`${variable.label} ${variable.key}`))
+            .map(({ id, key, label, valueType, initialValue, playerPresentation }) => ({ id, key, label, valueType, initialValue, playerPresentation }));
+          const stateGroups = (snapshot.stateGroups ?? []).map(({ id, label, order, visibleWhen }) => ({ id, label, order, visibleWhen }));
+          console.log(JSON.stringify({ revision: snapshot.revision, variables, stateGroups, interactions }, null, 2));
+          NODE
