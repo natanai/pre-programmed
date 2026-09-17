@@ -20,48 +20,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Patch capture owner
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('src/features/narrative/author/InteractionEditor.tsx')
-          text = path.read_text()
-          import_old = 'import { ALWAYS, type Condition } from "../../../engine/rules/model";\n'
-          import_new = import_old + 'import { PLAYER_INPUT_BINDING } from "../../../engine/rules/runtimeBindings";\n'
-          if import_new not in text:
-              if import_old not in text:
-                  raise SystemExit('rules/model import anchor not found')
-              text = text.replace(import_old, import_new, 1)
-          old = '''      <EffectsEditor\n        effects={capture.effects}\n        snapshot={snapshot}\n        onChange={(effects) => onChange((current) => current.inputCapture\n'''
-          new = '''      <EffectsEditor\n        effects={capture.effects}\n        snapshot={snapshot}\n        authoringContext={{ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING }}\n        onChange={(effects) => onChange((current) => current.inputCapture\n'''
-          if new not in text:
-              if old not in text:
-                  raise SystemExit('capture EffectsEditor anchor not found')
-              text = text.replace(old, new, 1)
-          path.write_text(text)
-          PY
-      - name: Add regression test
-        run: |
-          cat > tests/effectAuthoringContext.test.ts <<'EOF'
-          import { describe, expect, it } from "vitest";
-          import { PLAYER_INPUT_BINDING, runtimeBinding } from "../src/engine/rules/runtimeBindings";
-          import { setValueEffectAdapter } from "../src/features/state/author/ruleAdapters";
-
-          describe("effect authoring context", () => {
-            it("defaults Set Value to captured player input only when the owner advertises that binding", () => {
-              const captured = setValueEffectAdapter.create({ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING });
-              const ordinary = setValueEffectAdapter.create();
-
-              expect(captured.type).toBe("set_value");
-              if (captured.type !== "set_value") throw new Error("Expected set_value effect");
-              expect(captured.value).toEqual(runtimeBinding(PLAYER_INPUT_BINDING));
-
-              expect(ordinary.type).toBe("set_value");
-              if (ordinary.type !== "set_value") throw new Error("Expected set_value effect");
-              expect(ordinary.value).toBe(0);
-            });
-          });
-          EOF
+      - run: python .github/scripts/finish-capture-input-repair.py
       - run: npm ci --no-audit --no-fund
       - run: npm run verify
       - name: Assert owner wiring
@@ -69,8 +28,9 @@ jobs:
       - name: Commit verified repair
         run: |
           rm .github/workflows/finish-capture-input-repair-temp.yml
+          rm .github/scripts/finish-capture-input-repair.py
           git config user.name "natanai"
           git config user.email "109430106+natanai@users.noreply.github.com"
-          git add src/features/narrative/author/InteractionEditor.tsx tests/effectAuthoringContext.test.ts .github/workflows/finish-capture-input-repair-temp.yml
+          git add src/features/narrative/author/InteractionEditor.tsx tests/effectAuthoringContext.test.ts .github/workflows/finish-capture-input-repair-temp.yml .github/scripts/finish-capture-input-repair.py
           git commit -m "Complete captured input authoring repair"
           git push origin HEAD:agent/capture-input-terminal-mode-repair-v2
