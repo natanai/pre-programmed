@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import "./authorUi.css";
+import "./authorInlineDisclosure.css";
 
 export function AuthorInlineDisclosure({
   label,
