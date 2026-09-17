@@ -158,8 +158,11 @@ export function advanceNarrativeFlow(
     }
 
     if (step.type === "transition") {
+      // A transition terminates the current owner flow. The destination Node
+      // becomes the next presentation owner rather than allowing this flow to
+      // keep rendering across resource ownership boundaries.
       state = transitionState(state, step.destination);
-      continue;
+      break;
     }
 
     const responseText = interpolateText(step.responseText, { snapshot, state });
