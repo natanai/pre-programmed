@@ -1,0 +1,49 @@
+name: Diagnose live capture authoring
+
+on:
+  push:
+    branches:
+      - agent/diagnose-live-capture
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Inspect live authored capture configuration
+        env:
+          API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
+        run: |
+          node --input-type=module <<'NODE'
+          const origin = process.env.API_ORIGIN?.trim().replace(/\/+$/, '');
+          if (!origin) throw new Error('PRE_PROGRAMMED_API_ORIGIN is not configured');
+          const response = await fetch(`${origin}/api/project/snapshot`, { cache: 'no-store' });
+          if (!response.ok) throw new Error(`snapshot ${response.status}`);
+          const snapshot = await response.json();
+          const matches = snapshot.interactions.filter((interaction) => {
+            const text = JSON.stringify(interaction).toLowerCase();
+            return text.includes('do you love me') || text.includes('wait, who are you');
+          });
+          const nodesById = Object.fromEntries(snapshot.nodes.map((node) => [node.id, { id: node.id, nodeNumber: node.nodeNumber, openings: node.openings?.map((o) => ({ id: o.id, text: o.text, dialogueText: o.dialogueText })) }]));
+          const relevant = matches.map((interaction) => ({
+            id: interaction.id,
+            sourceNodeId: interaction.sourceNodeId,
+            sourceNode: nodesById[interaction.sourceNodeId],
+            wording: interaction.wording,
+            aliases: interaction.aliases,
+            matchMode: interaction.matchMode,
+            choiceVisibility: interaction.choiceVisibility,
+            outcomes: interaction.outcomes.map((outcome) => ({
+              id: outcome.id,
+              order: outcome.order,
+              condition: outcome.condition,
+              responseText: outcome.responseText,
+              dialogueText: outcome.dialogueText,
+              effects: outcome.effects,
+              disposition: outcome.disposition,
+              destination: outcome.destination,
+              inputCapture: outcome.inputCapture,
+            })),
+          }));
+          console.log(JSON.stringify({ revision: snapshot.revision, relevant }, null, 2));
+          NODE
