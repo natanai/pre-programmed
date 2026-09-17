@@ -1,4 +1,5 @@
 import type { ProjectSnapshot } from "../../src/engine/project/model";
+import { flowDestinations } from "../../src/features/narrative/flow";
 import type { NodeEntryTarget } from "../../src/features/narrative/model";
 
 type IntegrityIssue = {
@@ -6,40 +7,29 @@ type IntegrityIssue = {
   message: string;
 };
 
-function targetForOutcome(outcome: ProjectSnapshot["interactions"][number]["outcomes"][number]) {
-  if (outcome.inputCapture?.disposition === "transition" && outcome.inputCapture.destination) {
-    return { target: outcome.inputCapture.destination, section: "input-capture" as const };
-  }
-  if (outcome.disposition === "transition" && outcome.destination) {
-    return { target: outcome.destination, section: "response" as const };
-  }
-  return null;
-}
-
 function validateTarget(
   issues: IntegrityIssue[],
   nodes: Map<string, ProjectSnapshot["nodes"][number]>,
-  interactionId: string,
-  outcomeId: string,
+  ownerKey: string,
   target: NodeEntryTarget,
-  section: "response" | "input-capture",
+  ownerLabel: "response" | "node-opening",
 ) {
   const destination = nodes.get(target.nodeId);
   if (!destination) {
     issues.push({
-      key: `interaction:${interactionId}:outcome:${outcomeId}:${section}:destination:${target.nodeId}:missing`,
-      message: section === "input-capture"
-        ? "A captured-input continuation references a Node that does not exist."
-        : "A response destination references a Node that does not exist.",
+      key: `${ownerKey}:destination:${target.nodeId}:missing`,
+      message: ownerLabel === "response"
+        ? "A response destination references a Node that does not exist."
+        : "A Node entry continuation references a Node that does not exist.",
     });
     return;
   }
   if (target.openingId && !destination.openings.some((opening) => opening.id === target.openingId)) {
     issues.push({
-      key: `interaction:${interactionId}:outcome:${outcomeId}:${section}:opening:${target.openingId}:wrong-owner`,
-      message: section === "input-capture"
-        ? "A captured-input continuation targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node."
-        : "A response targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node.",
+      key: `${ownerKey}:opening:${target.openingId}:wrong-owner`,
+      message: ownerLabel === "response"
+        ? "A response targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node."
+        : "A Node entry continuation targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node.",
     });
   }
 }
@@ -64,6 +54,16 @@ export function narrativeReferenceIssues(snapshot: ProjectSnapshot) {
           message: "Node entry response identities must be unique across the project.",
         });
       } else openingOwners.set(opening.id, node.id);
+
+      for (const [index, target] of flowDestinations(opening.after).entries()) {
+        validateTarget(
+          issues,
+          nodes,
+          `node:${node.id}:opening:${opening.id}:flow:${index}`,
+          target,
+          "node-opening",
+        );
+      }
     }
   }
 
@@ -79,9 +79,15 @@ export function narrativeReferenceIssues(snapshot: ProjectSnapshot) {
       });
     }
     for (const outcome of interaction.outcomes) {
-      const target = targetForOutcome(outcome);
-      if (!target) continue;
-      validateTarget(issues, nodes, interaction.id, outcome.id, target.target, target.section);
+      for (const [index, target] of flowDestinations(outcome.after).entries()) {
+        validateTarget(
+          issues,
+          nodes,
+          `interaction:${interaction.id}:outcome:${outcome.id}:flow:${index}`,
+          target,
+          "response",
+        );
+      }
     }
   }
 
