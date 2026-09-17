@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   finish-and-verify:
-    if: github.event.head_commit.message == 'ci: finish capture input repair'
+    if: ${{ github.event.head_commit.message == 'ci: retry capture input repair' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
