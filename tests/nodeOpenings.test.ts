@@ -32,6 +32,7 @@ function opening(
     dialogueText,
     narrationPerformance: { ...PERFORMANCE, cues: [] },
     dialoguePerformance: { ...PERFORMANCE, cues: [] },
+    after: [],
   };
 }
 
@@ -101,7 +102,11 @@ describe("Node entry responses", () => {
     const forced = interaction("forced", start.id, question.id, ["forced"]);
     forced.outcomes[0] = {
       ...forced.outcomes[0],
-      destination: { nodeId: question.id, openingId: "question-forced" },
+      after: [{
+        id: "forced-transition",
+        type: "transition",
+        destination: { nodeId: question.id, openingId: "question-forced" },
+      }],
     };
     const snapshot = project({
       startNodeId: start.id,
@@ -181,7 +186,11 @@ describe("Node entry responses", () => {
     const link = interaction("go", left.id, right.id, ["go"]);
     link.outcomes[0] = {
       ...link.outcomes[0],
-      destination: { nodeId: right.id, openingId: "left-only" },
+      after: [{
+        id: "bad-transition",
+        type: "transition",
+        destination: { nodeId: right.id, openingId: "left-only" },
+      }],
     };
     const snapshot = project({ startNodeId: left.id, nodes: [left, right], interactions: [link] });
     const messages = narrativeReferenceIssues(snapshot).map((issue) => issue.message);
