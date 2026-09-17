@@ -65,6 +65,10 @@ export function flowDestination(flow: readonly NarrativeFlowStep[]) {
   return flowTransition(flow)?.destination ?? null;
 }
 
+export function flowDestinations(flow: readonly NarrativeFlowStep[]) {
+  return flow.flatMap((step) => step.type === "transition" ? [step.destination] : []);
+}
+
 export function flowAwaitsInput(flow: readonly NarrativeFlowStep[]) {
   return flow.some((step) => step.type === "await_input");
 }
