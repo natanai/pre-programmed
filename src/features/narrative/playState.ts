@@ -9,6 +9,7 @@ export function initializeNarrativePlayState(snapshot: ProjectSnapshot, state: P
     attempts: {},
     visitedNodeIds: [snapshot.startNodeId],
     interactionVisibility: {},
+    pendingInputCapture: null,
   };
 }
 
@@ -19,5 +20,13 @@ export function reconcileNarrativePlayState(snapshot: ProjectSnapshot, state: Pl
     && currentNode?.openings.some((opening) => opening.id === state.currentNodeOpeningId)
     ? state.currentNodeOpeningId
     : null;
-  return { ...state, currentNodeOpeningId: openingId };
+  const pending = state.pendingInputCapture;
+  const pendingInteraction = pending
+    ? snapshot.interactions.find((interaction) => interaction.id === pending.interactionId)
+    : undefined;
+  const pendingOutcome = pendingInteraction?.outcomes.find((outcome) => outcome.id === pending?.outcomeId);
+  const pendingInputCapture = pending && pendingOutcome?.inputCapture
+    ? pending
+    : null;
+  return { ...state, currentNodeOpeningId: openingId, pendingInputCapture };
 }
