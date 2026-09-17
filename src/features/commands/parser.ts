@@ -201,6 +201,24 @@ function projectGrammarMatches(input: string, snapshot: ProjectSnapshot, state: 
 
 export function parseCommand(input: string, snapshot: ProjectSnapshot, state: PlayState): ParserResult {
   const normalizedInput = normalizeCommand(input);
+  const pending = state.pendingInputCapture;
+  if (pending) {
+    const interaction = snapshot.interactions.find((candidate) => candidate.id === pending.interactionId);
+    const outcome = interaction?.outcomes.find((candidate) => candidate.id === pending.outcomeId);
+    if (interaction && outcome?.inputCapture) {
+      return {
+        interaction,
+        invocation: null,
+        reason: "capture",
+        matchedAlias: null,
+        matchedPattern: null,
+        candidates: [interaction.id],
+        normalizedInput,
+        ambiguities: [],
+      };
+    }
+  }
+
   const sceneInteractions = interactionsAtCurrentNode(snapshot, state);
   const commandInteractions = sceneInteractions.filter((interaction) => (interaction.matchMode ?? "command") === "command");
   const captureInteraction = sceneInteractions.filter((interaction) => interaction.matchMode === "capture").sort((left, right) => left.id.localeCompare(right.id))[0];
