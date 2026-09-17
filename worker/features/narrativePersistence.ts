@@ -107,23 +107,27 @@ function migrateLegacyMediaCues<T extends { cues?: Array<{ type: string; value?:
 function parseFlow(value: string | null | undefined): NarrativeFlowStep[] {
   const flow = parseJson<NarrativeFlowStep[]>(value, []);
   if (!Array.isArray(flow)) return [];
-  return flow.flatMap((step) => {
-    if (!step || typeof step !== "object") return [];
+  const result: NarrativeFlowStep[] = [];
+  for (const step of flow) {
+    if (!step || typeof step !== "object") continue;
     if (step.type === "effects") {
-      return [{
+      result.push({
         ...step,
         effects: migrateLegacyMediaEffects(step.effects) as Extract<NarrativeFlowStep, { type: "effects" }>["effects"],
-      }];
+      });
+      continue;
     }
     if (step.type === "present") {
-      return [{
+      result.push({
         ...step,
         responsePerformance: migrateLegacyMediaCues(step.responsePerformance ?? DEFAULT_TEXT_PERFORMANCE),
         dialoguePerformance: migrateLegacyMediaCues(step.dialoguePerformance ?? DEFAULT_TEXT_PERFORMANCE),
-      }];
+      });
+      continue;
     }
-    return [step];
-  });
+    result.push(step);
+  }
+  return result;
 }
 
 function normalizeNodeForPersistence(value: GameNode): GameNode {
