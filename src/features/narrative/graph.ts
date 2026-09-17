@@ -1,5 +1,5 @@
 import type { ProjectSnapshot } from "../../engine/project/model";
-import type { GameNode } from "./model";
+import type { GameNode, NodeEntryTarget } from "./model";
 
 export const GRAPH_NOTATION_DEFINITIONS = [
   { token: "[H]", meaning: "HERE / current node" },
@@ -20,14 +20,22 @@ export type GraphIndex = {
   byId: Map<string, GameNode>;
 };
 
+function outcomeDestination(outcome: ProjectSnapshot["interactions"][number]["outcomes"][number]): NodeEntryTarget | null {
+  if (outcome.inputCapture?.disposition === "transition" && outcome.inputCapture.destination) {
+    return outcome.inputCapture.destination;
+  }
+  return outcome.disposition === "transition" ? outcome.destination : null;
+}
+
 export function buildGraphIndex(snapshot: ProjectSnapshot): GraphIndex {
   const outgoing = new Map(snapshot.nodes.map((node) => [node.id, new Set<string>()]));
   const incoming = new Map(snapshot.nodes.map((node) => [node.id, new Set<string>()]));
   for (const interaction of snapshot.interactions) {
     for (const outcome of interaction.outcomes) {
-      if (outcome.disposition !== "transition" || !outcome.destination) continue;
-      outgoing.get(interaction.sourceNodeId)?.add(outcome.destination.nodeId);
-      incoming.get(outcome.destination.nodeId)?.add(interaction.sourceNodeId);
+      const destination = outcomeDestination(outcome);
+      if (!destination) continue;
+      outgoing.get(interaction.sourceNodeId)?.add(destination.nodeId);
+      incoming.get(destination.nodeId)?.add(interaction.sourceNodeId);
     }
   }
   return { outgoing, incoming, byId: new Map(snapshot.nodes.map((node) => [node.id, node])) };

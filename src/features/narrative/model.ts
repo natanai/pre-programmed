@@ -81,6 +81,17 @@ export type InteractionChoiceVisibility = "immediate" | "prompt" | "typed";
  */
 export type InteractionMatchMode = "command" | "capture" | "fallback";
 
+/**
+ * One-shot continuation that consumes the player's next terminal submission.
+ * The raw submission is exposed through the shared player-input runtime binding
+ * while these effects run, then ordinary stay/transition continuation resumes.
+ */
+export type InteractionInputCapture = {
+  effects: Effect[];
+  disposition: InteractionDisposition;
+  destination: NodeEntryTarget | null;
+};
+
 export type InteractionOutcome = {
   id: string;
   order: number;
@@ -98,6 +109,12 @@ export type InteractionOutcome = {
   /** Spoken-line delivery. */
   dialoguePerformance?: TextPerformance;
   effects: Effect[];
+  /**
+   * Optional one-shot capture performed after this response. When present it
+   * owns the immediate continuation; `disposition`/`destination` are retained
+   * as the non-capture continuation shape for historical and ordinary outcomes.
+   */
+  inputCapture?: InteractionInputCapture | null;
   disposition: InteractionDisposition;
   /** Node destination; opening id is optional so AUTO remains the default traversal behavior. */
   destination: NodeEntryTarget | null;

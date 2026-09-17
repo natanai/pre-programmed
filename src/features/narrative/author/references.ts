@@ -64,8 +64,15 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
       ...interaction.outcomes.flatMap((outcome) => [
         ...(outcome.speakerId ? [{ ...owner, resourceKind: "character", resourceId: outcome.speakerId, detail: `speaker for ${outcome.label || "outcome"}` }] : []),
         ...(outcome.destination ? [{ ...owner, resourceKind: "node", resourceId: outcome.destination.nodeId, detail: `destination for ${outcome.label || "outcome"}${outcome.destination.openingId ? " · specific opening" : " · auto opening"}` }] : []),
+        ...(outcome.inputCapture?.destination ? [{
+          ...owner,
+          resourceKind: "node",
+          resourceId: outcome.inputCapture.destination.nodeId,
+          detail: `captured-input continuation for ${outcome.label || "outcome"}${outcome.inputCapture.destination.openingId ? " · specific opening" : " · auto opening"}`,
+        }] : []),
         ...fromTargets(context.condition(outcome.condition), owner),
         ...fromTargets(context.effects(outcome.effects), owner),
+        ...fromTargets(context.effects(outcome.inputCapture?.effects ?? []), owner).map((reference) => ({ ...reference, detail: `captured input · ${reference.detail}` })),
         ...fromTargets(context.text(outcome.responseText), owner),
         ...fromTargets(context.text(outcome.dialogueText ?? ""), owner),
       ]),
