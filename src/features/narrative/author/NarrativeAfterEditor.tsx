@@ -20,6 +20,7 @@ import { buildGraphIndex, notationForNode } from "../graph";
 import type { NarrativeFlowStep } from "../model";
 import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
+import "./interactionEditor.css";
 
 function conditionlessOpeningLabel(snapshot: ProjectSnapshot, nodeId: string, openingId: string | null) {
   const node = snapshot.nodes.find((candidate) => candidate.id === nodeId);
