@@ -9,6 +9,33 @@ function textPerformanceValid(value: unknown) {
     && Array.isArray(value.cues);
 }
 
+function destinationValid(value: unknown) {
+  if (!object(value)
+    || typeof value.nodeId !== "string" || !value.nodeId
+    || (value.openingId !== null
+      && value.openingId !== undefined
+      && (typeof value.openingId !== "string" || !value.openingId))) {
+    return false;
+  }
+  return true;
+}
+
+function continuationValid(value: Record<string, unknown>, prefix: string) {
+  if (value.disposition !== "stay" && value.disposition !== "transition") {
+    return `${prefix} disposition is invalid.`;
+  }
+  if (value.destination !== undefined && value.destination !== null && !destinationValid(value.destination)) {
+    return `${prefix} destination is invalid.`;
+  }
+  if (value.disposition === "transition" && !value.destination) {
+    return `${prefix} transitions need a destination.`;
+  }
+  if (value.disposition === "stay" && value.destination) {
+    return `${prefix} Stay here behavior cannot store a destination.`;
+  }
+  return null;
+}
+
 export const narrativeMutationValidator: WorkerMutationValidator = {
   types: ["node.upsert", "interaction.upsert", "interaction.reorder", "interaction.delete"],
   validate(operation) {
@@ -109,22 +136,19 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
       if (candidate.speakerId !== undefined && candidate.speakerId !== null && (
         typeof candidate.speakerId !== "string" || candidate.speakerId.length > 128
       )) return "Interaction response speaker is invalid.";
-      if (candidate.disposition !== "stay" && candidate.disposition !== "transition") {
-        return "Interaction response disposition is invalid.";
-      }
-      if (candidate.destination !== undefined && candidate.destination !== null) {
-        if (!object(candidate.destination)
-          || typeof candidate.destination.nodeId !== "string" || !candidate.destination.nodeId
-          || (candidate.destination.openingId !== null
-            && (typeof candidate.destination.openingId !== "string" || !candidate.destination.openingId))) {
-          return "Interaction destination is invalid.";
+
+      const responseContinuationIssue = continuationValid(candidate, "Interaction response");
+      if (responseContinuationIssue) return responseContinuationIssue;
+
+      if (candidate.inputCapture !== undefined && candidate.inputCapture !== null) {
+        if (!object(candidate.inputCapture) || !effectsValid(candidate.inputCapture.effects)) {
+          return "Captured-input effects are invalid.";
         }
-      }
-      if (candidate.disposition === "transition" && !candidate.destination) {
-        return "Transition responses need a destination.";
-      }
-      if (candidate.disposition === "stay" && candidate.destination) {
-        return "Stay responses cannot store a destination.";
+        const captureContinuationIssue = continuationValid(candidate.inputCapture, "Captured-input continuation");
+        if (captureContinuationIssue) return captureContinuationIssue;
+        if (candidate.disposition !== "stay" || candidate.destination) {
+          return "A response that captures the next player input cannot also continue before that input is submitted.";
+        }
       }
     }
     return null;
