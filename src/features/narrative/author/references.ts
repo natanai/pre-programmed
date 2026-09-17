@@ -1,4 +1,5 @@
 import type { ProjectReferenceContribution, ResourceReference } from "../../../author/references/types";
+import type { NarrativeFlowStep } from "../model";
 import { nodeAuthorTitle } from "../nodeOpenings";
 import { nodeConversationCharacterId, nodeConversationMode, nodeLocationMode } from "../sceneContext";
 
@@ -7,6 +8,48 @@ function fromTargets(
   owner: Omit<ReturnType<ProjectReferenceContribution>[number], "resourceKind" | "resourceId" | "detail">,
 ) {
   return targets.map((target) => ({ ...owner, ...target }));
+}
+
+function flowReferences(
+  flow: readonly NarrativeFlowStep[],
+  owner: Omit<ReturnType<ProjectReferenceContribution>[number], "resourceKind" | "resourceId" | "detail">,
+  context: Parameters<ProjectReferenceContribution>[1],
+  detailPrefix: string,
+): ReturnType<ProjectReferenceContribution> {
+  return flow.flatMap((step, index) => {
+    const prefix = `${detailPrefix} · step ${index + 1}`;
+    if (step.type === "transition") return [{
+      ...owner,
+      resourceKind: "node",
+      resourceId: step.destination.nodeId,
+      detail: `${prefix} · destination${step.destination.openingId ? " · specific opening" : " · auto opening"}`,
+    }];
+    if (step.type === "effects") {
+      return fromTargets(context.effects(step.effects), owner).map((reference) => ({
+        ...reference,
+        detail: `${prefix} · ${reference.detail}`,
+      }));
+    }
+    if (step.type === "present") {
+      return [
+        ...(step.speakerId ? [{
+          ...owner,
+          resourceKind: "character",
+          resourceId: step.speakerId,
+          detail: `${prefix} · speaker`,
+        }] : []),
+        ...fromTargets(context.text(step.responseText), owner).map((reference) => ({
+          ...reference,
+          detail: `${prefix} · narration · ${reference.detail}`,
+        })),
+        ...fromTargets(context.text(step.dialogueText), owner).map((reference) => ({
+          ...reference,
+          detail: `${prefix} · dialogue · ${reference.detail}`,
+        })),
+      ];
+    }
+    return [];
+  });
 }
 
 export const narrativeProjectReferences: ProjectReferenceContribution = (snapshot, context) => [
@@ -44,6 +87,7 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
             ...openingOwner,
             route: { ...openingOwner.route, data: { ...openingOwner.route.data, section: "dialogue" } },
           }).map((reference) => ({ ...reference, detail: `opening ${index + 1} dialogue · ${reference.detail}` })),
+          ...flowReferences(opening.after, openingOwner, context, `opening ${index + 1} after`),
         ];
       }),
     ];
@@ -63,18 +107,11 @@ export const narrativeProjectReferences: ProjectReferenceContribution = (snapsho
         : []),
       ...interaction.outcomes.flatMap((outcome) => [
         ...(outcome.speakerId ? [{ ...owner, resourceKind: "character", resourceId: outcome.speakerId, detail: `speaker for ${outcome.label || "outcome"}` }] : []),
-        ...(outcome.destination ? [{ ...owner, resourceKind: "node", resourceId: outcome.destination.nodeId, detail: `destination for ${outcome.label || "outcome"}${outcome.destination.openingId ? " · specific opening" : " · auto opening"}` }] : []),
-        ...(outcome.inputCapture?.destination ? [{
-          ...owner,
-          resourceKind: "node",
-          resourceId: outcome.inputCapture.destination.nodeId,
-          detail: `captured-input continuation for ${outcome.label || "outcome"}${outcome.inputCapture.destination.openingId ? " · specific opening" : " · auto opening"}`,
-        }] : []),
         ...fromTargets(context.condition(outcome.condition), owner),
         ...fromTargets(context.effects(outcome.effects), owner),
-        ...fromTargets(context.effects(outcome.inputCapture?.effects ?? []), owner).map((reference) => ({ ...reference, detail: `captured input · ${reference.detail}` })),
         ...fromTargets(context.text(outcome.responseText), owner),
         ...fromTargets(context.text(outcome.dialogueText ?? ""), owner),
+        ...flowReferences(outcome.after, owner, context, `after ${outcome.label || "outcome"}`),
       ]),
     ];
   }),
