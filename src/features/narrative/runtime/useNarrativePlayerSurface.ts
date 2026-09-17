@@ -73,7 +73,9 @@ export function useNarrativePlayerSurface(
     const fallbackInput = snapshot.interactions.find((interaction) =>
       interaction.sourceNodeId === state.currentNodeId && interaction.matchMode === "fallback",
     );
-    const visibleInputs = currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, state, interaction));
+    const visibleInputs = state.pendingInputCapture
+      ? []
+      : currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, state, interaction));
     const immediateChoices = visibleInputs
       .filter((interaction) => interaction.choiceVisibility === "immediate")
       .map((interaction) => playerChoice(interaction))

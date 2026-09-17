@@ -25,10 +25,20 @@ export type ConditionAuthorAdapter = {
   render: (context: ConditionAuthorContext) => ReactNode;
 };
 
+/**
+ * Optional hints supplied by the owning authoring context to the canonical
+ * Effects editor. Effects remain owned by their feature adapters; consumers
+ * may only advertise which runtime value source is most relevant here.
+ */
+export type EffectAuthoringContext = {
+  preferredRuntimeBindingKey?: string;
+};
+
 export type EffectAuthorContext = {
   effect: Effect;
   snapshot: ProjectSnapshot;
   onChange: (effect: Effect) => void;
+  authoringContext?: EffectAuthoringContext;
 };
 
 export type EffectAuthorAdapter = {
@@ -38,7 +48,7 @@ export type EffectAuthorAdapter = {
   description: string;
   /** When present, only offer this effect while editing a compatible operation target. */
   targetKinds?: readonly string[];
-  create: () => Effect;
+  create: (context?: EffectAuthoringContext) => Effect;
   summarize?: (effect: Effect, snapshot: ProjectSnapshot) => string;
   references?: (effect: Effect) => readonly ResourceReference[];
   /** Safe presentation-only events; state-changing effects deliberately omit this. */

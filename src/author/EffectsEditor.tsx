@@ -2,17 +2,19 @@ import { useState } from "react";
 import type { Effect } from "../engine/rules/model";
 import type { ProjectSnapshot } from "../engine/project/model";
 import { effectAuthorAdapter, effectAuthorAdapters } from "./rules/catalog";
-import type { EffectAuthorAdapter } from "./rules/types";
+import type { EffectAuthorAdapter, EffectAuthoringContext } from "./rules/types";
 import "./effectsEditor.css";
 
 type EffectsScreen = "list" | "choose" | "edit";
 
-export function EffectsEditor({ effects, onChange, snapshot, targetKind }: {
+export function EffectsEditor({ effects, onChange, snapshot, targetKind, authoringContext }: {
   effects: Effect[];
   onChange: (effects: Effect[]) => void;
   snapshot: ProjectSnapshot;
   /** Optional semantic operation target; target-bound effects stay out of unrelated authoring surfaces. */
   targetKind?: string;
+  /** Optional hints from the owning context; effect adapters remain the source of truth for authored values. */
+  authoringContext?: EffectAuthoringContext;
 }) {
   const [screen, setScreen] = useState<EffectsScreen>("list");
   const [selectedEffectId, setSelectedEffectId] = useState<string | null>(null);
@@ -39,7 +41,7 @@ export function EffectsEditor({ effects, onChange, snapshot, targetKind }: {
   };
 
   const addEffect = (adapter: EffectAuthorAdapter) => {
-    const effect = adapter.create();
+    const effect = adapter.create(authoringContext);
     onChange([...effects, effect]);
     setSelectedEffectId(effect.id);
     setScreen("edit");
@@ -56,7 +58,7 @@ export function EffectsEditor({ effects, onChange, snapshot, targetKind }: {
     if (!selectedEffect || selectedIndex < 0) return;
     const adapter = effectAuthorAdapter(type);
     if (!adapter) return;
-    const replacement = { ...adapter.create(), id: selectedEffect.id } as Effect;
+    const replacement = { ...adapter.create(authoringContext), id: selectedEffect.id } as Effect;
     replace(selectedIndex, replacement);
   };
 
@@ -85,7 +87,7 @@ export function EffectsEditor({ effects, onChange, snapshot, targetKind }: {
         {adapters.map((option) => <option value={option.type} key={option.type}>{option.label}</option>)}
       </select></label>
       <div className="focused-effect-fields">
-        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot })}
+        {adapter?.render({ effect: selectedEffect, onChange: (next) => replace(selectedIndex, next), snapshot, authoringContext })}
       </div>
       <button type="button" className="effect-remove" onClick={removeSelected}>[REMOVE EFFECT]</button>
     </div>;
