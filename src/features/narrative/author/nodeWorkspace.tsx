@@ -4,6 +4,7 @@ import type { AuthorWorkspaceContext } from "../../../author/features/types";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
+import { AuthorInlineDisclosure } from "../../../author/ui/AuthorInlineDisclosure";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import { resolveActiveNodeAnchor } from "../anchor";
@@ -120,11 +121,12 @@ function OpeningEditor({
     ? `${conversationName.toUpperCase()} SAYS`
     : "DIALOGUE — SET A CONVERSATION CHARACTER";
   const snippet = nodeOpeningSnippet(opening, 72) || "No entry text";
-  return <details className="guided-section" open={total === 1 || autoFocus}>
-    <summary className="node-opening-summary">
-      <strong>{index + 1}. {snippet}</strong>
-      <small className="node-opening-notation">{notationForNodeOpeningCondition(opening.condition)}</small>
-    </summary>
+  return <AuthorInlineDisclosure
+    label={`${index + 1}. ${snippet}`}
+    summary={notationForNodeOpeningCondition(opening.condition)}
+    defaultOpen={total === 1 || autoFocus}
+    className="node-opening-disclosure"
+  >
     <div className="node-focused-form">
       <OutcomeConditionEditor
         condition={opening.condition}
@@ -161,7 +163,7 @@ function OpeningEditor({
       </div>
       {references > 0 ? <small>This opening is explicitly targeted by {references} response{references === 1 ? "" : "s"}. Reassign those links before removing it.</small> : null}
     </div>
-  </details>;
+  </AuthorInlineDisclosure>;
 }
 
 export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
