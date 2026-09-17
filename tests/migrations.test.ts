@@ -101,7 +101,7 @@ describe("D1 migration safety", () => {
           '{"effects":[{"id":"save-name","type":"set_value","key":"player_name","value":{"kind":"binding","key":"input.raw"}}],"disposition":"stay","destination":null}',
           'stay', NULL, NULL, 'configured'
         )
-      `);
+      `).run();
 
       applyMigration(database, flowMigration!.sql);
 
