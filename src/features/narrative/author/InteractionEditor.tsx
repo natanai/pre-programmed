@@ -1,16 +1,11 @@
-import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
-import { EffectsEditor } from "../../../author/EffectsEditor";
+import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
-import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
-import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
-import { PLAYER_INPUT_BINDING } from "../../../engine/rules/runtimeBindings";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type {
   Interaction,
   InteractionChoiceVisibility,
-  InteractionInputCapture,
   InteractionOutcome,
 } from "../model";
 import {
@@ -19,11 +14,13 @@ import {
   OutcomeEffectsEditor,
 } from "../../../author/outcomes/OutcomeComposer";
 import { createDraftOutcome } from "../drafts";
+import { captureFlowParts, flowDestination, flowEffectsCount } from "../flow";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { interactionOutcomeProse } from "../interactionProse";
-import { nodeAuthorLabel, nodeOpeningSnippet } from "../nodeOpenings";
+import { nodeOpeningSnippet } from "../nodeOpenings";
 import { resolveNodeConversationContext } from "../sceneContext";
 import { AuthoredTextEditor, type AuthoredTextValue } from "./AuthoredTextEditor";
+import { NarrativeAfterEditor } from "./NarrativeAfterEditor";
 export { aliasesForUserInput } from "./interactionAuthoring";
 import "./interactionEditor.css";
 
@@ -75,29 +72,24 @@ function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOut
   return snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId)?.name ?? "Unknown speaker";
 }
 
-function continuationLabel(snapshot: ProjectSnapshot, disposition: InteractionOutcome["disposition"], destination: InteractionOutcome["destination"]) {
-  if (disposition === "stay") return "Stay here";
-  if (!destination) return "Choose where to go";
-  const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
-  if (!node) return "Linked node";
-  if (!destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
-  const opening = node.openings.find((candidate) => candidate.id === destination.openingId);
-  return `Node #${node.nodeNumber} · ${opening ? nodeOpeningSnippet(opening, 40) || "specific opening" : "missing opening"}`;
-}
-
 function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
-  if (!outcome.inputCapture) return continuationLabel(snapshot, outcome.disposition, outcome.destination);
-  const afterCapture = continuationLabel(snapshot, outcome.inputCapture.disposition, outcome.inputCapture.destination);
-  return `Capture next input · then ${afterCapture.toLocaleLowerCase()}`;
+  const capture = captureFlowParts(outcome.after);
+  const destination = flowDestination(outcome.after);
+  const continuation = !destination
+    ? "Stay here"
+    : (() => {
+        const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
+        if (!node) return "Linked node";
+        if (!destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
+        const opening = node.openings.find((candidate) => candidate.id === destination.openingId);
+        return `Node #${node.nodeNumber} · ${opening ? nodeOpeningSnippet(opening, 40) || "specific opening" : "missing opening"}`;
+      })();
+  return capture ? `Capture next input · then ${continuation.toLocaleLowerCase()}` : continuation;
 }
 
 function secondaryAliases(wording: string, aliases: string[]) {
   const primary = wording.trim().toLocaleLowerCase();
   return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
-}
-
-function defaultInputCapture(): InteractionInputCapture {
-  return { effects: [], disposition: "stay", destination: null };
 }
 
 export function InteractionComposer({
@@ -134,7 +126,6 @@ export function InteractionComposer({
   onEditDestination?: (nodeId: string) => void;
 }) {
   const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
-  const captureMode = !fallbackMode && draft.matchMode === "capture";
   const sourceTraversalIndex = playState.traversal.lastIndexOf(draft.sourceNodeId);
   const sourcePlayState = sourceTraversalIndex >= 0
     ? { ...playState, currentNodeId: draft.sourceNodeId, currentNodeOpeningId: null, traversal: playState.traversal.slice(0, sourceTraversalIndex + 1) }
@@ -183,8 +174,9 @@ export function InteractionComposer({
 
   const notationForOutcome = (outcome: InteractionOutcome) => {
     if (outcome.authorStatus === "draft") return "[D]";
-    if (outcome.inputCapture || outcome.disposition === "stay" || !outcome.destination) return "[H]";
-    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destination.nodeId).join("") || "[A1]";
+    const destination = flowDestination(outcome.after);
+    if (!destination) return "[H]";
+    return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, destination.nodeId).join("") || "[A1]";
   };
 
   const selectedOutcome = "outcomeId" in screen
@@ -197,7 +189,7 @@ export function InteractionComposer({
   };
 
   const title = screen.type === "overview"
-    ? fallbackMode ? "INVALID INPUT" : captureMode ? "CAPTURE PLAYER INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
+    ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
@@ -212,13 +204,11 @@ export function InteractionComposer({
       {screen.type === "overview" ? <InteractionOverview
         draft={draft}
         fallbackMode={fallbackMode}
-        captureMode={captureMode}
         snapshot={snapshot}
         conversationCharacterId={conversationCharacterId}
         notationForOutcome={notationForOutcome}
         autoFocusWording={isNew}
         onWording={(wording) => setDraft({ ...draft, wording })}
-        onMatchMode={(matchMode) => setDraft({ ...draft, matchMode })}
         onOpenResponse={(outcomeId) => setScreen({ type: "response", outcomeId })}
         onAddResponse={addResponseDraft}
         onOpenSettings={() => setScreen({ type: "input-settings" })}
@@ -227,7 +217,6 @@ export function InteractionComposer({
       {screen.type === "input-settings" ? <InputSettings
         draft={draft}
         fallbackMode={fallbackMode}
-        captureMode={captureMode}
         snapshot={snapshot}
         onChange={setDraft}
       /> : null}
@@ -257,26 +246,22 @@ export function InteractionComposer({
 function InteractionOverview({
   draft,
   fallbackMode,
-  captureMode,
   snapshot,
   conversationCharacterId,
   notationForOutcome,
   autoFocusWording,
   onWording,
-  onMatchMode,
   onOpenResponse,
   onAddResponse,
   onOpenSettings,
 }: {
   draft: Interaction;
   fallbackMode: boolean;
-  captureMode: boolean;
   snapshot: ProjectSnapshot;
   conversationCharacterId: string | null;
   notationForOutcome: (outcome: InteractionOutcome) => string;
   autoFocusWording: boolean;
   onWording: (wording: string) => void;
-  onMatchMode: (matchMode: "command" | "capture") => void;
   onOpenResponse: (outcomeId: string) => void;
   onAddResponse: () => void;
   onOpenSettings: () => void;
@@ -284,14 +269,9 @@ function InteractionOverview({
   return <div className="interaction-overview">
     {!fallbackMode ? <section className="guided-section interaction-primary-section">
       <h3>PLAYER INPUT</h3>
-      {!captureMode ? <label className="user-input-field">PLAYER ENTERS
+      <label className="user-input-field">PLAYER ENTERS
         <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
-      </label> : <div className="guided-context-copy compact-copy">Accept otherwise-unmatched text at this Node and make it available to response effects.</div>}
-      <div className="interaction-mode-row" aria-label="Player input mode">
-        <span>MODE</span>
-        <button type="button" aria-pressed={!captureMode} onClick={() => onMatchMode("command")}>{!captureMode ? "[X]" : "[ ]"} SPECIFIC</button>
-        <button type="button" aria-pressed={captureMode} onClick={() => onMatchMode("capture")}>{captureMode ? "[X]" : "[ ]"} CAPTURE</button>
-      </div>
+      </label>
     </section> : <div className="guided-context-copy compact-copy">Response used when player text does not match another valid input at this Node.</div>}
 
     <section className="guided-section interaction-response-section">
@@ -301,7 +281,7 @@ function InteractionOverview({
           <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
           <span className="response-summary-content">
             <strong>{index + 1}. {responseSnippet(outcome)}</strong>
-            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length + (outcome.inputCapture?.effects.length ?? 0)} effect{outcome.effects.length + (outcome.inputCapture?.effects.length ?? 0) === 1 ? "" : "s"}</small>
+            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length + flowEffectsCount(outcome.after)} effect{outcome.effects.length + flowEffectsCount(outcome.after) === 1 ? "" : "s"}</small>
           </span>
           <span aria-hidden="true">›</span>
         </button>)}
@@ -312,24 +292,23 @@ function InteractionOverview({
     <section className="guided-section interaction-settings-summary">
       <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
         <span>INPUT SETTINGS</span>
-        <span className="guided-row-value">{fallbackMode || captureMode ? "Author details" : "Aliases · visibility · details"}</span>
+        <span className="guided-row-value">{fallbackMode ? "Author details" : "Aliases · visibility · details"}</span>
         <span aria-hidden="true">›</span>
       </button>
     </section>
   </div>;
 }
 
-function InputSettings({ draft, fallbackMode, captureMode, snapshot, onChange }: {
+function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
   draft: Interaction;
   fallbackMode: boolean;
-  captureMode: boolean;
   snapshot: ProjectSnapshot;
   onChange: (interaction: Interaction) => void;
 }) {
   const aliases = secondaryAliases(draft.wording, draft.aliases);
   const choiceVisibleWhen = draft.choiceVisibleWhen ?? ALWAYS;
   return <div className="guided-subworkspace">
-    {!fallbackMode && !captureMode ? <>
+    {!fallbackMode ? <>
       <section className="guided-section">
         <h3>PLAYER VISIBILITY</h3>
         <OutcomeComposerSection title="SHOW CHOICE WHEN" summary={conditionSummary(choiceVisibleWhen)}>
@@ -444,13 +423,15 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
         <OutcomeConditionEditor condition={outcome.condition} snapshot={snapshot} onChange={(condition) => onChange((current) => ({ ...current, condition }))} />
       </OutcomeComposerSection>
       <OutcomeComposerSection title="AFTER" summary={destinationLabel(snapshot, outcome)}>
-        <AfterWorkspace
-          outcome={outcome}
+        <NarrativeAfterEditor
           snapshot={snapshot}
           playState={playState}
+          flow={outcome.after}
+          conversationCharacterId={conversationCharacterId}
           onCreateDestination={onCreateDestination}
           onEditDestination={onEditDestination}
-          onChange={onChange}
+          onPreview={onPreview}
+          onChange={(after) => onChange((current) => ({ ...current, after }))}
         />
       </OutcomeComposerSection>
       <OutcomeComposerSection title="EFFECTS" summary={outcome.effects.length ? `${outcome.effects.length} configured` : "None"}>
@@ -467,220 +448,4 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
       {onRemove ? <button type="button" onClick={onRemove}>[REMOVE RESPONSE]</button> : null}
     </div>
   </div>;
-}
-
-function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onEditDestination, onChange, allowCapture = true }: {
-  outcome: InteractionOutcome;
-  snapshot: ProjectSnapshot;
-  playState: PlayState;
-  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
-  onEditDestination?: (nodeId: string) => void;
-  onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
-  allowCapture?: boolean;
-}) {
-  const [existingNodeQuery, setExistingNodeQuery] = useState("");
-  const documents = useMemo(() => buildSearchIndex(snapshot), [snapshot]);
-  const graph = useMemo(() => buildGraphIndex(snapshot), [snapshot]);
-  const matches = useMemo(
-    () => searchProject(snapshot, documents, playState, existingNodeQuery, ["node"], 12),
-    [snapshot, documents, playState, existingNodeQuery],
-  );
-  const destinationNotation = outcome.destination
-    ? notationForNode(snapshot, graph, playState.currentNodeId, playState.traversal, outcome.destination.nodeId).join("") || "[A1]"
-    : "[D]";
-  const destination = snapshot.nodes.find((node) => node.id === outcome.destination?.nodeId);
-  const selectedOpening = destination?.openings.find((opening) => opening.id === outcome.destination?.openingId) ?? null;
-  const selected = allowCapture && outcome.inputCapture
-    ? "capture"
-    : outcome.disposition === "stay" ? "stay" : "existing";
-
-  const choose = (value: string) => {
-    if (value === "stay") {
-      setExistingNodeQuery("");
-      onChange((current) => ({ ...current, inputCapture: null, disposition: "stay", destination: null }));
-      return;
-    }
-    if (value === "capture") {
-      setExistingNodeQuery("");
-      onChange((current) => ({
-        ...current,
-        disposition: "stay",
-        destination: null,
-        inputCapture: current.inputCapture ?? defaultInputCapture(),
-      }));
-      return;
-    }
-    if (value === "create") {
-      onCreateDestination?.((nodeId) => onChange((current) => ({
-        ...current,
-        inputCapture: null,
-        disposition: "transition",
-        destination: { nodeId, openingId: null },
-      })));
-      return;
-    }
-    onChange((current) => ({ ...current, inputCapture: null, disposition: "transition" }));
-  };
-
-  const chooseTarget = (nodeId: string, openingId: string | null) => {
-    setExistingNodeQuery("");
-    onChange((current) => ({
-      ...current,
-      inputCapture: null,
-      disposition: "transition",
-      destination: { nodeId, openingId },
-    }));
-  };
-
-  const existingResults = <>
-    {outcome.destination ? <div className="selected-destination">
-      <span>LINKED {destinationNotation}: {destination ? `${nodeAuthorLabel(destination)} · ${selectedOpening ? nodeOpeningSnippet(selectedOpening, 54) || "specific opening" : "AUTO"}` : outcome.destination.nodeId}</span>
-      <span className="selected-destination-actions">
-        {onEditDestination ? <button type="button" onClick={() => onEditDestination(outcome.destination!.nodeId)}>[EDIT NODE]</button> : null}
-        <button type="button" onClick={() => onChange((current) => ({ ...current, destination: null }))}>[UNLINK]</button>
-      </span>
-      {destination ? <div className="guided-option-list" aria-label="Destination Node entry opening">
-        <button type="button" className="guided-option-row" aria-pressed={!outcome.destination.openingId} onClick={() => chooseTarget(destination.id, null)}>
-          <span>{!outcome.destination.openingId ? "[X]" : "[ ]"} AUTO</span>
-          <small>Let Node #{destination.nodeNumber} choose its opening from current conditions.</small>
-        </button>
-        {[...destination.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map((opening, index) => <button
-          type="button"
-          className="guided-option-row"
-          key={opening.id}
-          aria-pressed={outcome.destination?.openingId === opening.id}
-          onClick={() => chooseTarget(destination.id, opening.id)}
-        >
-          <span>{outcome.destination?.openingId === opening.id ? "[X]" : "[ ]"} {index + 1}. {nodeOpeningSnippet(opening, 64) || "No entry text"}</span>
-          <small>{conditionSummary(opening.condition)} · explicit selection bypasses this normal condition</small>
-        </button>)}
-      </div> : null}
-    </div> : null}
-    {existingNodeQuery.trim() ? <div className="search-strip guided-destination-results" role="listbox" aria-label="Existing destination matches">
-      {matches.length ? matches.map((result) => {
-        const node = snapshot.nodes.find((candidate) => candidate.id === result.id);
-        if (!node) return null;
-        const openings = [...node.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));
-        return <div className="guided-destination-result" key={result.id}>
-          <button type="button" role="option" className="guided-destination-select" onClick={() => chooseTarget(node.id, null)}>
-            <span>{result.label}</span><span>{result.notation.join("")} · AUTO</span>
-          </button>
-          {openings.map((opening, index) => <button
-            type="button"
-            className="guided-destination-select"
-            key={opening.id}
-            onClick={() => chooseTarget(node.id, opening.id)}
-          >
-            <span>↳ {index + 1}. {nodeOpeningSnippet(opening, 72) || "No entry text"}</span>
-            <span>{conditionSummary(opening.condition)}</span>
-          </button>)}
-          {onEditDestination ? <button type="button" className="guided-destination-edit" onClick={() => onEditDestination(result.id)}>[EDIT]</button> : null}
-        </div>;
-      }) : <span className="search-empty">No existing node matches this search.</span>}
-    </div> : null}
-  </>;
-
-  const capture = allowCapture ? outcome.inputCapture : null;
-  const captureContinuation = capture ? {
-    ...outcome,
-    id: `${outcome.id}:captured-input`,
-    effects: capture.effects,
-    inputCapture: null,
-    disposition: capture.disposition,
-    destination: capture.destination,
-  } satisfies InteractionOutcome : null;
-  const captureEditor = capture && captureContinuation ? <div className="after-input-capture">
-    <p className="guided-context-copy">The next player submission is consumed once. In these effects, PLAYER INPUT is that captured text.</p>
-    <div className="after-input-capture-section">
-      <strong>ON SUBMIT</strong>
-      <EffectsEditor
-        effects={capture.effects}
-        snapshot={snapshot}
-        authoringContext={{ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING }}
-        onChange={(effects) => onChange((current) => current.inputCapture
-          ? { ...current, inputCapture: { ...current.inputCapture, effects } }
-          : current)}
-      />
-    </div>
-    <div className="after-input-capture-section">
-      <strong>THEN</strong>
-      <AfterWorkspace
-        outcome={captureContinuation}
-        snapshot={snapshot}
-        playState={playState}
-        allowCapture={false}
-        onCreateDestination={onCreateDestination}
-        onEditDestination={onEditDestination}
-        onChange={(change) => onChange((current) => {
-          if (!current.inputCapture) return current;
-          const continuation: InteractionOutcome = {
-            ...current,
-            id: `${current.id}:captured-input`,
-            effects: current.inputCapture.effects,
-            inputCapture: null,
-            disposition: current.inputCapture.disposition,
-            destination: current.inputCapture.destination,
-          };
-          const changed = change(continuation);
-          return {
-            ...current,
-            inputCapture: {
-              ...current.inputCapture,
-              disposition: changed.disposition,
-              destination: changed.destination,
-            },
-          };
-        })}
-      />
-    </div>
-  </div> : null;
-
-  const options = [
-    {
-      value: "stay",
-      label: "STAY HERE",
-      help: "Keep the player at the current node.",
-    },
-    {
-      value: "create",
-      label: "CREATE NEW",
-      help: "Create and link a new Node.",
-    },
-    {
-      value: "existing",
-      label: "LINK EXISTING",
-      help: "Connect this response to a Node that already exists.",
-      content: [
-        {
-          type: "field" as const,
-          id: `existing-destination-${outcome.id}`,
-          label: "Find existing node",
-          labelMode: "sr-only" as const,
-          control: "search" as const,
-          value: existingNodeQuery,
-          onChange: setExistingNodeQuery,
-          placeholder: "Find by node number, label, entry text, tags, or conditions…",
-          inputMode: "search" as const,
-        },
-        { type: "custom" as const, id: `existing-results-${outcome.id}`, role: "results" as const, content: existingResults },
-      ],
-    },
-    ...(allowCapture ? [{
-      value: "capture",
-      label: "CAPTURE INPUT",
-      help: "Wait for the player's next submission.",
-      content: captureEditor ? [{ type: "custom" as const, id: `capture-input-${outcome.id}`, role: "specialized-control" as const, content: captureEditor }] : [],
-    }] : []),
-  ];
-
-  return <AuthorUiBlocks blocks={[{
-    type: "choice",
-    id: `after-${outcome.id}`,
-    label: "What happens after this response?",
-    labelMode: "sr-only",
-    value: selected,
-    onChange: choose,
-    presentation: "segmented",
-    options,
-  }]} />;
 }
