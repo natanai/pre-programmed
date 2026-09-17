@@ -15,4 +15,6 @@ export type NarrativePlayStateSlice = {
   visitedNodeIds: string[];
   /** Per-run show/hide overrides for suggested player choices; never controls typed recognition. */
   interactionVisibility: Record<string, boolean>;
+  /** One response waiting to consume exactly the next player terminal submission. */
+  pendingInputCapture: { interactionId: string; outcomeId: string } | null;
 };

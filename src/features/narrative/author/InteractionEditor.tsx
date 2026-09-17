@@ -1,4 +1,5 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
+import { EffectsEditor } from "../../../author/EffectsEditor";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
@@ -8,6 +9,7 @@ import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type {
   Interaction,
   InteractionChoiceVisibility,
+  InteractionInputCapture,
   InteractionOutcome,
 } from "../model";
 import {
@@ -72,19 +74,29 @@ function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOut
   return snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId)?.name ?? "Unknown speaker";
 }
 
-function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
-  if (outcome.disposition === "stay") return "Stay here";
-  if (!outcome.destination) return "Choose where to go";
-  const node = snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
+function continuationLabel(snapshot: ProjectSnapshot, disposition: InteractionOutcome["disposition"], destination: InteractionOutcome["destination"]) {
+  if (disposition === "stay") return "Stay here";
+  if (!destination) return "Choose where to go";
+  const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
   if (!node) return "Linked node";
-  if (!outcome.destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
-  const opening = node.openings.find((candidate) => candidate.id === outcome.destination?.openingId);
+  if (!destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
+  const opening = node.openings.find((candidate) => candidate.id === destination.openingId);
   return `Node #${node.nodeNumber} · ${opening ? nodeOpeningSnippet(opening, 40) || "specific opening" : "missing opening"}`;
+}
+
+function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
+  if (!outcome.inputCapture) return continuationLabel(snapshot, outcome.disposition, outcome.destination);
+  const afterCapture = continuationLabel(snapshot, outcome.inputCapture.disposition, outcome.inputCapture.destination);
+  return `Capture next input · then ${afterCapture.toLocaleLowerCase()}`;
 }
 
 function secondaryAliases(wording: string, aliases: string[]) {
   const primary = wording.trim().toLocaleLowerCase();
   return aliases.filter((alias) => alias.trim().toLocaleLowerCase() !== primary);
+}
+
+function defaultInputCapture(): InteractionInputCapture {
+  return { effects: [], disposition: "stay", destination: null };
 }
 
 export function InteractionComposer({
@@ -170,7 +182,7 @@ export function InteractionComposer({
 
   const notationForOutcome = (outcome: InteractionOutcome) => {
     if (outcome.authorStatus === "draft") return "[D]";
-    if (outcome.disposition === "stay" || !outcome.destination) return "[H]";
+    if (outcome.inputCapture || outcome.disposition === "stay" || !outcome.destination) return "[H]";
     return notationForNode(snapshot, graph, draft.sourceNodeId, sourcePlayState.traversal, outcome.destination.nodeId).join("") || "[A1]";
   };
 
@@ -229,11 +241,7 @@ export function InteractionComposer({
         conversationCharacterId={conversationCharacterId}
         onPreview={onPreview ? (value, speakerId) => onPreview(value, speakerId, selectedOutcome) : undefined}
         playState={sourcePlayState}
-        onCreateDestination={onCreateDestination ? () => onCreateDestination((nodeId) => configureOutcome(selectedOutcome.id, (outcome) => ({
-          ...outcome,
-          disposition: "transition",
-          destination: { nodeId, openingId: null },
-        }))) : undefined}
+        onCreateDestination={onCreateDestination}
         onEditDestination={onEditDestination}
         onChange={(change) => configureOutcome(selectedOutcome.id, change)}
         onMove={(direction) => moveOutcome(selectedOutcome.id, direction)}
@@ -292,7 +300,7 @@ function InteractionOverview({
           <span className={`response-summary-notation${outcome.authorStatus === "draft" ? " draft-input" : ""}`}>{notationForOutcome(outcome)}</span>
           <span className="response-summary-content">
             <strong>{index + 1}. {responseSnippet(outcome)}</strong>
-            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length} effect{outcome.effects.length === 1 ? "" : "s"}</small>
+            <small>{responseSpeakerLabel(snapshot, outcome, conversationCharacterId)} · {conditionSummary(outcome.condition)} · {destinationLabel(snapshot, outcome)} · {outcome.effects.length + (outcome.inputCapture?.effects.length ?? 0)} effect{outcome.effects.length + (outcome.inputCapture?.effects.length ?? 0) === 1 ? "" : "s"}</small>
           </span>
           <span aria-hidden="true">›</span>
         </button>)}
@@ -371,7 +379,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   autoFocusText: boolean;
   conversationCharacterId: string | null;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
-  onCreateDestination?: () => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
   onEditDestination?: (nodeId: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
   onMove: (direction: -1 | 1) => void;
@@ -460,13 +468,14 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   </div>;
 }
 
-function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onEditDestination, onChange }: {
+function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onEditDestination, onChange, allowCapture = true }: {
   outcome: InteractionOutcome;
   snapshot: ProjectSnapshot;
   playState: PlayState;
-  onCreateDestination?: () => void;
+  onCreateDestination?: (onCreated: (nodeId: string) => void) => void;
   onEditDestination?: (nodeId: string) => void;
   onChange: (change: (outcome: InteractionOutcome) => InteractionOutcome) => void;
+  allowCapture?: boolean;
 }) {
   const [existingNodeQuery, setExistingNodeQuery] = useState("");
   const documents = useMemo(() => buildSearchIndex(snapshot), [snapshot]);
@@ -480,25 +489,43 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
     : "[D]";
   const destination = snapshot.nodes.find((node) => node.id === outcome.destination?.nodeId);
   const selectedOpening = destination?.openings.find((opening) => opening.id === outcome.destination?.openingId) ?? null;
-  const selected = outcome.disposition === "stay" ? "stay" : "existing";
+  const selected = allowCapture && outcome.inputCapture
+    ? "capture"
+    : outcome.disposition === "stay" ? "stay" : "existing";
 
   const choose = (value: string) => {
     if (value === "stay") {
       setExistingNodeQuery("");
-      onChange((current) => ({ ...current, disposition: "stay", destination: null }));
+      onChange((current) => ({ ...current, inputCapture: null, disposition: "stay", destination: null }));
+      return;
+    }
+    if (value === "capture") {
+      setExistingNodeQuery("");
+      onChange((current) => ({
+        ...current,
+        disposition: "stay",
+        destination: null,
+        inputCapture: current.inputCapture ?? defaultInputCapture(),
+      }));
       return;
     }
     if (value === "create") {
-      onCreateDestination?.();
+      onCreateDestination?.((nodeId) => onChange((current) => ({
+        ...current,
+        inputCapture: null,
+        disposition: "transition",
+        destination: { nodeId, openingId: null },
+      })));
       return;
     }
-    onChange((current) => ({ ...current, disposition: "transition" }));
+    onChange((current) => ({ ...current, inputCapture: null, disposition: "transition" }));
   };
 
   const chooseTarget = (nodeId: string, openingId: string | null) => {
     setExistingNodeQuery("");
     onChange((current) => ({
       ...current,
+      inputCapture: null,
       disposition: "transition",
       destination: { nodeId, openingId },
     }));
@@ -552,6 +579,98 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
     </div> : null}
   </>;
 
+  const capture = allowCapture ? outcome.inputCapture : null;
+  const captureContinuation = capture ? {
+    ...outcome,
+    id: `${outcome.id}:captured-input`,
+    effects: capture.effects,
+    inputCapture: null,
+    disposition: capture.disposition,
+    destination: capture.destination,
+  } satisfies InteractionOutcome : null;
+  const captureEditor = capture && captureContinuation ? <div className="after-input-capture">
+    <p className="guided-context-copy">The next player submission is consumed once. In these effects, PLAYER INPUT is that captured text.</p>
+    <div className="after-input-capture-section">
+      <strong>ON SUBMIT</strong>
+      <EffectsEditor
+        effects={capture.effects}
+        snapshot={snapshot}
+        onChange={(effects) => onChange((current) => current.inputCapture
+          ? { ...current, inputCapture: { ...current.inputCapture, effects } }
+          : current)}
+      />
+    </div>
+    <div className="after-input-capture-section">
+      <strong>THEN</strong>
+      <AfterWorkspace
+        outcome={captureContinuation}
+        snapshot={snapshot}
+        playState={playState}
+        allowCapture={false}
+        onCreateDestination={onCreateDestination}
+        onEditDestination={onEditDestination}
+        onChange={(change) => onChange((current) => {
+          if (!current.inputCapture) return current;
+          const continuation: InteractionOutcome = {
+            ...current,
+            id: `${current.id}:captured-input`,
+            effects: current.inputCapture.effects,
+            inputCapture: null,
+            disposition: current.inputCapture.disposition,
+            destination: current.inputCapture.destination,
+          };
+          const changed = change(continuation);
+          return {
+            ...current,
+            inputCapture: {
+              ...current.inputCapture,
+              disposition: changed.disposition,
+              destination: changed.destination,
+            },
+          };
+        })}
+      />
+    </div>
+  </div> : null;
+
+  const options = [
+    {
+      value: "stay",
+      label: "STAY HERE",
+      help: "Keep the player at the current node.",
+    },
+    {
+      value: "create",
+      label: "CREATE NEW",
+      help: "Create and link a new Node.",
+    },
+    {
+      value: "existing",
+      label: "LINK EXISTING",
+      help: "Connect this response to a Node that already exists.",
+      content: [
+        {
+          type: "field" as const,
+          id: `existing-destination-${outcome.id}`,
+          label: "Find existing node",
+          labelMode: "sr-only" as const,
+          control: "search" as const,
+          value: existingNodeQuery,
+          onChange: setExistingNodeQuery,
+          placeholder: "Find by node number, label, entry text, tags, or conditions…",
+          inputMode: "search" as const,
+        },
+        { type: "custom" as const, id: `existing-results-${outcome.id}`, role: "results" as const, content: existingResults },
+      ],
+    },
+    ...(allowCapture ? [{
+      value: "capture",
+      label: "CAPTURE INPUT",
+      help: "Wait for the player's next submission.",
+      content: captureEditor ? [{ type: "custom" as const, id: `capture-input-${outcome.id}`, role: "specialized-control" as const, content: captureEditor }] : [],
+    }] : []),
+  ];
+
   return <AuthorUiBlocks blocks={[{
     type: "choice",
     id: `after-${outcome.id}`,
@@ -560,36 +679,6 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
     value: selected,
     onChange: choose,
     presentation: "segmented",
-    options: [
-      {
-        value: "stay",
-        label: "STAY HERE",
-        help: "Keep the player at the current node.",
-      },
-      {
-        value: "create",
-        label: "CREATE NEW",
-        help: "Create and link a new Node.",
-      },
-      {
-        value: "existing",
-        label: "LINK EXISTING",
-        help: "Connect this response to a Node that already exists.",
-        content: [
-          {
-            type: "field",
-            id: `existing-destination-${outcome.id}`,
-            label: "Find existing node",
-            labelMode: "sr-only",
-            control: "search",
-            value: existingNodeQuery,
-            onChange: setExistingNodeQuery,
-            placeholder: "Find by node number, label, entry text, tags, or conditions…",
-            inputMode: "search",
-          },
-          { type: "custom", id: `existing-results-${outcome.id}`, role: "results", content: existingResults },
-        ],
-      },
-    ],
+    options,
   }]} />;
 }

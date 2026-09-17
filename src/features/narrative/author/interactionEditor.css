@@ -288,6 +288,28 @@
   color: var(--dos-bright) !important;
 }
 
+.after-input-capture {
+  display: grid;
+  gap: .75em;
+  padding-top: .35em;
+}
+
+.after-input-capture > .guided-context-copy {
+  margin-bottom: 0;
+}
+
+.after-input-capture-section {
+  display: grid;
+  gap: .45em;
+  padding-top: .55em;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.after-input-capture-section > strong {
+  color: var(--dos-muted);
+  font-weight: 400;
+}
+
 .guided-editor-error {
   margin: .75em 0 0;
 }

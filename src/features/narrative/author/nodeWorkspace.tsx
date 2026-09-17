@@ -187,7 +187,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
       },
     };
   },
-  buildSpec({ draft, setDraft, context, route }) {
+  buildSpec({ draft, setDraft, context, route, saveCurrentDraft }) {
     const data = routeData(route);
     const locationMode = nodeLocationMode(draft.node);
     const conversationMode = nodeConversationMode(draft.node);
@@ -275,15 +275,22 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
     const validInputs = nodeInteractions.filter((interaction) => interaction.matchMode !== "fallback");
     const invalidInput = nodeInteractions.find((interaction) => interaction.matchMode === "fallback");
     const inputSummary = `${validInputs.length} valid input${validInputs.length === 1 ? "" : "s"} · ${invalidInput ? "invalid response set" : "no invalid response"}`;
-    const inputRows = nodeExists ? <NodeInputList
-      snapshot={context.snapshot}
+    const openInput = async (interactionId?: string, fallback = false) => {
+      if (!nodeExists) {
+        const saved = await saveCurrentDraft?.({ completeTask: false });
+        if (!saved) return;
+      }
+      context.pushTask(inputRoute(draft.node.id, interactionId, fallback));
+    };
+    const inputRows = <NodeInputList
+      snapshot={snapshotWithDraft}
       nodeId={draft.node.id}
       nodeNumber={draft.node.nodeNumber}
       persist={context.persist}
       invalidInput={invalidInput}
-      onOpenInput={(interactionId) => context.pushTask(inputRoute(draft.node.id, interactionId))}
-      onOpenInvalid={() => context.pushTask(inputRoute(draft.node.id, invalidInput?.id, true))}
-    /> : null;
+      onOpenInput={(interactionId) => { void openInput(interactionId); }}
+      onOpenInvalid={() => { void openInput(invalidInput?.id, true); }}
+    />;
 
     const updateOpening = (openingId: string, opening: NodeOpening) => setDraft((current) => ({
       ...current,
@@ -350,7 +357,11 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
             <h3>ENTRY RESPONSES</h3>
             <small>AUTO entry evaluates these in order and uses the first matching condition. Other responses may explicitly target one opening by its stable identity.</small>
             {orderedOpenings.map((opening, index) => {
-              const references = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.filter((outcome) => outcome.destination?.nodeId === draft.node.id && outcome.destination.openingId === opening.id).length, 0);
+              const references = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.filter((outcome) => {
+                const direct = outcome.destination?.nodeId === draft.node.id && outcome.destination.openingId === opening.id;
+                const captured = outcome.inputCapture?.destination?.nodeId === draft.node.id && outcome.inputCapture.destination.openingId === opening.id;
+                return direct || captured;
+              }).length, 0);
               const focused = focusedOpeningId === opening.id;
               return <OpeningEditor
                 key={opening.id}
@@ -378,7 +389,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           id: "node-input-handling",
           label: "INPUT HANDLING",
           summary: inputSummary,
-          children: nodeExists ? [{ type: "custom", id: "node-input-list", role: "results", content: inputRows }] : [{ type: "status", id: "node-input-save-first", tone: "info", text: "Save this Node before configuring its node-specific inputs and invalid response." }],
+          children: [{ type: "custom", id: "node-input-list", role: "results", content: inputRows }],
         },
         {
           type: "custom",

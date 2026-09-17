@@ -65,11 +65,71 @@ export function executeNodeEntryEffects(
   return { state, events };
 }
 
+function executePendingInputCapture(
+  snapshot: ProjectSnapshot,
+  initialState: PlayState,
+  interaction: Interaction,
+): InteractionExecution | null {
+  const pending = initialState.pendingInputCapture;
+  if (!pending || pending.interactionId !== interaction.id) return null;
+  const outcome = interaction.outcomes.find((candidate) => candidate.id === pending.outcomeId);
+  const capture = outcome?.inputCapture;
+  if (!outcome || !capture) return null;
+
+  const eventKey = `interaction:${interaction.id}`;
+  const attempt = initialState.attempts[eventKey] ?? 0;
+  const scope = { kind: "node" as const, id: interaction.sourceNodeId };
+  const effectSource = authoredSource("interaction", interaction.id, {
+    outcomeId: outcome.id,
+    section: "input-capture",
+  });
+  let state: PlayState = { ...initialState, pendingInputCapture: null };
+  const execution = executeEffects(snapshot, state, capture.effects, {
+    bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
+    scope,
+  });
+  state = execution.state;
+
+  if (capture.disposition === "transition" && capture.destination) {
+    state = transitionState(state, capture.destination);
+  }
+
+  const captureEvents = execution.events.map((event) => {
+    const next = event.type === "notification"
+      ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
+      : event;
+    return { ...next, source: effectSource };
+  });
+  const enteredNode = state.currentNodeId !== initialState.currentNodeId
+    || state.traversal.length > initialState.traversal.length;
+  const entry = enteredNode
+    ? executeNodeEntryEffects(snapshot, state, state.currentNodeId)
+    : { state, events: [] };
+  state = entry.state;
+
+  return {
+    state,
+    outcome,
+    responseText: "",
+    responsePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueText: "",
+    dialoguePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
+    dialogueSpeakerId: null,
+    events: [...captureEvents, ...entry.events],
+    attempt,
+    eventKey,
+    source: effectSource,
+  };
+}
+
 export function executeInteraction(
   snapshot: ProjectSnapshot,
   initialState: PlayState,
   interaction: Interaction,
 ): InteractionExecution {
+  const captured = executePendingInputCapture(snapshot, initialState, interaction);
+  if (captured) return captured;
+
   const eventKey = `interaction:${interaction.id}`;
   const attempt = (initialState.attempts[eventKey] ?? 0) + 1;
   let state: PlayState = {
@@ -106,7 +166,12 @@ export function executeInteraction(
   });
   state = execution.state;
 
-  if (outcome.disposition === "transition" && outcome.destination) {
+  if (outcome.inputCapture) {
+    state = {
+      ...state,
+      pendingInputCapture: { interactionId: interaction.id, outcomeId: outcome.id },
+    };
+  } else if (outcome.disposition === "transition" && outcome.destination) {
     state = transitionState(state, outcome.destination);
   }
 
