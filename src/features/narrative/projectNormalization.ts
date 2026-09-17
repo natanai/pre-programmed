@@ -284,7 +284,7 @@ function normalizeInteraction(value: unknown): Interaction | null {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const candidate = value as Partial<Interaction> & Record<string, unknown>;
   if (typeof candidate.id !== "string" || typeof candidate.sourceNodeId !== "string" || !Array.isArray(candidate.outcomes)) return null;
-  if (candidate.matchMode === "capture") return null;
+  if ((value as Record<string, unknown>).matchMode === "capture") return null;
   const outcomes = candidate.outcomes.flatMap((outcome) => {
     const normalized = normalizeOutcome(outcome);
     return normalized ? [normalized] : [];
