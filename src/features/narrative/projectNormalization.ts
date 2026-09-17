@@ -121,6 +121,15 @@ function historicalOutcomeAfter(outcome: HistoricalOutcome): NarrativeFlowStep[]
         type: "effects",
         effects: Array.isArray(capture.effects) ? structuredClone(capture.effects) as Effect[] : [],
       },
+      {
+        id: `legacy-flow:${String(outcome.id ?? "outcome")}:present`,
+        type: "present",
+        responseText: "",
+        dialogueText: "",
+        speakerId: null,
+        responsePerformance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
+        dialoguePerformance: { ...DEFAULT_TEXT_PERFORMANCE, cues: [] },
+      },
       ...(capture.disposition === "transition" && captureDestination
         ? [{
             id: `legacy-flow:${String(outcome.id ?? "outcome")}:transition`,
