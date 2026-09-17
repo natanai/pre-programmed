@@ -71,6 +71,11 @@ import type { GameNode, TextPerformance } from "./features/narrative/model";
 import { executeOperation } from "./features/operations/runtime";
 import { parseCommand, type ParserResult } from "./features/commands/parser";
 import { executeInteraction } from "./features/narrative/runtime";
+import {
+  armNarrativeFlow,
+  resumeNarrativeFlowAfterPresentation,
+  resumeNarrativeFlowWithInput,
+} from "./features/narrative/flowRuntime";
 import { compileTextNotation } from "./features/narrative/textNotation";
 import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
 import { useRadixRuntimePresentation } from "./features/radix/runtime/useRadixRuntimePresentation";
@@ -176,6 +181,7 @@ export default function App() {
   const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource, authorMode && authorView);
   const nodeDialoguePending = narrativeContinuation.nodeDialoguePending;
   const interactionDialoguePending = narrativeContinuation.interactionDialoguePending;
+  const flowDialoguePending = narrativeContinuation.flowDialoguePending;
   const secondaryProsePending = narrativeContinuation.secondaryProsePending;
   const currentNotation = narrativeSurface.currentNotation;
   const fallbackInput = narrativeSurface.fallbackInput;
@@ -263,6 +269,16 @@ export default function App() {
     if (launchPresentationBlockingRef.current) return;
     firedCueIds.current = new Set();
     const presentation = resolveNodeOpeningPresentation(project, state, node, authorMode && authorView);
+    const opening = presentation.openingId
+      ? node.openings.find((candidate) => candidate.id === presentation.openingId)
+      : null;
+    if (opening?.after.length) {
+      setPlayState(armNarrativeFlow(state, {
+        type: "node-opening",
+        nodeId: node.id,
+        openingId: opening.id,
+      }));
+    }
     setActiveText(presentation.text);
     setActiveNodeId(node.id);
     setActiveSpeakerId(presentation.speakerId);
@@ -309,6 +325,29 @@ export default function App() {
     setActivePerformance(presentation.performance);
   }, [
     typewriter.complete, interactionDialoguePending, narrativeContinuation.interactionDialogue,
+    activeText, activeSpeakerId, activeSource,
+  ]);
+
+
+  useEffect(() => {
+    const presentation = narrativeContinuation.flowDialogue;
+    if (!typewriter.complete || !flowDialoguePending || !presentation) return;
+    if (activeText) {
+      setTranscript((lines) => [...lines, {
+        id: crypto.randomUUID(),
+        text: activeText,
+        speakerId: activeSpeakerId,
+        source: activeSource,
+      }]);
+    }
+    firedCueIds.current = new Set();
+    setActiveText(presentation.text);
+    setActiveNodeId(undefined);
+    setActiveSpeakerId(presentation.speakerId);
+    setActiveSource(presentation.source);
+    setActivePerformance(presentation.performance);
+  }, [
+    typewriter.complete, flowDialoguePending, narrativeContinuation.flowDialogue,
     activeText, activeSpeakerId, activeSource,
   ]);
 
@@ -705,6 +744,43 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (!snapshot || !playState || !typewriter.complete || secondaryProsePending) return;
+    if (playState.pendingNarrativeFlow?.mode !== "auto") return;
+
+    if (activeText) {
+      setTranscript((lines) => [...lines, {
+        id: crypto.randomUUID(),
+        text: activeText,
+        nodeId: activeNodeId,
+        speakerId: activeSpeakerId,
+        source: activeSource,
+      }]);
+    }
+
+    const previousState = playState;
+    const execution = resumeNarrativeFlowAfterPresentation(snapshot, playState);
+    if (!execution) return;
+    presentRuntimeExecution(
+      snapshot,
+      execution,
+      previousState,
+      crypto.randomUUID(),
+      execution.responsePerformance,
+      null,
+      execution.dialoguePerformance,
+    );
+  }, [
+    snapshot,
+    playState,
+    typewriter.complete,
+    secondaryProsePending,
+    activeText,
+    activeNodeId,
+    activeSpeakerId,
+    activeSource,
+  ]);
+
+  useEffect(() => {
     for (const cue of activePerformance.cues) {
       if (cue.start > typewriter.count || firedCueIds.current.has(cue.id)) continue;
       const events = effectEventsForTextCue(cue).map((event) => activeSource ? { ...event, source: activeSource } : event);
@@ -728,6 +804,35 @@ export default function App() {
       return;
     }
     if (!value.trim()) return;
+
+    const currentState = advanceProjectClocks(snapshot, playState, Date.now());
+    const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
+
+    // A suspended Narrative flow owns exactly the next player submission.
+    // Consume it before command/admin routing so "inv", "admin", or any other
+    // normally meaningful text can deliberately be captured as game data.
+    if (currentState.pendingNarrativeFlow?.mode === "input") {
+      setParserResult(null);
+      appendActive();
+      const commandLineId = crypto.randomUUID();
+      setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
+      const execution = resumeNarrativeFlowWithInput(snapshot, commandState, value);
+      if (execution) {
+        presentRuntimeExecution(
+          snapshot,
+          execution,
+          commandState,
+          commandLineId,
+          execution.responsePerformance,
+          null,
+          execution.dialoguePerformance,
+        );
+      } else {
+        setPlayState({ ...commandState, pendingNarrativeFlow: null });
+      }
+      return;
+    }
+
     if (normalized === "admin") { if (authorMode) { setAuthorView(true); setAuthorMessage(""); } else setRequestingKey(true); return; }
     if (normalized === "logout" && authorMode) { clearAuthorSession(); return; }
     if (authorMode && authorView && (normalized === "backup" || normalized === "/backup")) { await downloadBackup(); return; }
@@ -736,8 +841,6 @@ export default function App() {
       if (featureShortcut) { setPanel(featureShortcut); return; }
     }
 
-    const currentState = advanceProjectClocks(snapshot, playState, Date.now());
-    const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
     const parsed = parseCommand(value, snapshot, commandState);
     setParserResult(parsed);
 
