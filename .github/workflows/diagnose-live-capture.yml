@@ -10,9 +10,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npx vitest run tests/liveCaptureDiagnostic.test.ts
+      - name: Locate follow-up authored text
+        run: |
+          node --input-type=module <<'NODE'
+          const response = await fetch('https://pre-programmed.natanai.workers.dev/api/project/snapshot', { cache: 'no-store' });
+          const snapshot = await response.json();
+          const matches = [];
+          for (const node of snapshot.nodes) {
+            for (const opening of node.openings ?? []) {
+              if (JSON.stringify(opening).toLowerCase().includes('ooooh')) matches.push({ type: 'opening', nodeId: node.id, nodeNumber: node.nodeNumber, opening });
+            }
+          }
+          for (const interaction of snapshot.interactions) {
+            for (const outcome of interaction.outcomes ?? []) {
+              if (JSON.stringify(outcome).toLowerCase().includes('ooooh')) matches.push({ type: 'outcome', interactionId: interaction.id, wording: interaction.wording, sourceNodeId: interaction.sourceNodeId, outcome });
+            }
+          }
+          console.log(JSON.stringify(matches, null, 2));
+          NODE
