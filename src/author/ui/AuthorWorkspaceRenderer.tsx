@@ -1,6 +1,7 @@
 import type { ChangeEvent } from "react";
 import { ReferenceField } from "../resources/ReferenceField";
 import { useAuthorCommitPending } from "../tasks/commitState";
+import { AuthorInlineDisclosure } from "./AuthorInlineDisclosure";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -118,10 +119,9 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
   }
 
   if (node.type === "disclosure") {
-    return <details className="author-ui-disclosure" open={node.defaultOpen}>
-      <summary><span>{node.label}</span>{node.summary ? <small>{node.summary}</small> : null}</summary>
-      <div className="author-ui-disclosure-body">{renderNodes(node.children, node.label)}</div>
-    </details>;
+    return <AuthorInlineDisclosure label={node.label} summary={node.summary} defaultOpen={node.defaultOpen}>
+      {renderNodes(node.children, node.label)}
+    </AuthorInlineDisclosure>;
   }
 
   if (node.type === "list") {
