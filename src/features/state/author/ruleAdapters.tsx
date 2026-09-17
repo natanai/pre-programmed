@@ -155,7 +155,14 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
   label: "set value",
   category: "state",
   description: "Replace an authored variable's value.",
-  create: () => ({ id: crypto.randomUUID(), type: "set_value", key: "", value: 0 }),
+  create: (context) => ({
+    id: crypto.randomUUID(),
+    type: "set_value",
+    key: "",
+    value: context?.preferredRuntimeBindingKey
+      ? runtimeBinding(context.preferredRuntimeBindingKey)
+      : 0,
+  }),
   references: (effect) => effect.type === "set_value" && effect.key ? [{ resourceKind: "variable", resourceId: effect.key, detail: "variable effect" }] : [],
   summarize: (effect, snapshot) => {
     if (effect.type !== "set_value") return "Set value";
