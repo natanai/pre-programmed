@@ -4,11 +4,17 @@ import { selectConditionalCandidate } from "../../engine/rules/conditionalSelect
 import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
-import { transitionState } from "./effectRuntime";
+import {
+  advanceNarrativeFlow,
+  armNarrativeFlow,
+} from "./flowRuntime";
 import { DEFAULT_INTERACTION_TEXT_PERFORMANCE, interactionOutcomeProse } from "./interactionProse";
 import { interpolateText } from "./interpolation";
-import type { Interaction, InteractionOutcome, TextPerformance } from "./model";
+import type { Interaction, InteractionOutcome, NarrativeFlowOwner, TextPerformance } from "./model";
+import { executeNodeEntryEffects } from "./nodeEntryRuntime";
 import { resolveNodeConversationContext } from "./sceneContext";
+
+export { executeNodeEntryEffects } from "./nodeEntryRuntime";
 
 export type InteractionExecution = {
   state: PlayState;
@@ -24,101 +30,18 @@ export type InteractionExecution = {
   source?: AuthoredSourceIdentity;
 };
 
-export type NodeEntryExecution = {
-  state: PlayState;
-  events: EffectEvent[];
-};
-
-/**
- * Executes the effects owned by a Node after runtime traversal enters it.
- * Entry effects may themselves transition, so follow that chain while keeping
- * each emitted presentation event attributed to the Node that produced it.
- */
-export function executeNodeEntryEffects(
-  snapshot: ProjectSnapshot,
-  initialState: PlayState,
-  nodeId = initialState.currentNodeId,
-  maxDepth = 16,
-): NodeEntryExecution {
-  let state = initialState;
-  const events: EffectEvent[] = [];
-  let currentNodeId = nodeId;
-
-  for (let depth = 0; depth < maxDepth; depth += 1) {
-    const node = snapshot.nodes.find((candidate) => candidate.id === currentNodeId);
-    if (!node) break;
-    const source = authoredSource("node", node.id, { section: "entry-effects" });
-    const execution = executeEffects(snapshot, state, node.entryEffects ?? [], {
-      scope: { kind: "node", id: node.id },
-    });
-    state = execution.state;
-    events.push(...execution.events.map((event) => {
-      const next = event.type === "notification"
-        ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
-        : event;
-      return { ...next, source };
-    }));
-    if (state.currentNodeId === currentNodeId) break;
-    currentNodeId = state.currentNodeId;
-  }
-
-  return { state, events };
-}
-
-function executePendingInputCapture(
-  snapshot: ProjectSnapshot,
-  initialState: PlayState,
-  interaction: Interaction,
-): InteractionExecution | null {
-  const pending = initialState.pendingInputCapture;
-  if (!pending || pending.interactionId !== interaction.id) return null;
-  const outcome = interaction.outcomes.find((candidate) => candidate.id === pending.outcomeId);
-  const capture = outcome?.inputCapture;
-  if (!outcome || !capture) return null;
-
-  const eventKey = `interaction:${interaction.id}`;
-  const attempt = initialState.attempts[eventKey] ?? 0;
-  const scope = { kind: "node" as const, id: interaction.sourceNodeId };
-  const effectSource = authoredSource("interaction", interaction.id, {
-    outcomeId: outcome.id,
-    section: "input-capture",
-  });
-  let state: PlayState = { ...initialState, pendingInputCapture: null };
-  const execution = executeEffects(snapshot, state, capture.effects, {
-    bindings: { [PLAYER_INPUT_BINDING]: initialState.lastCommand },
-    scope,
-  });
-  state = execution.state;
-
-  if (capture.disposition === "transition" && capture.destination) {
-    state = transitionState(state, capture.destination);
-  }
-
-  const captureEvents = execution.events.map((event) => {
-    const next = event.type === "notification"
-      ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
-      : event;
-    return { ...next, source: effectSource };
-  });
-  const enteredNode = state.currentNodeId !== initialState.currentNodeId
-    || state.traversal.length > initialState.traversal.length;
-  const entry = enteredNode
-    ? executeNodeEntryEffects(snapshot, state, state.currentNodeId)
-    : { state, events: [] };
-  state = entry.state;
-
+function blankExecution(state: PlayState, attempt: number, eventKey: string): InteractionExecution {
   return {
     state,
-    outcome,
+    outcome: null,
     responseText: "",
     responsePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
     dialogueText: "",
     dialoguePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
     dialogueSpeakerId: null,
-    events: [...captureEvents, ...entry.events],
+    events: [],
     attempt,
     eventKey,
-    source: effectSource,
   };
 }
 
@@ -127,9 +50,6 @@ export function executeInteraction(
   initialState: PlayState,
   interaction: Interaction,
 ): InteractionExecution {
-  const captured = executePendingInputCapture(snapshot, initialState, interaction);
-  if (captured) return captured;
-
   const eventKey = `interaction:${interaction.id}`;
   const attempt = (initialState.attempts[eventKey] ?? 0) + 1;
   let state: PlayState = {
@@ -145,18 +65,8 @@ export function executeInteraction(
     scope,
   });
 
-  if (!outcome) return {
-    state,
-    outcome,
-    responseText: "",
-    responsePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
-    dialogueText: "",
-    dialoguePerformance: { ...DEFAULT_INTERACTION_TEXT_PERFORMANCE, cues: [] },
-    dialogueSpeakerId: null,
-    events: [],
-    attempt,
-    eventKey,
-  };
+  if (!outcome) return blankExecution(state, attempt, eventKey);
+
   const prose = interactionOutcomeProse(outcome);
   const sourceConversation = resolveNodeConversationContext(snapshot, initialState, interaction.sourceNodeId);
   const effectSource = authoredSource("interaction", interaction.id, { outcomeId: outcome.id });
@@ -166,21 +76,47 @@ export function executeInteraction(
   });
   state = execution.state;
 
-  if (outcome.inputCapture) {
-    state = {
-      ...state,
-      pendingInputCapture: { interactionId: interaction.id, outcomeId: outcome.id },
-    };
-  } else if (outcome.disposition === "transition" && outcome.destination) {
-    state = transitionState(state, outcome.destination);
-  }
-
   const interactionEvents = execution.events.map((event) => {
     const next = event.type === "notification"
       ? { ...event, text: interpolateText(event.text, { snapshot, state }) }
       : event;
     return { ...next, source: effectSource };
   });
+
+  const responseText = interpolateText(prose.narrationText, { snapshot, state });
+  const dialogueText = interpolateText(prose.dialogueText, { snapshot, state });
+  const hasPrimaryPresentation = Boolean(responseText || dialogueText);
+  const owner: NarrativeFlowOwner = {
+    type: "interaction-outcome",
+    interactionId: interaction.id,
+    outcomeId: outcome.id,
+  };
+
+  if (outcome.after.length) {
+    if (hasPrimaryPresentation) {
+      state = armNarrativeFlow(state, owner, {
+        [PLAYER_INPUT_BINDING]: initialState.lastCommand,
+      });
+    } else {
+      const flowed = advanceNarrativeFlow(snapshot, state, owner, 0, {
+        [PLAYER_INPUT_BINDING]: initialState.lastCommand,
+      });
+      return {
+        state: flowed.state,
+        outcome,
+        responseText: flowed.responseText,
+        responsePerformance: flowed.responsePerformance,
+        dialogueText: flowed.dialogueText,
+        dialoguePerformance: flowed.dialoguePerformance,
+        dialogueSpeakerId: flowed.dialogueSpeakerId,
+        events: [...interactionEvents, ...flowed.events],
+        attempt,
+        eventKey,
+        source: flowed.source ?? effectSource,
+      };
+    }
+  }
+
   const enteredNode = state.currentNodeId !== initialState.currentNodeId
     || state.traversal.length > initialState.traversal.length;
   const entry = enteredNode
@@ -188,8 +124,6 @@ export function executeInteraction(
     : { state, events: [] };
   state = entry.state;
 
-  const responseText = interpolateText(prose.narrationText, { snapshot, state });
-  const dialogueText = interpolateText(prose.dialogueText, { snapshot, state });
   const presentationSource = responseText
     ? authoredSource("interaction", interaction.id, { outcomeId: outcome.id, section: "narration" })
     : dialogueText
