@@ -1,7 +1,7 @@
 import { ALWAYS } from "../../../engine/rules/model";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
-import type { Interaction } from "../model";
+import type { Interaction, NodeEntryTarget } from "../model";
 import { normalizeInteractionOutcomeProse } from "../interactionProse";
 import { validateTextNotation } from "../textNotation";
 
@@ -45,6 +45,13 @@ export function normalizeInteractionAuthorDraft(
   return value;
 }
 
+function destinationExists(snapshot: ProjectSnapshot, destination: NodeEntryTarget | null) {
+  if (!destination) return false;
+  const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
+  if (!node) return false;
+  return !destination.openingId || node.openings.some((opening) => opening.id === destination.openingId);
+}
+
 export function prepareInteractionForSave(
   draft: Interaction,
   fallbackMode: boolean,
@@ -65,7 +72,7 @@ export function prepareInteractionForSave(
   }
 
   const incompleteTransition = draft.outcomes.find((outcome) =>
-    outcome.disposition === "transition" && !outcome.destination);
+    !outcome.inputCapture && outcome.disposition === "transition" && !outcome.destination);
   if (incompleteTransition) {
     return {
       issue: {
@@ -75,12 +82,25 @@ export function prepareInteractionForSave(
     };
   }
 
+  const incompleteCaptureTransition = draft.outcomes.find((outcome) =>
+    outcome.inputCapture?.disposition === "transition" && !outcome.inputCapture.destination);
+  if (incompleteCaptureTransition) {
+    return {
+      issue: {
+        message: "Choose where play continues after the captured input, or choose Stay here.",
+        outcomeId: incompleteCaptureTransition.id,
+      },
+    };
+  }
+
   const invalidDestination = draft.outcomes.find((outcome) => {
-    if (outcome.disposition !== "transition" || !outcome.destination) return false;
-    const node = snapshot.nodes.find((candidate) => candidate.id === outcome.destination?.nodeId);
-    if (!node) return true;
-    return Boolean(outcome.destination.openingId
-      && !node.openings.some((opening) => opening.id === outcome.destination?.openingId));
+    if (!outcome.inputCapture && outcome.disposition === "transition" && outcome.destination) {
+      return !destinationExists(snapshot, outcome.destination);
+    }
+    if (outcome.inputCapture?.disposition === "transition" && outcome.inputCapture.destination) {
+      return !destinationExists(snapshot, outcome.inputCapture.destination);
+    }
+    return false;
   });
   if (invalidDestination) {
     return {
@@ -112,7 +132,18 @@ export function prepareInteractionForSave(
       choiceVisibility: fallbackMode || captureMode ? "typed" : draft.choiceVisibility,
       choiceVisibleWhen: fallbackMode || captureMode ? ALWAYS : (draft.choiceVisibleWhen ?? ALWAYS),
       aliases: fallbackMode || captureMode ? [] : aliasesForUserInput(userInputText, draft.aliases),
-      outcomes: draft.outcomes.map((outcome, index) => ({ ...outcome, order: index })),
+      outcomes: draft.outcomes.map((outcome, index) => outcome.inputCapture
+        ? {
+            ...outcome,
+            order: index,
+            disposition: "stay",
+            destination: null,
+            inputCapture: {
+              ...outcome.inputCapture,
+              effects: [...outcome.inputCapture.effects],
+            },
+          }
+        : { ...outcome, order: index }),
     },
   };
 }
