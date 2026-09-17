@@ -4,6 +4,7 @@ import { makeSemanticReferenceToken, interpolateSemanticReferences } from "../sr
 import { parseCommand } from "../src/features/commands/parser";
 import { resolveActiveNodeAnchor } from "../src/features/narrative/anchor";
 import { executeInteraction } from "../src/features/narrative/runtime";
+import { resumeNarrativeFlowAfterPresentation } from "../src/features/narrative/flowRuntime";
 import {
   resolveActiveNodeContext,
   resolveActiveNodeConversationContext,
@@ -185,7 +186,9 @@ describe("lightweight Node context", () => {
     expect(execution.responseText).toBe("You hesitate.");
     expect(execution.dialogueText).toBe("Come with me.");
     expect(execution.dialogueSpeakerId).toBe(marta.id);
-    expect(execution.state.currentNodeId).toBe("c");
+    expect(execution.state.currentNodeId).toBe("b");
+    const continued = resumeNarrativeFlowAfterPresentation(withResponse, execution.state);
+    expect(continued?.state.currentNodeId).toBe("c");
   });
 
   it("makes current-location name and description follow the inherited active location", () => {
