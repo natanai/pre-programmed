@@ -1,3 +1,4 @@
+import type { RuntimeBindings } from "../../engine/rules/runtimeBindings";
 import type { GameNode, Interaction, NarrativeFlowOwner } from "./model";
 
 export type NarrativeProjectSlice = {
@@ -25,6 +26,6 @@ export type NarrativePlayStateSlice = {
     owner: NarrativeFlowOwner;
     stepIndex: number;
     mode: "input" | "auto";
-    bindings: Record<string, string | number | boolean>;
+    bindings: RuntimeBindings;
   } | null;
 };
