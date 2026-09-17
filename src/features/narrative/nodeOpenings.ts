@@ -15,6 +15,7 @@ export function createNodeOpening(order = 0): NodeOpening {
     dialogueText: "",
     narrationPerformance: { ...DEFAULT_NODE_TEXT_PERFORMANCE, cues: [] },
     dialoguePerformance: { ...DEFAULT_NODE_TEXT_PERFORMANCE, cues: [] },
+    after: [],
   };
 }
 
