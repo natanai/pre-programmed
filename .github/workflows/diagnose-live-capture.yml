@@ -12,11 +12,10 @@ jobs:
       - uses: actions/checkout@v7
       - name: Inspect live authored capture configuration
         env:
-          API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN }}
+          API_ORIGIN: https://pre-programmed.natanai.workers.dev
         run: |
           node --input-type=module <<'NODE'
           const origin = process.env.API_ORIGIN?.trim().replace(/\/+$/, '');
-          if (!origin) throw new Error('PRE_PROGRAMMED_API_ORIGIN is not configured');
           const response = await fetch(`${origin}/api/project/snapshot`, { cache: 'no-store' });
           if (!response.ok) throw new Error(`snapshot ${response.status}`);
           const snapshot = await response.json();
