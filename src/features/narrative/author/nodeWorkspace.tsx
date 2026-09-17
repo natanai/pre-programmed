@@ -6,7 +6,6 @@ import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
-import type { Condition } from "../../../engine/rules/model";
 import { resolveActiveNodeAnchor } from "../anchor";
 import type { GameNode, NodeAnchor, NodeContextMode, NodeOpening } from "../model";
 import { createNodeOpening, nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
@@ -20,6 +19,7 @@ import {
 } from "../sceneContext";
 import { AuthoredTextEditor } from "./AuthoredTextEditor";
 import { NodeInputList } from "./NodeInputList";
+import { notationForNodeOpeningCondition } from "./notation";
 import "./nodeWorkspace.css";
 
 type NodeWorkspaceDraft = {
@@ -84,27 +84,6 @@ function entityName(context: AuthorWorkspaceContext, id: string | null | undefin
   return entity?.name || entity?.key || "missing resource";
 }
 
-function conditionSummary(condition: Condition): string {
-  switch (condition.type) {
-    case "always": return "Always";
-    case "attempt": {
-      if (condition.operator === "eq" && condition.value === 1) return "First entry";
-      if (condition.operator === "eq" && condition.value === 2) return "Second entry";
-      if (condition.operator === "gte" && condition.value === 2) return "Second entry +";
-      return `Entry ${condition.operator} ${condition.value}`;
-    }
-    case "variable": return `${condition.key || "variable"} ${condition.operator} ${String(condition.value)}`;
-    case "flag": return `${condition.key || "flag"} is ${condition.value ? "true" : "false"}`;
-    case "has_item": return "Has item";
-    case "lacks_item": return "Lacks item";
-    case "visited": return condition.value ? "Visited node" : "Has not visited node";
-    case "state": return `${condition.field} ${condition.operator} ${condition.value}`;
-    case "all": return `All of ${condition.conditions.length}`;
-    case "any": return `Any of ${condition.conditions.length}`;
-    case "not": return `Not: ${conditionSummary(condition.condition)}`;
-  }
-}
-
 function OpeningEditor({
   opening,
   index,
@@ -142,9 +121,9 @@ function OpeningEditor({
     : "DIALOGUE — SET A CONVERSATION CHARACTER";
   const snippet = nodeOpeningSnippet(opening, 72) || "No entry text";
   return <details className="guided-section" open={total === 1 || autoFocus}>
-    <summary>
+    <summary className="node-opening-summary">
       <strong>{index + 1}. {snippet}</strong>
-      <small>{conditionSummary(opening.condition)}</small>
+      <small className="node-opening-notation">{notationForNodeOpeningCondition(opening.condition)}</small>
     </summary>
     <div className="node-focused-form">
       <OutcomeConditionEditor

@@ -148,6 +148,26 @@
   padding-top: 0;
 }
 
+.node-opening-summary {
+  display: flex;
+  align-items: baseline;
+  gap: .75em;
+  min-width: 0;
+}
+
+.node-opening-summary > strong {
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-wrap: anywhere;
+}
+
+.node-opening-notation {
+  flex: 0 0 auto;
+  margin-left: auto;
+  color: var(--dos-dim);
+  white-space: nowrap;
+}
+
 @media (pointer: coarse) {
   .node-input-link,
   .node-context-strip > summary,
