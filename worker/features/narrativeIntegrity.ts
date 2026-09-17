@@ -1,9 +1,48 @@
 import type { ProjectSnapshot } from "../../src/engine/project/model";
+import type { NodeEntryTarget } from "../../src/features/narrative/model";
 
 type IntegrityIssue = {
   key: string;
   message: string;
 };
+
+function targetForOutcome(outcome: ProjectSnapshot["interactions"][number]["outcomes"][number]) {
+  if (outcome.inputCapture?.disposition === "transition" && outcome.inputCapture.destination) {
+    return { target: outcome.inputCapture.destination, section: "input-capture" as const };
+  }
+  if (outcome.disposition === "transition" && outcome.destination) {
+    return { target: outcome.destination, section: "response" as const };
+  }
+  return null;
+}
+
+function validateTarget(
+  issues: IntegrityIssue[],
+  nodes: Map<string, ProjectSnapshot["nodes"][number]>,
+  interactionId: string,
+  outcomeId: string,
+  target: NodeEntryTarget,
+  section: "response" | "input-capture",
+) {
+  const destination = nodes.get(target.nodeId);
+  if (!destination) {
+    issues.push({
+      key: `interaction:${interactionId}:outcome:${outcomeId}:${section}:destination:${target.nodeId}:missing`,
+      message: section === "input-capture"
+        ? "A captured-input continuation references a Node that does not exist."
+        : "A response destination references a Node that does not exist.",
+    });
+    return;
+  }
+  if (target.openingId && !destination.openings.some((opening) => opening.id === target.openingId)) {
+    issues.push({
+      key: `interaction:${interactionId}:outcome:${outcomeId}:${section}:opening:${target.openingId}:wrong-owner`,
+      message: section === "input-capture"
+        ? "A captured-input continuation targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node."
+        : "A response targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node.",
+    });
+  }
+}
 
 export function narrativeReferenceIssues(snapshot: ProjectSnapshot) {
   const issues: IntegrityIssue[] = [];
@@ -40,22 +79,9 @@ export function narrativeReferenceIssues(snapshot: ProjectSnapshot) {
       });
     }
     for (const outcome of interaction.outcomes) {
-      if (outcome.disposition !== "transition" || !outcome.destination) continue;
-      const destination = nodes.get(outcome.destination.nodeId);
-      if (!destination) {
-        issues.push({
-          key: `interaction:${interaction.id}:outcome:${outcome.id}:destination:${outcome.destination.nodeId}:missing`,
-          message: "A response destination references a Node that does not exist.",
-        });
-        continue;
-      }
-      if (outcome.destination.openingId
-        && !destination.openings.some((opening) => opening.id === outcome.destination?.openingId)) {
-        issues.push({
-          key: `interaction:${interaction.id}:outcome:${outcome.id}:opening:${outcome.destination.openingId}:wrong-owner`,
-          message: "A response targets an entry response that is not owned by its destination Node. Choose AUTO or an opening from that Node.",
-        });
-      }
+      const target = targetForOutcome(outcome);
+      if (!target) continue;
+      validateTarget(issues, nodes, interaction.id, outcome.id, target.target, target.section);
     }
   }
 
