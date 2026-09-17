@@ -1,4 +1,4 @@
-name: Diagnose live capture authoring
+name: Verify narrative flow branch
 
 on:
   push:
@@ -6,10 +6,15 @@ on:
       - agent/diagnose-live-capture
 
 jobs:
-  diagnose:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - name: Find narrative legacy continuation references
-        run: |
-          git grep -n -E 'inputCapture|pendingInputCapture|matchMode.*capture|capture_input|\.disposition|\.destination' -- src/features/narrative src/features/commands src/App.tsx worker/features/narrative* tests || true
+        with:
+          ref: agent/narrative-flow-input
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
