@@ -17,7 +17,6 @@ const STRUCTURE_ROUTE = { type: "feature", feature: "narrative", workspace: "str
 
 function interactionLabel(interaction: Interaction) {
   if (interaction.matchMode === "fallback") return "Invalid input response";
-  if (interaction.matchMode === "capture") return "Capture player input";
   return interaction.wording || interaction.aliases[0] || "New scene input";
 }
 
