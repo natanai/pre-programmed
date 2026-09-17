@@ -15,6 +15,7 @@ export function node(id: string, nodeNumber: number, ending = false): GameNode {
       dialogueText: "",
       narrationPerformance: { charactersPerSecond: 18, cues: [] },
       dialoguePerformance: { charactersPerSecond: 18, cues: [] },
+      after: [],
     }],
     ending,
     tags: [],
@@ -27,15 +28,15 @@ export function interaction(id: string, sourceNodeId: string, targetNodeId: stri
     id, sourceNodeId, wording: id, choiceVisibility: "prompt", aliases, tags: [], notes: "",
     outcomes: [{
       id: `${id}-outcome`, order: 0, label: "default", authorStatus: "configured", condition: { type: "always" }, responseText: "", dialogueText: "",
-      speakerId: null, responsePerformance: { charactersPerSecond: 18, cues: [] }, dialoguePerformance: { charactersPerSecond: 18, cues: [] }, effects: [], disposition: targetNodeId ? "transition" : "stay",
-      destination: targetNodeId ? { nodeId: targetNodeId, openingId: null } : null,
+      speakerId: null, responsePerformance: { charactersPerSecond: 18, cues: [] }, dialoguePerformance: { charactersPerSecond: 18, cues: [] }, effects: [],
+      after: targetNodeId ? [{ id: `${id}-transition`, type: "transition", destination: { nodeId: targetNodeId, openingId: null } }] : [],
     }],
   };
 }
 
 export function project(overrides: Partial<ProjectSnapshot> = {}): ProjectSnapshot {
   return {
-    schemaVersion: 46, revision: 0, startNodeId: "a", settings: structuredClone(DEFAULT_PROJECT_SETTINGS),
+    schemaVersion: 47, revision: 0, startNodeId: "a", settings: structuredClone(DEFAULT_PROJECT_SETTINGS),
     nodes: [node("a", 1)], interactions: [], entities: [], variables: [], computedValues: [], stateGroups: [], items: [], synthSounds: [], mediaAssets: [],
     ...overrides,
   };
