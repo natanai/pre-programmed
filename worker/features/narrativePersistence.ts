@@ -450,6 +450,15 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             'effects', json(json_extract(input_capture_json, '$.effects'))
           ),
           json_object(
+            'id', 'migration47:' || id || ':present',
+            'type', 'present',
+            'responseText', '',
+            'dialogueText', '',
+            'speakerId', NULL,
+            'responsePerformance', json('{"charactersPerSecond":18,"cues":[]}'),
+            'dialoguePerformance', json('{"charactersPerSecond":18,"cues":[]}')
+          ),
+          json_object(
             'id', 'migration47:' || id || ':transition',
             'type', 'transition',
             'destination', json_object(
@@ -469,6 +478,15 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
             'id', 'migration47:' || id || ':effects',
             'type', 'effects',
             'effects', json(COALESCE(json_extract(input_capture_json, '$.effects'), '[]'))
+          ),
+          json_object(
+            'id', 'migration47:' || id || ':present',
+            'type', 'present',
+            'responseText', '',
+            'dialogueText', '',
+            'speakerId', NULL,
+            'responsePerformance', json('{"charactersPerSecond":18,"cues":[]}'),
+            'dialoguePerformance', json('{"charactersPerSecond":18,"cues":[]}')
           )
         )
         WHERE input_capture_json IS NOT NULL
