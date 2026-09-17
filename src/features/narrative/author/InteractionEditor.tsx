@@ -5,6 +5,7 @@ import { buildSearchIndex, searchProject } from "../../../author/search/projectS
 import { AuthorUiBlocks } from "../../../author/ui/AuthorWorkspaceRenderer";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
+import { PLAYER_INPUT_BINDING } from "../../../engine/rules/runtimeBindings";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type {
   Interaction,
@@ -595,6 +596,7 @@ function AfterWorkspace({ outcome, snapshot, playState, onCreateDestination, onE
       <EffectsEditor
         effects={capture.effects}
         snapshot={snapshot}
+        authoringContext={{ preferredRuntimeBindingKey: PLAYER_INPUT_BINDING }}
         onChange={(effects) => onChange((current) => current.inputCapture
           ? { ...current, inputCapture: { ...current.inputCapture, effects } }
           : current)}
