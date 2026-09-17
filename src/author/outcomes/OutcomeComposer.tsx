@@ -3,6 +3,7 @@ import type { ProjectSnapshot } from "../../engine/project/model";
 import type { Condition, Effect } from "../../engine/rules/model";
 import { ConditionEditor } from "../ConditionEditor";
 import { EffectsEditor } from "../EffectsEditor";
+import { AuthorInlineDisclosure } from "../ui/AuthorInlineDisclosure";
 import "./outcomeComposer.css";
 
 export function OutcomeComposerSection({ title, summary, children, defaultOpen = false }: {
@@ -11,10 +12,14 @@ export function OutcomeComposerSection({ title, summary, children, defaultOpen =
   children: ReactNode;
   defaultOpen?: boolean;
 }) {
-  return <details className="outcome-composer-section" open={defaultOpen}>
-    <summary><span>{title}</span><small>{summary}</small><span aria-hidden="true">›</span></summary>
+  return <AuthorInlineDisclosure
+    label={title}
+    summary={summary}
+    defaultOpen={defaultOpen}
+    className="outcome-composer-section"
+  >
     <div className="outcome-composer-section-body">{children}</div>
-  </details>;
+  </AuthorInlineDisclosure>;
 }
 
 export function OutcomeConditionEditor({ condition, snapshot, onChange, language = "time" }: {
