@@ -1,4 +1,5 @@
 name: Verify narrative flow branch
+# release-candidate verification
 # final rerun after migration fixture repair
 # final verification after migration and flow-boundary audit
 # retry after flow tests and migration coverage
