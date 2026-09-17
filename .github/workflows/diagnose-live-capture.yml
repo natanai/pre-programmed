@@ -1,4 +1,5 @@
 name: Verify narrative flow branch
+# retry after canonical flow typing fixes
 
 on:
   push:
