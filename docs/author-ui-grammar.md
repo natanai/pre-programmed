@@ -67,6 +67,42 @@ AFTER → [STAY HERE] [CREATE NEW] [LINK EXISTING]
 
 rather than a stack of headings that mirrors object nesting.
 
+## Gold standard: inline disclosure rows
+
+When work is optional, conditional, advanced, or one item in a small authored set, prefer the shared **inline disclosure row** over a boxed card, nested panel, or route change.
+
+The shared implementation owner is `AuthorInlineDisclosure`. The semantic `disclosure` primitive renders through it, and specialized feature controls should reuse that owner rather than recreating `<details>` presentation locally.
+
+The closed row has three visual responsibilities and no extra chrome:
+
+```text
+PRIMARY LABEL OR AUTHORED TEXT          compact status  ›
+```
+
+When opened, the chevron rotates and the working body expands directly beneath that row:
+
+```text
+PRIMARY LABEL OR AUTHORED TEXT          compact status  ⌄
+---------------------------------------------------------
+working controls remain in the same task and same width
+```
+
+This is the Author gold standard because it preserves context while progressively disclosing complexity:
+
+- **full width** — no inset card border or side padding that steals horizontal space;
+- **one place** — expansion stays inside the current task instead of feeling like navigation to another screen;
+- **primary information first** — authored text or the control name stays left; terse state/notation stays right;
+- **one affordance** — the far-right chevron communicates expansion consistently;
+- **thin hierarchy** — horizontal separators are enough; do not wrap ordinary inline work in another box;
+- **responsive by the shared owner** — features do not invent separate mobile disclosure markup;
+- **semantic reuse** — if the thing is just a disclosure, use the semantic `disclosure` node; specialized repeated objects may use `AuthorInlineDisclosure` directly.
+
+Examples include response `WHEN / AFTER / EFFECTS / AUTHOR DETAILS`, Node Entry Responses, and other compact controls whose editing body can remain in the parent task.
+
+Use a nested Author task instead when the work has its own durable resource identity, independent draft/save lifecycle, or enough complexity that suspending and returning to the parent is meaningful. The inline disclosure is not a substitute for the owning-editor contract.
+
+For a set containing only one default item, a feature may suppress the row entirely and show the working body directly when the disclosure would communicate no meaningful choice. Once multiple variants exist, each should use the standard row so the set remains scannable.
+
 ## Scroll ownership
 
 A full Author task has one primary vertical scroll owner. Ordinary task content and primary durable lists should use the height made available by the shared Author shell rather than imposing arbitrary fixed `max-height` values and creating nested vertical scrollbars.
