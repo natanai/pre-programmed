@@ -39,6 +39,10 @@ export function createTransitionStep(destination: NodeEntryTarget): NarrativeFlo
   return { id: makeId(), type: "transition", destination };
 }
 
+export function createReturnPreviousStep(): NarrativeFlowStep {
+  return { id: makeId(), type: "return_previous" };
+}
+
 /**
  * One-click authoring preset for "wait for the next submission".
  *
@@ -65,6 +69,10 @@ export function flowDestination(flow: readonly NarrativeFlowStep[]) {
   return flowTransition(flow)?.destination ?? null;
 }
 
+export function flowReturnsPrevious(flow: readonly NarrativeFlowStep[]) {
+  return flow.some((step) => step.type === "return_previous");
+}
+
 export function flowDestinations(flow: readonly NarrativeFlowStep[]) {
   return flow.flatMap((step) => step.type === "transition" ? [step.destination] : []);
 }
@@ -81,8 +89,16 @@ export function replaceFlowTransition(
   flow: readonly NarrativeFlowStep[],
   destination: NodeEntryTarget | null,
 ): NarrativeFlowStep[] {
-  const without = flow.filter((step) => step.type !== "transition");
+  const without = flow.filter((step) => step.type !== "transition" && step.type !== "return_previous");
   return destination ? [...without, createTransitionStep(destination)] : without;
+}
+
+export function replaceFlowReturnPrevious(
+  flow: readonly NarrativeFlowStep[],
+  enabled: boolean,
+): NarrativeFlowStep[] {
+  const without = flow.filter((step) => step.type !== "transition" && step.type !== "return_previous");
+  return enabled ? [...without, createReturnPreviousStep()] : without;
 }
 
 export type CaptureFlowParts = {
