@@ -8,7 +8,7 @@ import { AuthorInlineDisclosure } from "../../../author/ui/AuthorInlineDisclosur
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import { resolveActiveNodeAnchor } from "../anchor";
-import { captureFlowParts, flowDestination, flowDestinations } from "../flow";
+import { captureFlowParts, flowDestination, flowDestinations, flowReturnsPrevious } from "../flow";
 import type { GameNode, NodeAnchor, NodeContextMode, NodeOpening } from "../model";
 import { createNodeOpening, nodeAuthorTitle, nodeOpeningSnippet } from "../nodeOpenings";
 import { nextNodeNumber } from "../nodeNumber";
@@ -89,12 +89,14 @@ function entityName(context: AuthorWorkspaceContext, id: string | null | undefin
 
 function openingAfterSummary(snapshot: AuthorWorkspaceContext["snapshot"], opening: NodeOpening) {
   const destination = flowDestination(opening.after);
-  const suffix = destination
-    ? (() => {
+  const suffix = flowReturnsPrevious(opening.after)
+    ? "return to previous Node"
+    : destination
+      ? (() => {
         const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
         return node ? `Node #${node.nodeNumber}` : "linked Node";
-      })()
-    : "stay here";
+        })()
+      : "stay here";
   return captureFlowParts(opening.after) ? `Capture input · then ${suffix.toLocaleLowerCase()}` : suffix;
 }
 
