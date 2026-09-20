@@ -51,6 +51,7 @@ type InteractionRow = {
   order_index: number;
   wording: string;
   match_mode: "command" | "fallback";
+  outcome_selection: "first" | "random";
   choice_visibility: Interaction["choiceVisibility"];
   tags_json: string;
   notes: string;
@@ -559,6 +560,17 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 47 WHERE id = 1;
       `,
     },
+    {
+      id: 48,
+      name: "narrative-interaction-outcome-selection",
+      sql: `
+        ALTER TABLE interactions
+        ADD COLUMN outcome_selection TEXT NOT NULL DEFAULT 'first'
+        CHECK (outcome_selection IN ('first', 'random'));
+
+        UPDATE project_meta SET schema_version = 48 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
@@ -578,7 +590,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
                 narration_performance_json, dialogue_performance_json, after_flow_json
            FROM node_openings ORDER BY node_id, order_index, id`,
       ).all<OpeningRow>(),
-      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
+      db.prepare("SELECT id, source_node_id, order_index, wording, match_mode, outcome_selection, choice_visibility, tags_json, notes FROM interactions ORDER BY source_node_id, order_index, id")
         .all<InteractionRow>(),
       db.prepare("SELECT interaction_id, condition_json FROM interaction_choice_visibility_conditions")
         .all<InteractionChoiceVisibilityRow>(),
@@ -634,6 +646,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
         order: row.order_index,
         wording: row.wording,
         matchMode: row.match_mode ?? "command",
+        outcomeSelection: row.outcome_selection ?? "first",
         choiceVisibility: row.choice_visibility,
         choiceVisibleWhen: parseJson(choiceVisibilityByInteraction.get(row.id), { type: "always" }),
         tags: parseJson(row.tags_json, []),
