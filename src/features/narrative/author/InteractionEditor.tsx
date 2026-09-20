@@ -14,7 +14,7 @@ import {
   OutcomeEffectsEditor,
 } from "../../../author/outcomes/OutcomeComposer";
 import { createDraftOutcome } from "../drafts";
-import { captureFlowParts, flowDestination, flowEffectsCount } from "../flow";
+import { captureFlowParts, flowDestination, flowEffectsCount, flowReturnsPrevious } from "../flow";
 import { buildGraphIndex, notationForNode } from "../graph";
 import { interactionOutcomeProse } from "../interactionProse";
 import { nodeOpeningSnippet } from "../nodeOpenings";
@@ -75,9 +75,12 @@ function responseSpeakerLabel(snapshot: ProjectSnapshot, outcome: InteractionOut
 function destinationLabel(snapshot: ProjectSnapshot, outcome: InteractionOutcome) {
   const capture = captureFlowParts(outcome.after);
   const destination = flowDestination(outcome.after);
-  const continuation = !destination
-    ? "Stay here"
-    : (() => {
+  const returnsPrevious = flowReturnsPrevious(outcome.after);
+  const continuation = returnsPrevious
+    ? "Return to previous Node"
+    : !destination
+      ? "Stay here"
+      : (() => {
         const node = snapshot.nodes.find((candidate) => candidate.id === destination.nodeId);
         if (!node) return "Linked node";
         if (!destination.openingId) return `Node #${node.nodeNumber} · AUTO`;
@@ -292,7 +295,7 @@ function InteractionOverview({
     <section className="guided-section interaction-settings-summary">
       <button type="button" className="guided-drill-row" onClick={onOpenSettings}>
         <span>INPUT SETTINGS</span>
-        <span className="guided-row-value">{fallbackMode ? "Author details" : "Aliases · visibility · details"}</span>
+        <span className="guided-row-value">{draft.outcomeSelection === "random" ? "Random responses · " : ""}{fallbackMode ? "Author details" : "Aliases · visibility · details"}</span>
         <span aria-hidden="true">›</span>
       </button>
     </section>
@@ -341,6 +344,29 @@ function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
         </label>
       </section>
     </> : null}
+    <section className="guided-section">
+      <h3>RESPONSE SELECTION</h3>
+      <div className="guided-option-list">
+        <button
+          type="button"
+          className="guided-option-row"
+          aria-pressed={(draft.outcomeSelection ?? "first") === "first"}
+          onClick={() => onChange({ ...draft, outcomeSelection: "first" })}
+        >
+          <span>{(draft.outcomeSelection ?? "first") === "first" ? "[X]" : "[ ]"} FIRST MATCHING</span>
+          <small>Use the first response whose WHEN condition currently matches.</small>
+        </button>
+        <button
+          type="button"
+          className="guided-option-row"
+          aria-pressed={draft.outcomeSelection === "random"}
+          onClick={() => onChange({ ...draft, outcomeSelection: "random" })}
+        >
+          <span>{draft.outcomeSelection === "random" ? "[X]" : "[ ]"} RANDOM MATCHING</span>
+          <small>Choose deterministically from all responses whose WHEN conditions currently match.</small>
+        </button>
+      </div>
+    </section>
     <section className="guided-section">
       <h3>AUTHOR DETAILS</h3>
       <label>TAGS <input value={draft.tags.join(", ")} onChange={(event) => onChange({ ...draft, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) })} /></label>
