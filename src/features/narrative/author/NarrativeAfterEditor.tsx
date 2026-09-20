@@ -383,7 +383,7 @@ export function NarrativeAfterEditor({
       {
         value: "previous",
         label: "RETURN PREVIOUS",
-        help: "Pop this Node from real traversal and re-enter the Node that led here.",
+        help: "Re-enter the Node that immediately led here, using real traversal history.",
       },
       {
         value: "create",
