@@ -1,4 +1,5 @@
 import type { TextCueType } from "../../engine/presentation/textCueTypes";
+import type { ConditionalSelectionMode } from "../../engine/rules/conditionalSelection";
 import type { Condition, Effect } from "../../engine/rules/model";
 
 export type { TextCueType } from "../../engine/presentation/textCueTypes";
@@ -108,6 +109,11 @@ export type NarrativeFlowStep =
       id: string;
       type: "transition";
       destination: NodeEntryTarget;
+    }
+  | {
+      id: string;
+      /** Pop one real traversal frame and re-enter that Node through AUTO selection. */
+      type: "return_previous";
     };
 
 export type NarrativeFlowOwner =
@@ -146,6 +152,8 @@ export type Interaction = {
   order?: number;
   wording: string;
   matchMode?: InteractionMatchMode;
+  /** How this input chooses among all response outcomes whose conditions currently match. */
+  outcomeSelection?: ConditionalSelectionMode;
   /** Where an otherwise visible choice is presented. Typed matching never depends on this field. */
   choiceVisibility: InteractionChoiceVisibility;
   /** Whether the engine should suggest this input as a player choice. Typed matching remains valid when false. */
