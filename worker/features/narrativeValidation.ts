@@ -32,6 +32,10 @@ function flowValid(value: unknown) {
       if (!destinationValid(step.destination) || index !== value.length - 1) return false;
       continue;
     }
+    if (step.type === "return_previous") {
+      if (index !== value.length - 1) return false;
+      continue;
+    }
     if (step.type === "present") {
       if (typeof step.responseText !== "string" || step.responseText.length > 20000
         || typeof step.dialogueText !== "string" || step.dialogueText.length > 20000
@@ -132,6 +136,9 @@ export const narrativeMutationValidator: WorkerMutationValidator = {
     if (interaction.choiceVisibility !== undefined && !["immediate", "prompt", "typed"].includes(String(interaction.choiceVisibility))) return "Interaction choice visibility is invalid.";
     if (interaction.choiceVisibleWhen !== undefined && !conditionValid(interaction.choiceVisibleWhen)) return "Interaction choice visibility condition is invalid.";
     if (interaction.matchMode !== undefined && !["command", "fallback"].includes(String(interaction.matchMode))) return "Interaction match mode is invalid.";
+    if (interaction.outcomeSelection !== undefined && !["first", "random"].includes(String(interaction.outcomeSelection))) {
+      return "Interaction response selection is invalid.";
+    }
 
     const outcomes = Array.isArray(interaction.outcomes) ? interaction.outcomes : [];
     for (const candidate of outcomes) {
