@@ -112,7 +112,7 @@ export type NarrativeFlowStep =
     }
   | {
       id: string;
-      /** Pop one real traversal frame and re-enter that Node through AUTO selection. */
+      /** Re-enter the immediately preceding Node from real traversal history through AUTO selection. */
       type: "return_previous";
     };
 
