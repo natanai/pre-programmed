@@ -63,7 +63,7 @@ export function executeInteraction(
     eventKey,
     occurrence: attempt,
     scope,
-  });
+  }, interaction.outcomeSelection ?? "first");
 
   if (!outcome) return blankExecution(state, attempt, eventKey);
 

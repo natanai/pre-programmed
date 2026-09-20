@@ -25,6 +25,7 @@ export function createDraftInteraction(sourceNodeId: string, command = "", fallb
     order: 0,
     wording: fallback ? "" : command,
     matchMode: fallback ? "fallback" : "command",
+    outcomeSelection: "first",
     choiceVisibility: fallback ? "typed" : "prompt",
     choiceVisibleWhen: ALWAYS,
     aliases: fallback ? [] : command ? [command] : [],
