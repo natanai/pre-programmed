@@ -4,7 +4,7 @@ import { executeEffects } from "../../engine/rules/executeEffects";
 import type { EffectEvent } from "../../engine/rules/effectRuntime";
 import type { RuntimeBindings } from "../../engine/rules/runtimeBindings";
 import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
-import { transitionState } from "./effectRuntime";
+import { returnToPreviousNodeState, transitionState } from "./effectRuntime";
 import { interpolateText } from "./interpolation";
 import type {
   NarrativeFlowOwner,
@@ -162,6 +162,11 @@ export function advanceNarrativeFlow(
       // becomes the next presentation owner rather than allowing this flow to
       // keep rendering across resource ownership boundaries.
       state = transitionState(state, step.destination);
+      break;
+    }
+
+    if (step.type === "return_previous") {
+      state = returnToPreviousNodeState(state);
       break;
     }
 
