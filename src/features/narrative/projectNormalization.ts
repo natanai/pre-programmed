@@ -85,6 +85,7 @@ function flowStep(value: unknown, index: number): NarrativeFlowStep | null {
     const target = destination(candidate.destination);
     return target ? { id, type: "transition", destination: target } : null;
   }
+  if (candidate.type === "return_previous") return { id, type: "return_previous" };
   return null;
 }
 
@@ -301,6 +302,7 @@ function normalizeInteraction(value: unknown): Interaction | null {
   return {
     ...candidate,
     matchMode: candidate.matchMode === "fallback" ? "fallback" : "command",
+    outcomeSelection: candidate.outcomeSelection === "random" ? "random" : "first",
     outcomes,
   } as Interaction;
 }
