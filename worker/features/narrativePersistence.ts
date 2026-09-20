@@ -747,14 +747,15 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
       return [
         db.prepare(
           `INSERT INTO interactions
-             (id, source_node_id, order_index, wording, match_mode, capture_input, choice_visibility, tags_json, notes, updated_at)
+             (id, source_node_id, order_index, wording, match_mode, outcome_selection, capture_input, choice_visibility, tags_json, notes, updated_at)
            VALUES (
              ?, ?,
              COALESCE((SELECT MAX(order_index) + 1 FROM interactions WHERE source_node_id = ? AND match_mode <> 'fallback'), 0),
-             ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
+             ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP
            )
            ON CONFLICT(id) DO UPDATE SET source_node_id=excluded.source_node_id, wording=excluded.wording,
-             match_mode=excluded.match_mode, capture_input=excluded.capture_input, choice_visibility=excluded.choice_visibility,
+             match_mode=excluded.match_mode, outcome_selection=excluded.outcome_selection,
+             capture_input=excluded.capture_input, choice_visibility=excluded.choice_visibility,
              tags_json=excluded.tags_json, notes=excluded.notes, updated_at=CURRENT_TIMESTAMP`,
         ).bind(
           value.id,
@@ -762,6 +763,7 @@ export const narrativeFeaturePersistence: WorkerFeaturePersistence = {
           value.sourceNodeId,
           value.wording,
           value.matchMode ?? "command",
+          value.outcomeSelection ?? "first",
           0,
           value.choiceVisibility ?? "prompt",
           JSON.stringify(value.tags),
