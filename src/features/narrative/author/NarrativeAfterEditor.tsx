@@ -10,10 +10,13 @@ import {
   CAPTURE_EFFECT_AUTHORING_CONTEXT,
   captureFlowParts,
   createCaptureInputFlow,
+  createReturnPreviousStep,
   createTransitionStep,
   flowDestination,
+  flowReturnsPrevious,
   replaceCaptureEffects,
   replaceCapturePresentation,
+  replaceFlowReturnPrevious,
   replaceFlowTransition,
 } from "../flow";
 import { buildGraphIndex, notationForNode } from "../graph";
@@ -245,7 +248,8 @@ function DestinationPreset({
 }) {
   const [choosingExisting, setChoosingExisting] = useState(false);
   const target = flowDestination(flow);
-  const selected = target || choosingExisting ? "existing" : "stay";
+  const returnsPrevious = flowReturnsPrevious(flow);
+  const selected = returnsPrevious ? "previous" : target || choosingExisting ? "existing" : "stay";
 
   return <AuthorUiBlocks blocks={[{
     type: "choice",
@@ -259,16 +263,23 @@ function DestinationPreset({
         onChange(replaceFlowTransition(flow, null));
         return;
       }
+      if (value === "previous") {
+        setChoosingExisting(false);
+        onChange(replaceFlowReturnPrevious(flow, true));
+        return;
+      }
       if (value === "create") {
         setChoosingExisting(false);
         onCreateDestination?.((nodeId) => onChange(replaceFlowTransition(flow, { nodeId, openingId: null })));
         return;
       }
       setChoosingExisting(true);
+      if (returnsPrevious) onChange(replaceFlowReturnPrevious(flow, false));
     },
     presentation: "segmented",
     options: [
       { value: "stay", label: "STAY HERE" },
+      { value: "previous", label: "RETURN PREVIOUS" },
       { value: "create", label: "CREATE NEW" },
       {
         value: "existing",
@@ -316,7 +327,8 @@ export function NarrativeAfterEditor({
   const [choosingExisting, setChoosingExisting] = useState(false);
   const capture = captureFlowParts(flow);
   const target = flowDestination(flow);
-  const selected = capture ? "capture" : target || choosingExisting ? "existing" : "stay";
+  const returnsPrevious = flowReturnsPrevious(flow);
+  const selected = capture ? "capture" : returnsPrevious ? "previous" : target || choosingExisting ? "existing" : "stay";
 
   const choose = (value: string) => {
     if (value === "stay") {
@@ -329,13 +341,18 @@ export function NarrativeAfterEditor({
       if (!capture) onChange(createCaptureInputFlow());
       return;
     }
+    if (value === "previous") {
+      setChoosingExisting(false);
+      onChange([createReturnPreviousStep()]);
+      return;
+    }
     if (value === "create") {
       setChoosingExisting(false);
       onCreateDestination?.((nodeId) => onChange([createTransitionStep({ nodeId, openingId: null })]));
       return;
     }
     setChoosingExisting(true);
-    if (capture) onChange([]);
+    if (capture || returnsPrevious) onChange([]);
   };
 
   const captureEditor = capture ? <CaptureFlowEditor
@@ -362,6 +379,11 @@ export function NarrativeAfterEditor({
         value: "stay",
         label: "STAY HERE",
         help: "End this flow at the current Node.",
+      },
+      {
+        value: "previous",
+        label: "RETURN PREVIOUS",
+        help: "Pop this Node from real traversal and re-enter the Node that led here.",
       },
       {
         value: "create",
