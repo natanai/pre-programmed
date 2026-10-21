@@ -14,6 +14,10 @@ export type PersistedTranscriptLine = {
   nodeId?: string;
   speakerId?: string | null;
   command?: boolean;
+  /** Static/timed text presentation that must remain visible in transcript history. */
+  performance?: TextPerformance;
+  /** Epoch milliseconds when this prose presentation began; timed cues resolve against it. */
+  presentedAt?: number;
   /** Stable media identity. Content location is resolved when the line renders. */
   artAssetId?: string;
   /** Optional durable source identity used only to augment live presentation in Author mode. */
@@ -26,6 +30,8 @@ export type PersistedPlayPresentation = {
   activeNodeId?: string;
   activeSpeakerId: string | null;
   activePerformance: TextPerformance;
+  /** Optional for backward-compatible v2 sessions; new saves always write it. */
+  activePresentedAt?: number;
   pendingDestinationNodeId: string | null;
   activeSource?: AuthoredSourceIdentity;
 };
@@ -84,6 +90,18 @@ function normalizeSource(value: unknown): AuthoredSourceIdentity | undefined {
   };
 }
 
+function normalizeTextPerformance(value: unknown): TextPerformance | undefined {
+  if (!object(value)
+    || !Number.isInteger(value.charactersPerSecond)
+    || (value.charactersPerSecond as number) < 1
+    || (value.charactersPerSecond as number) > 120
+    || !Array.isArray(value.cues)) return undefined;
+  return {
+    charactersPerSecond: value.charactersPerSecond as number,
+    cues: value.cues as TextPerformance["cues"],
+  };
+}
+
 function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null {
   if (!object(value) || typeof value.id !== "string" || typeof value.text !== "string") return null;
 
@@ -92,12 +110,15 @@ function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null
   if (typeof value.artUrl === "string" && typeof value.artAssetId !== "string") return null;
 
   const source = normalizeSource(value.source);
+  const performance = normalizeTextPerformance(value.performance);
   return {
     id: value.id,
     text: value.text,
     ...(typeof value.nodeId === "string" ? { nodeId: value.nodeId } : {}),
     ...(typeof value.speakerId === "string" || value.speakerId === null ? { speakerId: value.speakerId } : {}),
     ...(typeof value.command === "boolean" ? { command: value.command } : {}),
+    ...(performance ? { performance } : {}),
+    ...(typeof value.presentedAt === "number" && Number.isFinite(value.presentedAt) ? { presentedAt: value.presentedAt } : {}),
     ...(typeof value.artAssetId === "string" ? { artAssetId: value.artAssetId } : {}),
     ...(source ? { source } : {}),
   };
@@ -121,7 +142,13 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
     || typeof presentation.activeText !== "string"
     || !object(presentation.activePerformance)) return undefined;
 
+  const activePerformance = normalizeTextPerformance(presentation.activePerformance);
+  if (!activePerformance) return undefined;
   const activeSource = normalizeSource(presentation.activeSource);
+  const savedAtMs = Date.parse(value.savedAt);
+  const activePresentedAt = typeof presentation.activePresentedAt === "number" && Number.isFinite(presentation.activePresentedAt)
+    ? presentation.activePresentedAt
+    : (Number.isFinite(savedAtMs) ? savedAtMs : Date.now());
   return {
     version: PLAY_SESSION_VERSION,
     schemaVersion: value.schemaVersion,
@@ -135,7 +162,8 @@ export function normalizePersistedPlaySession(value: unknown): PersistedPlaySess
       activeText: presentation.activeText,
       ...(typeof presentation.activeNodeId === "string" ? { activeNodeId: presentation.activeNodeId } : {}),
       activeSpeakerId: typeof presentation.activeSpeakerId === "string" ? presentation.activeSpeakerId : null,
-      activePerformance: presentation.activePerformance as TextPerformance,
+      activePerformance,
+      activePresentedAt,
       pendingDestinationNodeId: typeof presentation.pendingDestinationNodeId === "string"
         ? presentation.pendingDestinationNodeId
         : null,

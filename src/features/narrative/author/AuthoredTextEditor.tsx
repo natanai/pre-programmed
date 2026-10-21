@@ -79,9 +79,15 @@ export function AuthoredTextEditor({
       ? "/shake{"
       : rule === "speed"
         ? "/speed30{"
-        : !["pause", "literal-slash"].includes(rule)
-          ? `/${rule}{`
-          : "";
+        : rule === "transparency"
+          ? "/transparency50{"
+          : rule === "color"
+            ? "/color#FFFFFF{"
+            : rule === "disappear"
+              ? "/disappear3{"
+              : !["pause", "literal-slash"].includes(rule)
+                ? `/${rule}{`
+                : "";
     const insertion = rule === "pause"
       ? "/p"
       : rule === "literal-slash"
