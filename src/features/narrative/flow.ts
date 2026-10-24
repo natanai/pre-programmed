@@ -1,5 +1,5 @@
 import type { Effect } from "../../engine/rules/model";
-import { PLAYER_INPUT_BINDING } from "../../engine/rules/runtimeBindings";
+import { isRuntimeBinding, PLAYER_INPUT_BINDING, runtimeBinding } from "../../engine/rules/runtimeBindings";
 import type {
   NarrativeFlowStep,
   NodeEntryTarget,
@@ -141,6 +141,38 @@ export function replaceCapturePresentation(
   const parts = captureFlowParts(flow);
   if (!parts) return flow.slice();
   return flow.map((step, index) => index === parts.presentIndex ? present : step);
+}
+
+/**
+ * The guided capture UI is a compact view onto the *same* canonical Set Value
+ * effect held in the flow's existing effects step. No separate capture state,
+ * effect evaluator, or persistence path.
+ */
+export function capturedInputVariableKey(flow: readonly NarrativeFlowStep[]): string {
+  const effects = captureFlowParts(flow)?.effectsStep.effects ?? [];
+  const capture = effects.find((effect) => effect.type === "set_value"
+    && isRuntimeBinding(effect.value) && effect.value.key === PLAYER_INPUT_BINDING);
+  return capture?.type === "set_value" ? capture.key : "";
+}
+
+export function replaceCapturedInputVariable(
+  flow: readonly NarrativeFlowStep[],
+  key: string,
+): NarrativeFlowStep[] {
+  const parts = captureFlowParts(flow);
+  if (!parts) return flow.slice();
+  const effects = [...parts.effectsStep.effects];
+  const index = effects.findIndex((effect) => effect.type === "set_value"
+    && isRuntimeBinding(effect.value) && effect.value.key === PLAYER_INPUT_BINDING);
+  if (index >= 0) {
+    if (key) {
+      const current = effects[index];
+      if (current.type === "set_value") effects[index] = { ...current, key };
+    } else effects.splice(index, 1);
+  } else if (key) {
+    effects.unshift({ id: crypto.randomUUID(), type: "set_value", key, value: runtimeBinding(PLAYER_INPUT_BINDING) });
+  }
+  return replaceCaptureEffects(flow, effects);
 }
 
 /** Context used by the canonical Effects editor for the segment after await input. */
