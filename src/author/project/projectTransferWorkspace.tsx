@@ -11,7 +11,9 @@ function downloadBlob(blob: Blob, filename: string) {
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
+  // Keep the Blob URL alive while Electron presents its native Save As dialog.
+  // Revoking it in the same task can race the download handoff on Windows.
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 function ProjectTransferControl({
@@ -31,7 +33,8 @@ function ProjectTransferControl({
     try {
       const { blob, filename } = await downloadAuthorProject(authorToken);
       downloadBlob(blob, filename);
-      setStatus("PROJECT FILE DOWNLOADED.");
+      // A triggered download may still be in the OS Save As dialog.
+      setStatus("PROJECT EXPORT READY. SAVE THE .PPGAME FILE WHEN PROMPTED.");
     } catch (error) {
       setStatus(error instanceof Error ? `EXPORT FAILED: ${error.message}` : "EXPORT FAILED.");
     } finally {
