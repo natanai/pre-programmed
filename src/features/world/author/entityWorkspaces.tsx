@@ -8,10 +8,9 @@ import { validateCondition } from "../../../engine/rules/conditions";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import { characterAliasCondition, characterAliasName, type EntityDefinition } from "../model";
+import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "../model";
 import { aliasesFromInput, normalizedAliases } from "./aliasInput";
 import { entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
-import { characterStartingNameSelection } from "../playState";
 import "./worldWorkspaces.css";
 
 export function worldEntityRoute(type: EntityDefinition["type"], id?: string, resourceTask = false, preferredOperation?: string) {
