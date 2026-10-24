@@ -162,6 +162,10 @@ function CaptureFlowEditor({
 }) {
   const resources = useAuthorResourceTools();
   const parts = captureFlowParts(flow);
+  const initialReply = parts?.presentStep;
+  const [responseOpen, setResponseOpen] = useState(Boolean(initialReply?.responseText.trim()
+    || initialReply?.dialogueText.trim() || initialReply?.speakerId));
+  const [continuationOpen, setContinuationOpen] = useState(Boolean(flowDestination(flow) || flowReturnsPrevious(flow)));
   if (!parts) return null;
   const present = parts.presentStep;
   const savedKey = capturedInputVariableKey(flow);
@@ -222,7 +226,7 @@ function CaptureFlowEditor({
       NEXT INPUT → {savedKey ? `save to ${savedVariable?.label || savedKey}` : "not stored"} → {hasPostInputResponse ? "respond" : "no response"} → {thenSummary}
     </p>
 
-    <details className="capture-optional-section" key={`response-${hasPostInputResponse}`} defaultOpen={hasPostInputResponse}>
+    <details className="capture-optional-section" open={responseOpen} onToggle={(event) => setResponseOpen(event.currentTarget.open)}>
       <summary>AFTER INPUT · NARRATION OR DIALOGUE <small>{hasPostInputResponse ? "Configured" : "Optional"}</small></summary>
       <div className="capture-optional-content">
         <p className="guided-context-copy">This happens after the player's submission, not before it. Leave empty to continue without speaking.</p>
@@ -271,7 +275,7 @@ function CaptureFlowEditor({
       </div>
     </details>
 
-    <details className="capture-optional-section" key={`then-${hasContinuation}`} defaultOpen={hasContinuation}>
+    <details className="capture-optional-section" open={continuationOpen} onToggle={(event) => setContinuationOpen(event.currentTarget.open)}>
       <summary>THEN · WHERE TO GO <small>{thenSummary}</small></summary>
       <div className="capture-optional-content">
         <DestinationPreset
