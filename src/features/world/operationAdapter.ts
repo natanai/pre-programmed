@@ -1,14 +1,8 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
-import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
+import type { OperationTargetAdapter } from "../operations/targetAdapter";
 import { characterNameForPresentation } from "./playState";
 
 export const WORLD_ENTITY_OPERATION_TARGET_KIND = "world.entity";
-
-/** World entities expose reusable operations; Character dialogue remains Node-owned. */
-export const WORLD_AUTHOR_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
-  { value: "inspect", label: "inspect", targetKinds: ["world.character", "world.location"] },
-  { value: "enter", label: "enter", targetKinds: ["world.location"] },
-];
 
 export const WORLD_ENTITY_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
   kind: WORLD_ENTITY_OPERATION_TARGET_KIND,
