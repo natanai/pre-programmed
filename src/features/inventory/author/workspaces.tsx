@@ -1,5 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { NATIVE_ITEM_OPERATIONS } from "../nativeOperations";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
@@ -12,7 +13,7 @@ import {
 } from "./equipmentWorkspaces";
 import "./inventoryWorkspaces.css";
 
-const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
+
 
 export function inventoryRoute(workspace: "inventory" | "items" | "body-types" | "item" | "body-type", id?: string, resourceTask = false, preferredOperation?: string) {
   return {
@@ -62,7 +63,7 @@ function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
+    interactable: true, operations: [...NATIVE_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
     equipOnGiveSlotKey: null, tags: [], initialState: {}, hooks: [],
   };
 }
