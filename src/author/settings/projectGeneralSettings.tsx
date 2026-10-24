@@ -1,4 +1,6 @@
 import type { AuthorProjectSettingsSection } from "../features/types";
+import { ValueMentionField } from "../ValueMentionField";
+import { MAX_TERMINAL_PROMPT_LENGTH } from "../../engine/project/settings";
 import { defineAuthorWorkspace } from "../ui/workspaceDefinition";
 
 type ProjectTerminalSettingsDraft = {
@@ -16,10 +18,10 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
     terminalPrompt: context.snapshot.settings.terminalPrompt,
     suggestionMenuHelpText: context.snapshot.settings.suggestionMenuHelpText ?? NULL_SUGGESTION_HELP_TEXT,
   }),
-  canSave: ({ draft }) => Boolean(draft.terminalPrompt.trim()),
+  canSave: ({ draft }) => Boolean(draft.terminalPrompt.trim()) && draft.terminalPrompt.length <= MAX_TERMINAL_PROMPT_LENGTH,
   save: async ({ context, draft }) => {
-    const terminalPrompt = draft.terminalPrompt.trim().slice(0, 32);
-    if (!terminalPrompt) return { accepted: false };
+    const terminalPrompt = draft.terminalPrompt;
+    if (!terminalPrompt.trim() || terminalPrompt.length > MAX_TERMINAL_PROMPT_LENGTH) return { accepted: false };
 
     const authoredHelpText = draft.suggestionMenuHelpText.trim();
     const suggestionMenuHelpText = !authoredHelpText || authoredHelpText.toLowerCase() === NULL_SUGGESTION_HELP_TEXT
@@ -40,7 +42,7 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
       }
       : { accepted: false };
   },
-  buildSpec: ({ draft, setDraft }) => ({
+  buildSpec: ({ draft, setDraft, context }) => ({
     id: "project-terminal-settings",
     title: "TERMINAL",
     context: "Project-wide player terminal",
@@ -50,16 +52,23 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
       label: "PROMPT",
       importance: "primary",
       children: [{
-        type: "field",
+        type: "custom",
         id: "project-terminal-prompt-value",
-        label: "Player prompt",
-        value: draft.terminalPrompt,
-        maxLength: 32,
-        onChange: (terminalPrompt) => setDraft({ ...draft, terminalPrompt }),
-        autoCapitalize: "none",
-        autoCorrect: "off",
-        spellCheck: false,
-        help: "Player-facing prompt text for this game. Maximum 32 characters.",
+        role: "specialized-control",
+        content: <div className="author-ui-field">
+          <span className="author-ui-label author-ui-label-always">Player prompt</span>
+          <ValueMentionField
+            snapshot={context.snapshot}
+            playState={context.playState}
+            value={draft.terminalPrompt}
+            onValueChange={(terminalPrompt) => setDraft({ ...draft, terminalPrompt })}
+            ariaLabel="Player prompt"
+          />
+          <small className="author-ui-help">Type @ to insert an existing variable or other reference. Its current value appears in the player terminal. Spaces, including a final space, are preserved.</small>
+          {draft.terminalPrompt.length > MAX_TERMINAL_PROMPT_LENGTH
+            ? <small className="author-ui-help" role="alert">Prompt is too long (maximum {MAX_TERMINAL_PROMPT_LENGTH} stored characters).</small>
+            : null}
+        </div>,
       }],
     }, {
       type: "disclosure",
