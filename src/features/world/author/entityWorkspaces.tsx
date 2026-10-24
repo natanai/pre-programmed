@@ -228,6 +228,9 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
               targetKind={draft.type === "character" ? "world.character" : "world.location"}
               defaultOpen={Boolean(route.data?.preferredOperation)}
               preferredOperation={route.data?.preferredOperation}
+              onOpenPlayerLanguage={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}
+              onCreatePlayerCommand={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}
+              onEditPlayerCommand={(commandId) => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId } })}
               onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
             />,
           }],
