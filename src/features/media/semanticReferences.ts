@@ -54,7 +54,7 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
       id: composition.id,
       key: composition.title,
       label: composition.title,
-      detail: composition.tracks.length + " tracks · " + composition.bpm + " BPM",
+      detail: composition.instruments.length + " instruments · " + composition.bpm + " BPM",
       aliases: [],
       defaultProjection: "title",
       projections: { title: composition.title, bpm: String(composition.bpm) },

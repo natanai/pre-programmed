@@ -6,13 +6,13 @@ import { migratePortableProject } from "../worker/portableProject";
 import { project } from "./fixtures";
 
 const score: PremidiComposition = {
-  format: "pre-midi", version: 1, id: "song-1", title: "Aether", bpm: 120,
+  format: "pre-midi", version: 2, id: "song-1", title: "Aether", bpm: 120,
   beatsPerBar: 4, stepsPerBeat: 4, bars: 2,
-  tracks: [{
-    id: "track-1", name: "Lead", waveform: "triangle", volume: 0.7, attack: 0.01,
-    release: 0.12, patterns: [{ id: "pattern-1", name: "Theme", notes: [
+  instruments: [{
+    id: "instrument-1", name: "Lead", waveform: "triangle", volume: 0.7, attack: 0.01,
+    release: 0.12, chunks: [{ id: "chunk-1", name: "Theme", notes: [
       { id: "note-1", pitch: 60, start: 0, duration: 4, velocity: 0.8 },
-    ] }], arrangement: ["pattern-1", null],
+    ] }], timeline: ["chunk-1", null],
   }],
 };
 
@@ -20,6 +20,7 @@ describe("native pre-midi boundaries", () => {
   it("preserves every music note and stable identity across native file exchange", () => {
     expect(validate(score)).toEqual([]);
     expect(parse(JSON.stringify(score))).toEqual(score);
+    expect(score.instruments[0].timeline).toEqual(["chunk-1", null]);
   });
   it("validates compositions through the ordinary project mutation contract", () => {
     expect(validateMutationBody({
