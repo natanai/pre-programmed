@@ -7,6 +7,12 @@ on:
         description: Portable engine version (for example 0.1.0)
         required: true
         type: string
+  # Updating this small version marker builds the same verified release from main.
+  # It also permits producing a new ZIP when manual workflow dispatch is unavailable.
+  push:
+    branches: [main]
+    paths:
+      - .github/portable-release.version
 
 permissions:
   contents: write
@@ -28,7 +34,11 @@ jobs:
         id: version
         shell: pwsh
         run: |
-          $version = "${{ inputs.version }}".Trim()
+          $version = if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            "${{ inputs.version }}".Trim()
+          } else {
+            (Get-Content ".github/portable-release.version" -Raw).Trim()
+          }
           if ($version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
             throw "Version must be semver-like, such as 0.1.0 or 0.1.0-beta.1"
           }
