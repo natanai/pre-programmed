@@ -1,5 +1,6 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
-import type { OperationArguments, OperationId } from "../operations/model";
+import type { OperationArguments } from "../operations/model";
+import { NATIVE_ITEM_OPERATIONS } from "./nativeOperations";
 import type { OperationTargetAdapter } from "../operations/targetAdapter";
 import {
   canPlaceItem,
@@ -9,9 +10,6 @@ import {
   occupiedEquipmentSlotKeys,
   unequipInventoryEntry,
 } from "./runtime";
-
-// Native inventory UI capabilities; not Player Command vocabulary.
-const DEFAULT_ITEM_OPERATIONS: OperationId[] = ["inspect", "use", "move", "remove", "equip", "unequip"];
 
 function requestedSlotKey(argumentsValue?: OperationArguments) {
   const argument = argumentsValue?.slot;
@@ -57,7 +55,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       definitionId: definition.id,
       label: definition.name || definition.key || target.id,
       interactable: definition.interactable ?? true,
-      operations: definition.operations ?? DEFAULT_ITEM_OPERATIONS,
+      operations: definition.operations ?? NATIVE_ITEM_OPERATIONS,
       hooks: definition.hooks ?? [],
       authorSource: authoredSource("item", definition.id),
     };
