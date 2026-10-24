@@ -53,6 +53,7 @@ import { presentEffectEvents } from "./ui/effectPresentationCatalog";
 import { resolveNodeOpeningPresentation, useNarrativeContinuation } from "./features/narrative/runtime/presentation";
 import { useNarrativePlayerSurface } from "./features/narrative/runtime/useNarrativePlayerSurface";
 import { applyOperations } from "./engine/project/mutations";
+import { resolveTerminalPrompt } from "./engine/project/terminalPrompt";
 import {
   createEmptyPlayState,
   reconcilePlayState,
@@ -819,6 +820,7 @@ export default function App() {
 
     const currentState = advanceProjectClocks(snapshot, playState, Date.now());
     const commandState = { ...currentState, commandsEntered: currentState.commandsEntered + 1, lastCommand: value };
+    const submittedPrompt = resolveTerminalPrompt(snapshot, currentState);
 
     // A suspended Narrative flow owns exactly the next player submission.
     // Consume it before command/admin routing so "inv", "admin", or any other
@@ -827,7 +829,7 @@ export default function App() {
       setParserResult(null);
       appendActive();
       const commandLineId = crypto.randomUUID();
-      setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
+      setTranscript((lines) => [...lines, { id: commandLineId, text: `${submittedPrompt}${value}`, command: true }]);
       const execution = resumeNarrativeFlowWithInput(snapshot, commandState, value);
       if (execution) {
         presentRuntimeExecution(
@@ -858,7 +860,7 @@ export default function App() {
 
     appendActive();
     const commandLineId = crypto.randomUUID();
-    setTranscript((lines) => [...lines, { id: commandLineId, text: `${snapshot.settings.terminalPrompt}${value}`, command: true }]);
+    setTranscript((lines) => [...lines, { id: commandLineId, text: `${submittedPrompt}${value}`, command: true }]);
 
     if (parsed.reason === "fallback" && authorMode && authorView) {
       const resolution = resolveAuthorCapability({
@@ -1005,7 +1007,7 @@ export default function App() {
   };
 
   if (!snapshot || !playState || !currentNode) return <main className="dos-screen" aria-label="Pre-Programmed terminal"><div className="dos-terminal">{connectionState === "retrying" ? "SYSTEM LINK: WAITING FOR API..." : "CONNECTING TO UNIVERSE..."}</div></main>;
-  const promptLabel = requestingKey ? "ADMIN KEY>" : snapshot.settings.terminalPrompt;
+  const promptLabel = requestingKey ? "ADMIN KEY>" : resolveTerminalPrompt(snapshot, playState);
   const editorOpen = authorTasks.hasTasks;
   const playerWorkspaceOpen = playerWorkspace !== null;
   const authorExperience = authorMode && authorView;
