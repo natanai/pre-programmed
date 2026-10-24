@@ -1,8 +1,11 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
+import { ConditionEditor } from "../../../author/ConditionEditor";
+import { ALWAYS, type Condition } from "../../../engine/rules/model";
+import { validateCondition } from "../../../engine/rules/conditions";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import type { EntityDefinition } from "../model";
+import { characterAliasCondition, characterAliasName, type CharacterAlias, type EntityDefinition } from "../model";
 import "./worldWorkspaces.css";
 
 export function worldEntityRoute(type: EntityDefinition["type"], id?: string, resourceTask = false, preferredOperation?: string) {
@@ -50,31 +53,72 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
   }),
 });
 
-function newEntity(type: EntityDefinition["type"]): EntityDefinition {
+type EntityDraft = EntityDefinition & { aliasesInput?: string };
+
+function newEntity(type: EntityDefinition["type"]): EntityDraft {
   return { id: crypto.randomUUID(), key: "", type, name: "", aliases: [], description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
 }
 
-function normalizedAliases(entity: EntityDefinition) {
+function normalizedAliases(entity: EntityDefinition): CharacterAlias[] {
   const canonical = entity.name.trim().toLocaleLowerCase();
   const seen = new Set<string>();
-  return (entity.aliases ?? []).map((alias) => alias.trim()).filter((alias) => {
-    const key = alias.toLocaleLowerCase();
-    if (!alias || key === canonical || seen.has(key)) return false;
+  return (entity.aliases ?? []).flatMap((alias) => {
+    const name = characterAliasName(alias).trim();
+    const key = name.toLocaleLowerCase();
+    if (!name || key === canonical || seen.has(key)) return [];
     seen.add(key);
-    return true;
+    const condition = characterAliasCondition(alias);
+    return [{ name, ...(condition ? { condition } : {}) }];
   });
 }
 
-export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
+/** Keep the exact in-progress textarea value; stripping blank lines here prevented Space and Enter. */
+function aliasesFromInput(value: string, previous: readonly CharacterAlias[]): CharacterAlias[] {
+  const names = value.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+  const remaining = new Set(names.map((name) => name.toLocaleLowerCase()));
+  const taken = new Set<number>();
+  return names.map((name, index) => {
+    const matching = previous.findIndex((alias, oldIndex) =>
+      !taken.has(oldIndex) && characterAliasName(alias).toLocaleLowerCase() === name.toLocaleLowerCase());
+    // A changed name retains its rule, but inserting a new row cannot steal a later row's rule.
+    const oldIndex = matching >= 0 ? matching
+      : index < previous.length && !taken.has(index)
+        && !remaining.has(characterAliasName(previous[index]).toLocaleLowerCase()) ? index : -1;
+    if (oldIndex >= 0) taken.add(oldIndex);
+    const condition = oldIndex >= 0 ? characterAliasCondition(previous[oldIndex]) : undefined;
+    return { name, ...(condition ? { condition } : {}) };
+  });
+}
+
+export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
   id: "world-entity",
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
-  createDraft: (route, context) => structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId) ?? newEntity(route.data?.entityType === "location" ? "location" : "character")),
+  createDraft: (route, context) => {
+    const entity = structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
+      ?? newEntity(route.data?.entityType === "location" ? "location" : "character"));
+    return { ...entity, aliasesInput: (entity.aliases ?? []).map(characterAliasName).join("\n") };
+  },
   buildSpec: ({ route, context, draft, setDraft }) => {
     const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);
     const usages = persisted
       ? referencesTo(context.snapshot, draft.type, draft.id).filter((reference) =>
           reference.ownerId !== draft.id || reference.ownerKind !== draft.type)
       : [];
+
+    const setAliasCondition = (index: number, condition?: Condition) => setDraft((current) => ({
+      ...current,
+      aliases: (current.aliases ?? []).map((alias, candidateIndex) => {
+        if (candidateIndex !== index) return alias;
+        return { name: characterAliasName(alias), ...(condition ? { condition } : {}) };
+      }),
+    }));
+    const aliasEntries = (draft.aliases ?? []).map((alias) => ({
+      name: characterAliasName(alias),
+      condition: characterAliasCondition(alias),
+    }));
+    const aliasErrors = aliasEntries.flatMap((alias) => alias.condition
+      ? validateCondition(alias.condition).map((issue) => `${alias.name}: ${issue}`)
+      : []);
 
     const deleteEntity = async () => {
       if (!persisted || usages.length) return;
@@ -107,13 +151,46 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
                 label: "Aliases",
                 control: "textarea" as const,
                 rows: 4,
-                value: (draft.aliases ?? []).join("\n"),
+                value: draft.aliasesInput ?? "",
                 placeholder: "one alternate name per line",
+                help: "Type one name per line. Spaces and blank lines are kept while editing.",
                 onChange: (value: string) => setDraft((current) => ({
                   ...current,
-                  aliases: value.split(/\r?\n/).map((alias) => alias.trim()).filter(Boolean),
+                  aliasesInput: value,
+                  aliases: aliasesFromInput(value, current.aliases ?? []),
                 })),
               },
+              ...(aliasEntries.length ? [{
+                type: "custom" as const,
+                id: "world-character-alias-rules",
+                role: "rule-editor" as const,
+                content: <div className="world-alias-rules">
+                  <small>Seeded names join the canonical name at world creation. Conditional names override that selection while their rule matches, in list order.</small>
+                  {aliasEntries.map((alias, index) => <div className="world-alias-rule" key={index}>
+                    <div className="world-alias-rule-header">
+                      <strong>{alias.name}</strong>
+                      <label>USE NAME
+                        <select aria-label={`When to use ${alias.name}`} value={alias.condition ? "conditional" : "seeded"}
+                          onChange={(event) => setAliasCondition(index, event.target.value === "conditional" ? ALWAYS : undefined)}>
+                          <option value="seeded">Seeded at game start</option>
+                          <option value="conditional">When condition matches</option>
+                        </select>
+                      </label>
+                    </div>
+                    {alias.condition ? <ConditionEditor
+                      condition={alias.condition}
+                      snapshot={context.snapshot}
+                      onChange={(condition) => setAliasCondition(index, condition)}
+                    /> : null}
+                  </div>)}
+                </div>,
+              }] : []),
+              ...(aliasErrors.length ? [{
+                type: "status" as const,
+                id: "world-character-alias-errors",
+                tone: "error" as const,
+                text: aliasErrors.join(" · "),
+              }] : []),
               {
                 type: "resource" as const,
                 id: "world-character-portrait",
@@ -185,15 +262,17 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDefinition>({
   },
   async save({ route, context, draft }) {
     if (!draft.name.trim()) return { accepted: false };
+    if ((draft.aliases ?? []).some((alias) => characterAliasCondition(alias) && validateCondition(characterAliasCondition(alias)!).length)) return { accepted: false };
     const key = resolveAuthorKey({
       override: draft.key,
       source: draft.name,
       existingKeys: context.snapshot.entities.filter((entity) => entity.id !== draft.id).map((entity) => entity.key),
       fallback: draft.type,
     });
-    const saved = draft.type === "character"
+    const saved: EntityDefinition = draft.type === "character"
       ? { ...draft, key, aliases: normalizedAliases(draft) }
       : { ...draft, key, aliases: [], portraitAssetId: null };
+    delete (saved as EntityDraft).aliasesInput;
     const result = await context.persist([{ type: "entity.upsert", entity: saved }], `Save ${saved.type} ${saved.name || key}`);
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
