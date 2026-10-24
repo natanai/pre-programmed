@@ -10,6 +10,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { characterAliasCondition, characterAliasName, type EntityDefinition } from "../model";
 import { aliasesFromInput, normalizedAliases } from "./aliasInput";
+import { entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
 import { characterStartingNameSelection } from "../playState";
 import "./worldWorkspaces.css";
 
@@ -58,27 +59,12 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
   }),
 });
 
-type EntityDraft = EntityDefinition & { aliasesInput?: string };
-
-function newEntity(type: EntityDefinition["type"]): EntityDraft {
-  return { id: crypto.randomUUID(), key: "", type, name: "", aliases: [], startingNameSelection: "first", description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
-}
-
 export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
   id: "world-entity",
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
   createDraft: (route, context) => {
-    const entity = structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
+    return entityAuthorDraft(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
       ?? newEntity(route.data?.entityType === "location" ? "location" : "character"));
-    return {
-      ...entity,
-      // Preserve the automatic startup draw only for older imported Characters
-      // that actually authored unconditional aliases. Adding an alias to a
-      // previously alias-less imported Character should not secretly randomize it.
-      startingNameSelection: entity.startingNameSelection
-        ?? ((entity.aliases ?? []).some((alias) => !characterAliasCondition(alias)) ? "random" : "first"),
-      aliasesInput: (entity.aliases ?? []).map(characterAliasName).join("\n"),
-    };
   },
   buildSpec: ({ route, context, draft, setDraft }) => {
     const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);
