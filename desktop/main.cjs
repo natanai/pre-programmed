@@ -333,9 +333,13 @@ async function runSelfTest() {
   } catch {
     throw new Error("Portable project export was not valid JSON.");
   }
-  if (!exportResponse.ok || exported?.format !== "pre-programmed-project" || exported?.version !== 1
-    || typeof exported?.project !== "object" || "revision" in exported.project
-    || !Array.isArray(exported?.bookmarks) || typeof exported?.featureData !== "object") {
+  if (!exportResponse.ok || exported?.format !== "pre-programmed-project"
+    || !Number.isInteger(exported?.version) || exported.version < 3
+    || !exported.project || typeof exported.project !== "object" || Array.isArray(exported.project)
+    || "revision" in exported.project
+    || !Number.isInteger(exported?.sourceSchemaVersion)
+    || !exported.featureData || typeof exported.featureData !== "object" || Array.isArray(exported.featureData)
+    || "bookmarks" in exported) {
     throw new Error("Portable project export contract failed.");
   }
 
