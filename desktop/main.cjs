@@ -357,25 +357,103 @@ async function runSelfTest() {
     throw new Error("Portable project import round-trip failed.");
   }
 
+  // Exercise the real Windows-contained Worker persistence boundary using
+  // older portable Character data, not just an empty project import.
+  const oldProject = structuredClone(exported);
+  oldProject.project.entities = [
+    ...(oldProject.project.entities ?? []).filter((entity) => entity.id !== "portable-self-test-character"),
+    {
+      id: "portable-self-test-character",
+      key: "rose",
+      type: "character",
+      name: "Rose",
+      aliases: ["Rosie", "Ro"], // Old exports stored plain strings.
+      description: "",
+      tags: [],
+      interactable: false,
+      operations: [],
+      hooks: [],
+      portraitAssetId: null,
+    },
+  ];
+  const importOldResponse = await fetch(new URL("api/author/project/import", url), {
+    method: "POST",
+    headers: { authorization: `Bearer ${login.token}`, "content-type": "application/json" },
+    body: JSON.stringify(oldProject),
+  });
+  const importedOld = await importOldResponse.json();
+  const oldCharacter = importedOld?.snapshot?.entities?.find(
+    (entity) => entity.id === "portable-self-test-character",
+  );
+  if (!importOldResponse.ok || JSON.stringify(oldCharacter?.aliases) !== JSON.stringify(["Rosie", "Ro"])) {
+    throw new Error(`Older Character alias import failed: ${JSON.stringify(importedOld)}`);
+  }
+
+  const updatedCharacter = {
+    ...oldCharacter,
+    aliases: [
+      { name: "Rosie", condition: { type: "always" } },
+      { name: "Sweetheart" },
+    ],
+    startingNameSelection: "first",
+  };
+  const editResponse = await fetch(new URL("api/author/mutate", url), {
+    method: "POST",
+    headers: { authorization: `Bearer ${login.token}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      expectedRevision: importedOld.snapshot.revision,
+      description: "Edit imported Character aliases",
+      operations: [{ type: "entity.upsert", entity: updatedCharacter }],
+    }),
+  });
+  const edited = await editResponse.json();
+  const editedCharacter = edited?.snapshot?.entities?.find(
+    (entity) => entity.id === "portable-self-test-character",
+  );
+  if (!editResponse.ok || editedCharacter?.aliases?.[0]?.condition?.type !== "always"
+    || editedCharacter?.aliases?.[1]?.name !== "Sweetheart"
+    || editedCharacter?.startingNameSelection !== "first") {
+    throw new Error(`Imported Character alias edit/save failed: ${JSON.stringify(edited)}`);
+  }
+
+  const reexportResponse = await fetch(new URL("api/author/project/export", url), {
+    headers: { authorization: `Bearer ${login.token}` }, cache: "no-store",
+  });
+  const reexported = await reexportResponse.json();
+  const exportedCharacter = reexported?.project?.entities?.find(
+    (entity) => entity.id === "portable-self-test-character",
+  );
+  if (!reexportResponse.ok || exportedCharacter?.aliases?.[0]?.condition?.type !== "always"
+    || exportedCharacter?.aliases?.[1]?.name !== "Sweetheart") {
+    throw new Error("Edited Character aliases were not retained by .ppgame export.");
+  }
+  const reimportResponse = await fetch(new URL("api/author/project/import", url), {
+    method: "POST",
+    headers: { authorization: `Bearer ${login.token}`, "content-type": "application/json" },
+    body: JSON.stringify(reexported),
+  });
+  const reimported = await reimportResponse.json();
+  if (!reimportResponse.ok || reimported?.snapshot?.entities?.find(
+    (entity) => entity.id === "portable-self-test-character",
+  )?.aliases?.[0]?.condition?.type !== "always") {
+    throw new Error("Edited Character aliases did not survive a second project import.");
+  }
+
   await shutdown();
 }
 
 function installSaveAsDownloads(window) {
   window.webContents.session.on("will-download", (_event, item) => {
-    item.pause();
     const suggestedName = item.getFilename() || "pre-programmed-export";
-    void dialog.showSaveDialog(window, {
+    // Electron owns the one native Save As dialog. Deferring setSavePath until
+    // after a second showSaveDialog raced Electron's own default download prompt.
+    // Configure that native prompt synchronously and let Electron handle cancel,
+    // chosen destination and download completion through its usual path.
+    item.setSaveDialogOptions({
       title: "Save file",
       defaultPath: path.join(app.getPath("downloads"), suggestedName),
       buttonLabel: "Save",
-    }).then(({ canceled, filePath }) => {
-      if (canceled || !filePath) {
-        item.cancel();
-        return;
-      }
-      item.setSavePath(filePath);
-      item.resume();
-    }).catch(() => item.cancel());
+    });
   });
 }
 

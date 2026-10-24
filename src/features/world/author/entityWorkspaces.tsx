@@ -118,12 +118,13 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                 id: "world-character-aliases",
                 role: "specialized-control" as const,
                 content: <div className="author-ui-field">
-                  <span className="author-ui-label">Aliases</span>
+                  <label className="author-ui-label" htmlFor="world-character-aliases-input">Aliases</label>
                   <ValueMentionField
                     snapshot={context.snapshot}
                     playState={context.playState}
                     multiline
                     rows={4}
+                    id="world-character-aliases-input"
                     value={draft.aliasesInput ?? ""}
                     placeholder="One alternate name per line"
                     ariaLabel="Character aliases"
