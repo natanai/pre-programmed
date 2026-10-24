@@ -18,6 +18,11 @@ function uniqueNames(values: readonly string[]) {
 }
 
 /** Canonical name plus only aliases participating in startup seed selection. */
+/** Older saved Characters randomized their unconditional aliases without an explicit setting. */
+export function characterStartingNameSelection(character: EntityDefinition) {
+  return character.startingNameSelection ?? "random";
+}
+
 export function characterNameOptions(character: EntityDefinition) {
   return uniqueNames([
     character.name,
@@ -36,11 +41,13 @@ export function initializeWorldPlayState(snapshot: ProjectSnapshot, state: PlayS
     .filter((entity) => entity.type === "character")
     .map((character) => {
       const options = characterNameOptions(character);
-      const selected = pickSeededInitializationValue(
-        state.initializationSeed,
-        `world.character:${character.id}:name`,
-        options,
-      ) ?? character.name;
+      const selected = characterStartingNameSelection(character) === "random"
+        ? pickSeededInitializationValue(
+          state.initializationSeed,
+          `world.character:${character.id}:name`,
+          options,
+        ) ?? character.name
+        : character.name;
       return [character.id, selected];
     }));
   return { ...state, characterNames };
