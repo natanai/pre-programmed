@@ -8,8 +8,9 @@ import { validateCondition } from "../../../engine/rules/conditions";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
-import { characterAliasCondition, characterAliasName, type EntityDefinition } from "../model";
+import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "../model";
 import { aliasesFromInput, normalizedAliases } from "./aliasInput";
+import { entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
 import "./worldWorkspaces.css";
 
 export function worldEntityRoute(type: EntityDefinition["type"], id?: string, resourceTask = false, preferredOperation?: string) {
@@ -57,19 +58,12 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
   }),
 });
 
-type EntityDraft = EntityDefinition & { aliasesInput?: string };
-
-function newEntity(type: EntityDefinition["type"]): EntityDraft {
-  return { id: crypto.randomUUID(), key: "", type, name: "", aliases: [], description: "", tags: [], portraitAssetId: null, interactable: false, operations: [], hooks: [] };
-}
-
 export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
   id: "world-entity",
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
   createDraft: (route, context) => {
-    const entity = structuredClone(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
+    return entityAuthorDraft(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
       ?? newEntity(route.data?.entityType === "location" ? "location" : "character"));
-    return { ...entity, aliasesInput: (entity.aliases ?? []).map(characterAliasName).join("\n") };
   },
   buildSpec: ({ route, context, draft, setDraft }) => {
     const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);
@@ -139,25 +133,38 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                       aliases: aliasesFromInput(value, current.aliases ?? []),
                     }))}
                   />
-                  <small className="author-ui-help">One alias per line. Type @ to reference a variable or another authored value. Aliases still use the seed or condition settings below.</small>
+                  <small className="author-ui-help">Other names for this Character, one per line. Type @ to use a variable. Adding an alias does not change the displayed name unless you choose when to show it.</small>
                 </div>,
               },
               ...(aliasEntries.length ? [{
+                type: "select" as const,
+                id: "world-character-starting-name",
+                label: "Starting name in play",
+                value: draft.startingNameSelection ?? characterStartingNameSelection(draft),
+                options: [
+                  { value: "first", label: "Use canonical name" },
+                  { value: "random", label: "Choose with world seed" },
+                ],
+                help: draft.startingNameSelection === "random"
+                  ? `A new game picks one of ${1 + aliasEntries.filter((alias) => !alias.condition).length} eligible names (including the canonical name) from the shared seed, and keeps that choice for the run. Names with WHEN rules are separate.`
+                  : "The character starts with their canonical name. A WHEN rule below can change what players see later.",
+                onChange: (startingNameSelection: string) => setDraft((current) => ({
+                  ...current,
+                  startingNameSelection: startingNameSelection === "random" ? "random" : "first",
+                })),
+              }, {
                 type: "custom" as const,
                 id: "world-character-alias-rules",
                 role: "rule-editor" as const,
                 content: <div className="world-alias-rules">
-                  <small>Seeded names join the canonical name at world creation. Conditional names override that selection while their rule matches, in list order.</small>
-                  {aliasEntries.map((alias, index) => <div className="world-alias-rule" key={index}>
+                  <small>Optional: show a nickname or other alias when a relationship or state changes. The first matching WHEN rule takes priority over the starting name.</small>
+                  {aliasEntries.map((alias, index) => <div className={`world-alias-rule${alias.condition ? " world-alias-rule-active" : ""}`} key={index}>
                     <div className="world-alias-rule-header">
                       <strong>{authorSemanticReferenceView(alias.name, aliasReferenceContext).text}</strong>
-                      <label>USE NAME
-                        <select aria-label={`When to use ${alias.name}`} value={alias.condition ? "conditional" : "seeded"}
-                          onChange={(event) => setAliasCondition(index, event.target.value === "conditional" ? ALWAYS : undefined)}>
-                          <option value="seeded">Seeded at game start</option>
-                          <option value="conditional">When condition matches</option>
-                        </select>
-                      </label>
+                      <button type="button" aria-label={`${alias.condition ? "Remove display condition for" : "Show as name when"} ${authorSemanticReferenceView(alias.name, aliasReferenceContext).text}`}
+                        onClick={() => setAliasCondition(index, alias.condition ? undefined : ALWAYS)}>
+                        {alias.condition ? "[− REMOVE WHEN]" : "[+ SHOW WHEN...]"}
+                      </button>
                     </div>
                     {alias.condition ? <ConditionEditor
                       condition={alias.condition}

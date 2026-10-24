@@ -2,7 +2,8 @@ import { pickSeededInitializationValue } from "../../engine/runtime/initializati
 import { interpolateSemanticReferences } from "../../engine/references/runtime";
 import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { characterAliasCondition, characterAliasName, type EntityDefinition } from "./model";
+import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "./model";
+export { characterStartingNameSelection } from "./model";
 
 function uniqueNames(values: readonly string[]) {
   const seen = new Set<string>();
@@ -36,11 +37,13 @@ export function initializeWorldPlayState(snapshot: ProjectSnapshot, state: PlayS
     .filter((entity) => entity.type === "character")
     .map((character) => {
       const options = characterNameOptions(character);
-      const selected = pickSeededInitializationValue(
-        state.initializationSeed,
-        `world.character:${character.id}:name`,
-        options,
-      ) ?? character.name;
+      const selected = characterStartingNameSelection(character) === "random"
+        ? pickSeededInitializationValue(
+          state.initializationSeed,
+          `world.character:${character.id}:name`,
+          options,
+        ) ?? character.name
+        : character.name;
       return [character.id, selected];
     }));
   return { ...state, characterNames };

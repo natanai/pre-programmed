@@ -26,23 +26,26 @@
   gap: .35em;
 }
 
+/* Aliases are compact alternate names. Only an expanded WHEN rule needs
+   additional vertical space or a border; don't present every alias as a form. */
 .world-alias-rules {
   display: grid;
-  gap: .65em;
+  gap: .35em;
   min-width: 0;
 }
 
 .world-alias-rules > small {
   color: var(--dos-muted);
-  line-height: 1.45;
+  line-height: 1.3;
+  margin-bottom: .2em;
 }
 
 .world-alias-rule {
   display: grid;
-  gap: .55em;
+  gap: .45em;
   min-width: 0;
-  padding: .65em;
-  border: 1px solid var(--dos-line);
+  padding: .35em 0;
+  border-top: 1px dotted var(--dos-line);
 }
 
 .world-alias-rule-header {
@@ -50,23 +53,28 @@
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: .5em 1em;
+  gap: .35em .65em;
 }
 
 .world-alias-rule-header strong {
   min-width: 0;
   overflow-wrap: anywhere;
+  font-weight: 400;
 }
 
-.world-alias-rule-header label {
-  display: grid;
-  gap: .25em;
-  min-width: min(100%, 13em);
-  font-size: .85em;
+.world-alias-rule-header button {
+  flex: 0 0 auto;
+  padding: .2em .3em;
+  font-size: .82em;
   color: var(--dos-muted);
 }
 
-.world-alias-rule-header select {
-  max-width: 100%;
-  color: var(--dos-text);
+.world-alias-rule-active > .world-alias-rule-header button {
+  color: var(--dos-bright);
+}
+
+@media (pointer: coarse) {
+  .world-alias-rule-header button {
+    min-height: 2.6em;
+  }
 }
