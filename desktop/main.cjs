@@ -362,20 +362,16 @@ async function runSelfTest() {
 
 function installSaveAsDownloads(window) {
   window.webContents.session.on("will-download", (_event, item) => {
-    item.pause();
     const suggestedName = item.getFilename() || "pre-programmed-export";
-    void dialog.showSaveDialog(window, {
+    // Electron owns the one native Save As dialog. Deferring setSavePath until
+    // after a second showSaveDialog raced Electron's own default download prompt.
+    // Configure that native prompt synchronously and let Electron handle cancel,
+    // chosen destination and download completion through its usual path.
+    item.setSaveDialogOptions({
       title: "Save file",
       defaultPath: path.join(app.getPath("downloads"), suggestedName),
       buttonLabel: "Save",
-    }).then(({ canceled, filePath }) => {
-      if (canceled || !filePath) {
-        item.cancel();
-        return;
-      }
-      item.setSavePath(filePath);
-      item.resume();
-    }).catch(() => item.cancel());
+    });
   });
 }
 
