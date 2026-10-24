@@ -92,7 +92,7 @@ describe("guided name capture reuses canonical Narrative, State and World", () =
     const oldCharacter = { ...char, startingNameSelection: undefined, aliases: ["Charlie", "Lottie"] };
     const draft = entityAuthorDraft(oldCharacter);
     expect(draft.startingNameSelection).toBe("random");
-    expect(aliasesFromInput("Charlie\\nLottie\\n{{variable:charlotte_nickname}}", draft.aliases ?? []).length).toBe(3);
+    expect(aliasesFromInput("Charlie\nLottie\n{{variable:charlotte_nickname}}", draft.aliases ?? []).length).toBe(3);
     expect(draft.aliases).toEqual(["Charlie", "Lottie"]);
   });
 
