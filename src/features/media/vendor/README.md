@@ -1,11 +1,10 @@
-# pre-midi native composition boundary
+# Native pre-midi contract
 
-This folder vendors the dependency-free v1 pre-midi schema and playback modules from https://github.com/natanai/pre-midi.
+This folder vendors the **current** dependency-free pre-midi musical document validator, format and Web Audio implementation from [pre-midi](https://github.com/natanai/pre-midi).
 
-- Source of truth for the portable document is pre-midi/schema.js.
-- These exact JavaScript modules are vendored because the portable pre-programmed desktop build must function without network/package-registry access.
-- The neighboring .d.ts files provide TypeScript declarations; pre-programmed never owns a parallel music production editor.
-- The native Media feature owns D1 storage, import/export and the Author resource task; playback is reused from pre-midi.
-- When updating pre-midi schema, synchronize the vendored files and add a v1 round-trip assertion. Incompatible schema changes require a new version and a migration, not silent conversion.
-
-The original code was authored in the pre-midi repository; no third-party dependencies are introduced.
+- Source of truth: pre-midi/schema.js and pre-midi/audio.js.
+- These modules are mirrored verbatim for offline playback in pre-programmed's own Media feature.
+- One v2 document: instruments, their reusable one-bar chunks, absolute timeline slots, and canonical note events.
+- No v1 compatibility or conversion: the original format was never used in imported projects.
+- Pre-programmed Media alone owns authored D1 mutations, import/export, preview, .ppgame round trips and event playback. Pre-midi alone owns full composition editing.
+- Future incompatible changes should update these source files and TypeScript declaration mirrors in lockstep.
