@@ -126,7 +126,7 @@ public/assets/audio/door-creak.ogg.asset.json
 
 The `.asset.json` file is therefore **not setup that an author must create**. It is an engine-owned identity receipt. Keep it with the file when moving or renaming that file if you want existing authored references to keep the same ID. If a build environment is read-only or ephemeral, the build still uses the same deterministic path-derived ID even if it cannot persist the receipt.
 
-The production build runs asset generation automatically. The Windows portable runtime uses the same scanner against the visible `assets/` folder beside the executable, so dropping the same bare file into either distribution follows the same identity rules.
+The production build runs asset generation automatically. The Windows portable runtime uses the same scanner against the visible `assets/` folder beside the `_engine/` directory, so dropping the same bare file into either distribution follows the same identity rules.
 
 Authored rules reference stable Media IDs rather than file URLs. File facts stay derived from the file itself, while author-editable name, presentation, and vector-grid editor identity stay in Media project data and travel with `.ppgame`. Older sidecars containing those fields remain readable as migration defaults; new engine-generated and exported receipts contain only `id`.
 

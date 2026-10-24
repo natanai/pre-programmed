@@ -114,6 +114,9 @@ jobs:
         working-directory: desktop
         run: npm ci --no-audit --no-fund
 
+      - name: Verify .ppgame drop arguments
+        run: node --test desktop/project-drop.test.cjs
+
       - name: Bundle Worker through Wrangler
         shell: pwsh
         run: |
@@ -168,20 +171,6 @@ jobs:
           Copy-Item "desktop/installation-template.txt" (Join-Path $appRoot "installation.txt")
           New-Item -ItemType Directory -Path (Join-Path $appRoot "assets") -Force | Out-Null
 
-          $vswhere = Join-Path ${env:ProgramFiles(x86)} "Microsoft Visual Studio\Installer\vswhere.exe"
-          if (-not (Test-Path $vswhere)) { throw "Visual Studio locator was not available on the Windows runner." }
-          $vsInstall = (& $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath | Select-Object -First 1)
-          if (-not $vsInstall) { throw "A Visual C++ toolchain was not available to build the portable launcher." }
-          $vcvars = Join-Path $vsInstall "VC\Auxiliary\Build\vcvars64.bat"
-          $launcherSource = (Resolve-Path "desktop/launcher.c").Path
-          $launcherOut = Join-Path $appRoot "Pre-Programmed.exe"
-          $launcherObj = Join-Path $env:RUNNER_TEMP "pre-programmed-launcher.obj"
-          $compile = "call `"$vcvars`" && cl.exe /nologo /O2 /MT /DUNICODE /D_UNICODE `"$launcherSource`" /Fo`"$launcherObj`" /link /SUBSYSTEM:WINDOWS /OUT:`"$launcherOut`""
-          & cmd.exe /d /c $compile
-          if ($LASTEXITCODE -ne 0 -or -not (Test-Path $launcherOut)) {
-            throw "Portable root launcher compilation failed."
-          }
-
           if (-not (Test-Path (Join-Path $engineRoot "Pre-Programmed.exe"))) {
             throw "Contained Electron runtime did not contain its executable."
           }
@@ -189,13 +178,13 @@ jobs:
           "app_root=$appRoot" >> $env:GITHUB_OUTPUT
           "engine_root=$engineRoot" >> $env:GITHUB_OUTPUT
 
-      - name: Smoke-test contained folder through root launcher
+      - name: Smoke-test contained runtime and .ppgame loading
         shell: pwsh
         env:
           APP_ROOT: ${{ steps.stage.outputs.app_root }}
           ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
         run: |
-          $launcher = Join-Path $env:APP_ROOT "Pre-Programmed.exe"
+          $executable = Join-Path $env:ENGINE_ROOT "Pre-Programmed.exe"
           $installation = Join-Path $env:APP_ROOT "installation.txt"
           $config = Get-Content $installation -Raw
           $config = $config -replace '(?m)^AUTHOR_KEY=.*$', 'AUTHOR_KEY=folder-self-test-key'
@@ -204,7 +193,7 @@ jobs:
 
           $stdout = Join-Path $env:APP_ROOT "self-test-stdout.txt"
           $stderr = Join-Path $env:APP_ROOT "self-test-stderr.txt"
-          $process = Start-Process -FilePath $launcher -ArgumentList "--self-test" -WorkingDirectory $env:APP_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          $process = Start-Process -FilePath $executable -ArgumentList "--self-test" -WorkingDirectory $env:ENGINE_ROOT -PassThru -Wait -RedirectStandardOutput $stdout -RedirectStandardError $stderr
           if (Test-Path $stdout) { Get-Content $stdout }
           if (Test-Path $stderr) { Get-Content $stderr }
           if ($process.ExitCode -ne 0) {
@@ -235,7 +224,7 @@ jobs:
           APP_ROOT: ${{ steps.stage.outputs.app_root }}
           ENGINE_ROOT: ${{ steps.stage.outputs.engine_root }}
         run: |
-          foreach ($required in @("Pre-Programmed.exe", "installation.txt", "assets", "_engine")) {
+          foreach ($required in @("installation.txt", "assets", "_engine")) {
             if (-not (Test-Path (Join-Path $env:APP_ROOT $required))) {
               throw "Portable folder is missing required entry: $required"
             }
@@ -247,11 +236,11 @@ jobs:
           }
 
           $rootEntries = @(Get-ChildItem $env:APP_ROOT -Force | ForEach-Object Name | Sort-Object)
-          $expectedRoot = @("_engine", "assets", "installation.txt", "Pre-Programmed.exe") | Sort-Object
+          $expectedRoot = @("_engine", "assets", "installation.txt") | Sort-Object
           if (($rootEntries -join "`n") -ne ($expectedRoot -join "`n")) {
             Write-Host "Unexpected portable root entries:"
             $rootEntries | ForEach-Object { Write-Host $_ }
-            throw "Portable root must expose only the launcher, installation.txt, assets, and _engine."
+            throw "Portable root must expose only installation.txt, assets, and _engine."
           }
 
           $installationLines = @(Get-Content (Join-Path $env:APP_ROOT "installation.txt"))
@@ -306,7 +295,6 @@ jobs:
             $reader.Dispose()
           }
           foreach ($required in @(
-            "Pre-Programmed/Pre-Programmed.exe",
             "Pre-Programmed/installation.txt",
             "Pre-Programmed/assets/",
             "Pre-Programmed/_engine/Pre-Programmed.exe",
@@ -314,6 +302,7 @@ jobs:
           )) {
             if ($entries -notcontains $required) { throw "Portable ZIP is missing required entry: $required" }
           }
+          if ($entries -contains "Pre-Programmed/Pre-Programmed.exe") { throw "Redundant root executable was packed." }
           if ($entries -contains "Pre-Programmed/data/" -or $entries -contains "Pre-Programmed/exports/") {
             throw "Legacy root state folders leaked into portable ZIP."
           }
