@@ -7,6 +7,14 @@ PRE-PROGRAMMED — WINDOWS PORTABLE ENGINE
 5. Type: admin
 6. Enter the Author key from installation.txt.
 
+UPDATING WITHOUT LOSING YOUR GAME
+1. Close Pre-Programmed. Export a .ppgame backup in Author mode first if possible.
+2. Extract the NEW ZIP into a separate empty folder; do not replace only Pre-Programmed.exe.
+3. Copy _engine/data, assets, and installation.txt FROM YOUR OLD FOLDER into the NEW folder. Keep their contents. The old folder is your safety backup.
+4. Open Pre-Programmed.exe in the NEW folder and check your Characters, aliases, and Nodes before deleting the old folder.
+
+IMPORTANT: The Pre-Programmed.exe beside installation.txt is only a launcher. The actual application is inside _engine, and your saved game is inside _engine/data. Replacing only the top-level EXE will NOT update the Author tools. An imported .ppgame also cannot update the engine; always open it in the newly extracted engine first.
+
 YOUR GAME
 Author mode → PROJECT FILE can export your authored game to one .ppgame file or import it into another Pre-Programmed build.
 
