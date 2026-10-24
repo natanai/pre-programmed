@@ -310,6 +310,82 @@
   font-weight: 400;
 }
 
+/* Capture is one ordered Narrative flow. Put the frequent "store input"
+   decision first; only reveal post-input prose/effects/branching as needed. */
+.capture-flow-intro {
+  display: grid;
+  gap: .3em;
+}
+
+.capture-flow-intro strong,
+.capture-storage > strong {
+  color: var(--dos-bright);
+  font-weight: 400;
+}
+
+.capture-flow-intro p,
+.capture-storage small,
+.capture-optional-content > p {
+  color: var(--dos-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.capture-storage {
+  display: grid;
+  gap: .4em;
+  min-width: 0;
+}
+
+.capture-storage .author-reference-field {
+  min-width: 0;
+}
+
+.capture-flow-summary {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--dos-muted);
+  font-size: .87em;
+  line-height: 1.4;
+}
+
+.capture-optional-section {
+  min-width: 0;
+  border-top: 1px dotted var(--dos-line);
+}
+
+.capture-optional-section > summary {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: .35em .65em;
+  min-height: 2.55em;
+  align-items: center;
+  cursor: pointer;
+  color: var(--dos-text);
+  font-size: .92em;
+  list-style-position: inside;
+}
+
+.capture-optional-section > summary small {
+  color: var(--dos-muted);
+  font-size: .88em;
+  overflow-wrap: anywhere;
+}
+
+.capture-optional-content {
+  display: grid;
+  gap: .7em;
+  min-width: 0;
+  padding: .5em 0 .75em;
+}
+
+@media (pointer: coarse) {
+  .capture-optional-section > summary {
+    min-height: 2.95em;
+  }
+}
+
 .guided-editor-error {
   margin: .75em 0 0;
 }
