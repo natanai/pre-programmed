@@ -183,6 +183,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                         {alias.condition ? "[− REMOVE WHEN]" : "[+ SHOW WHEN...]"}
                       </button>
                     </div>
+                    <small className="world-alias-display-state">{alias.condition ? alias.condition.type === "always" ? "SHOWS ALWAYS · FIRST MATCH WINS" : "SHOWS WHEN RULE MATCHES" : "REFERENCE ONLY · NOT DISPLAYED"}</small>
                     {alias.condition ? <ConditionEditor
                       condition={alias.condition}
                       snapshot={context.snapshot}
