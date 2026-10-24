@@ -162,7 +162,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
               onOpenPlayerLanguage={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}
               onCreatePlayerCommand={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}
               onEditPlayerCommand={(commandId) => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId } })}
-              capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+              capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? NATIVE_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
               onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
             />,
           }],
