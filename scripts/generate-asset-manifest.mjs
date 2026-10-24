@@ -1,3 +1,4 @@
+import "./generate-brand-assets.mjs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { scanAssetDirectory } from "./asset-manifest-lib.mjs";
