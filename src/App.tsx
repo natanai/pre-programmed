@@ -93,6 +93,12 @@ const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cue
 
 type TranscriptLine = PersistedTranscriptLine;
 
+function playerSpeakerName(snapshot: ProjectSnapshot | null, state: PlayState | null, speakerId: string | null): string | undefined {
+  if (!snapshot || !state || !speakerId) return undefined;
+  const speaker = snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId);
+  return speaker ? characterNameForPresentation(speaker, state, false, snapshot) : undefined;
+}
+
 type RuntimePresentationExecution = {
   state: PlayState;
   events: EffectEvent[];
@@ -296,6 +302,7 @@ export default function App() {
         text: activeText,
         nodeId: node.id,
         speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId),
         source: activeSource,
       }]);
     }
@@ -314,6 +321,7 @@ export default function App() {
         id: crypto.randomUUID(),
         text: activeText,
         speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId),
         source: activeSource,
       }]);
     }
@@ -337,6 +345,7 @@ export default function App() {
         id: crypto.randomUUID(),
         text: activeText,
         speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId),
         source: activeSource,
       }]);
     }
@@ -429,7 +438,8 @@ export default function App() {
     const destination = snapshot.nodes.find((node) => node.id === pendingDestinationNodeId);
     setPendingDestinationNodeId(null);
     if (!destination) return;
-    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, speakerId: activeSpeakerId, source: activeSource }]);
+    setTranscript((lines) => [...lines, { id: crypto.randomUUID(), text: activeText, speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId), source: activeSource }]);
     showNode(snapshot, destination, playState);
   }, [typewriter.complete, secondaryProsePending, pendingDestinationNodeId, snapshot, playState, activeText, activeSpeakerId, activeSource]);
 
@@ -672,6 +682,7 @@ export default function App() {
       text: activeText,
       nodeId: activeNodeId,
       speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId),
       source: activeSource,
     }]);
   };
@@ -753,6 +764,7 @@ export default function App() {
         text: activeText,
         nodeId: activeNodeId,
         speakerId: activeSpeakerId,
+        speakerName: playerSpeakerName(snapshot, playState, activeSpeakerId),
         source: activeSource,
       }]);
     }
@@ -1061,6 +1073,7 @@ export default function App() {
                 state={playState}
                 authorMode={authorExperience}
                 speakerId={line.speakerId}
+                speakerName={line.speakerName}
                 onEdit={authorExperience && line.speakerId ? () => openAuthorResource("character", line.speakerId!) : undefined}
               />
               {lineEditable && !line.command
@@ -1227,17 +1240,18 @@ export default function App() {
   </main>;
 }
 
-function SpeakerPrefix({ snapshot, state, authorMode, speakerId, onEdit }: {
+function SpeakerPrefix({ snapshot, state, authorMode, speakerId, speakerName, onEdit }: {
   snapshot: ProjectSnapshot;
   state: PlayState;
   authorMode: boolean;
   speakerId?: string | null;
+  speakerName?: string;
   onEdit?: () => void;
 }) {
   if (!speakerId) return null;
   const speaker = snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId);
   if (!speaker) return null;
-  const name = characterNameForPresentation(speaker, state, authorMode);
+  const name = authorMode ? speaker.name : speakerName ?? characterNameForPresentation(speaker, state, false, snapshot);
   return onEdit
     ? <button type="button" className="story-speaker-edit" onClick={onEdit}>{name}: </button>
     : <span>{name}: </span>;
