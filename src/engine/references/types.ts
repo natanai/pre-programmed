@@ -22,6 +22,8 @@ export type SemanticReferenceCandidate = {
   label: string;
   detail?: string;
   aliases: string[];
+  /** Optional owner-supplied names accepted by explicit authored input references. */
+  inputNames?: string[];
   /** Projection used when the author inserts the candidate without choosing a field. */
   defaultProjection: string;
   /** Optional default formatting rule for the default projection. */
