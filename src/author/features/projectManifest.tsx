@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "./types";
 import { PROJECT_GENERAL_SETTINGS, projectTerminalSettingsWorkspace } from "../settings/projectGeneralSettings";
+import { projectTerminalReferences } from "../settings/projectGeneralReferences";
 import { projectTransferAuthorWorkspace } from "../project/projectTransferWorkspace";
 import { projectAuthorTools } from "../tools/projectTools";
 import {
@@ -56,6 +57,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
     runtimeStateConditionAdapter,
   ],
   effects: [notificationEffectAdapter],
+  references: [projectTerminalReferences],
   tools: projectAuthorTools,
   workspaces: [projectTerminalSettingsWorkspace, projectTransferAuthorWorkspace],
   projectSettings: PROJECT_GENERAL_SETTINGS,
