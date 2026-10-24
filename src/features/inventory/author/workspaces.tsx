@@ -1,5 +1,6 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { authorOperationDefinitions } from "../../../author/operations/catalog";
 import { NATIVE_ITEM_OPERATIONS } from "../nativeOperations";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
@@ -84,6 +85,9 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
   canSave: ({ draft }) => Boolean(draft.name.trim()),
   buildSpec: ({ route, context, draft, setDraft }) => {
     const existing = context.snapshot.items.some((candidate) => candidate.id === draft.id);
+    const commandOperations = authorOperationDefinitions(context.snapshot, "inventory.item");
+    const availableCommands = commandOperations.filter((operation) => (draft.operations ?? NATIVE_ITEM_OPERATIONS).includes(operation.value));
+    const authoredResponses = (draft.hooks ?? []).filter((hook) => commandOperations.some((operation) => operation.value === hook.operation));
     const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
       (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
     ));
@@ -144,7 +148,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
           type: "disclosure",
           id: "inventory-item-behavior",
           label: "Player behavior",
-          summary: `${(draft.operations ?? []).length} operations · ${(draft.hooks ?? []).length} responses`,
+          summary: `${availableCommands.length} player operations · ${authoredResponses.length} responses`,
           defaultOpen: route.data?.section === "operations" || Boolean(route.data?.operation),
           children: [{
             type: "custom",
