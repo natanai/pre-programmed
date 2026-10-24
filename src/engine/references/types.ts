@@ -42,6 +42,8 @@ export type SemanticReferenceContext = {
   now?: number;
   /** Author presentation keeps canonical authored identity; Play uses resolved run identity. */
   authorMode?: boolean;
+  /** Internal recursion guard for Character alias templates that reference Characters. */
+  resolvingCharacterIds?: ReadonlySet<string>;
 };
 
 /**
