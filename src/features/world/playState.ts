@@ -1,4 +1,5 @@
 import { pickSeededInitializationValue } from "../../engine/runtime/initializationRandom";
+import { interpolateSemanticReferences } from "../../engine/references/runtime";
 import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import { characterAliasCondition, characterAliasName, type EntityDefinition } from "./model";
@@ -68,10 +69,18 @@ export function characterNameForPresentation(
   state: PlayState,
   authorMode = false,
   snapshot?: ProjectSnapshot,
+  resolvingCharacterIds: ReadonlySet<string> = new Set(),
 ) {
   if (authorMode) return character.name;
   const seededName = resolvedCharacterName(character, state);
-  if (!snapshot) return seededName;
+  if (!snapshot || resolvingCharacterIds.has(character.id)) return character.name;
+
+  // Keep the seeded choice as a stable authored template; resolve its current
+  // values only when presenting it, so naming variables can change mid-run.
+  // The shared semantic resolver owns the @ meaning, not World or its aliases.
+  const activeIds = new Set([...resolvingCharacterIds, character.id]);
+  const present = (template: string) =>
+    interpolateSemanticReferences(template, { snapshot, state, resolvingCharacterIds: activeIds }).trim();
 
   // Use Engine Rules\u2019 canonical ordered conditional selector; aliases do not own rule evaluation.
   const conditional = selectConditionalCandidate(
@@ -82,5 +91,5 @@ export function characterNameForPresentation(
     }),
     { snapshot, state },
   );
-  return conditional?.name ?? seededName;
+  return (conditional ? present(conditional.name) : "") || present(seededName) || character.name;
 }
