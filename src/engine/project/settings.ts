@@ -83,6 +83,7 @@ export function normalizeProjectSnapshot(snapshot: SnapshotLike): ProjectSnapsho
     ...normalizeNarrativeProjectSlice(snapshot),
     ...normalizeStateProjectSlice(snapshot),
     ...normalizeInventoryProjectSlice(snapshot),
+    mediaCompositions: Array.isArray(snapshot.mediaCompositions) ? snapshot.mediaCompositions : [],
     settings: normalizeProjectSettings(snapshot.settings),
   } as ProjectSnapshot;
   return migrateSnapshotReferenceTokens(normalized);
