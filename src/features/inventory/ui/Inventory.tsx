@@ -13,11 +13,11 @@ import {
 import { bodySlotPercentRect, DEFAULT_BODY_CANVAS, normalizeBodyTypeDefinition } from "../bodyCanvas";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import type { OperationId, OperationTarget } from "../../operations/model";
+import { NATIVE_ITEM_OPERATIONS } from "../nativeOperations";
 import { executeOperation, formatOperationOutput, type OperationRequest } from "../../operations/runtime";
 import { BodyDiagram } from "./BodyDiagram";
 import "../author/inventoryAuthor.css";
 
-const DEFAULT_ITEM_OPERATIONS: OperationId[] = ["inspect", "use", "move", "remove", "equip", "unequip"];
 
 /**
  * Inventory's live player surface owns carried items, the grid, body slots, and
@@ -81,7 +81,7 @@ export function Inventory({
     {onEdit ? <button type="button" onClick={onEdit}>[EDIT]</button> : null}
   </div>;
 
-  const selectedItemOperations = selectedItem?.operations ?? DEFAULT_ITEM_OPERATIONS;
+  const selectedItemOperations = selectedItem?.operations ?? NATIVE_ITEM_OPERATIONS;
   const compatibleSlots = selectedItem ? compatibleBodySlots(snapshot, state, selectedItem) : [];
   const equippedAnchor = selectedEntry?.equipment
     ? activeSlots.find((slot) => slot.key === selectedEntry.equipment?.anchorSlotKey)
