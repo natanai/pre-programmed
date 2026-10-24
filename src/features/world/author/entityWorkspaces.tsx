@@ -247,7 +247,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
     if (result.status !== "saved" && result.status !== "queued") return { accepted: false };
     return {
       accepted: true,
-      draft: saved,
+      draft: { ...saved, aliasesInput: (saved.aliases ?? []).map(characterAliasName).join("\n") },
       ...(route.data?.resourceTask ? { completion: { type: "resource" as const, kind: saved.type, id: saved.id, value: saved.id, label: saved.name || saved.key } } : {}),
     };
   },
