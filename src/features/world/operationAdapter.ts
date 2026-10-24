@@ -1,6 +1,6 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
-import { resolvedCharacterName } from "./playState";
+import { characterNameForPresentation } from "./playState";
 
 export const WORLD_ENTITY_OPERATION_TARGET_KIND = "world.entity";
 
@@ -18,7 +18,7 @@ export const WORLD_ENTITY_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
     return {
       definitionId: entity.id,
       label: entity.type === "character"
-        ? resolvedCharacterName(entity, state)
+        ? characterNameForPresentation(entity, state, false, snapshot)
         : entity.name || entity.key,
       interactable: entity.interactable ?? false,
       operations: entity.operations ?? [],

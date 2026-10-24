@@ -21,7 +21,16 @@ export const worldProjectReferences: ProjectReferenceContribution = (snapshot, c
   if (entity.type === "character") {
     references.push(...(entity.aliases ?? []).flatMap((alias) => {
       const condition = characterAliasCondition(alias);
-      return condition ? context.condition(condition).map((target) => ({
+      const name = typeof alias === "string" ? alias : alias.name;
+      const nameTargets = context.text(name).map((target) => ({
+        ...target,
+        detail: `character alias name · ${target.detail}`,
+        ownerKind: entity.type,
+        ownerId: entity.id,
+        ownerLabel: entity.name || entity.key,
+        route,
+      }));
+      const conditionTargets = condition ? context.condition(condition).map((target) => ({
         ...target,
         detail: `character alias condition · ${target.detail}`,
         ownerKind: entity.type,
@@ -29,6 +38,7 @@ export const worldProjectReferences: ProjectReferenceContribution = (snapshot, c
         ownerLabel: entity.name || entity.key,
         route,
       })) : [];
+      return [...nameTargets, ...conditionTargets];
     }));
   }
 

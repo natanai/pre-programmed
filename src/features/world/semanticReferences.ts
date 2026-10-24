@@ -26,7 +26,7 @@ function entityCandidate(
   context: SemanticReferenceContext,
 ): SemanticReferenceCandidate {
   const presentedName = entity.type === "character"
-    ? characterNameForPresentation(entity, context.state, context.authorMode === true, context.snapshot)
+    ? characterNameForPresentation(entity, context.state, context.authorMode === true, context.snapshot, context.resolvingCharacterIds)
     : entity.name;
   return {
     id: entity.id,
@@ -102,7 +102,7 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
     ? snapshot.entities.find((candidate) => candidate.id === active.characterId && candidate.type === "character")
     : undefined;
   const presentedName = entity
-    ? characterNameForPresentation(entity, state, context.authorMode === true, snapshot)
+    ? characterNameForPresentation(entity, state, context.authorMode === true, snapshot, context.resolvingCharacterIds)
     : "";
   return [{
     id: "current",

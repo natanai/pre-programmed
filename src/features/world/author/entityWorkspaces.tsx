@@ -1,4 +1,7 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
+import { ValueMentionField } from "../../../author/ValueMentionField";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
+import { createEmptyPlayState } from "../../../engine/project/playState";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import { validateCondition } from "../../../engine/rules/conditions";
@@ -82,6 +85,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
         return { name: characterAliasName(alias), ...(condition ? { condition } : {}) };
       }),
     }));
+    const aliasReferenceContext = { snapshot: context.snapshot, state: context.playState ?? createEmptyPlayState(context.snapshot) };
     const aliasEntries = (draft.aliases ?? []).map((alias) => ({
       name: characterAliasName(alias),
       condition: characterAliasCondition(alias),
@@ -116,19 +120,27 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
             { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
             ...(draft.type === "character" ? [
               {
-                type: "field" as const,
+                type: "custom" as const,
                 id: "world-character-aliases",
-                label: "Aliases",
-                control: "textarea" as const,
-                rows: 4,
-                value: draft.aliasesInput ?? "",
-                placeholder: "one alternate name per line",
-                help: "Type one name per line. Spaces and blank lines are kept while editing.",
-                onChange: (value: string) => setDraft((current) => ({
-                  ...current,
-                  aliasesInput: value,
-                  aliases: aliasesFromInput(value, current.aliases ?? []),
-                })),
+                role: "specialized-control" as const,
+                content: <div className="author-ui-field">
+                  <span className="author-ui-label">Aliases</span>
+                  <ValueMentionField
+                    snapshot={context.snapshot}
+                    playState={context.playState}
+                    multiline
+                    rows={4}
+                    value={draft.aliasesInput ?? ""}
+                    placeholder="One alternate name per line"
+                    ariaLabel="Character aliases"
+                    onValueChange={(value) => setDraft((current) => ({
+                      ...current,
+                      aliasesInput: value,
+                      aliases: aliasesFromInput(value, current.aliases ?? []),
+                    }))}
+                  />
+                  <small className="author-ui-help">One alias per line. Type @ to reference a variable or another authored value. Aliases still use the seed or condition settings below.</small>
+                </div>,
               },
               ...(aliasEntries.length ? [{
                 type: "custom" as const,
@@ -138,7 +150,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                   <small>Seeded names join the canonical name at world creation. Conditional names override that selection while their rule matches, in list order.</small>
                   {aliasEntries.map((alias, index) => <div className="world-alias-rule" key={index}>
                     <div className="world-alias-rule-header">
-                      <strong>{alias.name}</strong>
+                      <strong>{authorSemanticReferenceView(alias.name, aliasReferenceContext).text}</strong>
                       <label>USE NAME
                         <select aria-label={`When to use ${alias.name}`} value={alias.condition ? "conditional" : "seeded"}
                           onChange={(event) => setAliasCondition(index, event.target.value === "conditional" ? ALWAYS : undefined)}>
