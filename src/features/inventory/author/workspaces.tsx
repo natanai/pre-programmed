@@ -154,6 +154,9 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
               targetKind="inventory.item"
               defaultOpen={route.data?.section === "operations" || Boolean(route.data?.operation)}
               preferredOperation={route.data?.operation}
+              onOpenPlayerLanguage={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}
+              onCreatePlayerCommand={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}
+              onEditPlayerCommand={(commandId) => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId } })}
               capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
               onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
             />,
