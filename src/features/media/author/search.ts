@@ -12,7 +12,7 @@ export const mediaSearchDocuments: SearchDocumentContribution = (snapshot) =>
       id: composition.id,
       kind: "media-sound",
       label: composition.title,
-      searchText: composition.title + " " + composition.bpm + " BPM " + composition.tracks.map((track) => track.name).join(" "),
+      searchText: composition.title + " " + composition.bpm + " BPM " + composition.instruments.map((instrument) => instrument.name + " " + instrument.chunks.map((chunk) => chunk.name).join(" ")).join(" "),
     })),
     ...snapshot.mediaAssets.map((asset) => ({
       id: asset.id,

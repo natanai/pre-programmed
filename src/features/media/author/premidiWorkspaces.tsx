@@ -29,7 +29,7 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
           const input = event.currentTarget;
           setBusy(true);
           try {
-            if (file.size > 1_000_000) throw new Error("Composition file exceeds the 1 MB v1 limit.");
+            if (file.size > 1_000_000) throw new Error("Composition file exceeds the 1 MB limit.");
             const composition = parse(await file.text());
             setMessage(await onImport(composition));
           } catch (error) {
@@ -85,7 +85,7 @@ export const mediaCompositionsWorkspace = defineAuthorWorkspace({
       items: context.snapshot.mediaCompositions.map((composition) => ({
         id: "premidi:" + composition.id,
         label: composition.title,
-        detail: composition.tracks.length + " tracks · " + composition.bars + " bars · " + composition.bpm + " BPM",
+        detail: composition.instruments.length + " instruments · " + composition.bars + " bars · " + composition.bpm + " BPM",
         onAction: () => context.pushTask({
           type: "feature", feature: "media", workspace: "composition",
           data: { compositionId: composition.id },
@@ -120,9 +120,9 @@ export const mediaCompositionWorkspace = defineAuthorWorkspace({
         label: "Composition",
         importance: "primary",
         children: [
-          { type: "status", id: "premidi-summary", text: composition.tracks.length + " tracks · " + composition.bars + " bars · " + composition.bpm + " BPM" },
+          { type: "status", id: "premidi-summary", text: composition.instruments.length + " instruments · " + composition.bars + " bars · " + composition.bpm + " BPM" },
           { type: "status", id: "premidi-id", text: "STABLE MEDIA ID · " + composition.id },
-          { type: "status", id: "premidi-editing", text: "Edit notes, patterns and instruments in pre-midi, then reimport with the same ID to update this resource without breaking references." },
+          { type: "status", id: "premidi-editing", text: "Edit notes, chunks and instrument settings in pre-midi, then reimport with the same ID to update this resource without breaking references." },
         ],
       }],
       actions: [
