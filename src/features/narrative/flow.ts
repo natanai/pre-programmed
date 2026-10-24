@@ -110,11 +110,21 @@ export type CaptureFlowParts = {
   presentStep: Extract<NarrativeFlowStep, { type: "present" }>;
 };
 
-export function captureFlowParts(flow: readonly NarrativeFlowStep[]): CaptureFlowParts | null {
-  const awaitIndex = flow.findIndex((step) => step.type === "await_input");
-  if (awaitIndex !== 0) return null;
-  const effectsIndex = flow.findIndex((step, index) => index > awaitIndex && step.type === "effects");
-  const presentIndex = flow.findIndex((step, index) => index > awaitIndex && step.type === "present");
+export function captureFlowParts(
+  flow: readonly NarrativeFlowStep[],
+  awaitStepId?: string,
+): CaptureFlowParts | null {
+  const awaitIndex = awaitStepId
+    ? flow.findIndex((step) => step.type === "await_input" && step.id === awaitStepId)
+    : flow.findIndex((step) => step.type === "await_input");
+  // The capture preset owns the first flow step. Later captures remain in that
+  // same owner's ordered steps, not in new Node openings or hidden run states.
+  if (awaitIndex < 0 || (!awaitStepId && awaitIndex !== 0)) return null;
+  const nextBoundary = flow.findIndex((step, index) => index > awaitIndex
+    && (step.type === "await_input" || step.type === "transition" || step.type === "return_previous"));
+  const end = nextBoundary < 0 ? flow.length : nextBoundary;
+  const effectsIndex = flow.findIndex((step, index) => index > awaitIndex && index < end && step.type === "effects");
+  const presentIndex = flow.findIndex((step, index) => index > effectsIndex && index < end && step.type === "present");
   if (effectsIndex < 0 || presentIndex < 0) return null;
   const awaitStep = flow[awaitIndex];
   const effectsStep = flow[effectsIndex];
@@ -123,11 +133,41 @@ export function captureFlowParts(flow: readonly NarrativeFlowStep[]): CaptureFlo
   return { awaitIndex, effectsIndex, presentIndex, awaitStep, effectsStep, presentStep };
 }
 
+/** Every authored input/reply turn in one canonical Narrative flow. */
+export function captureFlowSegments(flow: readonly NarrativeFlowStep[]): CaptureFlowParts[] {
+  return flow.flatMap((step) => step.type === "await_input"
+    ? [captureFlowParts(flow, step.id)].filter((part): part is CaptureFlowParts => Boolean(part))
+    : []);
+}
+
+/** Continue after this reply by waiting for one more submission. */
+export function appendCaptureTurn(flow: readonly NarrativeFlowStep[]): NarrativeFlowStep[] {
+  const turns = captureFlowSegments(flow);
+  if (!turns.length) return flow.slice();
+  const finalPresentIndex = turns[turns.length - 1].presentIndex;
+  // Preserve the original final destination: the new turn runs before it.
+  return [
+    ...flow.slice(0, finalPresentIndex + 1),
+    ...createCaptureInputFlow(),
+    ...flow.slice(finalPresentIndex + 1),
+  ];
+}
+
+/** Remove only this captured turn's canonical steps; do not erase its siblings. */
+export function removeCaptureTurn(flow: readonly NarrativeFlowStep[], awaitStepId: string): NarrativeFlowStep[] {
+  const turns = captureFlowSegments(flow);
+  if (turns.length < 2) return flow.slice();
+  const part = turns.find((item) => item.awaitStep.id === awaitStepId);
+  if (!part) return flow.slice();
+  return [...flow.slice(0, part.awaitIndex), ...flow.slice(part.presentIndex + 1)];
+}
+
 export function replaceCaptureEffects(
   flow: readonly NarrativeFlowStep[],
   effects: Effect[],
+  awaitStepId?: string,
 ): NarrativeFlowStep[] {
-  const parts = captureFlowParts(flow);
+  const parts = captureFlowParts(flow, awaitStepId);
   if (!parts) return flow.slice();
   return flow.map((step, index) => index === parts.effectsIndex && step.type === "effects"
     ? { ...step, effects }
@@ -137,8 +177,9 @@ export function replaceCaptureEffects(
 export function replaceCapturePresentation(
   flow: readonly NarrativeFlowStep[],
   present: Extract<NarrativeFlowStep, { type: "present" }>,
+  awaitStepId?: string,
 ): NarrativeFlowStep[] {
-  const parts = captureFlowParts(flow);
+  const parts = captureFlowParts(flow, awaitStepId);
   if (!parts) return flow.slice();
   return flow.map((step, index) => index === parts.presentIndex ? present : step);
 }
@@ -148,8 +189,8 @@ export function replaceCapturePresentation(
  * effect held in the flow's existing effects step. No separate capture state,
  * effect evaluator, or persistence path.
  */
-export function capturedInputVariableKey(flow: readonly NarrativeFlowStep[]): string {
-  const effects = captureFlowParts(flow)?.effectsStep.effects ?? [];
+export function capturedInputVariableKey(flow: readonly NarrativeFlowStep[], awaitStepId?: string): string {
+  const effects = captureFlowParts(flow, awaitStepId)?.effectsStep.effects ?? [];
   const capture = effects.find((effect) => effect.type === "set_value"
     && isRuntimeBinding(effect.value) && effect.value.key === PLAYER_INPUT_BINDING);
   return capture?.type === "set_value" ? capture.key : "";
@@ -158,8 +199,9 @@ export function capturedInputVariableKey(flow: readonly NarrativeFlowStep[]): st
 export function replaceCapturedInputVariable(
   flow: readonly NarrativeFlowStep[],
   key: string,
+  awaitStepId?: string,
 ): NarrativeFlowStep[] {
-  const parts = captureFlowParts(flow);
+  const parts = captureFlowParts(flow, awaitStepId);
   if (!parts) return flow.slice();
   const effects = [...parts.effectsStep.effects];
   const index = effects.findIndex((effect) => effect.type === "set_value"
@@ -172,7 +214,7 @@ export function replaceCapturedInputVariable(
   } else if (key) {
     effects.unshift({ id: crypto.randomUUID(), type: "set_value", key, value: runtimeBinding(PLAYER_INPUT_BINDING) });
   }
-  return replaceCaptureEffects(flow, effects);
+  return replaceCaptureEffects(flow, effects, awaitStepId);
 }
 
 /** Context used by the canonical Effects editor for the segment after await input. */
