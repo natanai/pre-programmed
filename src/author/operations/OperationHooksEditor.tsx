@@ -218,7 +218,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                 >[+ {operation.label.toUpperCase()} RESPONSE]</button>
               </section>;
             })}
-            {!cardDefinitions.length ? <div className="operation-card-empty">No targeted Player Commands exist for this target. Define one in Advanced settings > Player language.</div> : null}
+            {!cardDefinitions.length ? <div className="operation-card-empty">No targeted Player Commands exist for this target. Define one in Advanced settings, under Player language.</div> : null}
           </div>
         </> : null}
       </> : selectedHook ? <>
