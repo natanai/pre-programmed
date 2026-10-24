@@ -44,6 +44,27 @@ export const MEDIA_SEMANTIC_REFERENCE_PROVIDERS: readonly SemanticReferenceProvi
       : null,
   },
   {
+    kind: "media.composition",
+    label: "Compositions",
+    description: "Native pre-midi compositions imported into the Media catalog.",
+    authorSyntax: "composition",
+    authorResourceKind: "media-sound",
+    defaultProjection: "title",
+    candidates: ({ snapshot }) => (snapshot.mediaCompositions ?? []).map((composition) => ({
+      id: composition.id,
+      key: composition.title,
+      label: composition.title,
+      detail: composition.tracks.length + " tracks · " + composition.bpm + " BPM",
+      aliases: [],
+      defaultProjection: "title",
+      projections: { title: composition.title, bpm: String(composition.bpm) },
+      author: { resourceKind: "media-sound", resourceId: composition.id },
+    })),
+    projectResource: (id, snapshot) => (snapshot.mediaCompositions ?? []).some((composition) => composition.id === id)
+      ? { resourceKind: "media-sound", resourceId: id }
+      : null,
+  },
+  {
     kind: "media.synth",
     label: "Synths",
     description: "Authored procedural Synth definitions.",
