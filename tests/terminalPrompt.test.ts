@@ -22,10 +22,10 @@ describe("terminal prompt semantic references", () => {
   const reference = makeSemanticReferenceToken("state.variable", playerName.id, "value");
 
   it("preserves trailing spaces in normalized and saved settings", () => {
-    const source = `\${reference}> `;
+    const source = `${reference}> `;
     const settings = normalizeProjectSettings({ ...DEFAULT_PROJECT_SETTINGS, terminalPrompt: source });
     expect(settings.terminalPrompt).toBe(source);
-    expect(normalizeProjectSettings({ terminalPrompt: "U:\\\\>  " }).terminalPrompt).toBe("U:\\\\>  ");
+    expect(normalizeProjectSettings({ terminalPrompt: "U:\\>  " }).terminalPrompt).toBe("U:\\>  ");
     expect(normalizeProjectSettings({ terminalPrompt: "   " }).terminalPrompt).toBe(DEFAULT_PROJECT_SETTINGS.terminalPrompt);
   });
 
