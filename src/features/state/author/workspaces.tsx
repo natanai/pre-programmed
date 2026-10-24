@@ -213,7 +213,7 @@ function newVariable(kind?: StateAuthorResourceKind): VariableDefinition {
     key: "",
     label: "",
     valueType,
-    initialValue: valueType === "boolean" ? false : 0,
+    initialValue: valueType === "boolean" ? false : valueType === "string" ? "" : 0,
     playerPresentation: null,
     interactable: false,
     operations: [],
