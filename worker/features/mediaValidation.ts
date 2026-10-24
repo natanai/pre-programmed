@@ -1,4 +1,5 @@
 import type { WorkerMutationValidator } from "./validationTypes";
+import type { ProjectSnapshot } from "../../src/engine/project/model";
 import { object } from "./validationHelpers";
 import { MAX_SYNTH_BEND, validateSynth } from "../../src/features/media/synth";
 import type { SynthSound } from "../../src/features/media/model";
@@ -102,3 +103,18 @@ export const mediaMutationValidator: WorkerMutationValidator = {
     return null;
   },
 };
+
+/** The same feature-owned validation must protect whole-project .ppgame restores. */
+export function validateNativeMediaCompositions(_before: ProjectSnapshot, after: ProjectSnapshot): string | null {
+  const ids = new Set<string>();
+  for (const composition of after.mediaCompositions ?? []) {
+    const errors = validatePremidi(composition);
+    if (errors.length) return "Invalid native composition in project: " + errors[0];
+    if (ids.has(composition.id)) return "Duplicate native composition ID.";
+    ids.add(composition.id);
+    if (new TextEncoder().encode(JSON.stringify(composition)).byteLength > 1_000_000) {
+      return "Native composition exceeds the 1 MB limit.";
+    }
+  }
+  return null;
+}
