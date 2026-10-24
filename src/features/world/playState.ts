@@ -1,6 +1,7 @@
 import { pickSeededInitializationValue } from "../../engine/runtime/initializationRandom";
+import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import type { EntityDefinition } from "./model";
+import { characterAliasCondition, characterAliasName, type EntityDefinition } from "./model";
 
 function uniqueNames(values: readonly string[]) {
   const seen = new Set<string>();
@@ -15,9 +16,14 @@ function uniqueNames(values: readonly string[]) {
   return names;
 }
 
-/** Canonical name plus the author's alternate-name pool for this Character. */
+/** Canonical name plus only aliases participating in startup seed selection. */
 export function characterNameOptions(character: EntityDefinition) {
-  return uniqueNames([character.name, ...(character.aliases ?? [])]);
+  return uniqueNames([
+    character.name,
+    ...(character.aliases ?? [])
+      .filter((alias) => !characterAliasCondition(alias))
+      .map(characterAliasName),
+  ]);
 }
 
 /**
@@ -61,6 +67,20 @@ export function characterNameForPresentation(
   character: EntityDefinition,
   state: PlayState,
   authorMode = false,
+  snapshot?: ProjectSnapshot,
 ) {
-  return authorMode ? character.name : resolvedCharacterName(character, state);
+  if (authorMode) return character.name;
+  const seededName = resolvedCharacterName(character, state);
+  if (!snapshot) return seededName;
+
+  // Use Engine Rules\u2019 canonical ordered conditional selector; aliases do not own rule evaluation.
+  const conditional = selectConditionalCandidate(
+    (character.aliases ?? []).flatMap((alias, order) => {
+      const condition = characterAliasCondition(alias);
+      const name = characterAliasName(alias).trim();
+      return condition && name ? [{ id: `${character.id}:${order}`, order, condition, name }] : [];
+    }),
+    { snapshot, state },
+  );
+  return conditional?.name ?? seededName;
 }

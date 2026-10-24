@@ -46,6 +46,22 @@ describe("player session persistence", () => {
     expect(resumed.variableTimeUpdatedAt).toBe(20_000);
   });
 
+  it("keeps the original player-visible speaker name after a later identity reveal", () => {
+    const session = sessionFor();
+    session.presentation.transcript.push({
+      id: "first-voice",
+      text: "Who goes there?",
+      speakerId: "guide",
+      speakerName: "Mysterious voice",
+    });
+
+    const normalized = normalizePersistedPlaySession(session);
+    expect(normalized?.presentation.transcript[0]).toMatchObject({
+      speakerId: "guide",
+      speakerName: "Mysterious voice",
+    });
+  });
+
   it("keeps stable Media identities in the saved transcript", () => {
     const current = sessionFor();
     current.presentation.transcript.push({ id: "art", text: "", artAssetId: "asset-eye" });
