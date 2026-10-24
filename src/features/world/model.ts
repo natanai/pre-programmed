@@ -36,3 +36,11 @@ export type EntityDefinition = {
   operations?: OperationId[];
   hooks?: OperationHook[];
 };
+
+/** The single read boundary for older Characters that implicitly seeded their aliases. */
+export function characterStartingNameSelection(character: EntityDefinition): ConditionalSelectionMode {
+  if (character.startingNameSelection) return character.startingNameSelection;
+  // No eligible aliases means either mode resolves to the canonical name.
+  // Treat it as first so an imported alias-less Character is intuitive to edit.
+  return (character.aliases ?? []).some((alias) => !characterAliasCondition(alias)) ? "random" : "first";
+}
