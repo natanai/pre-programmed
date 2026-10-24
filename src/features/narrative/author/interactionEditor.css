@@ -310,70 +310,37 @@
   font-weight: 400;
 }
 
-/* Capture is one ordered Narrative flow. Put the frequent "store input"
-   decision first; only reveal post-input prose/effects/branching as needed. */
-.capture-flow-intro {
+/* Serial input/reply turns are one Narrative flow, not simulated Nodes. */
+.capture-turn {
   display: grid;
-  gap: .3em;
+  gap: .8em;
+  padding: .8em 0 1em;
+  border-top: 1px dotted var(--dos-line);
+  min-width: 0;
 }
-
-.capture-flow-intro strong,
-.capture-storage > strong {
-  color: var(--dos-bright);
-  font-weight: 400;
+.capture-turn:first-child { border-top: none; padding-top: .1em; }
+.capture-turn-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: .5em;
 }
-
-.capture-flow-intro p,
-.capture-storage small,
-.capture-optional-content > p {
-  color: var(--dos-muted);
-  line-height: 1.4;
-  margin: 0;
-}
-
-.capture-storage {
+.capture-turn-heading strong { font-weight: 400; color: var(--dos-bright); }
+.capture-turn-heading button { min-height: 2.6em; color: var(--dos-muted); }
+.capture-storage, .capture-reply {
   display: grid;
   gap: .4em;
   min-width: 0;
 }
-
-.capture-storage .author-reference-field {
-  min-width: 0;
-}
-
-.capture-character-link {
-  display: grid;
-  gap: .35em;
-  min-width: 0;
-}
-
-.capture-character-link > strong {
-  font-weight: 400;
-  color: var(--dos-text);
-}
-
-.capture-character-link > strong small,
-.capture-character-link > small {
+.capture-storage > span, .capture-reply > strong {
   color: var(--dos-muted);
   font-weight: 400;
-  line-height: 1.35;
 }
-
-.capture-character-link > button {
+.capture-storage > span small { font-size: .9em; }
+.capture-add-turn {
   width: fit-content;
-  padding: .4em .55em;
   min-height: 2.75em;
-  color: var(--dos-bright);
 }
-
-.capture-flow-summary {
-  margin: 0;
-  overflow-wrap: anywhere;
-  color: var(--dos-muted);
-  font-size: .87em;
-  line-height: 1.4;
-}
-
 .capture-optional-section {
   min-width: 0;
   border-top: 1px dotted var(--dos-line);

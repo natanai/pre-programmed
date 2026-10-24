@@ -1,7 +1,7 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
-import { findSemanticReferenceTokens, makeSemanticReferenceToken } from "../../../engine/references/runtime";
+import { findSemanticReferenceTokens } from "../../../engine/references/runtime";
 import { createEmptyPlayState } from "../../../engine/project/playState";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
@@ -11,7 +11,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "../model";
 import { aliasesFromInput, normalizedAliases } from "./aliasInput";
-import { appendCapturedTextAlias, entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
+import { entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
 import "./worldWorkspaces.css";
 
 export function worldEntityRoute(type: EntityDefinition["type"], id?: string, resourceTask = false, preferredOperation?: string) {
@@ -81,16 +81,14 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
       }),
     }));
     const aliasReferenceContext = { snapshot: context.snapshot, state: context.playState ?? createEmptyPlayState(context.snapshot) };
-    const proposedVariable = route.data?.proposedAliasVariableId
-      ? context.snapshot.variables.find((variable) => variable.id === route.data?.proposedAliasVariableId && variable.valueType === "string")
-      : null;
-    const proposedAlias = proposedVariable ? makeSemanticReferenceToken("state.variable", proposedVariable.id, "value") : null;
-    const proposedAlreadyLinked = Boolean(proposedAlias && (draft.aliases ?? []).some((alias) => characterAliasName(alias) === proposedAlias));
-
-    const aliasEntries = (draft.aliases ?? []).map((alias) => ({
-      name: characterAliasName(alias),
-      condition: characterAliasCondition(alias),
-    }));
+    const aliasEntries = (draft.aliases ?? []).map((alias) => {
+      const name = characterAliasName(alias);
+      const tokens = findSemanticReferenceTokens(name);
+      const linkedTextVariable = tokens.length === 1 && tokens[0].token === name && tokens[0].kind === "state.variable"
+        ? context.snapshot.variables.find((variable) => variable.id === tokens[0].id && variable.valueType === "string")
+        : undefined;
+      return { name, condition: characterAliasCondition(alias), linkedTextVariable };
+    });
     const aliasErrors = aliasEntries.flatMap((alias) => alias.condition
       ? validateCondition(alias.condition).map((issue) => `${alias.name}: ${issue}`)
       : []);
@@ -120,19 +118,6 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
           children: [
             { type: "field", id: "world-entity-name", label: "Name", value: draft.name, autoFocus: !persisted, onChange: (name) => setDraft((current) => ({ ...current, name })) },
             ...(draft.type === "character" ? [
-              ...(proposedVariable && proposedAlias ? [{
-                type: "custom" as const,
-                id: "world-character-alias-suggestion",
-                role: "specialized-control" as const,
-                content: <div className="world-alias-suggestion">
-                  <strong>NAME FROM CAPTURED PLAYER INPUT</strong>
-                  <span>{proposedVariable.label || proposedVariable.key} · @ reference</span>
-                  {proposedAlreadyLinked
-                    ? <small>Already listed as an alias. Edit its WHEN rule below if desired.</small>
-                    : <button type="button" onClick={() => setDraft((current) => appendCapturedTextAlias(current, proposedVariable.id))}>[+ USE AS CHARACTER NAME WHEN ENTERED]</button>}
-                  <small>The alias is an ordinary @ reference. It displays when it contains text; otherwise the Character keeps their starting name. Save the Character to confirm.</small>
-                </div>,
-              }] : []),
               {
                 type: "custom" as const,
                 id: "world-character-aliases",
@@ -154,7 +139,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                       aliases: aliasesFromInput(value, current.aliases ?? []),
                     }))}
                   />
-                  <small className="author-ui-help">Other names for this Character, one per line. Type @ to use a variable. Adding an alias does not change the displayed name unless you choose when to show it.</small>
+                  <small className="author-ui-help">One per line. Type @ to reference a variable. An alias changes the displayed name only when you set SHOW WHEN below.</small>
                 </div>,
               },
               ...(aliasEntries.length ? [{
@@ -178,7 +163,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                 id: "world-character-alias-rules",
                 role: "rule-editor" as const,
                 content: <div className="world-alias-rules">
-                  <small>Optional: show a nickname or other alias when a relationship or state changes. The first matching WHEN rule takes priority over the starting name.</small>
+                  <small>Topmost matching display rule wins. An alias without SHOW WHEN is a reference only.</small>
                   {aliasEntries.map((alias, index) => <div className={`world-alias-rule${alias.condition ? " world-alias-rule-active" : ""}`} key={index}>
                     <div className="world-alias-rule-header">
                       <span className="world-alias-reference-title">
@@ -190,11 +175,13 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                             return <button key={variable.id} type="button" onClick={() => context.resources.edit("variable", variable.key)} aria-label={`Edit variable ${variable.label || variable.key}`}>[EDIT VARIABLE]</button>;
                           })}
                       </span>
-                      <button type="button" aria-label={`${alias.condition ? "Remove display condition for" : "Show as name when"} ${authorSemanticReferenceView(alias.name, aliasReferenceContext).text}`}
-                        onClick={() => setAliasCondition(index, alias.condition ? undefined : ALWAYS)}>
-                        {alias.condition ? "[− REMOVE WHEN]" : "[+ SHOW WHEN...]"}
+                      <button type="button" aria-label={`${alias.condition ? "Remove display condition for" : alias.linkedTextVariable ? "Display when variable has text" : "Display always"} ${authorSemanticReferenceView(alias.name, aliasReferenceContext).text}`}
+                        onClick={() => setAliasCondition(index, alias.condition ? undefined : alias.linkedTextVariable
+                          ? { type: "variable", key: alias.linkedTextVariable.key, operator: "neq", value: "" } : ALWAYS)}>
+                        {alias.condition ? "[− REMOVE WHEN]" : alias.linkedTextVariable ? "[+ SHOW WHEN SET]" : "[+ SHOW ALWAYS]"}
                       </button>
                     </div>
+                    <small className="world-alias-display-state">{alias.condition ? alias.condition.type === "always" ? "SHOWS ALWAYS · FIRST MATCH WINS" : "SHOWS WHEN RULE MATCHES" : "REFERENCE ONLY · NOT DISPLAYED"}</small>
                     {alias.condition ? <ConditionEditor
                       condition={alias.condition}
                       snapshot={context.snapshot}

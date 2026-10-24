@@ -4,6 +4,11 @@ import { makeSemanticReferenceToken } from "../src/engine/references/runtime";
 import { PLAYER_INPUT_BINDING, runtimeBinding } from "../src/engine/rules/runtimeBindings";
 import {
   captureFlowParts,
+  captureFlowSegments,
+  appendCaptureTurn,
+  removeCaptureTurn,
+  createTransitionStep,
+  replaceCapturePresentation,
   capturedInputVariableKey,
   createCaptureInputFlow,
   replaceCapturedInputVariable,
@@ -11,7 +16,8 @@ import {
 } from "../src/features/narrative/flow";
 import { armNarrativeFlow, resumeNarrativeFlowAfterPresentation, resumeNarrativeFlowWithInput } from "../src/features/narrative/flowRuntime";
 import { characterNameForPresentation } from "../src/features/world/playState";
-import { appendCapturedTextAlias, entityAuthorDraft } from "../src/features/world/author/entityDraft";
+import { entityAuthorDraft } from "../src/features/world/author/entityDraft";
+import { aliasesFromInput } from "../src/features/world/author/aliasInput";
 import { node, project } from "./fixtures";
 import type { EntityDefinition } from "../src/features/world/model";
 
@@ -57,11 +63,11 @@ describe("guided name capture reuses canonical Narrative, State and World", () =
   });
 
   it("player submits a nickname once, State stores it, and canonical Character @ alias displays it", () => {
-    const authored = appendCapturedTextAlias(entityAuthorDraft(char), textVariable.id);
     const token = makeSemanticReferenceToken("state.variable", textVariable.id, "value");
-    expect(authored.aliases).toEqual([{ name: token, condition: { type: "always" } }]);
+    const draft = entityAuthorDraft(char);
+    const authored = { ...draft, aliases: [{ name: token, condition: { type: "variable" as const, key: textVariable.key, operator: "neq" as const, value: "" } }], aliasesInput: token };
+    expect(authored.aliases).toEqual([{ name: token, condition: { type: "variable", key: textVariable.key, operator: "neq", value: "" } }]);
     expect(authored.aliasesInput).toBe(token);
-    expect(appendCapturedTextAlias(authored, textVariable.id)).toBe(authored);
 
     const ask = node("ask", 1);
     ask.openings[0].narrationText = "What would you like to call me?";
@@ -82,14 +88,73 @@ describe("guided name capture reuses canonical Narrative, State and World", () =
     expect(submitted.state.pendingNarrativeFlow).toBeNull();
   });
 
-  it("retains an older Character's existing aliases when the guided nickname is proposed", () => {
-    const original = { ...char, startingNameSelection: undefined, aliases: ["Charlie", "Lottie"] };
-    const draft = entityAuthorDraft(original);
+  it("does not add Character aliases implicitly; imported aliases remain independently editable", () => {
+    const oldCharacter = { ...char, startingNameSelection: undefined, aliases: ["Charlie", "Lottie"] };
+    const draft = entityAuthorDraft(oldCharacter);
     expect(draft.startingNameSelection).toBe("random");
-    const added = appendCapturedTextAlias(draft, textVariable.id);
-    expect(added.aliases?.slice(0, 2)).toEqual(["Charlie", "Lottie"]);
-    expect(added.aliases?.length).toBe(3);
-    expect(added.startingNameSelection).toBe("random");
-    expect(draft.aliases?.length).toBe(2);
+    expect(aliasesFromInput("Charlie\nLottie\n{{variable:charlotte_nickname}}", draft.aliases ?? []).length).toBe(3);
+    expect(draft.aliases).toEqual(["Charlie", "Lottie"]);
   });
+
+  it("captures a conversation of three questions in one Node without a new conditional opening", () => {
+    const first = createCaptureInputFlow();
+    const firstId = captureFlowParts(first)!.awaitStep.id;
+    const second = appendCaptureTurn(first);
+    const secondId = captureFlowSegments(second)[1].awaitStep.id;
+    const third = appendCaptureTurn(second);
+    const thirdId = captureFlowSegments(third)[2].awaitStep.id;
+    expect(new Set([firstId, secondId, thirdId]).size).toBe(3);
+    expect(third.map((step) => step.type)).toEqual([
+      "await_input", "effects", "present",
+      "await_input", "effects", "present",
+      "await_input", "effects", "present",
+    ]);
+
+    const firstSaved = replaceCapturedInputVariable(third, "player_name", firstId);
+    const secondSaved = replaceCapturedInputVariable(firstSaved, "", secondId);
+    const thirdSaved = replaceCapturedInputVariable(secondSaved, "charlotte_nickname", thirdId);
+    const addReply = (flow: typeof third, id: string, text: string) => {
+      const part = captureFlowParts(flow, id)!;
+      return replaceCapturePresentation(flow, { ...part.presentStep, responseText: text }, id);
+    };
+    const replies = addReply(addReply(addReply(thirdSaved, firstId, "How old are you, {{variable:player_name}}?"), secondId, "And your preferred nickname?"), thirdId, "Thank you.");
+    const n = node("questions", 1);
+    n.openings[0].narrationText = "What is your name?";
+    n.openings[0].after = replies;
+    const snapshot = project({ nodes: [n], startNodeId: n.id, variables: [{ ...textVariable, id: "player-name", key: "player_name", label: "Player name" }, textVariable] });
+    const initial = createEmptyPlayState(snapshot, 0);
+    const armed = armNarrativeFlow(initial, { type: "node-opening", nodeId: n.id, openingId: n.openings[0].id });
+    const waiting1 = resumeNarrativeFlowAfterPresentation(snapshot, armed)!;
+    expect(waiting1.state.pendingNarrativeFlow?.mode).toBe("input");
+    const reply1 = resumeNarrativeFlowWithInput(snapshot, waiting1.state, "Ada")!;
+    expect(reply1.state.values.player_name).toBe("Ada");
+    expect(reply1.responseText).toContain("How old are you");
+    const waiting2 = resumeNarrativeFlowAfterPresentation(snapshot, reply1.state)!;
+    expect(waiting2.state.pendingNarrativeFlow?.mode).toBe("input");
+    const reply2 = resumeNarrativeFlowWithInput(snapshot, waiting2.state, "24")!;
+    expect(reply2.responseText).toContain("preferred nickname");
+    expect(reply2.state.values.player_name).toBe("Ada");
+    expect(reply2.state.values.charlotte_nickname).toBe("");
+    const waiting3 = resumeNarrativeFlowAfterPresentation(snapshot, reply2.state)!;
+    expect(waiting3.state.pendingNarrativeFlow?.mode).toBe("input");
+    const reply3 = resumeNarrativeFlowWithInput(snapshot, waiting3.state, "Moon")!;
+    expect(reply3.state.values.charlotte_nickname).toBe("Moon");
+    expect(reply3.responseText).toBe("Thank you.");
+    expect(reply3.state.pendingNarrativeFlow).toBeNull();
+  });
+
+  it("inserts another capture before an existing Node transition, without losing effects or route", () => {
+    const initial = createCaptureInputFlow();
+    const routed = [...initial, createTransitionStep({ nodeId: "next", openingId: null })];
+    const extended = appendCaptureTurn(routed);
+    expect(extended.at(-1)).toEqual(routed.at(-1));
+    expect(captureFlowSegments(extended)).toHaveLength(2);
+    const second = captureFlowSegments(extended)[1];
+    const withEffect = replaceCapturedInputVariable(extended, textVariable.key, second.awaitStep.id);
+    expect(capturedInputVariableKey(withEffect, second.awaitStep.id)).toBe(textVariable.key);
+    expect(capturedInputVariableKey(withEffect, captureFlowSegments(withEffect)[0].awaitStep.id)).toBe("");
+    const removed = removeCaptureTurn(withEffect, second.awaitStep.id);
+    expect(removed).toEqual(routed);
+  });
+
 });

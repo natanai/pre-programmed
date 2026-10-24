@@ -4,12 +4,14 @@ import {
   AuthorUiBlocks,
 } from "../../../author/ui/AuthorWorkspaceRenderer";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
-import { useAuthorResourceTools } from "../../../author/resources/context";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import {
   CAPTURE_EFFECT_AUTHORING_CONTEXT,
   captureFlowParts,
+  captureFlowSegments,
+  appendCaptureTurn,
+  removeCaptureTurn,
   capturedInputVariableKey,
   createCaptureInputFlow,
   createReturnPreviousStep,
@@ -160,123 +162,93 @@ function CaptureFlowEditor({
   onEditDestination?: (nodeId: string) => void;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
 }) {
-  const resources = useAuthorResourceTools();
-  const parts = captureFlowParts(flow);
-  const initialReply = parts?.presentStep;
-  const [responseOpen, setResponseOpen] = useState(Boolean(initialReply?.responseText.trim()
-    || initialReply?.dialogueText.trim() || initialReply?.speakerId));
+  const turns = captureFlowSegments(flow);
   const [continuationOpen, setContinuationOpen] = useState(Boolean(flowDestination(flow) || flowReturnsPrevious(flow)));
-  if (!parts) return null;
-  const present = parts.presentStep;
-  const savedKey = capturedInputVariableKey(flow);
-  const savedVariable = snapshot.variables.find((variable) => variable.key === savedKey);
-  const dialogueSpeakerId = conversationCharacterId ?? present.speakerId;
-  const dialogueSpeakerName = dialogueSpeakerId
-    ? snapshot.entities.find((entity) => entity.type === "character" && entity.id === dialogueSpeakerId)?.name ?? "Unknown character"
-    : "";
-  const showDialogue = Boolean(conversationCharacterId || present.speakerId || present.dialogueText.trim());
-  const hasPostInputResponse = Boolean(present.responseText.trim() || present.dialogueText.trim() || present.speakerId);
-  const hasContinuation = Boolean(flowDestination(flow) || flowReturnsPrevious(flow));
-  const dialogueLabel = dialogueSpeakerName ? `${dialogueSpeakerName.toUpperCase()} SAYS` : "DIALOGUE — CHOOSE SPEAKER";
-  const extraEffects = parts.effectsStep.effects.length - (savedKey ? 1 : 0);
+  if (!turns.length) return null;
+
   const destination = flowDestination(flow);
-  const thenSummary = flowReturnsPrevious(flow) ? "return to previous Node"
-    : destination ? `continue to Node #${snapshot.nodes.find((node) => node.id === destination.nodeId)?.nodeNumber ?? "?"}`
-    : "stay at this Node";
-  const updatePresent = (change: Partial<typeof present>) => {
-    onChange(replaceCapturePresentation(flow, { ...present, ...change }));
-  };
+  const thenSummary = flowReturnsPrevious(flow) ? "return previous"
+    : destination ? `Node #${snapshot.nodes.find((node) => node.id === destination.nodeId)?.nodeNumber ?? "?"}`
+    : "stay here";
 
   return <div className="after-input-capture">
-    <div className="capture-flow-intro">
-      <strong>WAIT FOR THE PLAYER'S NEXT INPUT</strong>
-      <p>The next terminal submission is captured once. It won't be treated as a command. Saving it is optional.</p>
-    </div>
+    {turns.map((turn, index) => {
+      const present = turn.presentStep;
+      const awaitStepId = turn.awaitStep.id;
+      const savedKey = capturedInputVariableKey(flow, awaitStepId);
+      const savedVariable = snapshot.variables.find((variable) => variable.key === savedKey);
+      const dialogueSpeakerId = conversationCharacterId ?? present.speakerId;
+      const dialogueSpeakerName = dialogueSpeakerId
+        ? snapshot.entities.find((entity) => entity.type === "character" && entity.id === dialogueSpeakerId)?.name ?? "Character"
+        : "";
+      const showDialogue = Boolean(conversationCharacterId || present.speakerId || present.dialogueText.trim());
+      const additionalEffects = turn.effectsStep.effects.length - (savedKey ? 1 : 0);
+      const changePresent = (change: Partial<typeof present>) =>
+        onChange(replaceCapturePresentation(flow, { ...present, ...change }, awaitStepId));
 
-    <section className="capture-storage" aria-label="Save captured player text">
-      <strong>SAVE SUBMITTED TEXT TO</strong>
-      <ReferenceField
-        kind="text-variable"
-        value={savedKey}
-        onChange={(key) => onChange(replaceCapturedInputVariable(flow, key))}
-        placeholder="Don't save · use input only now"
-      />
-      <small>Choose an existing text variable, or create one here. A new variable starts as Text. The usual Set Variable effect stores exactly what the player typed.</small>
-      {savedKey && !savedVariable ? <small role="status">This variable has not finished saving. Complete its Author task, then return here.</small> : null}
-    </section>
-
-    {savedVariable ? <div className="capture-character-link">
-      <strong>USE AS A CHARACTER NAME <small>(optional)</small></strong>
-      {conversationCharacterId && resources.canEdit("character", conversationCharacterId)
-        ? <button type="button" onClick={() => resources.edit("character", conversationCharacterId, undefined, { proposedAliasVariableId: savedVariable.id })}>
-          [+ ADD TO {snapshot.entities.find((entity) => entity.id === conversationCharacterId)?.name || "CHARACTER"}'S ALIASES]
-        </button>
-        : <ReferenceField
-          kind="character"
-          value=""
-          placeholder="Choose Character to name"
-          onChange={(characterId) => {
-            if (characterId) resources.edit("character", characterId, undefined, { proposedAliasVariableId: savedVariable.id });
-          }}
-        />}
-      <small>Opens that Character's real Author task with a suggested @ alias. Confirm there and save the Character.</small>
-    </div> : null}
-
-    <p className="capture-flow-summary" role="status">
-      NEXT INPUT → {savedKey ? `save to ${savedVariable?.label || savedKey}` : "not stored"} → {hasPostInputResponse ? "respond" : "no response"} → {thenSummary}
-    </p>
-
-    <details className="capture-optional-section" open={responseOpen} onToggle={(event) => setResponseOpen(event.currentTarget.open)}>
-      <summary>AFTER INPUT · NARRATION OR DIALOGUE <small>{hasPostInputResponse ? "Configured" : "Optional"}</small></summary>
-      <div className="capture-optional-content">
-        <p className="guided-context-copy">This happens after the player's submission, not before it. Leave empty to continue without speaking.</p>
-        {!conversationCharacterId ? <label>SPEAKER
-          <ReferenceField
-            kind="character"
-            value={present.speakerId ?? ""}
-            onChange={(speakerId) => updatePresent({ speakerId: speakerId || null })}
-            placeholder="none / narration"
-          />
-          <small>Choose a Character to speak after the input, if desired.</small>
-        </label> : null}
-        <div className={`narrative-prose-grid${showDialogue ? " has-dialogue" : ""}`}>
-          <AuthoredTextEditor
-            value={{ text: present.responseText, performance: present.responsePerformance }}
-            snapshot={snapshot}
-            playState={playState}
-            label="NARRATION AFTER INPUT"
-            rows={3}
-            onChange={(value) => updatePresent({ responseText: value.text, responsePerformance: value.performance })}
-            onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
-          />
-          {showDialogue ? <AuthoredTextEditor
-            value={{ text: present.dialogueText, performance: present.dialoguePerformance }}
-            snapshot={snapshot}
-            playState={playState}
-            label={dialogueLabel}
-            rows={3}
-            onChange={(value) => updatePresent({ dialogueText: value.text, dialoguePerformance: value.performance })}
-            onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
-          /> : null}
+      return <section className="capture-turn" key={awaitStepId} aria-label={`Captured input ${index + 1}`}>
+        <div className="capture-turn-heading">
+          <strong>INPUT {index + 1}</strong>
+          {index > 0 ? <button type="button" onClick={() => onChange(removeCaptureTurn(flow, awaitStepId))}>[REMOVE]</button> : null}
         </div>
-      </div>
-    </details>
-
-    <details className="capture-optional-section">
-      <summary>ON SUBMIT · ALL EFFECTS <small>{parts.effectsStep.effects.length} configured{extraEffects > 0 ? ` · ${extraEffects} additional` : ""}</small></summary>
-      <div className="capture-optional-content">
-        <p className="guided-context-copy">These run after the input, before any reply. The saved-text field above is a shortcut for a regular Set Variable effect. You can edit it here or add any other effect.</p>
-        <EffectsEditor
-          effects={parts.effectsStep.effects}
-          snapshot={snapshot}
-          authoringContext={CAPTURE_EFFECT_AUTHORING_CONTEXT}
-          onChange={(effects) => onChange(replaceCaptureEffects(flow, effects))}
-        />
-      </div>
-    </details>
-
+        <div className="capture-storage">
+          <span>SAVE INPUT TO <small>(optional)</small></span>
+          <ReferenceField
+            kind="text-variable"
+            value={savedKey}
+            onChange={(key) => onChange(replaceCapturedInputVariable(flow, key, awaitStepId))}
+            placeholder="Don't save"
+          />
+        </div>
+        <div className="capture-reply">
+          <strong>RESPOND AFTER INPUT {index + 1}</strong>
+          {!conversationCharacterId ? <label>SPEAKER
+            <ReferenceField
+              kind="character"
+              value={present.speakerId ?? ""}
+              onChange={(speakerId) => changePresent({ speakerId: speakerId || null })}
+              placeholder="none / narration"
+            />
+          </label> : null}
+          <div className={`narrative-prose-grid${showDialogue ? " has-dialogue" : ""}`}>
+            <AuthoredTextEditor
+              value={{ text: present.responseText, performance: present.responsePerformance }}
+              snapshot={snapshot}
+              playState={playState}
+              label="NARRATION"
+              rows={3}
+              onChange={(value) => changePresent({ responseText: value.text, responsePerformance: value.performance })}
+              onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
+            />
+            {showDialogue ? <AuthoredTextEditor
+              value={{ text: present.dialogueText, performance: present.dialoguePerformance }}
+              snapshot={snapshot}
+              playState={playState}
+              label={dialogueSpeakerName ? `${dialogueSpeakerName.toUpperCase()} SAYS` : "DIALOGUE"}
+              rows={3}
+              onChange={(value) => changePresent({ dialogueText: value.text, dialoguePerformance: value.performance })}
+              onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
+            /> : null}
+          </div>
+        </div>
+        <details className="capture-optional-section">
+          <summary>OTHER EFFECTS <small>{additionalEffects ? `${additionalEffects} additional` : "Optional"}</small></summary>
+          <div className="capture-optional-content">
+            <EffectsEditor
+              effects={turn.effectsStep.effects}
+              snapshot={snapshot}
+              authoringContext={CAPTURE_EFFECT_AUTHORING_CONTEXT}
+              onChange={(effects) => onChange(replaceCaptureEffects(flow, effects, awaitStepId))}
+            />
+          </div>
+        </details>
+      </section>;
+    })}
+    <button type="button" className="guided-add capture-add-turn" onClick={() => onChange(appendCaptureTurn(flow))}>
+      [+ CAPTURE ANOTHER INPUT]
+    </button>
     <details className="capture-optional-section" open={continuationOpen} onToggle={(event) => setContinuationOpen(event.currentTarget.open)}>
-      <summary>THEN · WHERE TO GO <small>{thenSummary}</small></summary>
+      <summary>THEN <small>{thenSummary}</small></summary>
       <div className="capture-optional-content">
         <DestinationPreset
           snapshot={snapshot}
