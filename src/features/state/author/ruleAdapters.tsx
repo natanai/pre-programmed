@@ -152,9 +152,9 @@ export const clearFlagEffectAdapter: EffectAuthorAdapter = {
 
 export const setValueEffectAdapter: EffectAuthorAdapter = {
   type: "set_value",
-  label: "set value",
+  label: "set variable",
   category: "state",
-  description: "Replace an authored variable's value.",
+  description: "Set a variable to authored text, a number, or the player\'s input.",
   create: (context) => ({
     id: crypto.randomUUID(),
     type: "set_value",
@@ -165,7 +165,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
   }),
   references: (effect) => effect.type === "set_value" && effect.key ? [{ resourceKind: "variable", resourceId: effect.key, detail: "variable effect" }] : [],
   summarize: (effect, snapshot) => {
-    if (effect.type !== "set_value") return "Set value";
+    if (effect.type !== "set_value") return "Set variable";
     const source = isRuntimeBinding(effect.value)
       ? effect.value.key === PLAYER_INPUT_BINDING ? "player input" : `runtime ${effect.value.key}`
       : String(effect.value);
@@ -182,7 +182,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
         const next = snapshot.variables.find((item) => item.key === key);
         onChange({ ...effect, key, value: binding ?? next?.initialValue ?? "" });
       }} />
-      <label>VALUE FROM
+      <label>SET FROM
         <select value={sourceMode} onChange={(event) => {
           const mode = event.target.value;
           if (mode === "player-input") onChange({ ...effect, value: runtimeBinding(PLAYER_INPUT_BINDING) });

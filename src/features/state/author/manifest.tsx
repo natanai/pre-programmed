@@ -88,6 +88,16 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
       editRoute: (resource) => stateResourceRoute("variable", resource.id),
     },
     {
+      kind: "text-variable",
+      label: "Text Variable",
+      pluralLabel: "Text Variables",
+      searchable: false,
+      list: (snapshot) => snapshot.variables.filter((item) => item.valueType === "string").map((item) => ({ id: item.id, value: item.key, label: item.label || item.key })),
+      listRoute: () => DEFINITIONS_ROUTE,
+      createRoute: () => stateResourceRoute("text-variable"),
+      editRoute: (resource) => stateResourceRoute("text-variable", resource.id),
+    },
+    {
       kind: "number-variable",
       label: "Number Variable",
       pluralLabel: "Number Variables",

@@ -418,7 +418,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
           value={{ text: prose.narrationText, performance: prose.narrationPerformance }}
           snapshot={snapshot}
           playState={playState}
-          label="NARRATION"
+          label={captureFlowParts(outcome.after) ? "NARRATION · BEFORE INPUT" : "NARRATION"}
           rows={4}
           autoFocus={autoFocusText && !dialogueSpeakerId}
           onChange={(value) => onChange((current) => ({
@@ -432,7 +432,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
           value={{ text: prose.dialogueText, performance: prose.dialoguePerformance }}
           snapshot={snapshot}
           playState={playState}
-          label={dialogueLabel}
+          label={captureFlowParts(outcome.after) ? `${dialogueLabel} · BEFORE INPUT` : dialogueLabel}
           rows={4}
           autoFocus={autoFocusText && Boolean(dialogueSpeakerId)}
           onChange={(value) => onChange((current) => ({
