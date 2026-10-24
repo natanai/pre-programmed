@@ -47,14 +47,3 @@ export type OperationTargetAdapter = {
   }) => TargetOperationResult;
 };
 
-export type AuthorOperationDefinition = {
-  value: OperationId;
-  label: string;
-  /**
-   * Semantic author target kinds that may expose this operation, such as
-   * `inventory.item` or `world.character`. These are intentionally more
-   * precise than runtime adapter kinds: characters and locations may share a
-   * runtime adapter while remaining different authorable command targets.
-   */
-  targetKinds: readonly string[];
-};
