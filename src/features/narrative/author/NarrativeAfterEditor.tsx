@@ -4,6 +4,7 @@ import {
   AuthorUiBlocks,
 } from "../../../author/ui/AuthorWorkspaceRenderer";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { useAuthorResourceTools } from "../../../author/resources/context";
 import { buildSearchIndex, searchProject } from "../../../author/search/projectSearch";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import {
@@ -159,6 +160,7 @@ function CaptureFlowEditor({
   onEditDestination?: (nodeId: string) => void;
   onPreview?: (value: AuthoredTextValue, speakerId: string | null) => void;
 }) {
+  const resources = useAuthorResourceTools();
   const parts = captureFlowParts(flow);
   if (!parts) return null;
   const present = parts.presentStep;
@@ -198,6 +200,23 @@ function CaptureFlowEditor({
       <small>Choose an existing text variable, or create one here. A new variable starts as Text. The usual Set Variable effect stores exactly what the player typed.</small>
       {savedKey && !savedVariable ? <small role="status">This variable has not finished saving. Complete its Author task, then return here.</small> : null}
     </section>
+
+    {savedVariable ? <div className="capture-character-link">
+      <strong>USE AS A CHARACTER NAME <small>(optional)</small></strong>
+      {conversationCharacterId && resources.canEdit("character", conversationCharacterId)
+        ? <button type="button" onClick={() => resources.edit("character", conversationCharacterId, undefined, { proposedAliasVariableId: savedVariable.id })}>
+          [+ ADD TO {snapshot.entities.find((entity) => entity.id === conversationCharacterId)?.name || "CHARACTER"}'S ALIASES]
+        </button>
+        : <ReferenceField
+          kind="character"
+          value=""
+          placeholder="Choose Character to name"
+          onChange={(characterId) => {
+            if (characterId) resources.edit("character", characterId, undefined, { proposedAliasVariableId: savedVariable.id });
+          }}
+        />}
+      <small>Opens that Character's real Author task with a suggested @ alias. Confirm there and save the Character.</small>
+    </div> : null}
 
     <p className="capture-flow-summary" role="status">
       NEXT INPUT → {savedKey ? `save to ${savedVariable?.label || savedKey}` : "not stored"} → {hasPostInputResponse ? "respond" : "no response"} → {thenSummary}
