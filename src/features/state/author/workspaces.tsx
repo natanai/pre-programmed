@@ -18,7 +18,7 @@ const WHEN_TEMPLATE: Condition = { type: "flag", key: "", value: true };
 const SELF_FLAG_KEY = "__author_self_flag__";
 const SELF_STRING_KEY = "__author_self_string__";
 
-export type StateAuthorResourceKind = "variable" | "number-variable" | "flag" | "computed" | "state-group";
+export type StateAuthorResourceKind = "variable" | "number-variable" | "text-variable" | "flag" | "computed" | "state-group";
 
 function stateRoute(kind?: StateAuthorResourceKind, id?: string, preferredOperation?: string) {
   return {
@@ -207,7 +207,7 @@ function presentationNodes(
 }
 
 function newVariable(kind?: StateAuthorResourceKind): VariableDefinition {
-  const valueType: VariableDefinition["valueType"] = kind === "flag" ? "boolean" : "number";
+  const valueType: VariableDefinition["valueType"] = kind === "flag" ? "boolean" : kind === "text-variable" ? "string" : "number";
   return {
     id: crypto.randomUUID(),
     key: "",
@@ -258,7 +258,7 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
       {
         type: "section",
         id: "state-library-values",
-        label: "Values",
+        label: "Variables",
         importance: "primary",
         children: [{
           type: "custom",
@@ -309,11 +309,11 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
 
 export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>({
   id: "state-variable",
-  matches: (route) => route.type === "feature" && route.feature === "state" && route.workspace === "definitions" && ["variable", "number-variable", "flag"].includes(route.data?.resourceKind ?? ""),
+  matches: (route) => route.type === "feature" && route.feature === "state" && route.workspace === "definitions" && ["variable", "number-variable", "text-variable", "flag"].includes(route.data?.resourceKind ?? ""),
   createDraft: (route, context) => structuredClone(context.snapshot.variables.find((candidate) => candidate.id === route.data?.resourceId) ?? newVariable(route.data?.resourceKind as StateAuthorResourceKind | undefined)),
   buildSpec: ({ route, context, draft, setDraft }) => {
     const existing = context.snapshot.variables.some((candidate) => candidate.id === draft.id);
-    const lockedType = route.data?.resourceKind === "flag" ? "boolean" : route.data?.resourceKind === "number-variable" ? "number" : null;
+    const lockedType = route.data?.resourceKind === "flag" ? "boolean" : route.data?.resourceKind === "number-variable" ? "number" : route.data?.resourceKind === "text-variable" ? "string" : null;
     return {
       id: "state-variable",
       title: draft.label || "New variable",
@@ -322,7 +322,7 @@ export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>(
         {
           type: "section",
           id: "state-variable-value",
-          label: "Value",
+          label: "Variable",
           importance: "primary",
           children: [
             { type: "field", id: "state-variable-label", label: "Name", value: draft.label, autoFocus: !existing, onChange: (label) => setDraft((current) => ({ ...current, label })) },
