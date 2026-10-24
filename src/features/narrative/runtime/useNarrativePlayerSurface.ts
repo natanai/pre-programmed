@@ -27,7 +27,7 @@ export type NarrativePlayerSurface = {
 function playerChoice(interaction: Interaction, snapshot: ProjectSnapshot, state: PlayState, menuHelpText: string | null = null): NarrativePlayerChoice {
   return {
     id: interaction.id,
-    text: interpolateText(interaction.wording || interaction.aliases[0] || "", { snapshot, state }),
+    text: interpolateText(interaction.aliases[0] || interaction.wording || "", { snapshot, state }),
     menuHelpText,
   };
 }
