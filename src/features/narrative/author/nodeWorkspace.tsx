@@ -158,7 +158,7 @@ function OpeningEditor({
           value={{ text: opening.narrationText, performance: opening.narrationPerformance }}
           snapshot={snapshot}
           playState={playState}
-          label="NARRATION"
+          label={captureFlowParts(opening.after) ? "NARRATION · BEFORE INPUT" : "NARRATION"}
           rows={6}
           autoFocus={autoFocus && (focusSection === "narration" || (!focusSection && !conversationCharacterId))}
           onChange={(value) => onChange({ ...opening, narrationText: value.text, narrationPerformance: value.performance })}
@@ -168,7 +168,7 @@ function OpeningEditor({
           value={{ text: opening.dialogueText, performance: opening.dialoguePerformance }}
           snapshot={snapshot}
           playState={playState}
-          label={dialogueLabel}
+          label={captureFlowParts(opening.after) ? `${dialogueLabel} · BEFORE INPUT` : dialogueLabel}
           rows={6}
           autoFocus={autoFocus && (focusSection === "dialogue" || (!focusSection && Boolean(conversationCharacterId)))}
           onChange={(value) => onChange({ ...opening, dialogueText: value.text, dialoguePerformance: value.performance })}
