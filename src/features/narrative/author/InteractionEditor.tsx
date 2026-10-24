@@ -1,6 +1,7 @@
 import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
@@ -193,7 +194,7 @@ export function InteractionComposer({
   };
 
   const title = screen.type === "overview"
-    ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
+    ? fallbackMode ? "INVALID INPUT" : (authorSemanticReferenceView(draft.wording.trim(), { snapshot, state: sourcePlayState, authorMode: true }).text || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
