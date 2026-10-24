@@ -1,4 +1,5 @@
 import type { ProjectReference, ProjectReferenceContribution, ResourceReference } from "../../../author/references/types";
+import { characterAliasCondition } from "../model";
 
 function hookTargets(
   context: Parameters<ProjectReferenceContribution>[1],
@@ -16,6 +17,20 @@ export const worldProjectReferences: ProjectReferenceContribution = (snapshot, c
     ownerLabel: entity.name || entity.key,
     route,
   }));
+
+  if (entity.type === "character") {
+    references.push(...(entity.aliases ?? []).flatMap((alias) => {
+      const condition = characterAliasCondition(alias);
+      return condition ? context.condition(condition).map((target) => ({
+        ...target,
+        detail: `character alias condition · ${target.detail}`,
+        ownerKind: entity.type,
+        ownerId: entity.id,
+        ownerLabel: entity.name || entity.key,
+        route,
+      })) : [];
+    }));
+  }
 
   if (entity.type === "character" && entity.portraitAssetId) {
     references.push({
