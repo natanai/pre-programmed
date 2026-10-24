@@ -3,6 +3,7 @@ import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import { resolveActiveNodeAnchor } from "../anchor";
 import { isInteractionChoiceVisible } from "../choiceVisibility";
 import { flowDestination } from "../flow";
+import { interpolateText } from "../interpolation";
 import { buildGraphIndex, notationForNode } from "../graph";
 import type { GameNode, Interaction } from "../model";
 
@@ -23,10 +24,10 @@ export type NarrativePlayerSurface = {
   promptChoices: NarrativePlayerChoice[];
 };
 
-function playerChoice(interaction: Interaction, menuHelpText: string | null = null): NarrativePlayerChoice {
+function playerChoice(interaction: Interaction, snapshot: ProjectSnapshot, state: PlayState, menuHelpText: string | null = null): NarrativePlayerChoice {
   return {
     id: interaction.id,
-    text: interaction.aliases[0] || interaction.wording,
+    text: interpolateText(interaction.wording || interaction.aliases[0] || "", { snapshot, state }),
     menuHelpText,
   };
 }
@@ -80,11 +81,11 @@ export function useNarrativePlayerSurface(
       : currentInputs.filter((interaction) => isInteractionChoiceVisible(snapshot, state, interaction));
     const immediateChoices = visibleInputs
       .filter((interaction) => interaction.choiceVisibility === "immediate")
-      .map((interaction) => playerChoice(interaction))
+      .map((interaction) => playerChoice(interaction, snapshot, state))
       .filter((choice) => choice.text);
     const promptChoices = visibleInputs
       .filter((interaction) => (interaction.choiceVisibility ?? "prompt") === "prompt")
-      .map((interaction) => playerChoice(interaction, snapshot.settings.suggestionMenuHelpText))
+      .map((interaction) => playerChoice(interaction, snapshot, state, snapshot.settings.suggestionMenuHelpText))
       .filter((choice) => choice.text);
 
     return {
