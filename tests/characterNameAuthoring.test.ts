@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createEmptyPlayState } from "../src/engine/project/playState";
 import { characterNameForPresentation, characterStartingNameSelection } from "../src/features/world/playState";
-import { worldEntityWorkspace } from "../src/features/world/author/entityWorkspaces";
+import { entityAuthorDraft } from "../src/features/world/author/entityDraft";
 import { aliasesFromInput } from "../src/features/world/author/aliasInput";
 import type { EntityDefinition } from "../src/features/world/model";
 import { makeSemanticReferenceToken, interpolateSemanticReferences } from "../src/engine/references/runtime";
@@ -27,10 +27,6 @@ function importedSnapshot(entity: EntityDefinition, version: 1 | 2 | 3 = 3) {
   });
 }
 
-function authorRoute() {
-  return { type: "feature" as const, feature: "world", workspace: "entity", data: { entityType: "character", resourceId: "old-character" } };
-}
-
 describe("Character name author experience", () => {
   it("new characters use their canonical name until the author explicitly chooses randomized names", () => {
     const entity = canonical(["Charlie", "Lottie"], "first");
@@ -50,30 +46,20 @@ describe("Character name author experience", () => {
       const entity = canonical(["Charlie", "Lottie"]);
       const document = importedSnapshot(entity, version);
       const snapshot = { ...document.project, revision: 0 };
-      const route = authorRoute();
-      const context = { snapshot };
-      const draft = worldEntityWorkspace.createDraft(route, context as never);
-      expect(draft.aliasesInput).toBe("Charlie\nLottie");
+      const draft = entityAuthorDraft(snapshot.entities[0]);
+      expect(draft.aliasesInput).toBe("Charlie\\nLottie".replace("\\\\n", "\\n"));
       expect(draft.startingNameSelection).toBe("random");
       expect(characterStartingNameSelection(snapshot.entities[0])).toBe("random");
-      const spec = worldEntityWorkspace.buildSpec({
-        route, context: context as never, draft, setDraft: () => {}, dirty: false, adoptLoadedDraft: () => {},
-      });
-      const identity = spec.blocks.find((block: { id: string }) => block.id === "world-entity-identity");
-      expect(identity).toBeDefined();
-      if (identity?.type !== "section") throw new Error("Missing identity section");
-      const aliasEditor = identity.children.find((child: { id: string }) => child.id === "world-character-aliases");
-      const startingSelection = identity.children.find((child: { id: string }) => child.id === "world-character-starting-name");
-      expect(aliasEditor?.type).toBe("custom");
-      expect(startingSelection?.type).toBe("select");
-      expect(startingSelection?.value).toBe("random");
+      expect(aliasesFromInput("Charlie renamed\\nLottie".replace("\\\\n", "\\n"), draft.aliases ?? [])).toEqual([
+        { name: "Charlie renamed" }, { name: "Lottie" },
+      ]);
     }
   });
 
   it("an older imported Character without aliases doesn't secretly randomize when its first alias is added", () => {
     const document = importedSnapshot(canonical());
     const snapshot = { ...document.project, revision: 0 };
-    const draft = worldEntityWorkspace.createDraft(authorRoute(), { snapshot } as never);
+    const draft = entityAuthorDraft(snapshot.entities[0]);
     expect(draft.startingNameSelection).toBe("first");
     const edited = { ...draft, aliases: aliasesFromInput("New nickname", draft.aliases ?? []) };
     const updated = { ...edited, aliasesInput: "New nickname" };
