@@ -79,32 +79,7 @@
   }
 }
 
-.world-alias-suggestion {
-  display: grid;
-  gap: .35em;
-  border-left: 2px solid var(--dos-line);
-  padding: .45em .65em;
-  min-width: 0;
-}
-
-.world-alias-suggestion strong {
-  color: var(--dos-bright);
-  font-weight: 400;
-}
-
-.world-alias-suggestion > span,
-.world-alias-suggestion small {
-  color: var(--dos-muted);
-  line-height: 1.35;
-}
-
-.world-alias-suggestion > button {
-  width: fit-content;
-  min-height: 2.75em;
-  text-align: left;
-  color: var(--dos-bright);
-}
-
+.world-alias-display-state { display: block; color: var(--dos-muted); font-size: .83em; line-height: 1.25; }
 .world-alias-reference-title {
   display: flex;
   flex-wrap: wrap;
