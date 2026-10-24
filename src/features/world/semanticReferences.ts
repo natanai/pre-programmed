@@ -7,7 +7,7 @@ import {
   resolveActiveNodeConversationContext,
   resolveActiveNodeLocationContext,
 } from "../narrative/sceneContext";
-import type { EntityDefinition } from "./model";
+import { characterAliasName, type EntityDefinition } from "./model";
 import { WORLD_ENTITY_OPERATION_TARGET_KIND } from "./operationAdapter";
 import { characterNameForPresentation } from "./playState";
 
@@ -26,7 +26,7 @@ function entityCandidate(
   context: SemanticReferenceContext,
 ): SemanticReferenceCandidate {
   const presentedName = entity.type === "character"
-    ? characterNameForPresentation(entity, context.state, context.authorMode === true)
+    ? characterNameForPresentation(entity, context.state, context.authorMode === true, context.snapshot)
     : entity.name;
   return {
     id: entity.id,
@@ -37,7 +37,7 @@ function entityCandidate(
     aliases: uniqueAliases([
       entity.name,
       entity.key,
-      ...(entity.aliases ?? []),
+      ...(entity.aliases ?? []).map(characterAliasName),
       presentedName,
       ...entity.tags,
     ]),
@@ -102,7 +102,7 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
     ? snapshot.entities.find((candidate) => candidate.id === active.characterId && candidate.type === "character")
     : undefined;
   const presentedName = entity
-    ? characterNameForPresentation(entity, state, context.authorMode === true)
+    ? characterNameForPresentation(entity, state, context.authorMode === true, snapshot)
     : "";
   return [{
     id: "current",
