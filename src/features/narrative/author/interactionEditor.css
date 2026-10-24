@@ -341,6 +341,31 @@
   min-width: 0;
 }
 
+.capture-character-link {
+  display: grid;
+  gap: .35em;
+  min-width: 0;
+}
+
+.capture-character-link > strong {
+  font-weight: 400;
+  color: var(--dos-text);
+}
+
+.capture-character-link > strong small,
+.capture-character-link > small {
+  color: var(--dos-muted);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.capture-character-link > button {
+  width: fit-content;
+  padding: .4em .55em;
+  min-height: 2.75em;
+  color: var(--dos-bright);
+}
+
 .capture-flow-summary {
   margin: 0;
   overflow-wrap: anywhere;
