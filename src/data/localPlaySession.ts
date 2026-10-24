@@ -13,6 +13,8 @@ export type PersistedTranscriptLine = {
   text: string;
   nodeId?: string;
   speakerId?: string | null;
+  /** Player-facing speaker identity at the time this line appeared. */
+  speakerName?: string;
   command?: boolean;
   /** Stable media identity. Content location is resolved when the line renders. */
   artAssetId?: string;
@@ -97,6 +99,7 @@ function normalizeTranscriptLine(value: unknown): PersistedTranscriptLine | null
     text: value.text,
     ...(typeof value.nodeId === "string" ? { nodeId: value.nodeId } : {}),
     ...(typeof value.speakerId === "string" || value.speakerId === null ? { speakerId: value.speakerId } : {}),
+    ...(typeof value.speakerName === "string" ? { speakerName: value.speakerName } : {}),
     ...(typeof value.command === "boolean" ? { command: value.command } : {}),
     ...(typeof value.artAssetId === "string" ? { artAssetId: value.artAssetId } : {}),
     ...(source ? { source } : {}),
