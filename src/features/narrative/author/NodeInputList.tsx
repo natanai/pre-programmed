@@ -1,6 +1,8 @@
 import { useState } from "react";
 import type { AuthorPersist } from "../../../author/features/types";
 import type { ProjectSnapshot } from "../../../engine/project/model";
+import { createEmptyPlayState } from "../../../engine/project/playState";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
 import { movedInteractionIds, validInteractionsForNode } from "../interactionOrdering";
 import type { Interaction } from "../model";
 
@@ -23,6 +25,7 @@ export function NodeInputList({
 }) {
   const [movingId, setMovingId] = useState("");
   const validInputs = validInteractionsForNode(snapshot, nodeId);
+  const authorContext = { snapshot, state: createEmptyPlayState(snapshot), authorMode: true };
 
   const move = async (interactionId: string, direction: -1 | 1) => {
     if (movingId) return;
@@ -48,7 +51,7 @@ export function NodeInputList({
         onClick={() => onOpenInput(interaction.id)}
       >
         <span>
-          <strong>{interaction.wording || interaction.aliases[0] || "UNTITLED INPUT"}</strong>
+          <strong>{authorSemanticReferenceView(interaction.wording || interaction.aliases[0] || "UNTITLED INPUT", authorContext).text}</strong>
           <small>{interaction.outcomes.length} response{interaction.outcomes.length === 1 ? "" : "s"} · Node #{nodeNumber}</small>
         </span>
         <span aria-hidden="true">›</span>
