@@ -1,6 +1,7 @@
 import type { EffectEventPresenter } from "../../../engine/presentation/effectPresentation";
 import { configuredAssetStore } from "./assetStore";
 import { playSynthSound } from "./synthPlayback";
+import { play as playPremidiComposition } from "../vendor/premidi-audio.js";
 
 function reportMissingSound(id: string) {
   console.warn(`[MEDIA] Sound ${id} has no playable synth or repository file.`);
@@ -22,6 +23,11 @@ export const presentMediaEffectEvent: EffectEventPresenter = (event, context) =>
     case "audio": {
       // "audio" is the persisted prototype effect name; its stable reference now resolves
       // against the single author-facing sound catalog: D1 synths first, then files.
+      const composition = context.snapshot.mediaCompositions?.find((candidate) => candidate.id === event.assetId);
+      if (composition) {
+        void playPremidiComposition(composition).catch((error: unknown) => console.warn("[MEDIA] Composition playback failed.", error));
+        return true;
+      }
       const synth = findSynth(context, event.assetId);
       if (synth) {
         void playSynthSound(synth).catch((error) => console.warn(`[MEDIA] Synth ${event.assetId} could not play.`, error));

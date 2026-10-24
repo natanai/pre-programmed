@@ -1,5 +1,6 @@
 import { normalizeMediaAssetAuthoringMode, type MediaAsset, type SynthSound } from "../../src/features/media/model";
 import type { GeneratedMediaContent } from "../../src/features/media/mutations";
+import type { PremidiComposition } from "../../src/features/media/vendor/premidi-schema.js";
 import { parseJson } from "../db/json";
 import { generatedMediaContentStatement } from "../mediaContent";
 import type { WorkerFeaturePersistence } from "./types";
@@ -17,6 +18,7 @@ type AssetRow = {
   default_presentation: MediaAsset["defaultPresentation"];
   authoring_mode: string;
 };
+type PremidiRow = { document_json: string };
 type PortableContentRow = {
   content_key: string;
   mime_type: string;
@@ -171,15 +173,29 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 30 WHERE id = 1;
       `,
     },
+    {
+      id: 50,
+      name: "media-native-premidi-compositions",
+      sql: `
+        CREATE TABLE IF NOT EXISTS media_compositions (
+          id TEXT PRIMARY KEY,
+          document_json TEXT NOT NULL,
+          updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+        UPDATE project_meta SET schema_version = 50 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
-    const [synths, assets] = await Promise.all([
+    const [synths, assets, compositions] = await Promise.all([
       db.prepare("SELECT id, key, label, recipe_json FROM synth_sounds ORDER BY key").all<SynthRow>(),
       db.prepare(`SELECT id, name, kind, mime_type, content_key, byte_length, intrinsic_width, intrinsic_height,
         default_presentation, authoring_mode FROM media_assets ORDER BY name, id`).all<AssetRow>(),
+      db.prepare("SELECT document_json FROM media_compositions ORDER BY id").all<PremidiRow>(),
     ]);
     return {
+      mediaCompositions: compositions.results.map((row) => JSON.parse(row.document_json) as PremidiComposition),
       synthSounds: synths.results.map((row): SynthSound => ({
         ...parseJson<Omit<SynthSound, "id" | "key" | "label">>(row.recipe_json, {
           tempo: 120,
@@ -206,6 +222,14 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
   },
 
   mutationStatements(db, operation) {
+    if (operation.type === "premidi.upsert") {
+      return [db.prepare(
+        "INSERT INTO media_compositions (id, document_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET document_json=excluded.document_json, updated_at=CURRENT_TIMESTAMP"
+      ).bind(operation.composition.id, JSON.stringify(operation.composition))];
+    }
+    if (operation.type === "premidi.delete") {
+      return [db.prepare("DELETE FROM media_compositions WHERE id = ?").bind(operation.id)];
+    }
     if (operation.type === "synth.upsert") {
       const sound = operation.sound;
       const { id: _id, key: _key, label: _label, ...recipe } = sound;
@@ -256,12 +280,13 @@ export const mediaFeaturePersistence: WorkerFeaturePersistence = {
   },
 
   resetStatements(db) {
-    return [db.prepare("DELETE FROM synth_sounds"), db.prepare("DELETE FROM media_assets")];
+    return [db.prepare("DELETE FROM synth_sounds"), db.prepare("DELETE FROM media_assets"), db.prepare("DELETE FROM media_compositions")];
   },
 
   restoreOperations(snapshot) {
     return [
       ...snapshot.synthSounds.map((sound) => ({ type: "synth.upsert" as const, sound })),
+      ...(snapshot.mediaCompositions ?? []).map((composition) => ({ type: "premidi.upsert" as const, composition })),
       ...(snapshot.mediaAssets ?? []).map((asset) => ({ type: "mediaAsset.upsert" as const, asset })),
     ];
   },

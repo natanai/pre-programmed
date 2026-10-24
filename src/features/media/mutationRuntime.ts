@@ -21,9 +21,21 @@ const deleteAsset: MutationHandler = (snapshot, operation) => {
   snapshot.mediaAssets = (snapshot.mediaAssets ?? []).filter((asset) => asset.id !== operation.id);
 };
 
+const upsertPremidi: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "premidi.upsert") return;
+  snapshot.mediaCompositions = upsertById(snapshot.mediaCompositions ?? [], operation.composition);
+};
+
+const deletePremidi: MutationHandler = (snapshot, operation) => {
+  if (operation.type !== "premidi.delete") return;
+  snapshot.mediaCompositions = (snapshot.mediaCompositions ?? []).filter((entry) => entry.id !== operation.id);
+};
+
 export const MEDIA_MUTATION_HANDLERS: Readonly<Record<string, MutationHandler>> = {
   "synth.upsert": upsertSynth,
   "synth.delete": deleteSynth,
   "mediaAsset.upsert": upsertAsset,
   "mediaAsset.delete": deleteAsset,
+  "premidi.upsert": upsertPremidi,
+  "premidi.delete": deletePremidi,
 };

@@ -1,7 +1,7 @@
 import { commandsProjectSettingsValid } from "./commandsValidation";
 import { inventoryMutationValidator } from "./inventoryValidation";
 import { validateNewInventoryReferences } from "./inventoryIntegrity";
-import { mediaMutationValidator } from "./mediaValidation";
+import { mediaMutationValidator, validateNativeMediaCompositions } from "./mediaValidation";
 import { validateNewNarrativeReferences } from "./narrativeIntegrity";
 import { narrativeMutationValidator } from "./narrativeValidation";
 import { stateMutationValidator } from "./stateValidation";
@@ -29,4 +29,5 @@ export const WORKER_PROJECT_SETTINGS_VALIDATORS: readonly ((value: unknown) => b
 export const WORKER_PROJECT_INTEGRITY_VALIDATORS = [
   validateNewNarrativeReferences,
   validateNewInventoryReferences,
+  validateNativeMediaCompositions,
 ] as const;

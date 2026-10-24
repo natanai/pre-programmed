@@ -1,7 +1,9 @@
 import type { WorkerMutationValidator } from "./validationTypes";
+import type { ProjectSnapshot } from "../../src/engine/project/model";
 import { object } from "./validationHelpers";
 import { MAX_SYNTH_BEND, validateSynth } from "../../src/features/media/synth";
 import type { SynthSound } from "../../src/features/media/model";
+import { validate as validatePremidi } from "../../src/features/media/vendor/premidi-schema.js";
 import { MAX_GENERATED_MEDIA_BYTES } from "../../src/features/media/mutations";
 import { parseVectorGrid, VECTOR_GRID_MAX_CELLS } from "../../src/features/media/vectorAsset";
 
@@ -34,8 +36,16 @@ function optionalDimension(value: unknown) {
 }
 
 export const mediaMutationValidator: WorkerMutationValidator = {
-  types: ["synth.upsert", "synth.delete", "mediaAsset.upsert", "mediaAsset.delete"],
+  types: ["synth.upsert", "synth.delete", "mediaAsset.upsert", "mediaAsset.delete", "premidi.upsert", "premidi.delete"],
   validate(operation) {
+    if (operation.type === "premidi.upsert") {
+      const errors = validatePremidi(operation.composition);
+      if (errors.length) return "Invalid .premidi composition: " + errors[0];
+      if (new TextEncoder().encode(JSON.stringify(operation.composition)).byteLength > 1_000_000) return "Composition exceeds 1 MB.";
+    }
+    if (operation.type === "premidi.delete") {
+      return typeof operation.id === "string" && operation.id.trim() ? null : "Composition ID is required.";
+    }
     if (operation.type === "synth.upsert") {
       if (!synthSound(operation.sound)) return "Synth is invalid.";
       if (typeof operation.sound.id !== "string" || !operation.sound.id || typeof operation.sound.label !== "string" || !operation.sound.label.trim()) return "Synth identity is invalid.";
@@ -93,3 +103,18 @@ export const mediaMutationValidator: WorkerMutationValidator = {
     return null;
   },
 };
+
+/** The same feature-owned validation must protect whole-project .ppgame restores. */
+export function validateNativeMediaCompositions(_before: ProjectSnapshot, after: ProjectSnapshot): string | null {
+  const ids = new Set<string>();
+  for (const composition of after.mediaCompositions ?? []) {
+    const errors = validatePremidi(composition);
+    if (errors.length) return "Invalid native composition in project: " + errors[0];
+    if (ids.has(composition.id)) return "Duplicate native composition ID.";
+    ids.add(composition.id);
+    if (new TextEncoder().encode(JSON.stringify(composition)).byteLength > 1_000_000) {
+      return "Native composition exceeds the 1 MB limit.";
+    }
+  }
+  return null;
+}
