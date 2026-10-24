@@ -1,4 +1,5 @@
 import { semanticReferenceProvider } from "../../engine/references/catalog";
+import { findSemanticReferenceTokens, interpolateSemanticReferences, semanticReferenceCandidate } from "../../engine/references/runtime";
 import { normalizePlayerInput } from "../../engine/input/normalize";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
 import type { Interaction } from "../narrative/model";
@@ -47,6 +48,46 @@ export type ParserResult = {
 
 export function normalizeCommand(value: string) {
   return normalizePlayerInput(value);
+}
+
+/**
+ * Resolve an authored Node Valid Input using canonical semantic @ references.
+ * Character names come from World's provider, not from a second parser-owned
+ * alias table. A specific Character reference accepts its canonical name and
+ * every authored alias (including a variable-backed one) in this Node.
+ * Ordinary static inputs still take the exact same matching path.
+ */
+export function resolvedInteractionInputNames(
+  authored: string,
+  snapshot: ProjectSnapshot,
+  state: PlayState,
+): string[] {
+  const tokens = findSemanticReferenceTokens(authored);
+  if (!tokens.length) return [authored];
+
+  const context = { snapshot, state };
+  const limit = 128;
+  let names = [""];
+  let cursor = 0;
+  for (const token of tokens) {
+    const literal = authored.slice(cursor, token.index);
+    let choices: string[];
+    if (token.kind === "world.character" && (!token.projection || token.projection === "name")) {
+      const candidate = semanticReferenceCandidate(token.kind, token.id, context);
+      const resolvingCharacterIds = new Set<string>([candidate?.target?.id ?? token.id]);
+      choices = (candidate?.inputNames ?? []).map((name) =>
+        interpolateSemanticReferences(name, { ...context, resolvingCharacterIds }).trim(),
+      ).filter(Boolean);
+    } else {
+      const projected = interpolateSemanticReferences(token.token, context).trim();
+      choices = projected ? [projected] : [];
+    }
+    if (!choices.length) return [];
+    names = names.flatMap((prefix) => choices.map((choice) => prefix + literal + choice)).slice(0, limit);
+    cursor = token.index + token.token.length;
+  }
+  const suffix = authored.slice(cursor);
+  return [...new Set(names.map((name) => (name + suffix).trim()).filter(Boolean))];
 }
 
 function interactionsAtCurrentNode(snapshot: ProjectSnapshot, state: PlayState) {
@@ -203,7 +244,8 @@ export function parseCommand(input: string, snapshot: ProjectSnapshot, state: Pl
   const sceneInteractions = interactionsAtCurrentNode(snapshot, state);
   const commandInteractions = sceneInteractions.filter((interaction) => (interaction.matchMode ?? "command") === "command");
   const fallbackInteraction = sceneInteractions.filter((interaction) => interaction.matchMode === "fallback").sort((left, right) => left.id.localeCompare(right.id))[0];
-  const allAliases = commandInteractions.flatMap((interaction) => interaction.aliases.map((alias) => ({ interaction, alias })));
+  const allAliases = commandInteractions.flatMap((interaction) => interaction.aliases.flatMap((authored) =>
+    resolvedInteractionInputNames(authored, snapshot, state).map((alias) => ({ interaction, alias }))));
 
   const exact = stableInteractionMatches(allAliases.filter(({ alias }) => alias.trim() === input.trim()).map(({ interaction, alias }) => ({ interaction, alias, score: alias.length })));
   if (exact[0]) return { interaction: exact[0].interaction, invocation: null, reason: "exact-alias", matchedAlias: exact[0].alias, matchedPattern: null, candidates: exact.map(({ interaction }) => interaction.id), normalizedInput, ambiguities: [] };
