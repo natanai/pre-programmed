@@ -1,7 +1,8 @@
 import type { OperationHook, OperationId } from "../operations/model";
 import type { Condition } from "../../engine/rules/model";
+import type { ConditionalSelectionMode } from "../../engine/rules/conditionalSelection";
 
-/** A name candidate: no condition joins the world-seeded pool; a condition overrides it while matching. */
+/** A reusable alternate name. Its optional When condition affects display, not identity. */
 export type CharacterAlias = string | { name: string; condition?: Condition };
 
 export function characterAliasName(alias: CharacterAlias): string {
@@ -18,8 +19,14 @@ export type EntityDefinition = {
   type: "character" | "location";
   /** Canonical Author-facing identity. Play may resolve a Character alias for one save. */
   name: string;
-  /** Names seeded at game start or conditionally presented during play. Legacy strings are seeded names. */
+  /** Alternate names remain usable for references even when not shown as the primary name. */
   aliases?: CharacterAlias[];
+  /**
+   * Shared first/random selection at world initialization: first keeps the canonical name,
+   * random selects from canonical plus unconditional aliases using the shared world seed.
+   * Older projects omitted this field and implicitly used random; keep that compatibility.
+   */
+  startingNameSelection?: ConditionalSelectionMode;
   description: string;
   tags: string[];
   /** Stable Media image reference used as this Character's portrait. Locations leave this unset. */
