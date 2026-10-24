@@ -9,6 +9,7 @@ type EntityRow = {
   entity_type: "character" | "location";
   name: string;
   aliases_json: string;
+  starting_name_selection: "first" | "random" | null;
   description: string;
   tags_json: string;
   portrait_asset_id: string | null;
@@ -43,12 +44,23 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
         UPDATE project_meta SET schema_version = 44 WHERE id = 1;
       `,
     },
+    {
+      id: 49,
+      name: "world-character-starting-name-selection",
+      sql: `
+        -- NULL represents historical Characters that used implicit name seeding.
+        -- Preserve that distinction when older .ppgame files are restored.
+        ALTER TABLE entity_definitions ADD COLUMN starting_name_selection TEXT;
+
+        UPDATE project_meta SET schema_version = 49 WHERE id = 1;
+      `,
+    },
   ],
 
   async load(db) {
     const [entities, hookGroups] = await Promise.all([
       db.prepare(
-        "SELECT id, key, entity_type, name, aliases_json, description, tags_json, portrait_asset_id, operation_interactable, operations_json FROM entity_definitions ORDER BY entity_type, key",
+        "SELECT id, key, entity_type, name, aliases_json, starting_name_selection, description, tags_json, portrait_asset_id, operation_interactable, operations_json FROM entity_definitions ORDER BY entity_type, key",
       ).all<EntityRow>(),
       loadHooksForKind(db, "world.entity"),
     ]);
@@ -60,6 +72,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
         type: row.entity_type,
         name: row.name,
         aliases: parseJson(row.aliases_json, []),
+        ...(row.starting_name_selection ? { startingNameSelection: row.starting_name_selection } : {}),
         description: row.description,
         tags: parseJson(row.tags_json, []),
         portraitAssetId: row.portrait_asset_id,
@@ -82,10 +95,11 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
     return [
       db.prepare(
         `INSERT INTO entity_definitions
-         (id, key, entity_type, name, aliases_json, description, tags_json, portrait_asset_id, operation_interactable, operations_json, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         (id, key, entity_type, name, aliases_json, starting_name_selection, description, tags_json, portrait_asset_id, operation_interactable, operations_json, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
          ON CONFLICT(id) DO UPDATE SET key=excluded.key, entity_type=excluded.entity_type,
-           name=excluded.name, aliases_json=excluded.aliases_json, description=excluded.description, tags_json=excluded.tags_json,
+           name=excluded.name, aliases_json=excluded.aliases_json,
+           starting_name_selection=excluded.starting_name_selection, description=excluded.description, tags_json=excluded.tags_json,
            portrait_asset_id=excluded.portrait_asset_id,
            operation_interactable=excluded.operation_interactable, operations_json=excluded.operations_json,
            updated_at=CURRENT_TIMESTAMP`,
@@ -95,6 +109,7 @@ export const worldFeaturePersistence: WorkerFeaturePersistence = {
         entity.type,
         entity.name,
         JSON.stringify(entity.aliases ?? []),
+        entity.type === "character" ? entity.startingNameSelection ?? null : null,
         entity.description,
         JSON.stringify(entity.tags),
         entity.type === "character" ? entity.portraitAssetId ?? null : null,
