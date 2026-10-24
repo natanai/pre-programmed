@@ -11,7 +11,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "../model";
 import { aliasesFromInput, normalizedAliases } from "./aliasInput";
-import { entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
+import { appendCapturedTextAlias, entityAuthorDraft, newEntity, type EntityDraft } from "./entityDraft";
 import "./worldWorkspaces.css";
 
 export function worldEntityRoute(type: EntityDefinition["type"], id?: string, resourceTask = false, preferredOperation?: string) {
@@ -129,15 +129,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                   <span>{proposedVariable.label || proposedVariable.key} · @ reference</span>
                   {proposedAlreadyLinked
                     ? <small>Already listed as an alias. Edit its WHEN rule below if desired.</small>
-                    : <button type="button" onClick={() => setDraft((current) => {
-                      const name = proposedAlias;
-                      if ((current.aliases ?? []).some((alias) => characterAliasName(alias) === name)) return current;
-                      return {
-                        ...current,
-                        aliases: [...(current.aliases ?? []), { name, condition: ALWAYS }],
-                        aliasesInput: [...(current.aliases ?? []).map(characterAliasName), name].join("\n"),
-                      };
-                    })}>[+ USE AS CHARACTER NAME WHEN ENTERED]</button>}
+                    : <button type="button" onClick={() => setDraft((current) => appendCapturedTextAlias(current, proposedVariable.id))}>[+ USE AS CHARACTER NAME WHEN ENTERED]</button>}
                   <small>The alias is an ordinary @ reference. It displays when it contains text; otherwise the Character keeps their starting name. Save the Character to confirm.</small>
                 </div>,
               }] : []),
