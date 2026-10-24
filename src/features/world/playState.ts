@@ -73,7 +73,8 @@ export function characterNameForPresentation(
 ) {
   if (authorMode) return character.name;
   const seededName = resolvedCharacterName(character, state);
-  if (!snapshot || resolvingCharacterIds.has(character.id)) return character.name;
+  if (!snapshot) return seededName;
+  if (resolvingCharacterIds.has(character.id)) return character.name;
 
   // Keep the seeded choice as a stable authored template; resolve its current
   // values only when presenting it, so naming variables can change mid-run.
