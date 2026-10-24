@@ -1,5 +1,7 @@
 import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { ValueMentionField } from "../../../author/ValueMentionField";
+import { authorSemanticReferenceView } from "../../../engine/references/authorSyntax";
 import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
@@ -192,7 +194,7 @@ export function InteractionComposer({
   };
 
   const title = screen.type === "overview"
-    ? fallbackMode ? "INVALID INPUT" : (draft.wording.trim() || "NEW USER INPUT").toUpperCase()
+    ? fallbackMode ? "INVALID INPUT" : (authorSemanticReferenceView(draft.wording.trim(), { snapshot, state: sourcePlayState, authorMode: true }).text || "NEW USER INPUT").toUpperCase()
     : screen.type === "input-settings" ? "INPUT SETTINGS"
     : `RESPONSE ${Math.max(1, draft.outcomes.findIndex((outcome) => outcome.id === screen.outcomeId) + 1)}`;
 
@@ -206,6 +208,7 @@ export function InteractionComposer({
     <div className="author-panel-body guided-editor-body">
       {screen.type === "overview" ? <InteractionOverview
         draft={draft}
+        playState={sourcePlayState}
         fallbackMode={fallbackMode}
         snapshot={snapshot}
         conversationCharacterId={conversationCharacterId}
@@ -221,6 +224,7 @@ export function InteractionComposer({
         draft={draft}
         fallbackMode={fallbackMode}
         snapshot={snapshot}
+        playState={sourcePlayState}
         onChange={setDraft}
       /> : null}
 
@@ -250,6 +254,7 @@ function InteractionOverview({
   draft,
   fallbackMode,
   snapshot,
+  playState,
   conversationCharacterId,
   notationForOutcome,
   autoFocusWording,
@@ -261,6 +266,7 @@ function InteractionOverview({
   draft: Interaction;
   fallbackMode: boolean;
   snapshot: ProjectSnapshot;
+  playState: PlayState;
   conversationCharacterId: string | null;
   notationForOutcome: (outcome: InteractionOutcome) => string;
   autoFocusWording: boolean;
@@ -273,8 +279,9 @@ function InteractionOverview({
     {!fallbackMode ? <section className="guided-section interaction-primary-section">
       <h3>PLAYER INPUT</h3>
       <label className="user-input-field">PLAYER ENTERS
-        <input value={draft.wording} onChange={(event) => onWording(event.target.value)} autoFocus={autoFocusWording} enterKeyHint="done" />
+        <ValueMentionField snapshot={snapshot} playState={playState} value={draft.wording} onValueChange={onWording} autoFocus={autoFocusWording} ariaLabel="Player enters" />
       </label>
+      <small>Type @ to reference a Character. Their canonical name and aliases match this same input.</small>
     </section> : <div className="guided-context-copy compact-copy">Response used when player text does not match another valid input at this Node.</div>}
 
     <section className="guided-section interaction-response-section">
@@ -302,10 +309,11 @@ function InteractionOverview({
   </div>;
 }
 
-function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
+function InputSettings({ draft, fallbackMode, snapshot, playState, onChange }: {
   draft: Interaction;
   fallbackMode: boolean;
   snapshot: ProjectSnapshot;
+  playState: PlayState;
   onChange: (interaction: Interaction) => void;
 }) {
   const aliases = secondaryAliases(draft.wording, draft.aliases);
@@ -337,8 +345,8 @@ function InputSettings({ draft, fallbackMode, snapshot, onChange }: {
       <section className="guided-section">
         <h3>OTHER WORDING</h3>
         <label>ALTERNATE PHRASES
-          <textarea rows={4} value={aliases.join("\n")} placeholder="one alternate phrase per line" onChange={(event) => {
-            const other = event.target.value.split("\n");
+          <ValueMentionField snapshot={snapshot} playState={playState} multiline rows={4} value={aliases.join("\n")} placeholder="one alternate phrase per line" onValueChange={(value) => {
+            const other = value.split("\n");
             onChange({ ...draft, aliases: [draft.wording, ...other] });
           }} />
         </label>

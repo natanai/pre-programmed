@@ -34,6 +34,11 @@ function entityCandidate(
     // Discovery and Author ownership always stay canonical even when the Play projection differs.
     label: entity.name || entity.key || entity.id,
     detail: entity.type,
+    inputNames: entity.type === "character" ? uniqueAliases([
+      entity.name,
+      ...(entity.aliases ?? []).map(characterAliasName),
+      presentedName,
+    ]) : undefined,
     aliases: uniqueAliases([
       entity.name,
       entity.key,
@@ -112,6 +117,11 @@ const currentConversationCharacterCandidates: SemanticReferenceProvider["candida
       ? `Currently with ${entity.name || entity.key}`
       : "No active conversation",
     aliases: ["conversation character", "current character", "current speaker", "speaker"],
+    inputNames: entity ? uniqueAliases([
+      entity.name,
+      ...(entity.aliases ?? []).map(characterAliasName),
+      presentedName,
+    ]) : [],
     defaultProjection: "name",
     projections: {
       name: presentedName,
