@@ -11,6 +11,8 @@ import {
 import { parseCommand } from "../src/features/commands/parser";
 import { createRadixSequence } from "../src/features/radix/model";
 import type { EntityDefinition } from "../src/features/world/model";
+import { characterNameForPresentation, characterNameOptions } from "../src/features/world/playState";
+import { aliasesFromInput, normalizedAliases } from "../src/features/world/author/aliasInput";
 import { node, project } from "./fixtures";
 
 function character(overrides: Partial<EntityDefinition> = {}): EntityDefinition {
@@ -129,5 +131,111 @@ describe("seeded Character aliases", () => {
       .toEqual({ kind: "world.entity", id: guide.id });
     expect(parseCommand("inspect Evelyn", snapshot, state).invocation).toBeNull();
     expect(parseCommand("inspect Mae", snapshot, state).invocation).toBeNull();
+  });
+});
+
+describe("conditional Character aliases", () => {
+  const hidden = {
+    name: "Mysterious voice",
+    condition: { type: "flag" as const, key: "knows_guide", value: false },
+  };
+  const seeded = { name: "June" };
+
+  it("keeps conditional aliases out of world seed selection and reveals the canonical name without rerolling", () => {
+    const guide = character({ aliases: [hidden, seeded] });
+    const snapshot = project({ entities: [guide] });
+    const initial = createEmptyPlayState(snapshot, 1000);
+    const unrevealed = { ...initial, values: { ...initial.values, knows_guide: false } };
+    const revealed = { ...initial, values: { ...initial.values, knows_guide: true } };
+    const token = makeSemanticReferenceToken("world.character", guide.id, "name");
+
+    expect(characterNameOptions(guide)).toEqual(["Evelyn", "June"]);
+    expect(characterNameForPresentation(guide, unrevealed, false, snapshot)).toBe("Mysterious voice");
+    expect(interpolateSemanticReferences(token, { snapshot, state: unrevealed })).toBe("Mysterious voice");
+    expect(characterNameForPresentation(guide, revealed, false, snapshot)).toBe(initial.characterNames.guide);
+    expect(interpolateSemanticReferences(token, { snapshot, state: revealed })).toBe(initial.characterNames.guide);
+    expect(characterNameForPresentation(guide, unrevealed, true, snapshot)).toBe("Evelyn");
+    expect(initial.characterNames.guide).toBe(revealed.characterNames.guide);
+  });
+
+  it("uses first matching conditional alias in authored order", () => {
+    const guide = character({ aliases: [
+      { name: "A distant voice", condition: { type: "always" } },
+      { name: "Someone nearby", condition: { type: "always" } },
+    ] });
+    const snapshot = project({ entities: [guide] });
+    const state = createEmptyPlayState(snapshot);
+    expect(characterNameForPresentation(guide, state, false, snapshot)).toBe("A distant voice");
+    expect(characterNameForPresentation(guide, state, true, snapshot)).toBe("Evelyn");
+  });
+
+  it("only offers the currently displayed name in player command matching", () => {
+    const guide = character({ aliases: [hidden] });
+    const base = project({
+      nodes: [{ ...node("a", 1), conversationMode: "set", conversationCharacterId: guide.id }],
+      entities: [guide],
+    });
+    const snapshot = { ...base, settings: { ...base.settings, commands: {
+      ...base.settings.commands,
+      commands: [{
+        id: "inspect-character",
+        label: "Inspect",
+        enabled: true,
+        patterns: ["inspect {target}"],
+        slots: [{ name: "target", sourceKinds: ["world.character"] }],
+        action: { type: "target-operation" as const, operation: "inspect", targetSlot: "target" },
+      }],
+      referenceSources: [{
+        sourceKind: "world.character",
+        enabled: true,
+        includeDefaults: true,
+        aliases: {},
+      }],
+    } } };
+    const initial = createEmptyPlayState(snapshot);
+    const unrevealed = { ...initial, values: { ...initial.values, knows_guide: false } };
+    const revealed = { ...initial, values: { ...initial.values, knows_guide: true } };
+    expect(parseCommand("inspect Mysterious voice", snapshot, unrevealed).invocation?.target)
+      .toEqual({ kind: "world.entity", id: guide.id });
+    expect(parseCommand("inspect Evelyn", snapshot, unrevealed).invocation).toBeNull();
+    expect(parseCommand("inspect Evelyn", snapshot, revealed).invocation?.target)
+      .toEqual({ kind: "world.entity", id: guide.id });
+    expect(parseCommand("inspect Mysterious voice", snapshot, revealed).invocation).toBeNull();
+  });
+});
+
+describe("Alias textarea draft handling", () => {
+  it("accepts spaces, returns, and unfinished blank lines", () => {
+    expect(aliasesFromInput("Mysterious voice \n\nCaptain June\n", [])).toEqual([
+      { name: "Mysterious voice" },
+      { name: "Captain June" },
+    ]);
+  });
+
+  it("preserves the associated condition on renaming and insertion", () => {
+    const condition = { type: "flag" as const, key: "known", value: false };
+    const original = [{ name: "Mysterious voice", condition }, { name: "June" }];
+    expect(aliasesFromInput("Unknown speaker\nJune", original)).toEqual([
+      { name: "Unknown speaker", condition },
+      { name: "June" },
+    ]);
+    expect(aliasesFromInput("New voice\nMysterious voice\nJune", original)).toEqual([
+      { name: "New voice" },
+      { name: "Mysterious voice", condition },
+      { name: "June" },
+    ]);
+  });
+
+  it("normalizes saved names without removing distinct conditional definitions", () => {
+    const condition = { type: "flag" as const, key: "known", value: false };
+    expect(normalizedAliases(character({ aliases: [
+      { name: " Mysterious voice ", condition },
+      { name: "mysterious voice" },
+      { name: "Evelyn" },
+      { name: "June" },
+    ] }))).toEqual([
+      { name: "Mysterious voice", condition },
+      { name: "June" },
+    ]);
   });
 });
