@@ -25,3 +25,48 @@
   display: grid;
   gap: .35em;
 }
+
+.world-alias-rules {
+  display: grid;
+  gap: .65em;
+  min-width: 0;
+}
+
+.world-alias-rules > small {
+  color: var(--dos-muted);
+  line-height: 1.45;
+}
+
+.world-alias-rule {
+  display: grid;
+  gap: .55em;
+  min-width: 0;
+  padding: .65em;
+  border: 1px solid var(--dos-line);
+}
+
+.world-alias-rule-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5em 1em;
+}
+
+.world-alias-rule-header strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.world-alias-rule-header label {
+  display: grid;
+  gap: .25em;
+  min-width: min(100%, 13em);
+  font-size: .85em;
+  color: var(--dos-muted);
+}
+
+.world-alias-rule-header select {
+  max-width: 100%;
+  color: var(--dos-text);
+}
