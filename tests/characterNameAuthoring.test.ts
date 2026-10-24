@@ -47,10 +47,10 @@ describe("Character name author experience", () => {
       const document = importedSnapshot(entity, version);
       const snapshot = { ...document.project, revision: 0 };
       const draft = entityAuthorDraft(snapshot.entities[0]);
-      expect(draft.aliasesInput).toBe("Charlie\\nLottie".replace("\\\\n", "\\n"));
+      expect(draft.aliasesInput).toBe(["Charlie", "Lottie"].join(String.fromCharCode(10)));
       expect(draft.startingNameSelection).toBe("random");
       expect(characterStartingNameSelection(snapshot.entities[0])).toBe("random");
-      expect(aliasesFromInput("Charlie renamed\\nLottie".replace("\\\\n", "\\n"), draft.aliases ?? [])).toEqual([
+      expect(aliasesFromInput(["Charlie renamed", "Lottie"].join(String.fromCharCode(10)), draft.aliases ?? [])).toEqual([
         { name: "Charlie renamed" }, { name: "Lottie" },
       ]);
     }
