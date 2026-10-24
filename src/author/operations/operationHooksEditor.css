@@ -14,6 +14,19 @@
   line-height: 1.35;
 }
 
+.operation-language-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35em .7em;
+}
+
+.operation-language-links button,
+.operation-edit-command {
+  width: fit-content;
+  min-height: 2.5em;
+  padding: .35em .5em !important;
+}
+
 .operation-card-list {
   display: grid;
   gap: .7em;

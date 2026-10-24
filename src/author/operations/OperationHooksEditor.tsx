@@ -69,17 +69,11 @@ function hookIsShadowed(hook: OperationHook, hooks: readonly OperationHook[]) {
     && (candidate.order < hook.order || (candidate.order === hook.order && candidate.id.localeCompare(hook.id) < 0)));
 }
 
-function operationDefinitionsFor(snapshot: ProjectSnapshot, targetKind: string, current?: OperationId) {
-  const definitions = authorOperationDefinitions(snapshot, targetKind);
-  if (!current || definitions.some((definition) => definition.value === current)) return definitions;
-  return [...definitions, { value: current, label: current, targetKinds: [targetKind] }];
-}
-
 /**
  * Operation behavior body. The parent Author workspace owns disclosure/navigation
  * so implementation composition never adds a second visual layer.
  */
-export function OperationHooksEditor({ capability, snapshot, targetKind, defaultOpen = false, preferredOperation, onChange }: {
+export function OperationHooksEditor({ capability, snapshot, targetKind, defaultOpen = false, preferredOperation, onChange, onOpenPlayerLanguage, onCreatePlayerCommand, onEditPlayerCommand }: {
   capability: OperationCapabilityDraft;
   snapshot: ProjectSnapshot;
   /** Semantic author target kind, e.g. inventory.item or world.character. */
@@ -88,18 +82,16 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
   defaultOpen?: boolean;
   preferredOperation?: string;
   onChange: (capability: OperationCapabilityDraft) => void;
+  onOpenPlayerLanguage?: () => void;
+  onCreatePlayerCommand?: () => void;
+  onEditPlayerCommand?: (commandId: string) => void;
 }) {
   const [selectedHookId, setSelectedHookId] = useState<string | null>(null);
   const [screen, setScreen] = useState<HookScreen>("list");
   const preferredControlRef = useRef<HTMLButtonElement>(null);
   const selectedHook = selectedHookId ? capability.hooks.find((hook) => hook.id === selectedHookId) : undefined;
   const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
-  const cardDefinitions = [
-    ...operationDefinitions,
-    ...capability.hooks
-      .filter((hook) => !operationDefinitions.some((definition) => definition.value === hook.operation))
-      .map((hook) => ({ value: hook.operation, label: hook.operation, targetKinds: [targetKind] })),
-  ].filter((definition, index, all) => all.findIndex((candidate) => candidate.value === definition.value) === index)
+  const cardDefinitions = [...operationDefinitions]
     .sort((left, right) => left.value === preferredOperation ? -1 : right.value === preferredOperation ? 1 : 0);
 
   useEffect(() => {
@@ -178,6 +170,10 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
       {screen === "list" ? <>
         <label className="check-label"><input type="checkbox" checked={capability.interactable}
           onChange={(event) => onChange({ ...capability, interactable: event.target.checked })} /> player can attempt operations on this target</label>
+        <div className="operation-language-links">
+          {onOpenPlayerLanguage ? <button type="button" onClick={onOpenPlayerLanguage}>[PLAYER LANGUAGE]</button> : null}
+          {onCreatePlayerCommand ? <button type="button" onClick={onCreatePlayerCommand}>[+ PLAYER COMMAND]</button> : null}
+        </div>
         {capability.interactable ? <>
           <p className="operation-capability-help">An available operation can use feature defaults even without an authored response. Add responses when this target should say something, apply effects, vary by attempt, or override success.</p>
           <div className="operation-card-list">
@@ -212,6 +208,8 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                     </div>;
                   })}
                 </div> : <span className="operation-card-empty">No authored response. {available ? "Feature defaults may still handle this operation." : "Enable it or add a response when needed."}</span>}
+                {onEditPlayerCommand ? <button type="button" className="operation-edit-command"
+                  onClick={() => onEditPlayerCommand(operation.commandId)}>[EDIT PLAYER COMMAND]</button> : null}
                 <button
                   ref={preferred ? preferredControlRef : undefined}
                   type="button"
@@ -220,7 +218,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
                 >[+ {operation.label.toUpperCase()} RESPONSE]</button>
               </section>;
             })}
-            {!cardDefinitions.length ? <div className="operation-card-empty">No operation vocabulary is installed for this target yet. Create targeted wording in Player Interactions to add one.</div> : null}
+            {!cardDefinitions.length ? <div className="operation-card-empty">No targeted Player Commands exist for this target. Define one in Advanced settings, under Player language.</div> : null}
           </div>
         </> : null}
       </> : selectedHook ? <>
@@ -244,7 +242,7 @@ function HookWorkspace({ hook, snapshot, targetKind, shadowed, onChange, onOpera
   onOperationChange: (operation: OperationId) => void;
   onRemove: () => void;
 }) {
-  const operationDefinitions = operationDefinitionsFor(snapshot, targetKind, hook.operation);
+  const operationDefinitions = authorOperationDefinitions(snapshot, targetKind);
   return <div className="operation-hook-workspace">
     {shadowed ? <div className="operation-hook-shadow-warning" role="alert">UNREACHABLE: an earlier ALWAYS response for this operation runs first. Move this response above it or give the earlier response a condition.</div> : null}
     <label>OPERATION <select value={hook.operation} onChange={(event) => onOperationChange(event.target.value)}>

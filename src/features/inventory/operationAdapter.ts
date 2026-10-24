@@ -1,6 +1,7 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
-import type { OperationArguments, OperationId } from "../operations/model";
-import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
+import type { OperationArguments } from "../operations/model";
+import { NATIVE_ITEM_OPERATIONS } from "./nativeOperations";
+import type { OperationTargetAdapter } from "../operations/targetAdapter";
 import {
   canPlaceItem,
   compatibleBodySlots,
@@ -9,17 +10,6 @@ import {
   occupiedEquipmentSlotKeys,
   unequipInventoryEntry,
 } from "./runtime";
-
-export const INVENTORY_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
-  { value: "inspect", label: "inspect", targetKinds: ["inventory.item"] },
-  { value: "use", label: "use", targetKinds: ["inventory.item"] },
-  { value: "move", label: "move", targetKinds: ["inventory.item"] },
-  { value: "remove", label: "remove", targetKinds: ["inventory.item"] },
-  { value: "equip", label: "equip", targetKinds: ["inventory.item"] },
-  { value: "unequip", label: "unequip", targetKinds: ["inventory.item"] },
-];
-
-const DEFAULT_ITEM_OPERATIONS: OperationId[] = INVENTORY_OPERATION_DEFINITIONS.map((definition) => definition.value);
 
 function requestedSlotKey(argumentsValue?: OperationArguments) {
   const argument = argumentsValue?.slot;
@@ -65,7 +55,7 @@ export const ITEM_OPERATION_TARGET_ADAPTER: OperationTargetAdapter = {
       definitionId: definition.id,
       label: definition.name || definition.key || target.id,
       interactable: definition.interactable ?? true,
-      operations: definition.operations ?? DEFAULT_ITEM_OPERATIONS,
+      operations: definition.operations ?? NATIVE_ITEM_OPERATIONS,
       hooks: definition.hooks ?? [],
       authorSource: authoredSource("item", definition.id),
     };

@@ -16,7 +16,6 @@ import type { AuthorSearchContributor } from "../search/types";
 import type { SearchDocumentContribution } from "../search/types";
 import type { AuthorTaskCompletion, AuthorTaskResult, AuthorTaskRoute } from "../tasks/types";
 import type { AuthorToolContributor } from "../tools/types";
-import type { AuthorOperationDefinition } from "../../features/operations/targetAdapter";
 import type { TextCueAuthorAdapter } from "../textCues/types";
 import type { AuthorCommandTargetAdapter } from "../commands/types";
 import type { RegisteredAuthorWorkspaceDefinition } from "../ui/workspaceDefinition";
@@ -107,8 +106,6 @@ export type AuthorFeatureManifest = {
   resources?: readonly AuthorResourceProvider[];
   /** Feature-owned destinations for authoring behavior on semantic command targets. */
   commandTargets?: readonly AuthorCommandTargetAdapter[];
-  /** Operations this feature exposes on semantic target kinds. */
-  operations?: readonly AuthorOperationDefinition[];
   /** Feature-owned condition editors composed by the generic rule UI. */
   conditions?: readonly ConditionAuthorAdapter[];
   /** Feature-owned effect editors composed by the generic rule UI. */

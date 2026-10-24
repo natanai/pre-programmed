@@ -1,5 +1,7 @@
 import { resolveAuthorKey } from "../../../author/generatedKey";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { authorOperationDefinitions } from "../../../author/operations/catalog";
+import { NATIVE_ITEM_OPERATIONS } from "../nativeOperations";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
@@ -12,7 +14,7 @@ import {
 } from "./equipmentWorkspaces";
 import "./inventoryWorkspaces.css";
 
-const DEFAULT_ITEM_OPERATIONS = ["inspect", "use", "move", "remove", "equip", "unequip"];
+
 
 export function inventoryRoute(workspace: "inventory" | "items" | "body-types" | "item" | "body-type", id?: string, resourceTask = false, preferredOperation?: string) {
   return {
@@ -62,7 +64,7 @@ function emptyItem(): ItemDefinition {
   return {
     id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
     stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: [...DEFAULT_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
+    interactable: true, operations: [...NATIVE_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
     equipOnGiveSlotKey: null, tags: [], initialState: {}, hooks: [],
   };
 }
@@ -83,6 +85,9 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
   canSave: ({ draft }) => Boolean(draft.name.trim()),
   buildSpec: ({ route, context, draft, setDraft }) => {
     const existing = context.snapshot.items.some((candidate) => candidate.id === draft.id);
+    const commandOperations = authorOperationDefinitions(context.snapshot, "inventory.item");
+    const availableCommands = commandOperations.filter((operation) => (draft.operations ?? NATIVE_ITEM_OPERATIONS).includes(operation.value));
+    const authoredResponses = (draft.hooks ?? []).filter((hook) => commandOperations.some((operation) => operation.value === hook.operation));
     const minimumStartingQuantity = Math.max(0, ...(context.snapshot.bodyBackgrounds ?? []).map((bodyType) =>
       (bodyType.startingEquipment ?? []).filter((assignment) => assignment.itemId === draft.id).length,
     ));
@@ -143,7 +148,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
           type: "disclosure",
           id: "inventory-item-behavior",
           label: "Player behavior",
-          summary: `${(draft.operations ?? []).length} operations · ${(draft.hooks ?? []).length} responses`,
+          summary: `${availableCommands.length} player operations · ${authoredResponses.length} responses`,
           defaultOpen: route.data?.section === "operations" || Boolean(route.data?.operation),
           children: [{
             type: "custom",
@@ -154,7 +159,10 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
               targetKind="inventory.item"
               defaultOpen={route.data?.section === "operations" || Boolean(route.data?.operation)}
               preferredOperation={route.data?.operation}
-              capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? DEFAULT_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
+              onOpenPlayerLanguage={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}
+              onCreatePlayerCommand={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}
+              onEditPlayerCommand={(commandId) => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId } })}
+              capability={{ interactable: draft.interactable ?? true, operations: draft.operations ?? NATIVE_ITEM_OPERATIONS, hooks: draft.hooks ?? [] }}
               onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
             />,
           }],

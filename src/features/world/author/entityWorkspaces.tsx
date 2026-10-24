@@ -7,6 +7,7 @@ import { ConditionEditor } from "../../../author/ConditionEditor";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import { validateCondition } from "../../../engine/rules/conditions";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
+import { authorOperationDefinitions } from "../../../author/operations/catalog";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "../model";
@@ -68,6 +69,9 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
   },
   buildSpec: ({ route, context, draft, setDraft }) => {
     const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);
+    const targetKind = draft.type === "character" ? "world.character" : "world.location";
+    const enabledCommandOperations = authorOperationDefinitions(context.snapshot, targetKind)
+      .filter((operation) => (draft.operations ?? []).includes(operation.value));
     const usages = persisted
       ? referencesTo(context.snapshot, draft.type, draft.id).filter((reference) =>
           reference.ownerId !== draft.id || reference.ownerKind !== draft.type)
@@ -216,7 +220,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
           type: "disclosure" as const,
           id: "world-entity-behavior",
           label: "Player interactions",
-          summary: draft.interactable ? `${draft.operations?.length ?? 0} operations` : "Not directly interactable",
+          summary: draft.interactable ? `${enabledCommandOperations.length} player operations enabled` : "Not directly interactable",
           defaultOpen: Boolean(route.data?.preferredOperation),
           children: [{
             type: "custom" as const,
@@ -228,6 +232,9 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
               targetKind={draft.type === "character" ? "world.character" : "world.location"}
               defaultOpen={Boolean(route.data?.preferredOperation)}
               preferredOperation={route.data?.preferredOperation}
+              onOpenPlayerLanguage={() => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" })}
+              onCreatePlayerCommand={() => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId: "new" } })}
+              onEditPlayerCommand={(commandId) => context.pushTask({ type: "feature", feature: "commands", workspace: "command", data: { commandId } })}
               onChange={(capability) => setDraft((current) => ({ ...current, ...capability }))}
             />,
           }],

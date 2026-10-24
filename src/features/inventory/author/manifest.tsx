@@ -1,6 +1,5 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
-import { INVENTORY_OPERATION_DEFINITIONS } from "../operationAdapter";
 import {
   giveItemEffectAdapter,
   hasItemConditionAdapter,
@@ -50,7 +49,6 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
     editRoute: (id, operation) => inventoryRoute("item", id, true, operation),
     createRoute: (operation) => inventoryRoute("item", undefined, true, operation),
   }],
-  operations: INVENTORY_OPERATION_DEFINITIONS,
   conditions: [hasItemConditionAdapter, lacksItemConditionAdapter],
   effects: [giveItemEffectAdapter, removeItemEffectAdapter, setItemStateEffectAdapter, setBodyBackgroundEffectAdapter],
   references: [inventoryProjectReferences],

@@ -235,10 +235,10 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
       const currentNames = placeholderNames(currentPatterns);
       const currentSlots = currentNames.map((name) => current.command.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] });
       const action = current.command.action.type === "target-operation" ? current.command.action : null;
-      const operation = action?.operation ?? "inspect";
+      const operation = action?.operation ?? "";
       const slotName = action?.targetSlot || currentSlots[0]?.name || "target";
-      const verb = normalizePlayerInput(current.command.label || operation || "inspect") || "inspect";
-      const nextPatterns = currentNames.includes(slotName) ? currentPatterns : [...currentPatterns, `${verb} {${slotName}}`];
+      const verb = normalizePlayerInput(current.command.label || operation);
+      const nextPatterns = currentNames.includes(slotName) || !verb ? currentPatterns : [...currentPatterns, `${verb} {${slotName}}`];
       const nextNames = placeholderNames(nextPatterns);
       const nextSlots = nextNames.map((name) => {
         const existingSlot = current.command.slots.find((slot) => slot.name === name) ?? { name, sourceKinds: [] };
@@ -283,7 +283,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
               ? current.command.action
               : {
                 type: "target-operation",
-                operation: "inspect",
+                operation: "",
                 targetSlot: currentSlots.find((slot) => slot.sourceKinds.length)?.name ?? currentSlots[0]?.name ?? "",
               },
           },
@@ -521,7 +521,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
           id: "command-target-operation",
           label: "Operation id",
           value: command.action.operation,
-          placeholder: "inspect",
+          placeholder: "operation-id",
           help: "Stable behavior id; player wording belongs in Player inputs.",
           onChange: (operation) => change((current) => current.command.action.type === "target-operation" ? {
             ...current,
