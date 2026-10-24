@@ -48,10 +48,6 @@ export function getAuthorCommandTargetAdapter(sourceKind: string) {
     .find((adapter) => adapter.sourceKind === sourceKind);
 }
 
-export function getAuthorOperationDefinitions() {
-  return AUTHOR_FEATURES.flatMap((feature) => feature.operations ?? []);
-}
-
 export function getAuthorConditionAdapters() {
   return AUTHOR_FEATURES.flatMap((feature) => feature.conditions ?? []);
 }
