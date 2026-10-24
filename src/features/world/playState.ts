@@ -2,7 +2,8 @@ import { pickSeededInitializationValue } from "../../engine/runtime/initializati
 import { interpolateSemanticReferences } from "../../engine/references/runtime";
 import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
-import { characterAliasCondition, characterAliasName, type EntityDefinition } from "./model";
+import { characterAliasCondition, characterAliasName, characterStartingNameSelection, type EntityDefinition } from "./model";
+export { characterStartingNameSelection } from "./model";
 
 function uniqueNames(values: readonly string[]) {
   const seen = new Set<string>();
@@ -18,11 +19,6 @@ function uniqueNames(values: readonly string[]) {
 }
 
 /** Canonical name plus only aliases participating in startup seed selection. */
-/** Older saved Characters randomized their unconditional aliases without an explicit setting. */
-export function characterStartingNameSelection(character: EntityDefinition) {
-  return character.startingNameSelection ?? "random";
-}
-
 export function characterNameOptions(character: EntityDefinition) {
   return uniqueNames([
     character.name,
