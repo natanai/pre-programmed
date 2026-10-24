@@ -1,0 +1,23 @@
+name: Request friend portable v0.1.3
+
+on:
+  push:
+    branches:
+      - friend-portable-v0.1.3
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  request-official-portable-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start the existing verified Windows release workflow from main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build-portable-windows.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            --field version=0.1.3
