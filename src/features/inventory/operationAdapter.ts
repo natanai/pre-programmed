@@ -1,6 +1,6 @@
 import { authoredSource } from "../../engine/presentation/authoredSource";
 import type { OperationArguments, OperationId } from "../operations/model";
-import type { AuthorOperationDefinition, OperationTargetAdapter } from "../operations/targetAdapter";
+import type { OperationTargetAdapter } from "../operations/targetAdapter";
 import {
   canPlaceItem,
   compatibleBodySlots,
@@ -10,16 +10,8 @@ import {
   unequipInventoryEntry,
 } from "./runtime";
 
-export const INVENTORY_OPERATION_DEFINITIONS: readonly AuthorOperationDefinition[] = [
-  { value: "inspect", label: "inspect", targetKinds: ["inventory.item"] },
-  { value: "use", label: "use", targetKinds: ["inventory.item"] },
-  { value: "move", label: "move", targetKinds: ["inventory.item"] },
-  { value: "remove", label: "remove", targetKinds: ["inventory.item"] },
-  { value: "equip", label: "equip", targetKinds: ["inventory.item"] },
-  { value: "unequip", label: "unequip", targetKinds: ["inventory.item"] },
-];
-
-const DEFAULT_ITEM_OPERATIONS: OperationId[] = INVENTORY_OPERATION_DEFINITIONS.map((definition) => definition.value);
+// Native inventory UI capabilities; not Player Command vocabulary.
+const DEFAULT_ITEM_OPERATIONS: OperationId[] = ["inspect", "use", "move", "remove", "equip", "unequip"];
 
 function requestedSlotKey(argumentsValue?: OperationArguments) {
   const argument = argumentsValue?.slot;
