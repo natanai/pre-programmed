@@ -1,5 +1,5 @@
 import type { EntityDefinition } from "../model";
-import { characterAliasCondition, characterAliasName } from "../model";
+import { characterAliasName, characterStartingNameSelection } from "../model";
 
 /** Canonical World Author draft. Used by the one Character/Location editor. */
 export type EntityDraft = EntityDefinition & { aliasesInput?: string };
@@ -32,8 +32,7 @@ export function entityAuthorDraft(entity: EntityDefinition): EntityDraft {
   return {
     ...source,
     ...(source.type === "character" ? {
-      startingNameSelection: source.startingNameSelection
-        ?? ((source.aliases ?? []).some((alias) => !characterAliasCondition(alias)) ? "random" : "first"),
+      startingNameSelection: characterStartingNameSelection(source),
     } : {}),
     aliasesInput: (source.aliases ?? []).map(characterAliasName).join("\n"),
   };
