@@ -11,6 +11,9 @@ import { MEDIA_TEXT_CUE_AUTHOR_ADAPTERS } from "./textCueAdapters";
 import { MEDIA_STRUCTURED_WORKSPACES } from "./structuredWorkspaces";
 
 function mediaSoundEditRoute(resource: AuthorResourceOption, snapshot: ProjectSnapshot): AuthorTaskRoute {
+  if (snapshot.mediaCompositions?.some((composition) => composition.id === resource.id)) return {
+    type: "feature", feature: "media", workspace: "composition", data: { compositionId: resource.id, resourceTask: "media-sound" },
+  };
   if (snapshot.synthSounds.some((synth) => synth.id === resource.id)) return {
     type: "feature",
     feature: "media",
@@ -41,6 +44,8 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "feature" || route.feature !== "media") return null;
     if (route.workspace === "assets") return "Media assets";
     if (route.workspace === "synth") return "Synths";
+    if (route.workspace === "compositions") return "Compositions";
+    if (route.workspace === "composition") return snapshot.mediaCompositions?.find((candidate) => candidate.id === route.data?.compositionId)?.title ?? "Composition";
     if (route.workspace === "asset" || route.workspace === "vector-asset") {
       const asset = configuredAssetStore.resolve(snapshot, route.data?.assetId ?? "");
       return asset?.name || (route.workspace === "vector-asset" ? "New vector" : "Repository Media");
@@ -87,6 +92,12 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
       pluralLabel: "Audio Sources",
       searchable: false,
       list: (snapshot) => [
+        ...(snapshot.mediaCompositions ?? []).map((composition) => ({
+          id: composition.id,
+          value: composition.id,
+          label: composition.title,
+          detail: "Composition · native pre-midi",
+        })),
         ...snapshot.synthSounds.map((synth) => ({
           id: synth.id,
           value: synth.id,
@@ -154,5 +165,6 @@ export const mediaAuthorFeature: AuthorFeatureManifest = {
   terminalShortcuts: [
     { commands: ["/assets", "assets"], route: { type: "feature", feature: "media", workspace: "assets" } },
     { commands: ["/synth", "synth", "/sounds", "sounds"], route: { type: "feature", feature: "media", workspace: "synth" } },
+    { commands: ["/compositions", "compositions"], route: { type: "feature", feature: "media", workspace: "compositions" } },
   ],
 };

@@ -4,6 +4,7 @@ import { AssetExplorer } from "./AssetExplorer";
 import { mediaFileAssetWorkspace, mediaFileHelpWorkspace } from "./mediaAssetWorkspace";
 import { synthSoundWorkspace } from "./synthSoundWorkspace";
 import { vectorAssetWorkspace } from "./vectorAssetWorkspace";
+import { mediaCompositionWorkspace, mediaCompositionsWorkspace } from "./premidiWorkspaces";
 import "./mediaAuthor.css";
 
 export const mediaAssetsWorkspace = defineAuthorWorkspace({
@@ -89,6 +90,8 @@ export const mediaSynthLibraryWorkspace = defineAuthorWorkspace({
 
 export const MEDIA_STRUCTURED_WORKSPACES = [
   mediaAssetsWorkspace,
+  mediaCompositionsWorkspace,
+  mediaCompositionWorkspace,
   mediaSynthLibraryWorkspace,
   synthSoundWorkspace,
   mediaFileAssetWorkspace,

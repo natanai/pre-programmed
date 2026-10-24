@@ -22,7 +22,7 @@ export const audioEffectAdapter: EffectAuthorAdapter = {
   type: "audio",
   label: "play audio",
   category: "audio & image",
-  description: "Play either a procedural Synth or an audio file shipped in public/assets.",
+  description: "Play a native pre-midi composition, a procedural Synth, or a repository audio file.",
   create: () => ({ id: crypto.randomUUID(), type: "audio", assetId: "" }),
   // "audio" is the persisted prototype effect name. Its reference is now the
   // author-facing audio-source union rather than pretending every source is a file.
@@ -31,6 +31,8 @@ export const audioEffectAdapter: EffectAuthorAdapter = {
     : [],
   summarize: (effect, snapshot) => {
     if (effect.type !== "audio") return "Play audio";
+    const composition = snapshot.mediaCompositions?.find((candidate) => candidate.id === effect.assetId);
+    if (composition) return "Play audio: " + composition.title + " · Composition";
     const synth = snapshot.synthSounds.find((candidate) => candidate.id === effect.assetId);
     if (synth) return `Play audio: ${synth.label || synth.key} · Synth`;
     const asset = configuredAssetStore.resolve(snapshot, effect.assetId);

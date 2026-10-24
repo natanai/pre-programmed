@@ -28,9 +28,30 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "synth" }),
     },
   },
+  {
+    groupId: "media",
+    groupLabel: "WORLD + MEDIA",
+    groupOrder: 30,
+    toolOrder: 40,
+    tool: {
+      id: "compositions",
+      label: "COMPOSITIONS",
+      description: "Import and manage native .premidi scores. Compose in pre-midi.",
+      searchText: "premidi pre-midi composition soundtrack notes music midi import export arrangement pattern",
+      onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "compositions" }),
+    },
+  },
 ];
 
 export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
+  {
+    id: "media:compositions",
+    groupLabel: "WORLD + MEDIA",
+    label: "COMPOSITIONS · PRE-MIDI",
+    description: "Import, audition, export and manage playable native compositions.",
+    searchText: "premidi pre-midi music midi soundtrack composition arrangement import export",
+    onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "compositions" }),
+  },
   {
     id: "media:synth-controls",
     groupLabel: "WORLD + MEDIA",
