@@ -9,6 +9,7 @@ import type { PlayState, ProjectSnapshot } from "../../../engine/project/model";
 import {
   CAPTURE_EFFECT_AUTHORING_CONTEXT,
   captureFlowParts,
+  capturedInputVariableKey,
   createCaptureInputFlow,
   createReturnPreviousStep,
   createTransitionStep,
@@ -16,6 +17,7 @@ import {
   flowReturnsPrevious,
   replaceCaptureEffects,
   replaceCapturePresentation,
+  replaceCapturedInputVariable,
   replaceFlowReturnPrevious,
   replaceFlowTransition,
 } from "../flow";
@@ -160,74 +162,109 @@ function CaptureFlowEditor({
   const parts = captureFlowParts(flow);
   if (!parts) return null;
   const present = parts.presentStep;
+  const savedKey = capturedInputVariableKey(flow);
+  const savedVariable = snapshot.variables.find((variable) => variable.key === savedKey);
   const dialogueSpeakerId = conversationCharacterId ?? present.speakerId;
   const dialogueSpeakerName = dialogueSpeakerId
     ? snapshot.entities.find((entity) => entity.type === "character" && entity.id === dialogueSpeakerId)?.name ?? "Unknown character"
     : "";
   const showDialogue = Boolean(conversationCharacterId || present.speakerId || present.dialogueText.trim());
+  const hasPostInputResponse = Boolean(present.responseText.trim() || present.dialogueText.trim() || present.speakerId);
+  const hasContinuation = Boolean(flowDestination(flow) || flowReturnsPrevious(flow));
   const dialogueLabel = dialogueSpeakerName ? `${dialogueSpeakerName.toUpperCase()} SAYS` : "DIALOGUE — CHOOSE SPEAKER";
-
+  const extraEffects = parts.effectsStep.effects.length - (savedKey ? 1 : 0);
+  const destination = flowDestination(flow);
+  const thenSummary = flowReturnsPrevious(flow) ? "return to previous Node"
+    : destination ? `continue to Node #${snapshot.nodes.find((node) => node.id === destination.nodeId)?.nodeNumber ?? "?"}`
+    : "stay at this Node";
   const updatePresent = (change: Partial<typeof present>) => {
     onChange(replaceCapturePresentation(flow, { ...present, ...change }));
   };
 
   return <div className="after-input-capture">
-    <p className="guided-context-copy">The next player submission is consumed once. Everything below continues inside this same response flow.</p>
-
-    <div className="after-input-capture-section">
-      <strong>ON SUBMIT</strong>
-      <EffectsEditor
-        effects={parts.effectsStep.effects}
-        snapshot={snapshot}
-        authoringContext={CAPTURE_EFFECT_AUTHORING_CONTEXT}
-        onChange={(effects) => onChange(replaceCaptureEffects(flow, effects))}
-      />
+    <div className="capture-flow-intro">
+      <strong>WAIT FOR THE PLAYER'S NEXT INPUT</strong>
+      <p>The next terminal submission is captured once. It won't be treated as a command. Saving it is optional.</p>
     </div>
 
-    <div className="after-input-capture-section">
-      <strong>RESPONSE</strong>
-      {!conversationCharacterId ? <label>SPEAKER
-        <ReferenceField
-          kind="character"
-          value={present.speakerId ?? ""}
-          onChange={(speakerId) => updatePresent({ speakerId: speakerId || null })}
-          placeholder="none / narration"
-        />
-        <small>Optional. Choose a Character to make the post-input response spoken dialogue.</small>
-      </label> : null}
-      <div className={`narrative-prose-grid${showDialogue ? " has-dialogue" : ""}`}>
-        <AuthoredTextEditor
-          value={{ text: present.responseText, performance: present.responsePerformance }}
-          snapshot={snapshot}
-          playState={playState}
-          label="NARRATION"
-          rows={3}
-          onChange={(value) => updatePresent({ responseText: value.text, responsePerformance: value.performance })}
-          onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
-        />
-        {showDialogue ? <AuthoredTextEditor
-          value={{ text: present.dialogueText, performance: present.dialoguePerformance }}
-          snapshot={snapshot}
-          playState={playState}
-          label={dialogueLabel}
-          rows={3}
-          onChange={(value) => updatePresent({ dialogueText: value.text, dialoguePerformance: value.performance })}
-          onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
-        /> : null}
+    <section className="capture-storage" aria-label="Save captured player text">
+      <strong>SAVE SUBMITTED TEXT TO</strong>
+      <ReferenceField
+        kind="text-variable"
+        value={savedKey}
+        onChange={(key) => onChange(replaceCapturedInputVariable(flow, key))}
+        placeholder="Don't save · use input only now"
+      />
+      <small>Choose an existing text variable, or create one here. A new variable starts as Text. The usual Set Variable effect stores exactly what the player typed.</small>
+      {savedKey && !savedVariable ? <small role="status">This variable has not finished saving. Complete its Author task, then return here.</small> : null}
+    </section>
+
+    <p className="capture-flow-summary" role="status">
+      NEXT INPUT → {savedKey ? `save to ${savedVariable?.label || savedKey}` : "not stored"} → {hasPostInputResponse ? "respond" : "no response"} → {thenSummary}
+    </p>
+
+    <details className="capture-optional-section" key={`response-${hasPostInputResponse}`} defaultOpen={hasPostInputResponse}>
+      <summary>AFTER INPUT · NARRATION OR DIALOGUE <small>{hasPostInputResponse ? "Configured" : "Optional"}</small></summary>
+      <div className="capture-optional-content">
+        <p className="guided-context-copy">This happens after the player's submission, not before it. Leave empty to continue without speaking.</p>
+        {!conversationCharacterId ? <label>SPEAKER
+          <ReferenceField
+            kind="character"
+            value={present.speakerId ?? ""}
+            onChange={(speakerId) => updatePresent({ speakerId: speakerId || null })}
+            placeholder="none / narration"
+          />
+          <small>Choose a Character to speak after the input, if desired.</small>
+        </label> : null}
+        <div className={`narrative-prose-grid${showDialogue ? " has-dialogue" : ""}`}>
+          <AuthoredTextEditor
+            value={{ text: present.responseText, performance: present.responsePerformance }}
+            snapshot={snapshot}
+            playState={playState}
+            label="NARRATION AFTER INPUT"
+            rows={3}
+            onChange={(value) => updatePresent({ responseText: value.text, responsePerformance: value.performance })}
+            onPreview={onPreview ? (value) => onPreview(value, null) : undefined}
+          />
+          {showDialogue ? <AuthoredTextEditor
+            value={{ text: present.dialogueText, performance: present.dialoguePerformance }}
+            snapshot={snapshot}
+            playState={playState}
+            label={dialogueLabel}
+            rows={3}
+            onChange={(value) => updatePresent({ dialogueText: value.text, dialoguePerformance: value.performance })}
+            onPreview={onPreview ? (value) => onPreview(value, dialogueSpeakerId) : undefined}
+          /> : null}
+        </div>
       </div>
-    </div>
+    </details>
 
-    <div className="after-input-capture-section">
-      <strong>THEN</strong>
-      <DestinationPreset
-        snapshot={snapshot}
-        playState={playState}
-        flow={flow}
-        onChange={onChange}
-        onCreateDestination={onCreateDestination}
-        onEditDestination={onEditDestination}
-      />
-    </div>
+    <details className="capture-optional-section">
+      <summary>ON SUBMIT · ALL EFFECTS <small>{parts.effectsStep.effects.length} configured{extraEffects > 0 ? ` · ${extraEffects} additional` : ""}</small></summary>
+      <div className="capture-optional-content">
+        <p className="guided-context-copy">These run after the input, before any reply. The saved-text field above is a shortcut for a regular Set Variable effect. You can edit it here or add any other effect.</p>
+        <EffectsEditor
+          effects={parts.effectsStep.effects}
+          snapshot={snapshot}
+          authoringContext={CAPTURE_EFFECT_AUTHORING_CONTEXT}
+          onChange={(effects) => onChange(replaceCaptureEffects(flow, effects))}
+        />
+      </div>
+    </details>
+
+    <details className="capture-optional-section" key={`then-${hasContinuation}`} defaultOpen={hasContinuation}>
+      <summary>THEN · WHERE TO GO <small>{thenSummary}</small></summary>
+      <div className="capture-optional-content">
+        <DestinationPreset
+          snapshot={snapshot}
+          playState={playState}
+          flow={flow}
+          onChange={onChange}
+          onCreateDestination={onCreateDestination}
+          onEditDestination={onEditDestination}
+        />
+      </div>
+    </details>
   </div>;
 }
 
