@@ -134,7 +134,7 @@ export function Inventory({
           {state.inventory.filter((entry) => entryOccupiesInventoryGrid(snapshot, entry)).map((entry) => {
             const item = snapshot.items.find((candidate) => candidate.id === entry.itemId);
             if (!item) return null;
-            const moveEnabled = (item.interactable ?? true) && (item.operations ?? DEFAULT_ITEM_OPERATIONS).includes("move");
+            const moveEnabled = (item.interactable ?? true) && (item.operations ?? NATIVE_ITEM_OPERATIONS).includes("move");
             const position = { "--x": entry.x, "--y": entry.y, "--w": item.width, "--h": item.height } as CSSProperties;
             return <button type="button" key={entry.instanceId} draggable={moveEnabled} className={`inventory-item${selected?.kind === "item" && selected.id === entry.instanceId ? " selected" : ""}${entry.equipment ? " equipped" : ""}`}
               style={position}
