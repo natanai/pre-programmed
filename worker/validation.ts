@@ -3,6 +3,7 @@ import {
   WORKER_PROJECT_SETTINGS_VALIDATORS,
 } from "./features/validationCatalog";
 import { object } from "./features/validationHelpers";
+import { MAX_TERMINAL_PROMPT_LENGTH } from "../src/engine/project/settings";
 
 const CORE_OPERATION_TYPES = new Set([
   "project.settings",
@@ -12,7 +13,8 @@ function projectSettingsValid(value: unknown) {
   return object(value)
     && typeof value.terminalPrompt === "string"
     && value.terminalPrompt.length >= 1
-    && value.terminalPrompt.length <= 32
+    && Boolean(value.terminalPrompt.trim())
+    && value.terminalPrompt.length <= MAX_TERMINAL_PROMPT_LENGTH
     && WORKER_PROJECT_SETTINGS_VALIDATORS.every((validate) => validate(value));
 }
 
