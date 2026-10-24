@@ -81,10 +81,14 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
       }),
     }));
     const aliasReferenceContext = { snapshot: context.snapshot, state: context.playState ?? createEmptyPlayState(context.snapshot) };
-    const aliasEntries = (draft.aliases ?? []).map((alias) => ({
-      name: characterAliasName(alias),
-      condition: characterAliasCondition(alias),
-    }));
+    const aliasEntries = (draft.aliases ?? []).map((alias) => {
+      const name = characterAliasName(alias);
+      const tokens = findSemanticReferenceTokens(name);
+      const linkedTextVariable = tokens.length === 1 && tokens[0].token === name && tokens[0].kind === "state.variable"
+        ? context.snapshot.variables.find((variable) => variable.id === tokens[0].id && variable.valueType === "string")
+        : undefined;
+      return { name, condition: characterAliasCondition(alias), linkedTextVariable };
+    });
     const aliasErrors = aliasEntries.flatMap((alias) => alias.condition
       ? validateCondition(alias.condition).map((issue) => `${alias.name}: ${issue}`)
       : []);
@@ -171,16 +175,10 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                             return <button key={variable.id} type="button" onClick={() => context.resources.edit("variable", variable.key)} aria-label={`Edit variable ${variable.label || variable.key}`}>[EDIT VARIABLE]</button>;
                           })}
                       </span>
-                      <button type="button" aria-label={`${alias.condition ? "Remove display condition for" : "Show as name when"} ${authorSemanticReferenceView(alias.name, aliasReferenceContext).text}`}
-                        onClick={() => {
-                          const tokens = findSemanticReferenceTokens(alias.name);
-                          const referenced = tokens.length === 1 && tokens[0].token === alias.name
-                            ? context.snapshot.variables.find((variable) => variable.id === tokens[0].id && tokens[0].kind === "state.variable" && variable.valueType === "string")
-                            : undefined;
-                          setAliasCondition(index, alias.condition ? undefined : referenced
-                            ? { type: "variable", key: referenced.key, operator: "neq", value: "" } : ALWAYS);
-                        }}>
-                        {alias.condition ? "[− REMOVE WHEN]" : "[+ SHOW WHEN...]"}
+                      <button type="button" aria-label={`${alias.condition ? "Remove display condition for" : alias.linkedTextVariable ? "Display when variable has text" : "Display always"} ${authorSemanticReferenceView(alias.name, aliasReferenceContext).text}`}
+                        onClick={() => setAliasCondition(index, alias.condition ? undefined : alias.linkedTextVariable
+                          ? { type: "variable", key: alias.linkedTextVariable.key, operator: "neq", value: "" } : ALWAYS)}>
+                        {alias.condition ? "[− REMOVE WHEN]" : alias.linkedTextVariable ? "[+ SHOW WHEN SET]" : "[+ SHOW ALWAYS]"}
                       </button>
                     </div>
                     <small className="world-alias-display-state">{alias.condition ? alias.condition.type === "always" ? "SHOWS ALWAYS · FIRST MATCH WINS" : "SHOWS WHEN RULE MATCHES" : "REFERENCE ONLY · NOT DISPLAYED"}</small>
