@@ -61,7 +61,10 @@
   padding: 1px .35em 0 0;
   color: var(--dos-bright);
   line-height: 1;
-  white-space: pre;
+  /* Preserve authored trailing spaces and keep variable-length names usable on mobile. */
+  white-space: break-spaces;
+  overflow-wrap: anywhere;
+  max-width: min(45vw, 18em);
   pointer-events: none;
 }
 
