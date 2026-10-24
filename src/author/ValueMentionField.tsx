@@ -87,6 +87,7 @@ export function ValueMentionField({
   rows = 2,
   placeholder,
   ariaLabel,
+  id,
   autoFocus,
   textareaRef,
   onKeyDown,
@@ -101,6 +102,8 @@ export function ValueMentionField({
   rows?: number;
   placeholder?: string;
   ariaLabel?: string;
+  /** Connect external visible labels to this canonical reference input. */
+  id?: string;
   autoFocus?: boolean;
   textareaRef?: RefObject<HTMLTextAreaElement | null>;
   onKeyDown?: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
@@ -275,6 +278,7 @@ export function ValueMentionField({
   };
   const handleSelect = (event: SyntheticEvent<HTMLInputElement | HTMLTextAreaElement>) => reportSelection(event.currentTarget);
   const common = {
+    id,
     value: authorView.text,
     placeholder,
     "aria-label": ariaLabel,
