@@ -28,6 +28,9 @@ export type ProjectSettings = {
 } & CommandsProjectSettingsSlice
   & RadixProjectSettingsSlice;
 
+/** Stored semantic-reference tokens can exceed their short Author-visible @ names. */
+export const MAX_TERMINAL_PROMPT_LENGTH = 512;
+
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   terminalPrompt: "U:\\>",
   suggestionMenuHelpText: null,
@@ -48,7 +51,7 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
 
   return {
     terminalPrompt: typeof root.terminalPrompt === "string" && root.terminalPrompt.trim()
-      ? root.terminalPrompt.slice(0, 32)
+      ? root.terminalPrompt.slice(0, MAX_TERMINAL_PROMPT_LENGTH)
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
     suggestionMenuHelpText,
     ...normalizeCommandsProjectSettings(root),
