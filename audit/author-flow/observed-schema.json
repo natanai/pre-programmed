@@ -62,6 +62,15 @@
             },
             "maxExecutions": {
               "type": "integer"
+            },
+            "enableScroll": {
+              "type": "boolean"
+            },
+            "scrollMechanism": {
+              "enum": [
+                "none",
+                "wheel"
+              ]
             }
           }
         }
@@ -209,6 +218,43 @@
                     }
                   }
                 }
+              },
+              "scrollable_regions": {
+                "type": "array",
+                "description": "Actual pointer-reachable overflow-y scroll containers with observed scroll offsets and finite scroll extents.",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "locator",
+                    "axis",
+                    "top",
+                    "max_top",
+                    "client_height"
+                  ],
+                  "properties": {
+                    "locator": {
+                      "type": "string"
+                    },
+                    "axis": {
+                      "const": "y"
+                    },
+                    "top": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "max_top": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "client_height": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  }
+                }
               }
             }
           },
@@ -269,7 +315,8 @@
                   "change",
                   "submit",
                   "key",
-                  "toggle"
+                  "toggle",
+                  "scroll"
                 ]
               },
               "value": {
@@ -342,7 +389,8 @@
                   "change",
                   "submit",
                   "key",
-                  "toggle"
+                  "toggle",
+                  "scroll"
                 ]
               },
               "value": {
@@ -420,7 +468,8 @@
                         "change",
                         "toggle",
                         "submit",
-                        "key"
+                        "key",
+                        "scroll"
                       ]
                     },
                     "value": {

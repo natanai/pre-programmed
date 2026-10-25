@@ -92,3 +92,16 @@ New browser traces also include the actual initial UI state, completed **contigu
 For newer traces, `--from` and `--to` return the shortest action subsequence **observed together in a single completed replay**, not an invented shortest path over the union graph. The fingerprint excludes internal draft and Player state, so equal visible states are not proof that arbitrarily composed actions will work. These queries cannot prove that an unseen path is impossible.
 
 The generated `coverage.json` includes per-fixture and per-workspace **observed** state counts, transitions, and frontier reasons. Those are raw coverage inventories, not success rates, inferred goal completion, or a fraction of the engine's unbounded state space. All generated traces come exclusively from isolated local fixtures, never from the live project.
+
+
+## Scroll-revealed controls (separate evidence suite)
+
+The `--scroll` explorer option adds **actual browser wheel interactions** to the otherwise identical bounded Author UI traversal. The recorder inventories pointer-reachable vertical scroll regions where rendered CSS permits scrolling and the content exceeds the viewport. Each recorded UI state includes scroll container locator, observed scroll offset, maximum scroll offset, and visible client height. Scroll transitions record a signed requested wheel delta with zero pointer *activations* (a wheel is not a click). Subsequent screenshots/state snapshots, not predictions, determine which controls become exposed.
+
+    npm run audit:author:explore -- --suite scroll --strategy stratified --scroll --max-states 55 --max-executions 75 --max-depth 5
+    npm run audit:author:trace -- --fixture mobile-scroll --find 'author-panel-body'
+    npm run audit:author:trace -- --fixture desktop-scroll
+
+Traces are kept in `author-audit-{desktop,mobile}-scroll.json`; original breadth and wide traces are not overwritten. The trace validator checks that the target region was actually recorded as scrollable and that the requested wheel direction was within its known boundaries. The coverage ledger reports the observed number of scroll actions separately from ordinary clicks/select changes. Individual replay sequences still provide proof of the full before/scroll/after chain.
+
+**Scope limits:** this pass observes wheel scrolling on a mobile-emulated viewport, not an actual finger swipe gesture on iOS Safari. Horizontal scrolling and automatic focus-triggered scrolls also remain outside this suite. The recorder only knows currently rendered content and does not infer invisible controls. No project data is persisted during the traversal.

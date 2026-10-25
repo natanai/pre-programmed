@@ -76,6 +76,29 @@
       open: kind === "summary" ? element.parentElement.open : null,
     };
   }
+  function scrollableRegions(roots) {
+    const elements = [...new Set(roots.flatMap(root => [root, ...root.querySelectorAll("*")]))];
+    const regions = [];
+    // The actual rendered CSS and scroll dimensions determine this list.
+    // Scrolling an element is recorded as an interaction, never inferred from its contents.
+    for (const element of elements) {
+      if (!(element instanceof HTMLElement)) continue;
+      const style = getComputedStyle(element);
+      if (!/^(auto|scroll)$/.test(style.overflowY)) continue;
+      const max = element.scrollHeight - element.clientHeight;
+      if (max < 12 || element.clientHeight < 56 || !visible(element)) continue;
+      const {scope} = scopeFor(element);
+      const ordinal = Array.from(document.body.querySelectorAll("*")).indexOf(element);
+      const locator = JSON.stringify([scope, "scroll-y", element.tagName.toLowerCase(), ordinal]);
+      element.setAttribute("data-author-flow-scroll-probe", locator);
+      regions.push({
+        locator, axis:"y", top:Math.round(element.scrollTop),
+        max_top:Math.round(max), client_height:Math.round(element.clientHeight),
+        label:(element.getAttribute("aria-label") || element.className?.toString().split(" ")[0] || element.tagName.toLowerCase()).slice(0,100),
+      });
+    }
+    return regions;
+  }
   function snapshot() {
     if (!fixture) throw new Error("Start the audit with a named fixture first.");
     const layer = document.querySelector(".author-workspace-layer");
@@ -88,6 +111,7 @@
     }));
     const ui = {
       visible_controls: controls,
+      scrollable_regions: scrollableRegions(roots),
       workspace: document.querySelector(".author-task-surface.is-active [data-author-ui-workspace]")?.getAttribute("data-author-ui-workspace")
         || (document.querySelector(".author-tool-index") ? "author-tools" : null),
       overlay_open: Boolean(layer),

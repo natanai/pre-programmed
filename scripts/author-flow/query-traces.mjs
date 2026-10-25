@@ -70,10 +70,12 @@ if(from||to){
     frontier:trace.frontier.filter(item=>item.state===wantedState)};
 }else if(find){
   const needle=find.toLocaleLowerCase();
-  result={matches:trace.states.flatMap(state=>state.ui.visible_controls
-    .filter(c=>JSON.stringify([c.label,c.locator,c.options]).toLocaleLowerCase().includes(needle))
-    .map(control=>({state:state.id,workspace:state.ui.workspace,control,
-      observed_transitions:(outgoing.get(state.id)??[]).filter(edge=>edge.action.locator===control.locator).map(edge=>({id:edge.id,to:edge.to,action:edge.action}))}))).slice(0,limit)};
+  result={matches:trace.states.flatMap(state=>[
+    ...state.ui.visible_controls.filter(c=>JSON.stringify([c.label,c.locator,c.options]).toLocaleLowerCase().includes(needle)).map(control=>({state:state.id,workspace:state.ui.workspace,control,
+      observed_transitions:(outgoing.get(state.id)??[]).filter(edge=>edge.action.locator===control.locator).map(edge=>({id:edge.id,to:edge.to,action:edge.action}))})),
+    ...(state.ui.scrollable_regions??[]).filter(region=>JSON.stringify([region.label,region.locator]).toLocaleLowerCase().includes(needle)).map(region=>({state:state.id,workspace:state.ui.workspace,scroll_region:region,
+      observed_transitions:(outgoing.get(state.id)??[]).filter(edge=>edge.action.locator===region.locator).map(edge=>({id:edge.id,to:edge.to,action:edge.action}))})),
+  ]).slice(0,limit)};
 }else{
   result={
     fixture:trace.fixtures[0],

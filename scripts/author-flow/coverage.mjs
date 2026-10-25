@@ -8,6 +8,7 @@ const folder=path.join(base,"traces");
 const files=fs.existsSync(folder)?fs.readdirSync(folder).filter(f=>f.endsWith(".json")).sort():[];
 const fixtures=[];const states=[];const transitions=[];const frontier=[];
 const fixtureCoverage=[];let replayCount=0;
+const actionEvents={};
 const byWorkspace=new Map();
 const workspaceName=state=>state?.ui?.workspace??(state?.ui?.overlay_open?"unidentified-author-screen":"terminal-or-unidentified");
 function workspaceRecord(name){
@@ -29,7 +30,7 @@ for(const file of files){
   replayCount+=(trace.replays?.length??0);
   fixtureCoverage.push({file,fixture_ids:trace.fixtures.map(f=>f.id),observed_states:trace.states.length,observed_transitions:trace.transitions.length,unexplored_frontier_entries:trace.frontier.length,verified_contiguous_replays:trace.replays?.length??null,source_commit:trace.provenance?.source_commit??null,explorer:trace.provenance?.explorer??null});
   for(const state of trace.states){const w=workspaceRecord(workspaceName(state));w.observed_states++;w.fixture_ids.add(state.fixture);}
-  for(const edge of trace.transitions){const w=workspaceRecord(workspaceName(stateMap.get(edge.from)));w.observed_transitions_from++;}
+  for(const edge of trace.transitions){const w=workspaceRecord(workspaceName(stateMap.get(edge.from)));w.observed_transitions_from++;actionEvents[edge.action.event]=(actionEvents[edge.action.event]??0)+1;}
   for(const item of trace.frontier){const w=workspaceRecord(workspaceName(stateMap.get(item.state)));w.frontier_by_reason[item.reason]=(w.frontier_by_reason[item.reason]??0)+1;}
   fixtures.push(...trace.fixtures.map(f=>({file,id:f.id})));
   states.push(...trace.states.map(s=>({file,id:s.id,fixture:s.fixture})));
@@ -40,7 +41,7 @@ const ledger={
   schema_version:1,type:"author-graph-coverage",
   method:"derived-from-source-graph-and-executed-trace-files",
   source_graph:{files:source.counts.source_files,declared_controls:source.counts.controls,declared_nesting:source.counts.declared_nesting,api_calls:source.counts.api_calls,branch_sites:source.counts.branch_sites,collection_sites:source.counts.collection_sites},
-  executed:{status:files.length?"partial":"not-started",trace_files:files,fixture_count:fixtures.length,state_count:states.length,transition_count:transitions.length,explicit_frontier_count:frontier.length,contiguous_replay_count:replayCount,by_fixture:fixtureCoverage,by_workspace:[...byWorkspace.values()].map(w=>({...w,fixture_ids:[...w.fixture_ids].sort()})).sort((a,b)=>a.workspace.localeCompare(b.workspace))},
+  executed:{status:files.length?"partial":"not-started",trace_files:files,fixture_count:fixtures.length,state_count:states.length,transition_count:transitions.length,explicit_frontier_count:frontier.length,contiguous_replay_count:replayCount,by_event:Object.fromEntries(Object.entries(actionEvents).sort(([a],[b])=>a.localeCompare(b))),by_fixture:fixtureCoverage,by_workspace:[...byWorkspace.values()].map(w=>({...w,fixture_ids:[...w.fixture_ids].sort()})).sort((a,b)=>a.workspace.localeCompare(b.workspace))},
   completeness:{global:null,reason:"The UI has unbounded input, resource cardinality, state and task depth; completeness is defined only over separately declared finite fixture domains."},
   evidence:{fixtures,states,transitions,frontier},
 };
