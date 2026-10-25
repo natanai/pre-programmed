@@ -148,7 +148,7 @@ function actionDomain(state) {
     if(control.kind==="select") {
       for(const option of control.options) {
         if(!option.enabled||option.value===control.value)continue;
-        actions.push({...base,event:"change",value:option.value,pointer_activations:1});
+        actions.push({...base,event:"change",value:option.value,pointer_activations:0});
       }
     } else if(["button","summary"].includes(control.kind)) {
       actions.push({...base,event:"click",value:null,pointer_activations:1});
