@@ -5,8 +5,8 @@
 
 .author-ui-toggle {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
   gap: .35em .55em;
   min-width: 0;
 }
@@ -15,9 +15,6 @@
   margin-top: .15em;
 }
 
-.author-ui-toggle > .author-ui-help {
-  grid-column: 2;
-}
 
 .author-ui-list {
   display: grid;
