@@ -19,12 +19,15 @@ import {
 import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
 import { migrateSnapshotReferenceTokens } from "../references/migration";
 import type { ProjectMutation, ProjectSnapshot } from "./model";
+import { DEFAULT_PROJECT_DEFAULTS, normalizeProjectDefaults, type ProjectDefaults } from "./defaults";
 
 export type ProjectSettings = {
   /** Player-facing terminal prompt for this game/project. */
   terminalPrompt: string;
   /** Optional authored copy exposed from the expanded terminal suggestion menu's info affordance. */
   suggestionMenuHelpText: string | null;
+  /** Author-selected values used when creating new project content. */
+  defaults: ProjectDefaults;
 } & CommandsProjectSettingsSlice
   & RadixProjectSettingsSlice;
 
@@ -34,6 +37,7 @@ export const MAX_TERMINAL_PROMPT_LENGTH = 512;
 export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   terminalPrompt: "U:\\>",
   suggestionMenuHelpText: null,
+  defaults: { ...DEFAULT_PROJECT_DEFAULTS },
   ...structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS),
   ...structuredClone(DEFAULT_RADIX_PROJECT_SETTINGS),
 };
@@ -54,6 +58,7 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
       ? root.terminalPrompt.slice(0, MAX_TERMINAL_PROMPT_LENGTH)
       : DEFAULT_PROJECT_SETTINGS.terminalPrompt,
     suggestionMenuHelpText,
+    defaults: normalizeProjectDefaults(root.defaults),
     ...normalizeCommandsProjectSettings(root),
     ...normalizeRadixProjectSettings(root),
   };

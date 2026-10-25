@@ -100,6 +100,13 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
 });
 
 export const PROJECT_GENERAL_SETTINGS: readonly AuthorProjectSettingsSection[] = [{
+  id: "project-defaults",
+  label: "TEXT & INPUTS",
+  description: "Starting text speed, input visibility, and response selection for newly authored content.",
+  order: 0,
+  group: "defaults",
+  route: { type: "feature", feature: "project", workspace: "defaults" },
+}, {
   id: "project-terminal",
   label: "TERMINAL",
   description: "Project-wide player terminal identity and presentation defaults.",
