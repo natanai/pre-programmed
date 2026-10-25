@@ -156,7 +156,7 @@ function actionDomain(state) {
       continue;
     }
     if(unsafe.test(control.label)) {
-      frontier.push({state:state.id,locator:control.locator,reason:"unsafe-mutation"});
+      frontier.push({state:state.id,locator:control.locator,reason:"unsafe-mutation",action:{...base,event:"click",value:null,pointer_activations:1}});
       continue;
     }
     if(control.kind==="select") {
@@ -214,7 +214,8 @@ async function newPage(browser, fixture, token) {
   return {page,context};
 }
 async function traverse(browser, fixture, token) {
-  const states=new Map(),transitions=new Map(),frontier=new Map();
+  const states=new Map(),transitions=new Map(),frontier=new Map(),replays=[];
+  let initialStateId=null;
   const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
   const servedFirst=new Map(),servedSecond=new Map();
   function dequeue() {
@@ -245,8 +246,10 @@ async function traverse(browser, fixture, token) {
     const path=next.path;
     const {page,context}=await newPage(browser,fixture,token);
     let lastObserved=null;
+    const replaySteps=[];
     try {
       let state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+      if(!initialStateId) initialStateId=state.id;
       lastObserved=state;
       addState(state);
       for(const action of path){
@@ -257,13 +260,15 @@ async function traverse(browser, fixture, token) {
         addState(state);
         const id=SHA([fixture.id,before.id,action,state.id]).slice(0,20);
         transitions.set(id,{id:"transition:"+id,fixture:fixture.id,from:before.id,to:state.id,action,observed:true});
+        replaySteps.push({from:before.id,to:state.id,action});
       }
+      replays.push({id:"replay:"+SHA([fixture.id,path]).slice(0,20),fixture:fixture.id,initial_state:initialStateId,steps:replaySteps,completed:true});
       if(visited.has(state.id))continue;
       visited.add(state.id);
       const choices=actionDomain(state);
       for(const entry of choices.frontier)note(entry);
       if(path.length>=maxDepth) {
-        for(const action of choices.actions)note({state:state.id,locator:action.locator,reason:"unvisited"});
+        for(const action of choices.actions)note({state:state.id,locator:action.locator,reason:"unvisited",action});
         continue;
       }
       for(const action of choices.actions) {
@@ -273,7 +278,7 @@ async function traverse(browser, fixture, token) {
       if(visited.size%10===0)console.log(fixture.id+": "+visited.size+" unique UI states; "+queue.length+" queued paths");
     } catch(error) {
       replayFailures++;
-      note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown"});
+      note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown",...(path.at(-1)?{action:path.at(-1)}:{})});
       console.error("Branch failed:",fixture.id,path.map(x=>x.locator).join(" -> "),String(error).slice(0,220));
     } finally {
       await context.close();
@@ -282,13 +287,15 @@ async function traverse(browser, fixture, token) {
   if(queue.length) {
     // Record budget-limited branches as an explicit unexplored frontier.
     for(const remaining of queue) {
-      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",reason:"unvisited"});
+      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
     }
   }
   return {
     states:[...states.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     transitions:[...transitions.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     frontier:[...frontier.values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
+    replays:replays.sort((a,b)=>a.id.localeCompare(b.id)),
+    initialStateId,
     stats:{strategy,visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
   };
 }
@@ -318,9 +325,9 @@ try {
     const result=await traverse(browser,fixture,token);
     const trace={
       schema_version:1,type:"author-observed-transitions",
-      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
       fixtures:[fixture],
-      states:result.states,transitions:result.transitions,frontier:result.frontier,
+      states:result.states,transitions:result.transitions,frontier:result.frontier,replays:result.replays,
     };
     const filename=path.join(outputDir,fixture.id+".json");
     await writeFile(filename,JSON.stringify(trace,null,2)+"\n");
