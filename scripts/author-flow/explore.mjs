@@ -32,6 +32,10 @@ function number(name, fallback) {
 const maxStates = number("--max-states", 65);
 const maxDepth = number("--max-depth", 4);
 const maxExecutions = number("--max-executions", 90);
+const strategy = arg("--strategy", "breadth");
+if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
+const suite = arg("--suite", "baseline");
+if (!/^[a-z][a-z0-9-]{0,24}$/.test(suite)) throw Error("--suite must be a short lowercase identifier");
 const selected = arg("--viewport", "both");
 if (!["both", "desktop", "mobile"].includes(selected)) throw new Error("--viewport must be both, desktop or mobile.");
 const viewports = selected === "both" ? [desktop, mobile] : [selected === "mobile" ? mobile : desktop];
@@ -54,8 +58,8 @@ async function request(uri, options) {
   if (!response.ok) throw new Error(uri + " (" + response.status + "): " + (await response.text()).slice(0,400));
   return response.json();
 }
-async function startLocal() {
-  await rm(dataDir, {recursive:true,force:true});
+async function startLocal({reset=false}={}) {
+  if(reset) await rm(dataDir, {recursive:true,force:true});
   server = spawn(process.execPath, ["scripts/run-local.mjs"], {
     stdio: "inherit",
     env: {...process.env, PRE_PROGRAMMED_LOCAL_DATA_DIR:dataDir},
@@ -72,17 +76,36 @@ async function startLocal() {
   throw new Error("Isolated Author local D1 server was not ready.");
 }
 let closing = false;
+async function stopServer() {
+  const child=server;
+  server=null;
+  if(!child)return;
+  if(child.exitCode===null) {
+    if(process.platform==="win32") {
+      spawnSync("taskkill",["/pid",String(child.pid),"/T","/F"],{stdio:"ignore"});
+    }else{
+      try{process.kill(-child.pid,"SIGTERM");}catch{try{child.kill("SIGTERM");}catch{}}
+    }
+    await Promise.race([once(child,"exit"),new Promise(r=>setTimeout(r,3500))]);
+  }
+}
+async function restartLocal(expectedHash) {
+  await stopServer();
+  let available=false;
+  for(let attempt=0;attempt<20;attempt++){
+    try{await requireExclusiveLocalPorts();available=true;break;}catch(error){
+      if(attempt===19)throw error;
+      await new Promise(resolve=>setTimeout(resolve,200));
+    }
+  }
+  if(!available)throw Error("Isolated local ports did not become available for restart.");
+  await startLocal();
+  const snapshot=await request("/api/project/snapshot");
+  if(SHA(snapshot)!==expectedHash)throw Error("Disposable project fixture changed during local server restart; cannot combine observations.");
+}
 async function stopLocal() {
   closing=true;
-  if(server&&server.exitCode===null) {
-    if (process.platform==="win32") {
-      const {spawnSync}=await import("node:child_process");
-      spawnSync("taskkill",["/pid",String(server.pid),"/T","/F"],{stdio:"ignore"});
-    } else {
-      try { process.kill(-server.pid,"SIGTERM"); } catch { server.kill("SIGTERM"); }
-    }
-    await Promise.race([once(server,"exit"),new Promise(r=>setTimeout(r,3500))]);
-  }
+  await stopServer();
   await rm(dataDir,{recursive:true,force:true});
 }
 const performance = {charactersPerSecond:18,cues:[]};
@@ -152,7 +175,7 @@ function actionDomain(state) {
       continue;
     }
     if(unsafe.test(control.label)) {
-      frontier.push({state:state.id,locator:control.locator,reason:"unsafe-mutation"});
+      frontier.push({state:state.id,locator:control.locator,reason:"unsafe-mutation",action:{...base,event:"click",value:null,pointer_activations:1}});
       continue;
     }
     if(control.kind==="select") {
@@ -192,10 +215,11 @@ async function perform(page,action) {
 async function newPage(browser, fixture, token) {
   const context=await browser.newContext({
     viewport:{width:fixture.viewport.width,height:fixture.viewport.height},
-    ...(fixture.id.endsWith("-mobile") ? {isMobile:true,hasTouch:true,deviceScaleFactor:2} : {}),
+    ...(fixture.id.includes("-mobile") ? {isMobile:true,hasTouch:true,deviceScaleFactor:2} : {}),
     reducedMotion:"reduce",
     serviceWorkers:"block",
   });
+  try {
   await context.addInitScript(value=>sessionStorage.setItem("pre-programmed:author-token",value),token);
   await context.addInitScript({path:recorderPath});
   const page=await context.newPage();
@@ -208,20 +232,52 @@ async function newPage(browser, fixture, token) {
   await page.evaluate(fixture=>window.__authorFlowAudit.start(fixture),fixture);
   await settle(page);
   return {page,context};
+  } catch(error) {
+    await context.close();
+    throw error;
+  }
 }
-async function traverse(browser, fixture, token) {
-  const states=new Map(),transitions=new Map(),frontier=new Map();
+async function traverse(browser, fixture, token, expectedHash) {
+  const states=new Map(),transitions=new Map(),frontier=new Map(),replays=[];
+  let initialStateId=null;
   const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
+  const servedFirst=new Map(),servedSecond=new Map();
+  function dequeue() {
+    if(strategy==="breadth" || queue.length<2) return queue.shift();
+    // Fairness depends only on the literal interaction sequence, never on presumed author goals.
+    // Every first-hop branch gets equal opportunities; within it, balance second-hop branches.
+    const firstKey=item=>item.path[0] ? JSON.stringify(item.path[0]) : "__root__";
+    const secondKey=item=>JSON.stringify(item.path.slice(0,2));
+    let best=0,score=null;
+    for(let i=0;i<queue.length;i++) {
+      const candidate=queue[i];
+      const next=[servedFirst.get(firstKey(candidate))??0,servedSecond.get(secondKey(candidate))??0,candidate.path.length,i];
+      if(!score||next.some((value,k)=>value<score[k]&&next.slice(0,k).every((prior,j)=>prior===score[j]))) {
+        best=i;score=next;
+      }
+    }
+    const [chosen]=queue.splice(best,1);
+    const first=firstKey(chosen),second=secondKey(chosen);
+    servedFirst.set(first,(servedFirst.get(first)??0)+1);
+    servedSecond.set(second,(servedSecond.get(second)??0)+1);
+    return chosen;
+  }
   const note=(entry)=>frontier.set(JSON.stringify(entry),entry);
   const addState=(state)=>{if(!states.has(state.id))states.set(state.id,state);};
   while(queue.length && visited.size < maxStates && executedPaths < maxExecutions) {
     executedPaths++;
-    const next=queue.shift();
+    if(executedPaths>1 && (executedPaths-1)%10===0) await restartLocal(expectedHash);
+    const next=dequeue();
     const path=next.path;
-    const {page,context}=await newPage(browser,fixture,token);
+    let page=null,context=null;
     let lastObserved=null;
+    const replaySteps=[];
+    let replayInitialId=null;
     try {
+      ({page,context}=await newPage(browser,fixture,token));
       let state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+      if(!initialStateId) initialStateId=state.id;
+      replayInitialId=state.id;
       lastObserved=state;
       addState(state);
       for(const action of path){
@@ -232,13 +288,15 @@ async function traverse(browser, fixture, token) {
         addState(state);
         const id=SHA([fixture.id,before.id,action,state.id]).slice(0,20);
         transitions.set(id,{id:"transition:"+id,fixture:fixture.id,from:before.id,to:state.id,action,observed:true});
+        replaySteps.push({from:before.id,to:state.id,action});
       }
+      replays.push({id:"replay:"+SHA([fixture.id,path]).slice(0,20),fixture:fixture.id,initial_state:replayInitialId,steps:replaySteps,completed:true});
       if(visited.has(state.id))continue;
       visited.add(state.id);
       const choices=actionDomain(state);
       for(const entry of choices.frontier)note(entry);
       if(path.length>=maxDepth) {
-        for(const action of choices.actions)note({state:state.id,locator:action.locator,reason:"unvisited"});
+        for(const action of choices.actions)note({state:state.id,locator:action.locator,reason:"unvisited",action});
         continue;
       }
       for(const action of choices.actions) {
@@ -248,23 +306,28 @@ async function traverse(browser, fixture, token) {
       if(visited.size%10===0)console.log(fixture.id+": "+visited.size+" unique UI states; "+queue.length+" queued paths");
     } catch(error) {
       replayFailures++;
-      note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown"});
+      note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown",...(path.at(-1)?{action:path.at(-1)}:{})});
       console.error("Branch failed:",fixture.id,path.map(x=>x.locator).join(" -> "),String(error).slice(0,220));
+      let healthy=false;
+      try { const status=await request("/api/health");healthy=status.ok===true&&status.persistence==="d1"; } catch {}
+      if(!healthy) await restartLocal(expectedHash);
     } finally {
-      await context.close();
+      await context?.close();
     }
   }
   if(queue.length) {
     // Record budget-limited branches as an explicit unexplored frontier.
     for(const remaining of queue) {
-      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",reason:"unvisited"});
+      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
     }
   }
   return {
     states:[...states.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     transitions:[...transitions.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     frontier:[...frontier.values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
-    stats:{visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
+    replays:replays.sort((a,b)=>a.id.localeCompare(b.id)),
+    initialStateId,
+    stats:{strategy,visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
   };
 }
 let browser;
@@ -275,14 +338,14 @@ try {
   await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
-  await startLocal();
+  await startLocal({reset:true});
   const {snapshot,token,nodeId}=await seedFixture();
   const fixtureHash=SHA(snapshot);
   browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
   await mkdir(outputDir,{recursive:true});
   for(const viewport of viewports) {
     const fixture={
-      id:"author-audit-"+viewport.id,
+      id:"author-audit-"+viewport.id+(suite==="baseline"?"":"-"+suite),
       project_fixture:"isolated-local-d1-seeded-v1",
       project_sha256:fixtureHash,
       viewport:{width:viewport.width,height:viewport.height},
@@ -290,12 +353,12 @@ try {
       seed:"runtime-uncontrolled",
       clock:"not-frozen",
     };
-    const result=await traverse(browser,fixture,token);
+    const result=await traverse(browser,fixture,token,fixtureHash);
     const trace={
       schema_version:1,type:"author-observed-transitions",
-      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local"},
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
       fixtures:[fixture],
-      states:result.states,transitions:result.transitions,frontier:result.frontier,
+      states:result.states,transitions:result.transitions,frontier:result.frontier,replays:result.replays,
     };
     const filename=path.join(outputDir,fixture.id+".json");
     await writeFile(filename,JSON.stringify(trace,null,2)+"\n");

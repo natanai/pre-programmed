@@ -38,6 +38,32 @@
         },
         "recorder_version": {
           "type": "string"
+        },
+        "initial_state_id": {
+          "type": "string"
+        },
+        "explorer": {
+          "type": "object",
+          "properties": {
+            "strategy": {
+              "enum": [
+                "breadth",
+                "stratified"
+              ]
+            },
+            "suite": {
+              "type": "string"
+            },
+            "maxStates": {
+              "type": "integer"
+            },
+            "maxDepth": {
+              "type": "integer"
+            },
+            "maxExecutions": {
+              "type": "integer"
+            }
+          }
         }
       }
     },
@@ -298,6 +324,121 @@
               "unsafe-mutation",
               "unknown"
             ]
+          },
+          "action": {
+            "type": "object",
+            "required": [
+              "locator",
+              "event",
+              "value"
+            ],
+            "properties": {
+              "locator": {
+                "type": "string"
+              },
+              "event": {
+                "enum": [
+                  "click",
+                  "change",
+                  "submit",
+                  "key",
+                  "toggle"
+                ]
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pointer_activations": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "replays": {
+      "type": "array",
+      "description": "Contiguous observed paths in individual browser sessions; unlike edges merged on visible state fingerprints, these paths are safe to compose in sequence.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fixture",
+          "initial_state",
+          "steps",
+          "completed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fixture": {
+            "type": "string"
+          },
+          "initial_state": {
+            "type": "string"
+          },
+          "completed": {
+            "const": true
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "from",
+                "to",
+                "action"
+              ],
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                },
+                "action": {
+                  "type": "object",
+                  "required": [
+                    "locator",
+                    "event",
+                    "value"
+                  ],
+                  "properties": {
+                    "locator": {
+                      "type": "string"
+                    },
+                    "event": {
+                      "enum": [
+                        "click",
+                        "change",
+                        "toggle",
+                        "submit",
+                        "key"
+                      ]
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "pointer_activations": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
