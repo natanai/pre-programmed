@@ -14,7 +14,31 @@
   function visible(element) {
     if (!element.isConnected || element.closest("[aria-hidden=true],[inert]")) return false;
     const style = getComputedStyle(element);
-    return style.visibility !== "hidden" && style.display !== "none" && element.getClientRects().length > 0;
+    if (style.visibility === "hidden" || style.display === "none" || style.pointerEvents === "none") return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return false;
+    let left = Math.max(0, rect.left), right = Math.min(innerWidth, rect.right);
+    let top = Math.max(0, rect.top), bottom = Math.min(innerHeight, rect.bottom);
+    for (let ancestor = element.parentElement; ancestor && left < right && top < bottom; ancestor = ancestor.parentElement) {
+      const overflow = getComputedStyle(ancestor);
+      const box = ancestor.getBoundingClientRect();
+      if (/hidden|clip|auto|scroll/.test(overflow.overflowX)) {
+        left = Math.max(left, box.left); right = Math.min(right, box.right);
+      }
+      if (/hidden|clip|auto|scroll/.test(overflow.overflowY)) {
+        top = Math.max(top, box.top); bottom = Math.min(bottom, box.bottom);
+      }
+    }
+    if (left >= right || top >= bottom) return false;
+    const points = [
+      [(left + right) / 2, (top + bottom) / 2],
+      [left + (right - left) * .25, top + (bottom - top) * .25],
+      [left + (right - left) * .75, top + (bottom - top) * .75],
+    ];
+    return points.some(([x,y]) => {
+      const hit = document.elementFromPoint(x,y);
+      return hit && (hit === element || element.contains(hit));
+    });
   }
   function scopeFor(element) {
     const region = element.closest("[data-author-ui-workspace],[data-author-ui-role],[data-task-id],.author-picker-surface,[role=dialog]") || document.body;
