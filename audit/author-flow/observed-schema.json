@@ -1,0 +1,306 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Observed Author UI state-transition graph",
+  "description": "Only populated by actual UI execution against a named test fixture. Never infer a transition from an AST handler or an author intention.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "type",
+    "provenance",
+    "fixtures",
+    "states",
+    "transitions",
+    "frontier"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "type": {
+      "const": "author-observed-transitions"
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "method",
+        "runtime_executed"
+      ],
+      "properties": {
+        "method": {
+          "const": "browser-observation"
+        },
+        "runtime_executed": {
+          "const": true
+        },
+        "source_commit": {
+          "type": "string"
+        },
+        "recorder_version": {
+          "type": "string"
+        }
+      }
+    },
+    "fixtures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "project_fixture",
+          "viewport",
+          "initial_run"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "project_fixture": {
+            "type": "string"
+          },
+          "project_sha256": {
+            "type": "string"
+          },
+          "viewport": {
+            "type": "object",
+            "required": [
+              "width",
+              "height"
+            ],
+            "properties": {
+              "width": {
+                "type": "integer"
+              },
+              "height": {
+                "type": "integer"
+              }
+            }
+          },
+          "initial_run": {
+            "type": "object"
+          },
+          "clock": {
+            "type": "string"
+          },
+          "seed": {
+            "type": [
+              "number",
+              "string"
+            ]
+          }
+        }
+      }
+    },
+    "states": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fixture",
+          "ui",
+          "task_stack",
+          "draft_state",
+          "run_state"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fixture": {
+            "type": "string"
+          },
+          "ui": {
+            "type": "object",
+            "required": [
+              "visible_controls"
+            ],
+            "properties": {
+              "visible_controls": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "locator",
+                    "kind",
+                    "enabled"
+                  ],
+                  "properties": {
+                    "locator": {
+                      "type": "string"
+                    },
+                    "source_id": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "kind": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "enabled": {
+                      "type": "boolean"
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    },
+                    "options": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "label",
+                          "enabled"
+                        ],
+                        "properties": {
+                          "label": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean",
+                              "null"
+                            ]
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "task_stack": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "draft_state": {
+            "type": "object"
+          },
+          "run_state": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "fixture",
+          "from",
+          "to",
+          "action",
+          "observed"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fixture": {
+            "type": "string"
+          },
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          },
+          "action": {
+            "type": "object",
+            "required": [
+              "locator",
+              "event",
+              "value"
+            ],
+            "properties": {
+              "locator": {
+                "type": "string"
+              },
+              "event": {
+                "enum": [
+                  "click",
+                  "change",
+                  "submit",
+                  "key",
+                  "toggle"
+                ]
+              },
+              "value": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean",
+                  "null"
+                ]
+              },
+              "pointer_activations": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "observed": {
+            "const": true
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        }
+      }
+    },
+    "frontier": {
+      "type": "array",
+      "description": "Explicit non-observed branches; no branch may be silently called covered.",
+      "items": {
+        "type": "object",
+        "required": [
+          "state",
+          "locator",
+          "reason"
+        ],
+        "properties": {
+          "state": {
+            "type": "string"
+          },
+          "locator": {
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "unvisited",
+              "unbounded-input",
+              "requires-fixture",
+              "async-external",
+              "unsafe-mutation",
+              "unknown"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
