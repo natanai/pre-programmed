@@ -81,6 +81,7 @@ import { compileTextNotation } from "./features/narrative/textNotation";
 import { MediaAssetThumbnail, MediaAssetViewer } from "./features/media/ui/MediaAssetViewer";
 import { useRadixRuntimePresentation } from "./features/radix/runtime/useRadixRuntimePresentation";
 import { characterNameForPresentation } from "./features/world/playState";
+import { SpeakerPrefix } from "./features/world/ui/SpeakerPrefix";
 import { configuredProjectPersistence } from "./platform/persistence/configuredProjectPersistence";
 import {
   TerminalCommandComposer,
@@ -185,7 +186,9 @@ export default function App() {
   const narrativeSurface = useNarrativePlayerSurface(snapshot, playState);
   const currentNode = narrativeSurface.currentNode;
   const activeNodeAnchor = narrativeSurface.anchor;
-  const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource, authorMode && authorView);
+  // Author mode augments this live player surface; it must not replace
+  // player-visible Character aliases or @ references with canonical names.
+  const narrativeContinuation = useNarrativeContinuation(snapshot, playState, activeNodeId, activeSource, false);
   const nodeDialoguePending = narrativeContinuation.nodeDialoguePending;
   const interactionDialoguePending = narrativeContinuation.interactionDialoguePending;
   const flowDialoguePending = narrativeContinuation.flowDialoguePending;
@@ -275,7 +278,7 @@ export default function App() {
   function showNode(project: ProjectSnapshot, node: GameNode, state: PlayState) {
     if (launchPresentationBlockingRef.current) return;
     firedCueIds.current = new Set();
-    const presentation = resolveNodeOpeningPresentation(project, state, node, authorMode && authorView);
+    const presentation = resolveNodeOpeningPresentation(project, state, node, false);
     const opening = presentation.openingId
       ? node.openings.find((candidate) => candidate.id === presentation.openingId)
       : null;
@@ -1073,7 +1076,6 @@ export default function App() {
               <SpeakerPrefix
                 snapshot={snapshot}
                 state={playState}
-                authorMode={authorExperience}
                 speakerId={line.speakerId}
                 speakerName={line.speakerName}
                 onEdit={authorExperience && line.speakerId ? () => openAuthorResource("character", line.speakerId!) : undefined}
@@ -1090,7 +1092,6 @@ export default function App() {
             <SpeakerPrefix
               snapshot={snapshot}
               state={playState}
-              authorMode={authorExperience}
               speakerId={activeSpeakerId}
               onEdit={authorExperience && activeSpeakerId ? () => openAuthorResource("character", activeSpeakerId!) : undefined}
             />
@@ -1242,23 +1243,6 @@ export default function App() {
     /> : null}
     {pendingPlaySession && !radixPresentation.active ? <PlayerSessionGate session={pendingPlaySession} onContinue={continuePlaySession} onNewGame={startNewGame} /> : null}
   </main>;
-}
-
-function SpeakerPrefix({ snapshot, state, authorMode, speakerId, speakerName, onEdit }: {
-  snapshot: ProjectSnapshot;
-  state: PlayState;
-  authorMode: boolean;
-  speakerId?: string | null;
-  speakerName?: string;
-  onEdit?: () => void;
-}) {
-  if (!speakerId) return null;
-  const speaker = snapshot.entities.find((entity) => entity.type === "character" && entity.id === speakerId);
-  if (!speaker) return null;
-  const name = authorMode ? speaker.name : speakerName ?? characterNameForPresentation(speaker, state, false, snapshot);
-  return onEdit
-    ? <button type="button" className="story-speaker-edit" onClick={onEdit}>{name}: </button>
-    : <span>{name}: </span>;
 }
 
 function RenderedPerformanceText({ text, performance }: { text: string; performance: TextPerformance }) {

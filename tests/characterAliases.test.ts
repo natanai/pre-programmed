@@ -9,6 +9,7 @@ import {
   reconcilePlayStateAfterProjectChange,
 } from "../src/engine/project/playState";
 import { parseCommand } from "../src/features/commands/parser";
+import { executeEffects } from "../src/engine/rules/executeEffects";
 import { createRadixSequence } from "../src/features/radix/model";
 import type { EntityDefinition } from "../src/features/world/model";
 import { characterNameForPresentation, characterNameOptions } from "../src/features/world/playState";
@@ -201,6 +202,35 @@ describe("conditional Character aliases", () => {
     expect(parseCommand("inspect Evelyn", snapshot, revealed).invocation?.target)
       .toEqual({ kind: "world.entity", id: guide.id });
     expect(parseCommand("inspect Mysterious voice", snapshot, revealed).invocation).toBeNull();
+  });
+});
+
+describe("Node-only Character reveal conditions", () => {
+  it("supports an initially false node-only reveal flag without a separate default definition", () => {
+    const guide = character({
+      startingNameSelection: "first",
+      aliases: [{ name: "Mysterious Voice", condition: {
+        type: "flag", key: "hasasked", scope: "node", value: false,
+      } }],
+    });
+    const snapshot = project({
+      entities: [guide],
+      nodes: [node("a", 1), node("b", 2)],
+    });
+    const firstRun = createEmptyPlayState(snapshot);
+    const inFirstNode = { ...firstRun, currentNodeId: "a" };
+    expect(inFirstNode.scopedValues.node.a?.hasasked).toBeUndefined();
+    expect(characterNameForPresentation(guide, inFirstNode, false, snapshot)).toBe("Mysterious Voice");
+
+    const asked = executeEffects(snapshot, inFirstNode, [{
+      id: "reveal", type: "set_flag", key: "hasasked", scope: "node",
+    }], { scope: { kind: "node", id: "a" } }).state;
+    expect(characterNameForPresentation(guide, asked, false, snapshot)).toBe("Evelyn");
+    // Node-scoped values remain independent when the run moves elsewhere.
+    expect(characterNameForPresentation(guide, { ...asked, currentNodeId: "b" }, false, snapshot))
+      .toBe("Mysterious Voice");
+    expect(characterNameForPresentation(guide, { ...asked, currentNodeId: "a" }, false, snapshot))
+      .toBe("Evelyn");
   });
 });
 
