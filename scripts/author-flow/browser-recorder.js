@@ -104,7 +104,10 @@
     const layer = document.querySelector(".author-workspace-layer");
     const root = layer || document.body;
     const roots = [root, ...document.querySelectorAll(".author-picker-surface,[role=dialog]")];
-    const controls = [...new Set(roots.flatMap(r => Array.from(r.querySelectorAll(selector))))].filter(visible).map(describe);
+    // The master X is deliberately outside the Author workspace portal. It must
+    // be inventoried as an actual visible control rather than omitted.
+    const extraControls = [...document.querySelectorAll(".work-surface-close")];
+    const controls = [...new Set([...roots.flatMap(r => Array.from(r.querySelectorAll(selector))),...extraControls])].filter(visible).map(describe);
     const trails = document.querySelectorAll(".author-task-trail");
     const task_stack = Array.from(trails[0]?.querySelectorAll("li") || []).map(li => ({
       label: li.textContent.trim(), current: li.getAttribute("aria-current") === "page",
