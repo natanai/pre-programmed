@@ -47,3 +47,24 @@ Queries emit JSON. The node argument is an exact source-location ID (replace the
 - **Unknown** means nothing observed. Never claim complete runtime flow coverage by dividing executed edges by source declarations; those measure different things.
 
 For questions about a control, query the declaration first. If a matching executed transition for the required state and fixture exists, follow it; otherwise report **not observed** and expose the declared callback. Keep proposed UX changes in separate discussions/issues, never inside raw audit JSON.
+
+## Executed browser exploration (first bounded capture)
+
+The [browser explorer](../../scripts/author-flow/explore.mjs) starts the **actual client and local Cloudflare Worker/D1** through the existing local launcher, deletes its dedicated `.wrangler/author-flow-audit` database before and after running, and seeds a deterministic authored Character, Location, Flag, numeric Variable, Group, and terminal Valid Input. It never accesses production.
+
+The browser uses real Chromium pointer/select interactions. It starts fresh browser contexts for each action path, replays all preceding interactions from the same fixture, records the UI state before and after every action, and collects newly reached states breadth-first. Browser-recorder V2 does not guess a click's previous state from a post-change event; the explorer records explicit boundaries.
+
+Run using a Playwright installation in an **isolated development/test environment**, never in a production bundle:
+
+    npm install --no-save --no-package-lock playwright@1.56.1
+    npx playwright install chromium
+    npm run audit:author:explore -- --max-states 45 --max-depth 4
+    npm run audit:author:coverage
+
+Use `--viewport desktop` or `--viewport mobile` to restrict captures; the default runs both. The [browser audit workflow](../../.github/workflows/author-flow-browser.yml) installs Chromium and its system libraries separately from the engine's normal dependencies, runs the explorer against isolated D1, verifies project build/tests, and commits its observed traces to the audit branch.
+
+**The first explorer intentionally does not execute persistent/destructive controls**, nor guess values for free text. They are preserved in the frontier as `unsafe-mutation` and `unbounded-input`. This is a *safe observed baseline*, not exhaustive logical coverage of all project definitions or actions. The remaining branches require explicit disposable reset contracts before broad mutation traversal is appropriate.
+
+**Important determinism boundary:** the captured states describe observable controls and labels, not full in-memory React drafts or player internals. Equal screen signatures can hide distinct internal states. The trace accurately says `draft_state.observed=false` and `run_state.observed=false`. Do not interpret state-ID equality as proof of identical project state or player semantics. Source hash and fixture SHA, browser version, and bounded exploration parameters should be retained for comparing runs.
+
+The progress ledger in `coverage.json` counts only saved executed fixtures/states/edges. An agent can reproduce the trace or extend the explicit frontier without supplying any imaginary author goals.
