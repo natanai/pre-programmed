@@ -366,12 +366,6 @@ async function captureWrite(browser,viewport,test) {
   // One independently bootstrapped disposable D1 project per value/viewport.
   await stopServer();
   await requireExclusiveLocalPorts();
-  if(captureWrites){
-    browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
-    await mkdir(outputDir,{recursive:true});
-    for(const viewport of viewports)for(const test of writeDomains)await captureWrite(browser,viewport,test);
-    console.log("All finite write fixtures persisted and survived local D1 restart.");
-  }else{
   await startLocal({reset:true});
   const {snapshot,token,nodeId}=await seedFixture();
   const before=await request("/api/project/snapshot");
@@ -465,6 +459,12 @@ try {
   await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
+  if(captureWrites){
+    browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+    await mkdir(outputDir,{recursive:true});
+    for(const viewport of viewports)for(const test of writeDomains)await captureWrite(browser,viewport,test);
+    console.log("All finite write fixtures persisted and survived local D1 restart.");
+  }else{
   await startLocal({reset:true});
   const {snapshot,token,nodeId}=await seedFixture();
   const fixtureHash=SHA(snapshot);
