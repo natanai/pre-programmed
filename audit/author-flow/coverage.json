@@ -23,6 +23,11 @@
     "transition_count": 295,
     "explicit_frontier_count": 2311,
     "contiguous_replay_count": 220,
+    "by_event": {
+      "change": 36,
+      "click": 253,
+      "toggle": 6
+    },
     "by_fixture": [
       {
         "file": "author-audit-desktop-wide.json",
