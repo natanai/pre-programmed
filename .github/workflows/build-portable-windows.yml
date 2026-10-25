@@ -115,7 +115,7 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Verify .ppgame drop arguments
-        run: node --test desktop/project-drop.test.cjs
+        run: node --test desktop/project-drop.nodecheck.cjs
 
       - name: Bundle Worker through Wrangler
         shell: pwsh
