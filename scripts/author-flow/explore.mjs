@@ -196,22 +196,26 @@ async function newPage(browser, fixture, token) {
 }
 async function traverse(browser, fixture, token) {
   const states=new Map(),transitions=new Map(),frontier=new Map();
-  const queue=[[]];const visited=new Set();let replayFailures=0;
+  const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;
   const note=(entry)=>frontier.set(JSON.stringify(entry),entry);
   const addState=(state)=>{if(!states.has(state.id))states.set(state.id,state);};
   while(queue.length && visited.size < maxStates) {
-    const path=queue.shift();
+    const next=queue.shift();
+    const path=next.path;
     const {page,context}=await newPage(browser,fixture,token);
+    let lastObserved=null;
     try {
       let state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+      lastObserved=state;
       addState(state);
       for(const action of path){
         const before=state;
         await perform(page,action);
         state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+        lastObserved=state;
         addState(state);
         const id=SHA([fixture.id,before.id,action,state.id]).slice(0,20);
-        transitions.set(id,{id:"transition:"+id,fixture:fixture.id,from:before.id,to:state.id,action,observed:true,effects:[]});
+        transitions.set(id,{id:"transition:"+id,fixture:fixture.id,from:before.id,to:state.id,action,observed:true});
       }
       if(visited.has(state.id))continue;
       visited.add(state.id);
@@ -223,13 +227,12 @@ async function traverse(browser, fixture, token) {
       }
       for(const action of choices.actions) {
         // Identical paths are replayable using native pointer events only.
-        queue.push([...path,action]);
+        queue.push({path:[...path,action],from:state.id});
       }
       if(visited.size%10===0)console.log(fixture.id+": "+visited.size+" unique UI states; "+queue.length+" queued paths");
     } catch(error) {
       replayFailures++;
-      const previous=states.values().next().value;
-      note({state:previous?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown"});
+      note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown"});
       console.error("Branch failed:",fixture.id,path.map(x=>x.locator).join(" -> "),String(error).slice(0,220));
     } finally {
       await context.close();
@@ -238,8 +241,7 @@ async function traverse(browser, fixture, token) {
   if(queue.length) {
     // Record budget-limited branches as an explicit unexplored frontier.
     for(const remaining of queue) {
-      const parent=remaining.at(-2)?.from ?? states.values().next().value?.id??"state:unavailable";
-      note({state:parent,locator:remaining.at(-1)?.locator??"unknown",reason:"unvisited"});
+      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",reason:"unvisited"});
     }
   }
   return {
