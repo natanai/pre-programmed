@@ -74,7 +74,9 @@
       return;
     }
     capturing=true;
-    const action={locator:d.locator,event:event.type,value:event.type==="change"&&target.type!=="checkbox"&&target.type!=="radio"?null:d.value,pointer_activations:event.type==="click"?1:0};
+    const freeText=event.type==="change"&&((kind==="textarea")||(kind==="input"&&!["checkbox","radio"].includes(target.type)));
+    if(freeText)session.frontier.push({state:from,locator:d.locator,reason:"unbounded-input"});
+    const action={locator:d.locator,event:event.type,value:freeText?null:d.value,pointer_activations:event.type==="click"?1:0};
     pending=pending.then(async()=>{
       await waitSettled();
       if(!session)return;
