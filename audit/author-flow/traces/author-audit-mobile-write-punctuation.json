@@ -1,0 +1,1226 @@
+{
+  "schema_version": 1,
+  "type": "author-observed-transitions",
+  "provenance": {
+    "method": "browser-observation",
+    "runtime_executed": true,
+    "recorder_version": "2",
+    "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+    "initial_state_id": "state:e2f548151dd075eb",
+    "explorer": {
+      "strategy": "finite-write",
+      "suite": "write",
+      "maxStates": 4,
+      "maxDepth": 3,
+      "maxExecutions": 1
+    },
+    "fixture_reset": "disposable-d1-per-case",
+    "input_mechanism": "playwright.fill",
+    "save_mechanism": "canonical-ui-button"
+  },
+  "fixtures": [
+    {
+      "id": "author-audit-mobile-write-punctuation",
+      "project_fixture": "isolated-local-d1-write-v1",
+      "project_sha256": "746e80197931a6efad1777143e4a54e00438f5bce5eb3f049ae4d9850efe4dcf",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "initial_run": {
+        "nodeId": "00000000-0000-4000-8000-000000000001",
+        "revision": 1
+      },
+      "seed": "runtime-uncontrolled",
+      "clock": "not-frozen",
+      "input_domain": {
+        "kind": "node.opening[0].narrationText",
+        "case_id": "punctuation",
+        "value": "Line two: punctuation?! (audit)"
+      }
+    }
+  ],
+  "states": [
+    {
+      "id": "state:e2f548151dd075eb",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",0]",
+            "kind": "button",
+            "label": "you are born",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+            "kind": "textarea",
+            "label": "Universe command",
+            "enabled": true,
+            "value": "",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Submit command\",3]",
+            "kind": "button",
+            "label": "Submit command",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Edit who are you?\",4]",
+            "kind": "button",
+            "label": "Edit who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",5]",
+            "kind": "button",
+            "label": "who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",6]",
+            "kind": "button",
+            "label": "[EDIT NODE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Preview player experience\",8]",
+            "kind": "button",
+            "label": "Preview player experience",
+            "enabled": true,
+            "value": true,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Display settings\",9]",
+            "kind": "button",
+            "label": "Display settings",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [],
+        "workspace": null,
+        "overlay_open": false
+      },
+      "task_stack": [],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:2120ad0c2d1ce325",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",3]",
+            "kind": "button",
+            "label": "[FIND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+            "kind": "summary",
+            "label": "NO LOCATION ON THIS PATH · NO CONVERSATION ON THIS PATH [CHANGE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",10]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+            "kind": "button",
+            "label": "About Node entry responses",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",14]",
+            "kind": "button",
+            "label": "[ALWAYS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",15]",
+            "kind": "button",
+            "label": "[FIRST]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",16]",
+            "kind": "button",
+            "label": "[SECOND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",17]",
+            "kind": "button",
+            "label": "[SECOND+]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+            "kind": "select",
+            "label": "Condition type",
+            "enabled": true,
+            "value": "always",
+            "options": [
+              {
+                "label": "visited node",
+                "value": "visited",
+                "enabled": true
+              },
+              {
+                "label": "flag",
+                "value": "flag",
+                "enabled": true
+              },
+              {
+                "label": "variable comparison",
+                "value": "variable",
+                "enabled": true
+              },
+              {
+                "label": "has item",
+                "value": "has_item",
+                "enabled": true
+              },
+              {
+                "label": "lacks item",
+                "value": "lacks_item",
+                "enabled": true
+              },
+              {
+                "label": "always",
+                "value": "always",
+                "enabled": true
+              },
+              {
+                "label": "all (AND)",
+                "value": "all",
+                "enabled": true
+              },
+              {
+                "label": "any (OR)",
+                "value": "any",
+                "enabled": true
+              },
+              {
+                "label": "not",
+                "value": "not",
+                "enabled": true
+              },
+              {
+                "label": "attempt count",
+                "value": "attempt",
+                "enabled": true
+              },
+              {
+                "label": "state field",
+                "value": "state",
+                "enabled": true
+              }
+            ],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+            "kind": "input",
+            "label": "NARRATION speed in characters per second",
+            "enabled": true,
+            "value": "18",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "kind": "textarea",
+            "label": "NARRATION",
+            "enabled": true,
+            "value": "you are born",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+            "kind": "summary",
+            "label": "[? INLINE COMMANDS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",36]",
+            "kind": "button",
+            "label": "[PREVIEW]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+            "kind": "summary",
+            "label": "AFTER stay here ›",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",51]",
+            "kind": "button",
+            "label": "[+ ADD ENTRY RESPONSE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"narrative.node\",\"button\",\"\",71]",
+            "kind": "button",
+            "label": "[SAVE]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [
+          {
+            "locator": "[\"narrative.node\",\"scroll-y\",\"div\",28]",
+            "axis": "y",
+            "top": 0,
+            "max_top": 526,
+            "client_height": 685,
+            "label": "author-panel-body"
+          }
+        ],
+        "workspace": "narrative.node",
+        "overlay_open": true
+      },
+      "task_stack": [
+        {
+          "label": "Node #1",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:a2523002103543ff",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",3]",
+            "kind": "button",
+            "label": "[FIND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+            "kind": "summary",
+            "label": "NO LOCATION ON THIS PATH · NO CONVERSATION ON THIS PATH [CHANGE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",10]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+            "kind": "button",
+            "label": "About Node entry responses",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",14]",
+            "kind": "button",
+            "label": "[ALWAYS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",15]",
+            "kind": "button",
+            "label": "[FIRST]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",16]",
+            "kind": "button",
+            "label": "[SECOND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",17]",
+            "kind": "button",
+            "label": "[SECOND+]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+            "kind": "select",
+            "label": "Condition type",
+            "enabled": true,
+            "value": "always",
+            "options": [
+              {
+                "label": "visited node",
+                "value": "visited",
+                "enabled": true
+              },
+              {
+                "label": "flag",
+                "value": "flag",
+                "enabled": true
+              },
+              {
+                "label": "variable comparison",
+                "value": "variable",
+                "enabled": true
+              },
+              {
+                "label": "has item",
+                "value": "has_item",
+                "enabled": true
+              },
+              {
+                "label": "lacks item",
+                "value": "lacks_item",
+                "enabled": true
+              },
+              {
+                "label": "always",
+                "value": "always",
+                "enabled": true
+              },
+              {
+                "label": "all (AND)",
+                "value": "all",
+                "enabled": true
+              },
+              {
+                "label": "any (OR)",
+                "value": "any",
+                "enabled": true
+              },
+              {
+                "label": "not",
+                "value": "not",
+                "enabled": true
+              },
+              {
+                "label": "attempt count",
+                "value": "attempt",
+                "enabled": true
+              },
+              {
+                "label": "state field",
+                "value": "state",
+                "enabled": true
+              }
+            ],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+            "kind": "input",
+            "label": "NARRATION speed in characters per second",
+            "enabled": true,
+            "value": "18",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "kind": "textarea",
+            "label": "NARRATION",
+            "enabled": true,
+            "value": "Line two: punctuation?! (audit)",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+            "kind": "summary",
+            "label": "[? INLINE COMMANDS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",36]",
+            "kind": "button",
+            "label": "[PREVIEW]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+            "kind": "summary",
+            "label": "AFTER stay here ›",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",51]",
+            "kind": "button",
+            "label": "[+ ADD ENTRY RESPONSE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"narrative.node\",\"button\",\"\",71]",
+            "kind": "button",
+            "label": "[SAVE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [
+          {
+            "locator": "[\"narrative.node\",\"scroll-y\",\"div\",29]",
+            "axis": "y",
+            "top": 0,
+            "max_top": 526,
+            "client_height": 685,
+            "label": "author-panel-body"
+          }
+        ],
+        "workspace": "narrative.node",
+        "overlay_open": true
+      },
+      "task_stack": [
+        {
+          "label": "Node #1 *",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:5f10d572a5fcc5fa",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",1]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "[FIND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",4]",
+            "kind": "summary",
+            "label": "NO LOCATION ON THIS PATH · NO CONVERSATION ON THIS PATH [CHANGE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",6]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",9]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",11]",
+            "kind": "button",
+            "label": "About Node entry responses",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",13]",
+            "kind": "button",
+            "label": "[ALWAYS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",14]",
+            "kind": "button",
+            "label": "[FIRST]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",15]",
+            "kind": "button",
+            "label": "[SECOND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",16]",
+            "kind": "button",
+            "label": "[SECOND+]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"select\",\"Condition type\",17]",
+            "kind": "select",
+            "label": "Condition type",
+            "enabled": true,
+            "value": "always",
+            "options": [
+              {
+                "label": "visited node",
+                "value": "visited",
+                "enabled": true
+              },
+              {
+                "label": "flag",
+                "value": "flag",
+                "enabled": true
+              },
+              {
+                "label": "variable comparison",
+                "value": "variable",
+                "enabled": true
+              },
+              {
+                "label": "has item",
+                "value": "has_item",
+                "enabled": true
+              },
+              {
+                "label": "lacks item",
+                "value": "lacks_item",
+                "enabled": true
+              },
+              {
+                "label": "always",
+                "value": "always",
+                "enabled": true
+              },
+              {
+                "label": "all (AND)",
+                "value": "all",
+                "enabled": true
+              },
+              {
+                "label": "any (OR)",
+                "value": "any",
+                "enabled": true
+              },
+              {
+                "label": "not",
+                "value": "not",
+                "enabled": true
+              },
+              {
+                "label": "attempt count",
+                "value": "attempt",
+                "enabled": true
+              },
+              {
+                "label": "state field",
+                "value": "state",
+                "enabled": true
+              }
+            ],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",18]",
+            "kind": "input",
+            "label": "NARRATION speed in characters per second",
+            "enabled": true,
+            "value": "18",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",19]",
+            "kind": "textarea",
+            "label": "NARRATION",
+            "enabled": true,
+            "value": "Line two: punctuation?! (audit)",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",20]",
+            "kind": "summary",
+            "label": "[? INLINE COMMANDS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",35]",
+            "kind": "button",
+            "label": "[PREVIEW]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",36]",
+            "kind": "summary",
+            "label": "AFTER stay here ›",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",47]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[+ ADD ENTRY RESPONSE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"narrative.node\",\"button\",\"\",70]",
+            "kind": "button",
+            "label": "[SAVE]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [
+          {
+            "locator": "[\"narrative.node\",\"scroll-y\",\"div\",27]",
+            "axis": "y",
+            "top": 0,
+            "max_top": 526,
+            "client_height": 685,
+            "label": "author-panel-body"
+          }
+        ],
+        "workspace": "narrative.node",
+        "overlay_open": true
+      },
+      "task_stack": [
+        {
+          "label": "Node #1",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    }
+  ],
+  "transitions": [
+    {
+      "id": "transition:a91d73e8c06556547262",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "from": "state:e2f548151dd075eb",
+      "to": "state:2120ad0c2d1ce325",
+      "action": {
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "event": "click",
+        "value": null,
+        "pointer_activations": 1
+      },
+      "observed": true
+    },
+    {
+      "id": "transition:d91b72f05b3b2d6278d4",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "from": "state:2120ad0c2d1ce325",
+      "to": "state:a2523002103543ff",
+      "action": {
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "event": "fill",
+        "value": "Line two: punctuation?! (audit)",
+        "pointer_activations": 0
+      },
+      "observed": true
+    },
+    {
+      "id": "transition:199fd13e18b46ab90387",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "from": "state:a2523002103543ff",
+      "to": "state:5f10d572a5fcc5fa",
+      "action": {
+        "locator": "[\"narrative.node\",\"button\",\"\",71]",
+        "event": "click",
+        "value": null,
+        "pointer_activations": 1
+      },
+      "observed": true,
+      "persistence": {
+        "source": "local-d1-readback",
+        "node_id": "00000000-0000-4000-8000-000000000001",
+        "field": "openings[0].narrationText",
+        "prior_value": "you are born",
+        "expected_value": "Line two: punctuation?! (audit)",
+        "readback_value": "Line two: punctuation?! (audit)",
+        "revision_before": 1,
+        "revision_after": 2,
+        "snapshot_sha256_before": "746e80197931a6efad1777143e4a54e00438f5bce5eb3f049ae4d9850efe4dcf",
+        "snapshot_sha256_after": "92be5fd17d136c9ec6feb33a72b3658a5d109e181e60c823ce1cb3b3b7352c8f",
+        "restart_verified": true,
+        "restart_snapshot_sha256": "92be5fd17d136c9ec6feb33a72b3658a5d109e181e60c823ce1cb3b3b7352c8f"
+      }
+    }
+  ],
+  "frontier": [],
+  "replays": [
+    {
+      "id": "replay:17d986cae172275b48f1",
+      "fixture": "author-audit-mobile-write-punctuation",
+      "initial_state": "state:e2f548151dd075eb",
+      "steps": [
+        {
+          "from": "state:e2f548151dd075eb",
+          "to": "state:2120ad0c2d1ce325",
+          "action": {
+            "locator": "[\"page\",\"button\",\"\",6]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        },
+        {
+          "from": "state:2120ad0c2d1ce325",
+          "to": "state:a2523002103543ff",
+          "action": {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "event": "fill",
+            "value": "Line two: punctuation?! (audit)",
+            "pointer_activations": 0
+          }
+        },
+        {
+          "from": "state:a2523002103543ff",
+          "to": "state:5f10d572a5fcc5fa",
+          "action": {
+            "locator": "[\"narrative.node\",\"button\",\"\",71]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        }
+      ],
+      "completed": true
+    }
+  ]
+}

@@ -33,6 +33,7 @@ const maxStates = number("--max-states", 65);
 const maxDepth = number("--max-depth", 4);
 const maxExecutions = number("--max-executions", 90);
 const enableScroll=args.includes("--scroll");
+const captureWrites=args.includes("--writes");
 const strategy = arg("--strategy", "breadth");
 if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
 const suite = arg("--suite", "baseline");
@@ -212,6 +213,13 @@ async function settle(page) {
   }
 }
 async function perform(page,action) {
+  if(action.event==="fill") {
+    const target=page.locator(selectorFor(action.locator));
+    if(await target.count()!==1)throw Error("Missing or ambiguous text input: "+action.locator);
+    await target.fill(action.value,{timeout:4000});
+    await settle(page);
+    return;
+  }
   if(action.event==="scroll") {
     const region=page.locator("[data-author-flow-scroll-probe="+quote(action.locator)+"]");
     if(await region.count()!==1)throw Error("Missing or ambiguous scroll region: "+action.locator);
@@ -349,6 +357,100 @@ async function traverse(browser, fixture, token, expectedHash) {
     stats:{strategy,visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
   };
 }
+const writeDomains=[
+  {id:"ascii",value:"Audit text alpha."},
+  {id:"punctuation",value:"Line two: punctuation?! (audit)"},
+  {id:"empty",value:""},
+];
+async function captureWrite(browser,viewport,test) {
+  // One independently bootstrapped disposable D1 project per value/viewport.
+  await stopServer();
+  await requireExclusiveLocalPorts();
+  await startLocal({reset:true});
+  const {snapshot,token,nodeId}=await seedFixture();
+  const before=await request("/api/project/snapshot");
+  const initialText=before.nodes.find(node=>node.id===nodeId)?.openings?.[0]?.narrationText;
+  if(typeof initialText!=="string"||initialText===test.value)throw Error("Unexpected initial narration fixture.");
+  const fixture={
+    id:"author-audit-"+viewport.id+"-write-"+test.id,
+    project_fixture:"isolated-local-d1-write-v1",
+    project_sha256:SHA(snapshot),
+    viewport:{width:viewport.width,height:viewport.height},
+    initial_run:{nodeId,revision:snapshot.revision},
+    seed:"runtime-uncontrolled",clock:"not-frozen",
+    input_domain:{kind:"node.opening[0].narrationText",case_id:test.id,value:test.value},
+  };
+  let context;
+  try {
+    const opened=await newPage(browser,fixture,token);
+    context=opened.context;
+    const page=opened.page,states=new Map(),steps=[],transitions=[];
+    let current=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+    const initialId=current.id;
+    states.set(current.id,current);
+    async function doAction(action) {
+      const from=current;
+      await perform(page,action);
+      current=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+      states.set(current.id,current);
+      const id="transition:"+SHA([fixture.id,from.id,action,current.id]).slice(0,20);
+      const transition={id,fixture:fixture.id,from:from.id,to:current.id,action,observed:true};
+      transitions.push(transition);
+      steps.push({from:from.id,to:current.id,action});
+      return transition;
+    }
+    const selectVisible=(kind,label)=> {
+      const matches=current.ui.visible_controls.filter(c=>c.kind===kind&&c.label===label&&c.enabled);
+      if(matches.length!==1)throw Error("Expected one enabled "+kind+" labeled "+JSON.stringify(label)+", got "+matches.length+" in "+current.ui.workspace);
+      return matches[0];
+    };
+    const open=selectVisible("button","[EDIT NODE]");
+    await doAction({locator:open.locator,event:"click",value:null,pointer_activations:1});
+    if(current.ui.workspace!=="narrative.node")throw Error("The real Node editor was not reached.");
+    const editor=selectVisible("textarea","NARRATION");
+    await doAction({locator:editor.locator,event:"fill",value:test.value,pointer_activations:0});
+    if(current.ui.visible_controls.find(c=>c.locator===editor.locator)?.value!==test.value)throw Error("DOM field did not retain the entered sample.");
+    const save=selectVisible("button","[SAVE]");
+    const saved=await doAction({locator:save.locator,event:"click",value:null,pointer_activations:1});
+    let after=null;
+    for(let attempt=0;attempt<45;attempt++){
+      const probe=await request("/api/project/snapshot");
+      const text=probe.nodes.find(node=>node.id===nodeId)?.openings?.[0]?.narrationText;
+      if(probe.revision>before.revision&&text===test.value){after=probe;break;}
+      await page.waitForTimeout(200);
+    }
+    if(!after)throw Error("Canonical Save did not durably persist expected narration.");
+    saved.persistence={
+      source:"local-d1-readback",node_id:nodeId,field:"openings[0].narrationText",
+      prior_value:initialText,expected_value:test.value,readback_value:after.nodes.find(n=>n.id===nodeId).openings[0].narrationText,
+      revision_before:before.revision,revision_after:after.revision,
+      snapshot_sha256_before:SHA(before),snapshot_sha256_after:SHA(after),
+      restart_verified:false,
+    };
+    await context.close();context=null;
+    await restartLocal(SHA(after));
+    const afterRestart=await request("/api/project/snapshot");
+    if(SHA(afterRestart)!==SHA(after)
+      ||afterRestart.nodes.find(n=>n.id===nodeId)?.openings?.[0]?.narrationText!==test.value)
+      throw Error("Persisted project differed after isolated D1 server restart.");
+    saved.persistence.restart_verified=true;
+    saved.persistence.restart_snapshot_sha256=SHA(afterRestart);
+    const trace={
+      schema_version:1,type:"author-observed-transitions",
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:initialId,
+        explorer:{strategy:"finite-write",suite:"write",maxStates:states.size,maxDepth:3,maxExecutions:1},
+        fixture_reset:"disposable-d1-per-case",input_mechanism:"playwright.fill",save_mechanism:"canonical-ui-button",
+      },
+      fixtures:[fixture],states:[...states.values()],transitions,frontier:[],
+      replays:[{id:"replay:"+SHA([fixture.id,steps]).slice(0,20),fixture:fixture.id,initial_state:initialId,steps,completed:true}],
+    };
+    const dest=path.join(outputDir,fixture.id+".json");
+    await writeFile(dest,JSON.stringify(trace,null,2)+"\n");
+    console.log("Verified isolated canonical Save",fixture.id,{revision_before:before.revision,revision_after:after.revision,after_restart:true,transitions:transitions.length},dest);
+  }finally {
+    await context?.close();
+  }
+}
 let browser;
 try {
   const { chromium }=await import("playwright").catch(()=>{
@@ -357,6 +459,12 @@ try {
   await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
+  if(captureWrites){
+    browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+    await mkdir(outputDir,{recursive:true});
+    for(const viewport of viewports)for(const test of writeDomains)await captureWrite(browser,viewport,test);
+    console.log("All finite write fixtures persisted and survived local D1 restart.");
+  }else{
   await startLocal({reset:true});
   const {snapshot,token,nodeId}=await seedFixture();
   const fixtureHash=SHA(snapshot);
@@ -384,6 +492,7 @@ try {
     console.log("Observed",fixture.id,result.stats,filename);
     if(result.stats.replay_failures>Math.ceil(result.stats.visited*0.6))
       throw new Error("Too many failed browser branches; inspect the recorded frontier.");
+  }
   }
 }finally{
   await browser?.close();

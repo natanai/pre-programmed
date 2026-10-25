@@ -15,19 +15,26 @@
     "trace_files": [
       "author-audit-desktop-scroll.json",
       "author-audit-desktop-wide.json",
+      "author-audit-desktop-write-ascii.json",
+      "author-audit-desktop-write-empty.json",
+      "author-audit-desktop-write-punctuation.json",
       "author-audit-desktop.json",
       "author-audit-mobile-scroll.json",
       "author-audit-mobile-wide.json",
+      "author-audit-mobile-write-ascii.json",
+      "author-audit-mobile-write-empty.json",
+      "author-audit-mobile-write-punctuation.json",
       "author-audit-mobile.json"
     ],
-    "fixture_count": 6,
-    "state_count": 261,
-    "transition_count": 443,
+    "fixture_count": 12,
+    "state_count": 285,
+    "transition_count": 461,
     "explicit_frontier_count": 3485,
-    "contiguous_replay_count": 370,
+    "contiguous_replay_count": 376,
     "by_event": {
       "change": 40,
-      "click": 395,
+      "click": 407,
+      "fill": 6,
       "scroll": 2,
       "toggle": 6
     },
@@ -68,6 +75,60 @@
           "maxStates": 80,
           "maxDepth": 4,
           "maxExecutions": 110
+        }
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "fixture_ids": [
+          "author-audit-desktop-write-ascii"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "fixture_ids": [
+          "author-audit-desktop-write-empty"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "fixture_ids": [
+          "author-audit-desktop-write-punctuation"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
         }
       },
       {
@@ -118,6 +179,60 @@
           "maxStates": 80,
           "maxDepth": 4,
           "maxExecutions": 110
+        }
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "fixture_ids": [
+          "author-audit-mobile-write-ascii"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "fixture_ids": [
+          "author-audit-mobile-write-empty"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "fixture_ids": [
+          "author-audit-mobile-write-punctuation"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 3,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d7be0f9ef3fbd6d9168d1089424a4a08bc28b495",
+        "explorer": {
+          "strategy": "finite-write",
+          "suite": "write",
+          "maxStates": 4,
+          "maxDepth": 3,
+          "maxExecutions": 1
         }
       },
       {
@@ -242,8 +357,8 @@
       },
       {
         "workspace": "narrative.node",
-        "observed_states": 95,
-        "observed_transitions_from": 99,
+        "observed_states": 113,
+        "observed_transitions_from": 111,
         "frontier_by_reason": {
           "unvisited": 1778,
           "unbounded-input": 213,
@@ -253,9 +368,15 @@
           "author-audit-desktop",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
+          "author-audit-desktop-write-ascii",
+          "author-audit-desktop-write-empty",
+          "author-audit-desktop-write-punctuation",
           "author-audit-mobile",
           "author-audit-mobile-scroll",
-          "author-audit-mobile-wide"
+          "author-audit-mobile-wide",
+          "author-audit-mobile-write-ascii",
+          "author-audit-mobile-write-empty",
+          "author-audit-mobile-write-punctuation"
         ]
       },
       {
@@ -288,8 +409,8 @@
       },
       {
         "workspace": "terminal-or-unidentified",
-        "observed_states": 72,
-        "observed_transitions_from": 238,
+        "observed_states": 78,
+        "observed_transitions_from": 244,
         "frontier_by_reason": {
           "unbounded-input": 140,
           "unvisited": 274
@@ -298,9 +419,15 @@
           "author-audit-desktop",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
+          "author-audit-desktop-write-ascii",
+          "author-audit-desktop-write-empty",
+          "author-audit-desktop-write-punctuation",
           "author-audit-mobile",
           "author-audit-mobile-scroll",
-          "author-audit-mobile-wide"
+          "author-audit-mobile-wide",
+          "author-audit-mobile-write-ascii",
+          "author-audit-mobile-write-empty",
+          "author-audit-mobile-write-punctuation"
         ]
       },
       {
@@ -350,6 +477,18 @@
         "id": "author-audit-desktop-wide"
       },
       {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "author-audit-desktop-write-punctuation"
+      },
+      {
         "file": "author-audit-desktop.json",
         "id": "author-audit-desktop"
       },
@@ -360,6 +499,18 @@
       {
         "file": "author-audit-mobile-wide.json",
         "id": "author-audit-mobile-wide"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "author-audit-mobile-write-punctuation"
       },
       {
         "file": "author-audit-mobile.json",
@@ -866,6 +1017,66 @@
         "file": "author-audit-desktop-wide.json",
         "id": "state:fd779c3543ab654e",
         "fixture": "author-audit-desktop-wide"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "state:0ed55d90f1ae0bba",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "state:17571f3da24bc6a8",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "state:6d0d86a190e7adac",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "state:0ed55d90f1ae0bba",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "state:026e4c0b1bff6d24",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "state:b52a3ea0b5fe0178",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-desktop-write-punctuation"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "state:0ed55d90f1ae0bba",
+        "fixture": "author-audit-desktop-write-punctuation"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "state:f30f7f226507b830",
+        "fixture": "author-audit-desktop-write-punctuation"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "state:c14ce2e1b416665c",
+        "fixture": "author-audit-desktop-write-punctuation"
       },
       {
         "file": "author-audit-desktop.json",
@@ -1521,6 +1732,66 @@
         "file": "author-audit-mobile-wide.json",
         "id": "state:fb69218cc45380cc",
         "fixture": "author-audit-mobile-wide"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "state:2120ad0c2d1ce325",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "state:08243b420351f657",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "state:2ac27475de04656a",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "state:2120ad0c2d1ce325",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "state:b2b9b13d1cdfa813",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "state:3290c20f48a5d0d6",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "state:e2f548151dd075eb",
+        "fixture": "author-audit-mobile-write-punctuation"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "state:2120ad0c2d1ce325",
+        "fixture": "author-audit-mobile-write-punctuation"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "state:a2523002103543ff",
+        "fixture": "author-audit-mobile-write-punctuation"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "state:5f10d572a5fcc5fa",
+        "fixture": "author-audit-mobile-write-punctuation"
       },
       {
         "file": "author-audit-mobile.json",
@@ -2588,6 +2859,51 @@
         "file": "author-audit-desktop-wide.json",
         "id": "transition:ff9abf9fd396803d2657",
         "fixture": "author-audit-desktop-wide"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "transition:afc955b9e5859a7de5e3",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "transition:9e35efdeb6669cc955ff",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-ascii.json",
+        "id": "transition:c68572927f16a2218ad0",
+        "fixture": "author-audit-desktop-write-ascii"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "transition:d14a25ca0913da2e6ac8",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "transition:a30dab4f90b4c19297d1",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-empty.json",
+        "id": "transition:a18fbb00b921a7dfc5b6",
+        "fixture": "author-audit-desktop-write-empty"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "transition:ec9374d6ffb8980b97db",
+        "fixture": "author-audit-desktop-write-punctuation"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "transition:1899adfc31670af18b1a",
+        "fixture": "author-audit-desktop-write-punctuation"
+      },
+      {
+        "file": "author-audit-desktop-write-punctuation.json",
+        "id": "transition:1e4f074bf92548ef3755",
+        "fixture": "author-audit-desktop-write-punctuation"
       },
       {
         "file": "author-audit-desktop.json",
@@ -3698,6 +4014,51 @@
         "file": "author-audit-mobile-wide.json",
         "id": "transition:fe2d3c3477ec3dfaf1b3",
         "fixture": "author-audit-mobile-wide"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "transition:799ec552fe71c968a6e5",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "transition:81b367177fff3448d801",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-ascii.json",
+        "id": "transition:588b2a5ad4f57cb175fc",
+        "fixture": "author-audit-mobile-write-ascii"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "transition:fec3fb8699d3f639f6f7",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "transition:10b7d37bdb475cab1537",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-empty.json",
+        "id": "transition:02080d79065f63d78423",
+        "fixture": "author-audit-mobile-write-empty"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "transition:a91d73e8c06556547262",
+        "fixture": "author-audit-mobile-write-punctuation"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "transition:d91b72f05b3b2d6278d4",
+        "fixture": "author-audit-mobile-write-punctuation"
+      },
+      {
+        "file": "author-audit-mobile-write-punctuation.json",
+        "id": "transition:199fd13e18b46ab90387",
+        "fixture": "author-audit-mobile-write-punctuation"
       },
       {
         "file": "author-audit-mobile.json",

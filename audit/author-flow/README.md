@@ -105,3 +105,19 @@ The `--scroll` explorer option adds **actual browser wheel interactions** to the
 Traces are kept in `author-audit-{desktop,mobile}-scroll.json`; original breadth and wide traces are not overwritten. The trace validator checks that the target region was actually recorded as scrollable and that the requested wheel direction was within its known boundaries. The coverage ledger reports the observed number of scroll actions separately from ordinary clicks/select changes. Individual replay sequences still provide proof of the full before/scroll/after chain.
 
 **Scope limits:** this pass observes wheel scrolling on a mobile-emulated viewport, not an actual finger swipe gesture on iOS Safari. Horizontal scrolling and automatic focus-triggered scrolls also remain outside this suite. The recorder only knows currently rendered content and does not infer invisible controls. No project data is persisted during the traversal.
+
+## Finite text-entry and durable Save evidence
+
+A separate `--writes` audit suite exercises **the real Node editor and its owning Save action** against three explicit text samples: a short ASCII sentence, punctuation, and empty text. It operates on a dedicated D1 database freshly reset and re-seeded **for every single value and viewport**. The input domain is deliberately finite and declarative; it does not describe or assume developer intentions.
+
+    npm run audit:author:explore -- --writes --viewport both
+    node scripts/author-flow/validate-traces.mjs
+    npm run audit:author:coverage
+    npm run audit:author:trace -- --fixture desktop-write-ascii
+    npm run audit:author:trace -- --fixture mobile-write-empty
+
+Each trace is a contiguous, executed browser sequence: open the canonical Node workspace → enter a finite narration text with Playwright `fill` → click the enabled canonical [SAVE]. The text change is marked `event: "fill"` with **zero counted pointer clicks**; it is not counted as a measured number of keyboard keystrokes. Saving is marked as a separate, observed click.
+
+A persisted Save transition contains the previous and new snapshot SHA-256 hashes, D1 revision numbers, the exact authored field and expected/read-back value, and evidence that restarting the isolated Worker **retained exactly the same serialized project snapshot and field value**. The validator requires a verified revision increase and a matching post-restart hash. Neither an on-screen notification nor a pending save alone counts as durability evidence.
+
+No production project, real user data, or Author-only persistence path is involved. Each test case starts from the engine's normal seeded project and uses the real workspace editor and its existing persistence contract. Other editable resources, dependent resources, invalid inputs, unsaved navigation and broader input strings remain explicitly outside this finite case suite. The existing breadth, wide, and scroll traces remain unchanged.

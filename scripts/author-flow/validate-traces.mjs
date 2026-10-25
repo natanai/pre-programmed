@@ -37,10 +37,24 @@ for (const filename of files) {
       const control=controlsBefore[0];
       if(action.event==="change"&&(control.kind!=="select"||!control.options.some(o=>o.value===action.value&&o.enabled)))throw Error(filename+": invalid selection "+transition.id);
       if(action.event==="toggle"&&(control.kind!=="input"||typeof control.value!=="boolean"))throw Error(filename+": invalid toggle "+transition.id);
+      if(action.event==="fill"){
+        if(!["input","textarea"].includes(control.kind)||typeof action.value!=="string")throw Error(filename+": invalid finite text sample "+transition.id);
+        const readback=after.ui.visible_controls.find(c=>c.locator===action.locator);
+        if(!readback||readback.value!==action.value)throw Error(filename+": entered text was not observed in the target field "+transition.id);
+      }
       if(action.event==="click"&&!["button","summary"].includes(control.kind))throw Error(filename+": invalid pointer click "+transition.id);
-      if(!["click","change","toggle"].includes(action.event))throw Error(filename+": unsupported UI input event "+transition.id);
+      if(!["click","change","toggle","fill"].includes(action.event))throw Error(filename+": unsupported UI input event "+transition.id);
     }
-    if(action.pointer_activations!==(action.event==="change"||action.event==="scroll"?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
+    if(action.pointer_activations!==(["change","scroll","fill"].includes(action.event)?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
+    if(transition.persistence){
+      const p=transition.persistence;
+      if(action.event!=="click"||p.source!=="local-d1-readback"||p.field!=="openings[0].narrationText"||p.restart_verified!==true
+        ||p.revision_after<=p.revision_before||p.expected_value!==p.readback_value
+        ||p.restart_snapshot_sha256!==p.snapshot_sha256_after
+        ||!/^([a-f0-9]{64})$/.test(p.snapshot_sha256_before)
+        ||!/^([a-f0-9]{64})$/.test(p.snapshot_sha256_after))
+        throw Error(filename+": unverified canonical Save readback "+transition.id);
+    }
     edgeKeys.add(JSON.stringify([transition.from,transition.to,transition.action]));
     edges++;
   }
@@ -54,6 +68,16 @@ for (const filename of files) {
       current=step.to;
     }
     replays++;
+  }
+  if(trace.fixtures.some(f=>f.input_domain)){
+    if(trace.fixtures.length!==1||!Array.isArray(trace.replays)||trace.replays.length!==1)
+      throw Error(filename+": finite write trace must be one independently replayed fixture");
+    const domain=trace.fixtures[0].input_domain;
+    const fills=trace.transitions.filter(t=>t.action.event==="fill");
+    const saves=trace.transitions.filter(t=>Boolean(t.persistence));
+    if(fills.length!==1||saves.length!==1||fills[0].action.value!==domain.value||saves[0].persistence.expected_value!==domain.value
+      ||saves[0].persistence.snapshot_sha256_before===saves[0].persistence.snapshot_sha256_after)
+      throw Error(filename+": finite text sample or persistence readback does not match fixture domain");
   }
   for(const item of trace.frontier){
     if(!states.has(item.state))throw Error(filename+": unanchored frontier "+JSON.stringify(item));
