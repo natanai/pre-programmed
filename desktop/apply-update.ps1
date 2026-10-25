@@ -1,7 +1,8 @@
 param(
   [Parameter(Mandatory=$true)][string]$Root,
   [Parameter(Mandatory=$true)][int]$OldPid,
-  [Parameter(Mandatory=$true)][string]$TempRoot
+  [Parameter(Mandatory=$true)][string]$TempRoot,
+  [switch]$SkipRestart
 )
 $ErrorActionPreference = "Stop"
 $engine = Join-Path $Root "_engine"
@@ -31,7 +32,7 @@ try {
   }
   $executable = Join-Path $engine "Pre-Programmed.exe"
   if (-not (Test-Path -LiteralPath $executable)) { throw "The replacement executable is missing." }
-  Start-Process -FilePath $executable -WorkingDirectory $engine
+  if (-not $SkipRestart) { Start-Process -FilePath $executable -WorkingDirectory $engine }
   $success = $true
 } catch {
   $message = $_.Exception.Message
