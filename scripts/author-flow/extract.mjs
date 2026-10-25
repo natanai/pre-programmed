@@ -91,7 +91,7 @@ function label(n,sf) {
   return raw||{expression:"dynamic JSX children"};
 }
 const paths=[...walk(path.join(root,"src/author")),...walk(path.join(root,"src/features")),...walk(path.join(root,"src/engine")),...walk(path.join(root,"src/player")),path.join(root,"src/App.tsx")].filter(fs.existsSync).sort();
-const nodes=[];const edges=[];const calls=[];const sources=[];
+const nodes=[];const edges=[];const calls=[];const sources=[];const branchSites=[];const collectionSites=[];
 for(const p of paths) {
   const file=path.relative(root,p).split(path.sep).join("/");
   const sf=ts.createSourceFile(file,fs.readFileSync(p,"utf8"),ts.ScriptTarget.Latest,true,p.endsWith(".tsx")?ts.ScriptKind.TSX:ts.ScriptKind.TS);
@@ -121,8 +121,17 @@ for(const p of paths) {
       const loc=location(n); const node={id:id(loc),...entry,source:loc,workspace:workspace(n,sf),parent_id:null,guards:guards(n,sf),handlers:handlers(n,sf)};
       nodes.push(node);candidates.push([n,node]);byStart.set(n.getStart(sf),node.id);
     }
+    if(ts.isIfStatement(n)||ts.isConditionalExpression(n)||ts.isSwitchStatement(n)||ts.isBinaryExpression(n)&&[ts.SyntaxKind.AmpersandAmpersandToken,ts.SyntaxKind.BarBarToken].includes(n.operatorToken.kind)) {
+      const loc=location(n);
+      const predicate=ts.isIfStatement(n)?n.expression:ts.isConditionalExpression(n)?n.condition:ts.isSwitchStatement(n)?n.expression:n.left;
+      branchSites.push({id:id(loc)+":branch",source:loc,syntax:ts.SyntaxKind[n.kind],predicate:predicate.getText(sf),workspace:workspace(n,sf),alternatives:ts.isSwitchStatement(n)?n.caseBlock.clauses.map(c=>ts.isCaseClause(c)?c.expression.getText(sf):"default"):["taken","not-taken"]});
+    }
     if(ts.isCallExpression(n)) {
       const api=n.expression.getText(sf), method=api.split(".").at(-1);
+      if(["map","flatMap","filter"].includes(method)) {
+        const loc=location(n);
+        collectionSites.push({id:id(loc)+":collection",source:loc,method,source_expression:api,workspace:workspace(n,sf),enumeration:"runtime-dependent"});
+      }
       if(taskCalls.has(method)&&api.includes(".")) {
         const loc=location(n);
         calls.push({id:id(loc)+":call",source:loc,api,args:n.arguments.map(a=>a.getText(sf)),owner_control:null,guards:guards(n,sf)});
@@ -150,8 +159,8 @@ const graph={
   schema_version:1,type:"author-source-declarations",
   provenance:{method:"typescript-ast",generator:"scripts/author-flow/extract.mjs",runtime_executed:false},
   semantics:{nodes:"Source-level UI declarations; not unique rendered instances.",edges:"Declared nesting and API calls; not observed screen transitions.",guards:"Raw source expressions, not evaluated."},
-  counts:{source_files:paths.length,controls:nodes.length,declared_nesting:edges.filter(e=>e.relation==="declared-nesting").length,api_calls:calls.length,observed_transitions:0},
-  sources,nodes,edges,navigation_calls:calls,
+  counts:{source_files:paths.length,controls:nodes.length,declared_nesting:edges.filter(e=>e.relation==="declared-nesting").length,api_calls:calls.length,branch_sites:branchSites.length,collection_sites:collectionSites.length,observed_transitions:0},
+  sources,nodes,edges,navigation_calls:calls,branch_sites:branchSites,collection_sites:collectionSites,
 };
 const content=JSON.stringify(graph,null,2)+"\n";
 if(check) {
