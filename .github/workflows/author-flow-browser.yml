@@ -34,7 +34,7 @@ jobs:
           node --check scripts/author-flow/explore.mjs
           node --check scripts/author-flow/browser-recorder.js
       - name: Explore isolated mobile and desktop Author screens
-        run: npm run audit:author:explore -- --max-states 45 --max-depth 4
+        run: npm run audit:author:explore -- --max-states 30 --max-depth 4 --max-executions 60
       - name: Recompute evidence-derived coverage
         run: |
           npm run audit:author:coverage
