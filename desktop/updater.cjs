@@ -87,7 +87,8 @@ async function stageUpdate({ release, root, scriptSource, onProgress }) {
     const zip = path.join(tmp, "release.zip");
     await downloadZip(release.asset, zip, onProgress);
     const expanded = path.join(tmp, "unpacked");
-    await powershell(["-Command", "Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force", zip, expanded]);
+    const psLiteral = (value) => "\'" + value.replace(/\'/g, "\'\'") + "\'";
+    await powershell(["-Command", "Expand-Archive -LiteralPath " + psLiteral(zip) + " -DestinationPath " + psLiteral(expanded) + " -Force"]);
     const stageRoot = path.join(expanded, "Pre-Programmed");
     const engine = path.join(stageRoot, "_engine");
     for (const required of [
