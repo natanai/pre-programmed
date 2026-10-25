@@ -53,7 +53,7 @@
   function snapshot() {
     if (!fixture) throw new Error("Start the audit with a named fixture first.");
     const layer = document.querySelector(".author-workspace-layer");
-    const root = layer || document.querySelector(".author-input-surface") || document.body;
+    const root = layer || document.body;
     const roots = [root, ...document.querySelectorAll(".author-picker-surface,[role=dialog]")];
     const controls = [...new Set(roots.flatMap(r => Array.from(r.querySelectorAll(selector))))].filter(visible).map(describe);
     const trails = document.querySelectorAll(".author-task-trail");
