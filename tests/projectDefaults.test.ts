@@ -5,6 +5,7 @@ import { createDraftInteraction, createDraftOutcome } from "../src/features/narr
 import { createNodeOpening } from "../src/features/narrative/nodeOpenings";
 import { appendCaptureTurn, createCaptureInputFlow } from "../src/features/narrative/flow";
 import { createRadixSequence, DEFAULT_RADIX_SEQUENCE } from "../src/features/radix/model";
+import { newEntity } from "../src/features/world/author/entityDraft";
 
 describe("project authoring defaults", () => {
   it("preserves the legacy 18 cps and other choices when a project has no defaults", () => {
@@ -42,6 +43,27 @@ describe("project authoring defaults", () => {
     expect(extra.dialoguePerformance?.charactersPerSecond).toBe(41);
     expect(flow.find((step) => step.type === "present" && step.responsePerformance.charactersPerSecond === 41)).toBeTruthy();
     expect(appended.filter((step) => step.type === "present")).toHaveLength(2);
+  });
+
+  it("normalizes owned defaults for characters, items, and State independently", () => {
+    const settings = normalizeProjectSettings({
+      worldDefaults: { characterStartingNameSelection: "random", interactable: true },
+      itemDefaults: { width: 3, height: 2, stackable: true, maxStack: 9, startingQuantity: 0, equippedStorage: "slot" },
+      variableDefaults: { flagValue: true, numberValue: 7, textValue: "ready", timeRate: 2, timeUnit: "minute" },
+    });
+    expect(settings.worldDefaults).toEqual({ characterStartingNameSelection: "random", interactable: true });
+    expect(settings.itemDefaults).toMatchObject({
+      width: 3, height: 2, stackable: true, maxStack: 9, startingQuantity: 0, equippedStorage: "slot",
+    });
+    expect(settings.variableDefaults).toMatchObject({
+      flagValue: true, numberValue: 7, textValue: "ready", timeRate: 2, timeUnit: "minute",
+    });
+    expect(newEntity("character", settings.worldDefaults).startingNameSelection).toBe("random");
+    expect(newEntity("location", settings.worldDefaults).interactable).toBe(true);
+    const legacy = normalizeProjectSettings({});
+    expect(legacy.worldDefaults).toMatchObject({ characterStartingNameSelection: "first", interactable: false });
+    expect(legacy.itemDefaults).toMatchObject({ startingQuantity: 1, width: 1, stackable: false });
+    expect(legacy.variableDefaults).toMatchObject({ flagValue: false, numberValue: 0, timeRate: 0 });
   });
 
   it("keeps original sequences while applying configured sort defaults only to new sequences", () => {
