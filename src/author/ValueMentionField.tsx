@@ -128,8 +128,13 @@ export function ValueMentionField({
     () => authorSemanticReferenceView(value, referenceContext),
     [value, referenceContext],
   );
-  const candidates = useMemo(() => semanticReferenceEntries(referenceContext)
-    .filter((entry) => livePlayState || !entry.candidate.contextual), [referenceContext, livePlayState]);
+  // Ordinary prose editing does not need every semantic-reference provider to
+  // enumerate its candidates. This can be expensive in large authored games,
+  // especially when many nested Author fields are mounted at once.
+  const mentionOpen = mention !== null;
+  const candidates = useMemo(() => mentionOpen
+    ? semanticReferenceEntries(referenceContext).filter((entry) => livePlayState || !entry.candidate.contextual)
+    : [], [referenceContext, livePlayState, mentionOpen]);
   const matches = useMemo(() => {
     if (!mention) return [];
     const normalizedQuery = query.trim().toLowerCase();
