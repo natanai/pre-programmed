@@ -537,6 +537,19 @@ async function captureDraftNavigationCase(browser,viewport,test) {
       expectNarration(original);
       await move("textarea","NARRATION","fill",test.value);
       expectNarration(test.value);
+      if(!current.ui.visible_controls.some(c=>c.kind==="button"&&c.label==="[← BACK]")) {
+        const diagnostic=await page.evaluate(()=>{
+          const element=document.querySelector(".author-workspace-back");
+          if(!element)return {found:false,depth:document.querySelector(".author-workspace-layer")?.getAttribute("data-task-depth")};
+          const rect=element.getBoundingClientRect(),style=getComputedStyle(element),centerX=rect.x+rect.width/2,centerY=rect.y+rect.height/2;
+          return {found:true,depth:document.querySelector(".author-workspace-layer")?.getAttribute("data-task-depth"),
+            label:element.innerText,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},
+            visibility:style.visibility,display:style.display,opacity:style.opacity,pointerEvents:style.pointerEvents,
+            elementAtCenter:document.elementFromPoint(centerX,centerY)?.outerHTML.slice(0,250),
+            nearestHidden:element.closest("[aria-hidden=true],[inert]")?.outerHTML.slice(0,250)};
+        });
+        throw Error("Nested Node Back not observed: "+JSON.stringify(diagnostic));
+      }
       await move("button","[← BACK]");
       await expectDialog("UNSAVED CHANGES",["[KEEP EDITING]","[DISCARD CHANGES]"]);
       await move("button","[KEEP EDITING]");
