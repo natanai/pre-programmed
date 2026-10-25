@@ -1,5 +1,9 @@
 name: Verify Author UI
-on: pull_request
+on:
+  pull_request:
+  push:
+    branches:
+      - audit/author-terminology-help-2026-10-24
 jobs:
   test:
     runs-on: ubuntu-latest
