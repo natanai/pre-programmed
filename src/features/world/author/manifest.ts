@@ -74,7 +74,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
     tool: {
       id: "people-places",
       label: "PEOPLE + PLACES",
-      description: "Characters, speakers, locations, and world entities.",
+      description: "Create and edit Characters and Locations.",
       searchText: "person people character characters speaker speakers location locations place places world",
       onSelect: () => context.pushTask(WORLD_LIBRARY_ROUTE),
     },
@@ -83,7 +83,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
     id: "world:library",
     groupLabel: "GAME SYSTEMS",
     label: "PEOPLE + PLACES",
-    description: "Find or create characters and locations.",
+    description: "Find or create Characters and Locations.",
     searchText: "character characters speaker person people location locations place places world",
     onSelect: () => context.pushTask(WORLD_LIBRARY_ROUTE),
   }],
