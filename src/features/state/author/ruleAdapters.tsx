@@ -51,7 +51,7 @@ function localFlagKeyField(key: string, onChange: (key: string) => void) {
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
-    <small>Private to this Node in the current run. The same name can be reused independently in other Nodes.</small>
+    <small>Starts false until an effect sets it. Private to this Node for the current run; the same name may be reused in other Nodes. For a lasting reveal across Nodes, use a project/global Flag (whose starting value is editable).</small>
   </>;
 }
 
