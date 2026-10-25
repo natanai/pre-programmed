@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "type": "author-graph-coverage",
+  "method": "derived-from-source-graph-and-executed-trace-files",
+  "source_graph": {
+    "files": 320,
+    "declared_controls": 713,
+    "declared_nesting": 230,
+    "api_calls": 160,
+    "branch_sites": 4428,
+    "collection_sites": 715
+  },
+  "executed": {
+    "status": "not-started",
+    "trace_files": [],
+    "fixture_count": 0,
+    "state_count": 0,
+    "transition_count": 0,
+    "explicit_frontier_count": 0
+  },
+  "completeness": {
+    "global": null,
+    "reason": "The UI has unbounded input, resource cardinality, state and task depth; completeness is defined only over separately declared finite fixture domains."
+  },
+  "evidence": {
+    "fixtures": [],
+    "states": [],
+    "transitions": [],
+    "frontier": []
+  }
+}

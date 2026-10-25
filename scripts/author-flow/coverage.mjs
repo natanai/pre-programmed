@@ -1,0 +1,43 @@
+#!/usr/bin/env node
+/* Reproducible coverage ledger from declarations and *executed* fixture traces. */
+import fs from "node:fs";
+import path from "node:path";
+const base="audit/author-flow";
+const source=JSON.parse(fs.readFileSync(path.join(base,"source-graph.json"),"utf8"));
+const folder=path.join(base,"traces");
+const files=fs.existsSync(folder)?fs.readdirSync(folder).filter(f=>f.endsWith(".json")).sort():[];
+const fixtures=[];const states=[];const transitions=[];const frontier=[];
+for(const file of files){
+  const trace=JSON.parse(fs.readFileSync(path.join(folder,file),"utf8"));
+  if(trace.type!=="author-observed-transitions"||trace.schema_version!==1||trace.provenance?.runtime_executed!==true)
+    throw Error("Invalid executed trace: "+file);
+  for(const k of ["fixtures","states","transitions","frontier"])
+    if(!Array.isArray(trace[k]))throw Error("Missing "+k+" in "+file);
+  const ids=new Set(trace.states.map(s=>s.id));
+  for(const edge of trace.transitions) {
+    if(edge.observed!==true||!ids.has(edge.from)||!ids.has(edge.to))
+      throw Error("Unverifiable executed edge in "+file+": "+edge.id);
+  }
+  fixtures.push(...trace.fixtures.map(f=>({file,id:f.id})));
+  states.push(...trace.states.map(s=>({file,id:s.id,fixture:s.fixture})));
+  transitions.push(...trace.transitions.map(e=>({file,id:e.id,fixture:e.fixture})));
+  frontier.push(...trace.frontier.map(e=>({...e,file})));
+}
+const ledger={
+  schema_version:1,type:"author-graph-coverage",
+  method:"derived-from-source-graph-and-executed-trace-files",
+  source_graph:{files:source.counts.source_files,declared_controls:source.counts.controls,declared_nesting:source.counts.declared_nesting,api_calls:source.counts.api_calls,branch_sites:source.counts.branch_sites,collection_sites:source.counts.collection_sites},
+  executed:{status:files.length?"partial":"not-started",trace_files:files,fixture_count:fixtures.length,state_count:states.length,transition_count:transitions.length,explicit_frontier_count:frontier.length},
+  completeness:{global:null,reason:"The UI has unbounded input, resource cardinality, state and task depth; completeness is defined only over separately declared finite fixture domains."},
+  evidence:{fixtures,states,transitions,frontier},
+};
+const destination=path.join(base,"coverage.json");
+const result=JSON.stringify(ledger,null,2)+"\n";
+if(process.argv.includes("--check")) {
+  if(!fs.existsSync(destination)||fs.readFileSync(destination,"utf8")!==result) {
+    console.error("Coverage ledger is stale: npm run audit:author:coverage"); process.exitCode=1;
+  }else console.log("Coverage ledger matches source/trace evidence.");
+}else{
+  fs.writeFileSync(destination,result);
+  console.log("Coverage recorded:",fixtures.length,"fixtures,",transitions.length,"observed transitions.");
+}

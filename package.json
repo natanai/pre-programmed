@@ -19,7 +19,12 @@
     "typecheck": "tsc -b",
     "pretest": "npm run generate:assets",
     "test": "vitest run",
-    "verify": "npm run generate:assets && tsc -b && vitest run && vite build"
+    "verify": "npm run generate:assets && tsc -b && vitest run && vite build",
+    "audit:author:extract": "node scripts/author-flow/extract.mjs",
+    "audit:author:check": "node scripts/author-flow/extract.mjs --check",
+    "audit:author:query": "node scripts/author-flow/query.mjs",
+    "audit:author:coverage": "node scripts/author-flow/coverage.mjs",
+    "audit:author:coverage-check": "node scripts/author-flow/coverage.mjs --check"
   },
   "dependencies": {
     "react": "19.2.8",
