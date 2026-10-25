@@ -49,11 +49,16 @@ jobs:
       - name: Commit audit-only observations
         if: github.event_name == 'push'
         run: |
-          git add audit/author-flow/traces audit/author-flow/coverage.json
+          git add audit/author-flow/traces
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Capture observed scrolling paths in Author mode'
             git fetch origin "$GITHUB_REF_NAME"
             git rebase "origin/$GITHUB_REF_NAME"
+            npm run audit:author:coverage
+            git add audit/author-flow/coverage.json
+            if ! git diff --cached --quiet; then
+              git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Refresh source-linked Author coverage ledger'
+            fi
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
       - name: Archive audit evidence
