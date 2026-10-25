@@ -91,7 +91,14 @@ async function stopServer() {
 }
 async function restartLocal(expectedHash) {
   await stopServer();
-  await requireExclusiveLocalPorts();
+  let available=false;
+  for(let attempt=0;attempt<20;attempt++){
+    try{await requireExclusiveLocalPorts();available=true;break;}catch(error){
+      if(attempt===19)throw error;
+      await new Promise(resolve=>setTimeout(resolve,200));
+    }
+  }
+  if(!available)throw Error("Isolated local ports did not become available for restart.");
   await startLocal();
   const snapshot=await request("/api/project/snapshot");
   if(SHA(snapshot)!==expectedHash)throw Error("Disposable project fixture changed during local server restart; cannot combine observations.");
@@ -212,6 +219,7 @@ async function newPage(browser, fixture, token) {
     reducedMotion:"reduce",
     serviceWorkers:"block",
   });
+  try {
   await context.addInitScript(value=>sessionStorage.setItem("pre-programmed:author-token",value),token);
   await context.addInitScript({path:recorderPath});
   const page=await context.newPage();
@@ -224,6 +232,10 @@ async function newPage(browser, fixture, token) {
   await page.evaluate(fixture=>window.__authorFlowAudit.start(fixture),fixture);
   await settle(page);
   return {page,context};
+  } catch(error) {
+    await context.close();
+    throw error;
+  }
 }
 async function traverse(browser, fixture, token, expectedHash) {
   const states=new Map(),transitions=new Map(),frontier=new Map(),replays=[];
@@ -257,11 +269,12 @@ async function traverse(browser, fixture, token, expectedHash) {
     if(executedPaths>1 && (executedPaths-1)%10===0) await restartLocal(expectedHash);
     const next=dequeue();
     const path=next.path;
-    const {page,context}=await newPage(browser,fixture,token);
+    let page=null,context=null;
     let lastObserved=null;
     const replaySteps=[];
     let replayInitialId=null;
     try {
+      ({page,context}=await newPage(browser,fixture,token));
       let state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
       if(!initialStateId) initialStateId=state.id;
       replayInitialId=state.id;
@@ -295,8 +308,11 @@ async function traverse(browser, fixture, token, expectedHash) {
       replayFailures++;
       note({state:lastObserved?.id??next.from??states.values().next().value?.id??"state:unavailable",locator:path.at(-1)?.locator??"runtime",reason:"unknown",...(path.at(-1)?{action:path.at(-1)}:{})});
       console.error("Branch failed:",fixture.id,path.map(x=>x.locator).join(" -> "),String(error).slice(0,220));
+      let healthy=false;
+      try { const status=await request("/api/health");healthy=status.ok===true&&status.persistence==="d1"; } catch {}
+      if(!healthy) await restartLocal(expectedHash);
     } finally {
-      await context.close();
+      await context?.close();
     }
   }
   if(queue.length) {
