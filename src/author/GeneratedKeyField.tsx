@@ -1,4 +1,5 @@
 import { normalizeAuthorKey } from "./generatedKey";
+import { AuthorHelp } from "./ui/AuthorHelp";
 import "./generatedKeyField.css";
 
 export function GeneratedKeyField({ source, value, onChange }: {
@@ -9,8 +10,8 @@ export function GeneratedKeyField({ source, value, onChange }: {
   const generated = normalizeAuthorKey(source) || "generated-on-save";
   return <details className="author-identifier-details">
     <summary>[ADVANCED IDENTIFIER]</summary>
-    <label>KEY
-      <input
+    <div className="author-ui-field"><div className="author-ui-field-heading"><label htmlFor="author-generated-key">KEY</label><AuthorHelp label="About internal keys" text={value ? "The key is a stable identifier. Change it only when you intentionally need a different identity." : `The key is generated automatically from the name: ${generated}`} /></div>
+      <input id="author-generated-key"
         value={value}
         placeholder={generated}
         onChange={(event) => onChange(normalizeAuthorKey(event.target.value))}
@@ -18,7 +19,6 @@ export function GeneratedKeyField({ source, value, onChange }: {
         autoCorrect="off"
         spellCheck={false}
       />
-      <small>{value ? "Stable internal key. Change only when you intentionally need a different identifier." : `Generated automatically from the name/label: ${generated}`}</small>
-    </label>
+    </div>
   </details>;
 }
