@@ -52,6 +52,9 @@ jobs:
           git add audit/author-flow/traces
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Capture observed scrolling paths in Author mode'
+            # Generated ledger was updated during validation and will be
+            # deterministically rebuilt from the rebased source plus traces.
+            git restore -- audit/author-flow/coverage.json
             git fetch origin "$GITHUB_REF_NAME"
             git rebase "origin/$GITHUB_REF_NAME"
             npm run audit:author:coverage
