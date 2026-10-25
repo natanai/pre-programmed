@@ -25,7 +25,8 @@
     "audit:author:query": "node scripts/author-flow/query.mjs",
     "audit:author:coverage": "node scripts/author-flow/coverage.mjs",
     "audit:author:coverage-check": "node scripts/author-flow/coverage.mjs --check",
-    "audit:author:explore": "node scripts/author-flow/explore.mjs"
+    "audit:author:explore": "node scripts/author-flow/explore.mjs",
+    "audit:author:trace": "node scripts/author-flow/query-traces.mjs"
   },
   "dependencies": {
     "react": "19.2.8",
