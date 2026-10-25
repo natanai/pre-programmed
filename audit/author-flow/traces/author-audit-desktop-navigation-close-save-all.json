@@ -1,0 +1,1116 @@
+{
+  "schema_version": 1,
+  "type": "author-observed-transitions",
+  "provenance": {
+    "method": "browser-observation",
+    "runtime_executed": true,
+    "recorder_version": "2",
+    "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+    "initial_state_id": "state:b0840eebb3246c5a",
+    "fixture_reset": "disposable-d1-per-case",
+    "input_mechanism": "playwright.fill",
+    "navigation_mechanism": "canonical-task-shell",
+    "explorer": {
+      "strategy": "finite-draft-navigation",
+      "suite": "navigation",
+      "maxStates": 5,
+      "maxDepth": 4,
+      "maxExecutions": 1
+    }
+  },
+  "fixtures": [
+    {
+      "id": "author-audit-desktop-navigation-close-save-all",
+      "project_fixture": "isolated-local-d1-draft-navigation-v1",
+      "project_sha256": "746e80197931a6efad1777143e4a54e00438f5bce5eb3f049ae4d9850efe4dcf",
+      "viewport": {
+        "width": 1280,
+        "height": 800
+      },
+      "initial_run": {
+        "nodeId": "00000000-0000-4000-8000-000000000001",
+        "revision": 1
+      },
+      "seed": "runtime-uncontrolled",
+      "clock": "not-frozen",
+      "navigation_case": "close-save-all"
+    }
+  ],
+  "states": [
+    {
+      "id": "state:b0840eebb3246c5a",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",0]",
+            "kind": "button",
+            "label": "you are born",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+            "kind": "textarea",
+            "label": "Universe command",
+            "enabled": true,
+            "value": "",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Submit command\",3]",
+            "kind": "button",
+            "label": "Submit command",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Edit who are you?\",4]",
+            "kind": "button",
+            "label": "Edit who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",5]",
+            "kind": "button",
+            "label": "who are you?",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",6]",
+            "kind": "button",
+            "label": "[EDIT NODE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Preview player experience\",8]",
+            "kind": "button",
+            "label": "Preview player experience",
+            "enabled": true,
+            "value": true,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Display settings\",9]",
+            "kind": "button",
+            "label": "Display settings",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [],
+        "workspace": null,
+        "overlay_open": false,
+        "task_depth": 0
+      },
+      "task_stack": [],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:04909b83eb8025de",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",3]",
+            "kind": "button",
+            "label": "[FIND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+            "kind": "summary",
+            "label": "NO LOCATION ON THIS PATH · NO CONVERSATION ON THIS PATH [CHANGE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",10]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+            "kind": "button",
+            "label": "About Node entry responses",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",14]",
+            "kind": "button",
+            "label": "[ALWAYS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",15]",
+            "kind": "button",
+            "label": "[FIRST]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",16]",
+            "kind": "button",
+            "label": "[SECOND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",17]",
+            "kind": "button",
+            "label": "[SECOND+]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+            "kind": "select",
+            "label": "Condition type",
+            "enabled": true,
+            "value": "always",
+            "options": [
+              {
+                "label": "visited node",
+                "value": "visited",
+                "enabled": true
+              },
+              {
+                "label": "flag",
+                "value": "flag",
+                "enabled": true
+              },
+              {
+                "label": "variable comparison",
+                "value": "variable",
+                "enabled": true
+              },
+              {
+                "label": "has item",
+                "value": "has_item",
+                "enabled": true
+              },
+              {
+                "label": "lacks item",
+                "value": "lacks_item",
+                "enabled": true
+              },
+              {
+                "label": "always",
+                "value": "always",
+                "enabled": true
+              },
+              {
+                "label": "all (AND)",
+                "value": "all",
+                "enabled": true
+              },
+              {
+                "label": "any (OR)",
+                "value": "any",
+                "enabled": true
+              },
+              {
+                "label": "not",
+                "value": "not",
+                "enabled": true
+              },
+              {
+                "label": "attempt count",
+                "value": "attempt",
+                "enabled": true
+              },
+              {
+                "label": "state field",
+                "value": "state",
+                "enabled": true
+              }
+            ],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+            "kind": "input",
+            "label": "NARRATION speed in characters per second",
+            "enabled": true,
+            "value": "18",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "kind": "textarea",
+            "label": "NARRATION",
+            "enabled": true,
+            "value": "you are born",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+            "kind": "summary",
+            "label": "[? INLINE COMMANDS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",36]",
+            "kind": "button",
+            "label": "[PREVIEW]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+            "kind": "summary",
+            "label": "AFTER stay here ›",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"narrative.node\",\"button\",\"\",71]",
+            "kind": "button",
+            "label": "[SAVE]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Close Author tasks and return to play\",1]",
+            "kind": "button",
+            "label": "Close Author tasks and return to play",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [
+          {
+            "locator": "[\"narrative.node\",\"scroll-y\",\"div\",28]",
+            "axis": "y",
+            "top": 0,
+            "max_top": 499,
+            "client_height": 629,
+            "label": "author-panel-body"
+          }
+        ],
+        "workspace": "narrative.node",
+        "overlay_open": true,
+        "task_depth": 1
+      },
+      "task_stack": [
+        {
+          "label": "Node #1",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:b2ad2ae9a2d6ff00",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "kind": "button",
+            "label": "[TOOLS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",3]",
+            "kind": "button",
+            "label": "[FIND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+            "kind": "summary",
+            "label": "NO LOCATION ON THIS PATH · NO CONVERSATION ON THIS PATH [CHANGE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",10]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+            "kind": "button",
+            "label": "About Node entry responses",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",14]",
+            "kind": "button",
+            "label": "[ALWAYS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",15]",
+            "kind": "button",
+            "label": "[FIRST]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",16]",
+            "kind": "button",
+            "label": "[SECOND]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",17]",
+            "kind": "button",
+            "label": "[SECOND+]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+            "kind": "select",
+            "label": "Condition type",
+            "enabled": true,
+            "value": "always",
+            "options": [
+              {
+                "label": "visited node",
+                "value": "visited",
+                "enabled": true
+              },
+              {
+                "label": "flag",
+                "value": "flag",
+                "enabled": true
+              },
+              {
+                "label": "variable comparison",
+                "value": "variable",
+                "enabled": true
+              },
+              {
+                "label": "has item",
+                "value": "has_item",
+                "enabled": true
+              },
+              {
+                "label": "lacks item",
+                "value": "lacks_item",
+                "enabled": true
+              },
+              {
+                "label": "always",
+                "value": "always",
+                "enabled": true
+              },
+              {
+                "label": "all (AND)",
+                "value": "all",
+                "enabled": true
+              },
+              {
+                "label": "any (OR)",
+                "value": "any",
+                "enabled": true
+              },
+              {
+                "label": "not",
+                "value": "not",
+                "enabled": true
+              },
+              {
+                "label": "attempt count",
+                "value": "attempt",
+                "enabled": true
+              },
+              {
+                "label": "state field",
+                "value": "state",
+                "enabled": true
+              }
+            ],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+            "kind": "input",
+            "label": "NARRATION speed in characters per second",
+            "enabled": true,
+            "value": "18",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "kind": "textarea",
+            "label": "NARRATION",
+            "enabled": true,
+            "value": "Audit narration committed by Save All",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+            "kind": "summary",
+            "label": "[? INLINE COMMANDS]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",36]",
+            "kind": "button",
+            "label": "[PREVIEW]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+            "kind": "summary",
+            "label": "AFTER stay here ›",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": false
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"narrative.node\",\"button\",\"\",71]",
+            "kind": "button",
+            "label": "[SAVE]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Close Author tasks and return to play\",1]",
+            "kind": "button",
+            "label": "Close Author tasks and return to play",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [
+          {
+            "locator": "[\"narrative.node\",\"scroll-y\",\"div\",29]",
+            "axis": "y",
+            "top": 0,
+            "max_top": 499,
+            "client_height": 629,
+            "label": "author-panel-body"
+          }
+        ],
+        "workspace": "narrative.node",
+        "overlay_open": true,
+        "task_depth": 1
+      },
+      "task_stack": [
+        {
+          "label": "Node #1 *",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:f58302d5b2091008",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",7]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",10]",
+            "kind": "button",
+            "label": "[CONTINUE FROM PATH]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",48]",
+            "kind": "button",
+            "label": "[MOVE UP]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",49]",
+            "kind": "button",
+            "label": "[MOVE DOWN]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"specialized-control\",\"button\",\"\",50]",
+            "kind": "button",
+            "label": "[REMOVE OPENING]",
+            "enabled": false,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",72]",
+            "kind": "button",
+            "label": "[KEEP EDITING]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",73]",
+            "kind": "button",
+            "label": "[SAVE ALL & RETURN]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"\",74]",
+            "kind": "button",
+            "label": "[DISCARD ALL & RETURN]",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Close Author tasks and return to play\",1]",
+            "kind": "button",
+            "label": "Close Author tasks and return to play",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [],
+        "workspace": "narrative.node",
+        "overlay_open": true,
+        "task_depth": 1
+      },
+      "task_stack": [
+        {
+          "label": "Node #1 *",
+          "current": true
+        }
+      ],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    },
+    {
+      "id": "state:5f4eb68a72104c2e",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "ui": {
+        "visible_controls": [
+          {
+            "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
+            "kind": "textarea",
+            "label": "Universe command",
+            "enabled": true,
+            "value": "",
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Submit command\",1]",
+            "kind": "button",
+            "label": "Submit command",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Preview player experience\",2]",
+            "kind": "button",
+            "label": "Preview player experience",
+            "enabled": true,
+            "value": true,
+            "options": [],
+            "expanded": null,
+            "selected": null,
+            "open": null
+          },
+          {
+            "locator": "[\"page\",\"button\",\"Display settings\",3]",
+            "kind": "button",
+            "label": "Display settings",
+            "enabled": true,
+            "value": null,
+            "options": [],
+            "expanded": "false",
+            "selected": null,
+            "open": null
+          }
+        ],
+        "scrollable_regions": [],
+        "workspace": null,
+        "overlay_open": false,
+        "task_depth": 0
+      },
+      "task_stack": [],
+      "draft_state": {
+        "observed": false
+      },
+      "run_state": {
+        "observed": false
+      }
+    }
+  ],
+  "transitions": [
+    {
+      "id": "transition:cc3b1e5d2bb912663695",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "from": "state:b0840eebb3246c5a",
+      "to": "state:04909b83eb8025de",
+      "action": {
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "event": "click",
+        "value": null,
+        "pointer_activations": 1
+      },
+      "observed": true
+    },
+    {
+      "id": "transition:78666edb835c28a92d57",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "from": "state:04909b83eb8025de",
+      "to": "state:b2ad2ae9a2d6ff00",
+      "action": {
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "event": "fill",
+        "value": "Audit narration committed by Save All",
+        "pointer_activations": 0
+      },
+      "observed": true
+    },
+    {
+      "id": "transition:67440099572a56abbd56",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "from": "state:b2ad2ae9a2d6ff00",
+      "to": "state:f58302d5b2091008",
+      "action": {
+        "locator": "[\"page\",\"button\",\"Close Author tasks and return to play\",1]",
+        "event": "click",
+        "value": null,
+        "pointer_activations": 1
+      },
+      "observed": true
+    },
+    {
+      "id": "transition:891c4948c3c2040af8ff",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "from": "state:f58302d5b2091008",
+      "to": "state:5f4eb68a72104c2e",
+      "action": {
+        "locator": "[\"page\",\"button\",\"\",73]",
+        "event": "click",
+        "value": null,
+        "pointer_activations": 1
+      },
+      "observed": true,
+      "project_observation": {
+        "source": "local-d1-readback",
+        "case_id": "close-save-all",
+        "field": "openings[0].narrationText",
+        "node_id": "00000000-0000-4000-8000-000000000001",
+        "expected_value": "Audit narration committed by Save All",
+        "readback_value": "Audit narration committed by Save All",
+        "revision_before": 1,
+        "revision_after": 2,
+        "snapshot_sha256_before": "746e80197931a6efad1777143e4a54e00438f5bce5eb3f049ae4d9850efe4dcf",
+        "snapshot_sha256_after": "065b3c31f2ff10d21d30bc3eaff35f41b0517b659e9853939f2147df03f4dc57",
+        "changed": true,
+        "restart_verified": true,
+        "restart_snapshot_sha256": "065b3c31f2ff10d21d30bc3eaff35f41b0517b659e9853939f2147df03f4dc57"
+      }
+    }
+  ],
+  "frontier": [],
+  "replays": [
+    {
+      "id": "replay:35a91245778e1c3cc266",
+      "fixture": "author-audit-desktop-navigation-close-save-all",
+      "initial_state": "state:b0840eebb3246c5a",
+      "steps": [
+        {
+          "from": "state:b0840eebb3246c5a",
+          "to": "state:04909b83eb8025de",
+          "action": {
+            "locator": "[\"page\",\"button\",\"\",6]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        },
+        {
+          "from": "state:04909b83eb8025de",
+          "to": "state:b2ad2ae9a2d6ff00",
+          "action": {
+            "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+            "event": "fill",
+            "value": "Audit narration committed by Save All",
+            "pointer_activations": 0
+          }
+        },
+        {
+          "from": "state:b2ad2ae9a2d6ff00",
+          "to": "state:f58302d5b2091008",
+          "action": {
+            "locator": "[\"page\",\"button\",\"Close Author tasks and return to play\",1]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        },
+        {
+          "from": "state:f58302d5b2091008",
+          "to": "state:5f4eb68a72104c2e",
+          "action": {
+            "locator": "[\"page\",\"button\",\"\",73]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        }
+      ],
+      "completed": true
+    }
+  ]
+}
