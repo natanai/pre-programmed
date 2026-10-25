@@ -1220,7 +1220,9 @@ export default function App() {
         />
       </div>
     </div>
-    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active} onToggleAuthorView={() => {
+    <AuthorSettings authorView={authorView} showAuthorViewToggle={authorMode} onNewGame={() => {
+      if (window.confirm("Start a new play session? This replaces the current autosave, but keeps the authored game and assets.")) startNewGame();
+    }} visible={!editorOpen && !playerWorkspaceOpen && !pendingPlaySession && !radixPresentation.active} onToggleAuthorView={() => {
       setAuthorView((value) => !value);
       authorTasks.closeAll();
       setAuthorMessage("");
