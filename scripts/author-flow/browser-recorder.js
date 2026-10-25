@@ -14,7 +14,7 @@
   function visible(element) {
     if (!element.isConnected || element.closest("[aria-hidden=true],[inert]")) return false;
     const style = getComputedStyle(element);
-    if (style.visibility === "hidden" || style.display === "none" || style.pointerEvents === "none") return false;
+    if (style.visibility === "hidden" || style.display === "none" || (style.pointerEvents === "none" && !element.disabled)) return false;
     const rect = element.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
     let left = Math.max(0, rect.left), right = Math.min(innerWidth, rect.right);
@@ -35,7 +35,7 @@
       [left + (right - left) * .25, top + (bottom - top) * .25],
       [left + (right - left) * .75, top + (bottom - top) * .75],
     ];
-    return points.some(([x,y]) => {
+    return Boolean(element.disabled) || points.some(([x,y]) => {
       const hit = document.elementFromPoint(x,y);
       return hit && (hit === element || element.contains(hit));
     });
