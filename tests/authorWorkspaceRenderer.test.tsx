@@ -41,7 +41,7 @@ describe("AuthorWorkspaceRenderer", () => {
       />,
     );
     expect(html).toContain("<textarea");
-    expect(html).not.toMatch(/<section[^>]*\\sinert(?:\\s|=|>)/);
+    expect(html).not.toMatch(/<section[^>]*\sinert(?:\s|=|>)/);
   });
 
   it("temporarily locks its own inputs only while that workspace is explicitly saving", () => {
@@ -52,7 +52,7 @@ describe("AuthorWorkspaceRenderer", () => {
         blocks: [{ type: "field", id: "narration", control: "textarea", label: "NARRATION", value: "", onChange: () => undefined }],
       }} />,
     );
-    expect(html).toMatch(/<section[^>]*\\sinert(?:\\s|=|>)/);
+    expect(html).toMatch(/<section[^>]*\sinert(?:\s|=|>)/);
   });
 
 });
