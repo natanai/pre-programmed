@@ -34,6 +34,8 @@ const maxDepth = number("--max-depth", 4);
 const maxExecutions = number("--max-executions", 90);
 const enableScroll=args.includes("--scroll");
 const captureWrites=args.includes("--writes");
+const captureDraftNavigation=args.includes("--draft-navigation");
+if(captureWrites&&captureDraftNavigation)throw Error("Choose only one targeted audit mode.");
 const strategy = arg("--strategy", "breadth");
 if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
 const suite = arg("--suite", "baseline");
@@ -451,6 +453,157 @@ async function captureWrite(browser,viewport,test) {
     await context?.close();
   }
 }
+
+const navigationCases=[
+  {id:"close-keep-discard",value:"Uncommitted audit narration / keep-discard"},
+  {id:"close-save-all",value:"Audit narration committed by Save All"},
+  {id:"nested-parent-return",value:"Unsaved parent draft survives child return"},
+  {id:"dirty-child-back",value:"Unsaved nested node draft before Back"},
+];
+async function captureDraftNavigationCase(browser,viewport,test) {
+  // Reset ALL persisted authored data between cases. No user or live DB access.
+  await stopServer();
+  await requireExclusiveLocalPorts();
+  await startLocal({reset:true});
+  const {snapshot,token,nodeId}=await seedFixture();
+  const before=await request("/api/project/snapshot");
+  const original=before.nodes.find(n=>n.id===nodeId)?.openings?.[0]?.narrationText;
+  if(typeof original!=="string" || original===test.value)throw Error("Bad original narration fixture");
+  const fixture={
+    id:"author-audit-"+viewport.id+"-navigation-"+test.id,
+    project_fixture:"isolated-local-d1-draft-navigation-v1",
+    project_sha256:SHA(before),
+    viewport:{width:viewport.width,height:viewport.height},
+    initial_run:{nodeId,revision:before.revision},
+    seed:"runtime-uncontrolled",clock:"not-frozen",
+    navigation_case:test.id,
+  };
+  let context;
+  try{
+    const opened=await newPage(browser,fixture,token);
+    context=opened.context;
+    const page=opened.page,states=new Map(),transitions=[],steps=[];
+    let current=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+    const initialId=current.id;
+    states.set(current.id,current);
+    function select(kind,label) {
+      const controls=current.ui.visible_controls.filter(c=>c.kind===kind&&c.label===label&&c.enabled);
+      if(controls.length!==1)throw Error("Expected one enabled "+kind+" "+JSON.stringify(label)+" in "+(current.ui.workspace||"terminal")+", got "+controls.length+"; choices: "+current.ui.visible_controls.map(c=>c.label).slice(0,24).join(" | "));
+      return controls[0];
+    }
+    async function move(kind,label,event="click",value=null){
+      const c=select(kind,label);
+      const action={locator:c.locator,event,value,pointer_activations:event==="click"?1:0};
+      const from=current;
+      await perform(page,action);
+      current=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
+      states.set(current.id,current);
+      const edge={id:"transition:"+SHA([fixture.id,from.id,action,current.id]).slice(0,20),fixture:fixture.id,from:from.id,to:current.id,action,observed:true};
+      transitions.push(edge);steps.push({from:from.id,to:current.id,action});
+      return edge;
+    }
+    function expectNarration(value){
+      if(current.ui.workspace!=="narrative.node")throw Error("Expected active real Node workspace.");
+      const field=select("textarea","NARRATION");
+      if(field.value!==value)throw Error("Draft was lost: expected "+JSON.stringify(value)+", observed "+JSON.stringify(field.value));
+      return field;
+    }
+    async function expectDialog(title,actions) {
+      const dialog=page.locator('[role="alertdialog"]');
+      if(await dialog.count()!==1 || !(await dialog.innerText()).includes(title))throw Error("Expected "+title+" Author navigation confirmation.");
+      for(const action of actions)select("button",action);
+    }
+    await move("button","[EDIT NODE]");
+    if(test.id!=="dirty-child-back"){
+      expectNarration(original);
+      await move("textarea","NARRATION","fill",test.value);
+      expectNarration(test.value);
+    }
+    if(test.id==="nested-parent-return"){
+      await move("button","[TOOLS]");
+      if(current.ui.workspace!=="author-tools")throw Error("Opening nested Tools did not suspend Node editor.");
+      await move("button","[← BACK]");
+      expectNarration(test.value);
+      transitions.at(-1).draft_observation={kind:"resumed-parent",field:"openings[0].narrationText",expected_value:test.value,observed_value:select("textarea","NARRATION").value};
+    }
+    if(test.id==="dirty-child-back"){
+      await move("button","[TOOLS]");
+      if(current.ui.workspace!=="author-tools")throw Error("Expected nested Tools.");
+      await move("button","STRUCTURE Browse Nodes, entry responses, valid inputs, and destinations. ›");
+      if(current.ui.workspace!=="narrative-structure")throw Error("Expected nested Structure workspace.");
+      if(!current.ui.visible_controls.some(c=>c.kind==="button"&&c.label==="[EDIT]"&&c.enabled)){
+        const row=current.ui.visible_controls.find(c=>c.kind==="button"&&c.label.includes("Node #1")&&c.enabled);
+        if(!row)throw Error("No original Node available from Structure.");
+        await move("button",row.label);
+      }
+      await move("button","[EDIT]");
+      expectNarration(original);
+      await move("textarea","NARRATION","fill",test.value);
+      expectNarration(test.value);
+      await move("button","[← BACK]");
+      await expectDialog("UNSAVED CHANGES",["[KEEP EDITING]","[DISCARD CHANGES]"]);
+      await move("button","[KEEP EDITING]");
+      expectNarration(test.value);
+      await move("button","[← BACK]");
+      await expectDialog("UNSAVED CHANGES",["[KEEP EDITING]","[DISCARD CHANGES]"]);
+      await move("button","[DISCARD CHANGES]");
+      if(current.ui.workspace!=="narrative-structure")throw Error("Discard Back did not return to nested parent task.");
+      const afterDiscard=await request("/api/project/snapshot");
+      if(SHA(afterDiscard)!==SHA(before))throw Error("Discard Back unexpectedly persisted node changes.");
+    }
+    if(test.id!=="dirty-child-back"){
+      await move("button","Close Author tasks and return to play");
+      await expectDialog("RETURN TO PLAYER",["[KEEP EDITING]","[SAVE ALL & RETURN]","[DISCARD ALL & RETURN]"]);
+      if(test.id==="close-keep-discard"){
+        await move("button","[KEEP EDITING]");
+        expectNarration(test.value);
+        await move("button","Close Author tasks and return to play");
+        await expectDialog("RETURN TO PLAYER",["[DISCARD ALL & RETURN]"]);
+      }
+    }
+    const willSave=test.id==="close-save-all";
+    const end=await move("button",willSave?"[SAVE ALL & RETURN]":
+      test.id==="dirty-child-back"?"Close Author tasks and return to play":"[DISCARD ALL & RETURN]");
+    if(test.id==="dirty-child-back" && await page.locator('[role="alertdialog"]').count())throw Error("Nested discarded task left dirty close confirmation.");
+    if(current.ui.overlay_open)throw Error("Master X did not return to actual player surface.");
+    let after=null;
+    for(let attempt=0;attempt<45;attempt++){
+      const result=await request("/api/project/snapshot");
+      const updated=result.nodes.find(n=>n.id===nodeId)?.openings?.[0]?.narrationText;
+      if(willSave ? result.revision>before.revision&&updated===test.value : SHA(result)===SHA(before)){after=result;break;}
+      await page.waitForTimeout(200);
+    }
+    if(!after)throw Error("Unexpected D1 state after navigation: "+test.id);
+    const expectedValue=willSave?test.value:original;
+    end.project_observation={
+      source:"local-d1-readback",case_id:test.id,field:"openings[0].narrationText",node_id:nodeId,
+      expected_value:expectedValue,readback_value:after.nodes.find(n=>n.id===nodeId).openings[0].narrationText,
+      revision_before:before.revision,revision_after:after.revision,
+      snapshot_sha256_before:SHA(before),snapshot_sha256_after:SHA(after),
+      changed:willSave,restart_verified:false,
+    };
+    await context.close();context=null;
+    await restartLocal(SHA(after));
+    const restarted=await request("/api/project/snapshot");
+    if(SHA(restarted)!==SHA(after)||restarted.nodes.find(n=>n.id===nodeId)?.openings?.[0]?.narrationText!==expectedValue)
+      throw Error("D1 project or Node narration diverged across restart.");
+    end.project_observation.restart_verified=true;
+    end.project_observation.restart_snapshot_sha256=SHA(restarted);
+    const trace={
+      schema_version:1,type:"author-observed-transitions",
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:initialId,
+        fixture_reset:"disposable-d1-per-case",input_mechanism:"playwright.fill",navigation_mechanism:"canonical-task-shell",
+        explorer:{strategy:"finite-draft-navigation",suite:"navigation",maxStates:states.size,maxDepth:steps.length,maxExecutions:1}},
+      fixtures:[fixture],states:[...states.values()],transitions,frontier:[],
+      replays:[{id:"replay:"+SHA([fixture.id,steps]).slice(0,20),fixture:fixture.id,initial_state:initialId,steps,completed:true}],
+    };
+    const dest=path.join(outputDir,fixture.id+".json");
+    await writeFile(dest,JSON.stringify(trace,null,2)+"\n");
+    console.log("Verified isolated dirty Author navigation",fixture.id,{steps:steps.length,changed:willSave,revision_before:before.revision,revision_after:after.revision,restart_verified:true});
+  }finally{
+    await context?.close();
+  }
+}
 let browser;
 try {
   const { chromium }=await import("playwright").catch(()=>{
@@ -459,7 +612,12 @@ try {
   await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
-  if(captureWrites){
+  if(captureDraftNavigation){
+    browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
+    await mkdir(outputDir,{recursive:true});
+    for(const viewport of viewports)for(const test of navigationCases)await captureDraftNavigationCase(browser,viewport,test);
+    console.log("All finite Author navigation cases verified with independent D1 restarts.");
+  }else if(captureWrites){
     browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
     await mkdir(outputDir,{recursive:true});
     for(const viewport of viewports)for(const test of writeDomains)await captureWrite(browser,viewport,test);
