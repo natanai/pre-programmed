@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 const dir="audit/author-flow/traces";
 const files=fs.existsSync(dir)?fs.readdirSync(dir).filter(f=>f.endsWith(".json")).sort():[];
-let edges=0,controls=0;
+let edges=0,controls=0,replays=0;
 for (const filename of files) {
   const trace=JSON.parse(fs.readFileSync(path.join(dir,filename),"utf8"));
   if(trace.type!=="author-observed-transitions"||trace.provenance?.runtime_executed!==true)throw Error(filename+": unsupported trace provenance");
@@ -19,6 +19,7 @@ for (const filename of files) {
     }
     states.set(state.id,state);
   }
+  const edgeKeys=new Set();
   for(const transition of trace.transitions){
     if(transition.observed!==true||!fixtures.has(transition.fixture))throw Error(filename+": unobserved edge");
     const before=states.get(transition.from),after=states.get(transition.to);
@@ -31,12 +32,25 @@ for (const filename of files) {
     if(action.event==="toggle"&&(control.kind!=="input"||typeof control.value!=="boolean"))throw Error(filename+": invalid toggle "+transition.id);
     if(action.event==="click"&&!["button","summary"].includes(control.kind))throw Error(filename+": invalid pointer click "+transition.id);
     if(action.pointer_activations!==(action.event==="change"?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
+    edgeKeys.add(JSON.stringify([transition.from,transition.to,transition.action]));
     edges++;
+  }
+  if(trace.provenance.initial_state_id && !states.has(trace.provenance.initial_state_id))throw Error(filename+": initial state not observed");
+  if(Array.isArray(trace.replays))for(const replay of trace.replays){
+    if(replay.completed!==true||!fixtures.has(replay.fixture)||!states.has(replay.initial_state))throw Error(filename+": invalid replay header "+replay.id);
+    let current=replay.initial_state;
+    for(const step of replay.steps){
+      if(step.from!==current||!states.has(step.to))throw Error(filename+": noncontiguous browser replay "+replay.id);
+      if(!edgeKeys.has(JSON.stringify([step.from,step.to,step.action])))throw Error(filename+": replay step lacks observed edge "+replay.id);
+      current=step.to;
+    }
+    replays++;
   }
   for(const item of trace.frontier){
     if(!states.has(item.state))throw Error(filename+": unanchored frontier "+JSON.stringify(item));
     if(typeof item.locator!=="string")throw Error(filename+": frontier locator missing");
+    if(item.action && item.action.locator!==item.locator)throw Error(filename+": frontier action and locator disagree");
   }
   if(!trace.transitions.length)throw Error(filename+": does not contain any executed transitions");
 }
-console.log("Validated "+files.length+" executed fixture files, "+edges+" observed edges and "+controls+" observed control instances.");
+console.log("Validated "+files.length+" executed fixture files, "+edges+" observed edges and "+controls+" observed control instances and "+replays+" contiguous browser replays.");
