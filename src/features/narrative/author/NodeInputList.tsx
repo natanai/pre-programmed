@@ -74,13 +74,13 @@ export function NodeInputList({
       </div>
     </div>)}
     <button type="button" className="node-input-link" onClick={() => onOpenInput()}>
-      <span><strong>+ VALID INPUT</strong><small>Add player wording that works only at Node #{nodeNumber}.</small></span>
+      <span><strong>+ VALID INPUT</strong></span>
       <span aria-hidden="true">›</span>
     </button>
     <button type="button" className="node-input-link" onClick={onOpenInvalid}>
       <span>
         <strong>{invalidInput ? "INVALID INPUT RESPONSE" : "+ INVALID INPUT RESPONSE"}</strong>
-        <small>Only for Node #{nodeNumber}: what happens when player text matches nothing here.</small>
+        <small>Fallback for unmatched player text</small>
       </span>
       <span aria-hidden="true">›</span>
     </button>
