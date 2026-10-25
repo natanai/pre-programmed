@@ -1,9 +1,11 @@
 const { app, BrowserWindow, dialog } = require("electron");
 const { createServer } = require("node:http");
-const { mkdir, readFile, stat } = require("node:fs/promises");
+const { mkdir, readFile, stat, unlink, writeFile } = require("node:fs/promises");
 const { createReadStream, existsSync, mkdirSync, renameSync } = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
+const { randomUUID } = require("node:crypto");
+const { projectPathFromArguments } = require("./project-drop.cjs");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -29,6 +31,9 @@ let miniflare = null;
 let hostServer = null;
 let mainWindow = null;
 let quitting = false;
+let portableHost = null;
+let projectImportQueue = Promise.resolve();
+const waitingProjectFiles = [];
 
 function portableRoot() {
   if (process.env.PORTABLE_EXECUTABLE_DIR) return path.resolve(process.env.PORTABLE_EXECUTABLE_DIR);
@@ -439,7 +444,117 @@ async function runSelfTest() {
     throw new Error("Edited Character aliases did not survive a second project import.");
   }
 
+
+  // Exercise the same dropped-project import and backup path as Windows Explorer.
+  const dropFixture = path.join(configuredPortableRoot, "_engine", "data", "drop-self-test.ppgame");
+  await writeFile(dropFixture, JSON.stringify(reexported), "utf8");
+  try {
+    if (projectPathFromArguments([process.execPath, dropFixture]) !== dropFixture) {
+      throw new Error("Windows .ppgame drop argument was not recognized.");
+    }
+    const importedByDrop = await importProjectFile(dropFixture, { url, authorKey });
+    const backup = JSON.parse(await readFile(importedByDrop.backupFile, "utf8"));
+    if (backup.format !== "pre-programmed-project"
+      || !Number.isInteger(importedByDrop.snapshot.revision)
+      || importedByDrop.snapshot.revision <= reimported.snapshot.revision) {
+      throw new Error("Dropped .ppgame import/backup did not complete through the canonical Worker.");
+    }
+  } finally {
+    await unlink(dropFixture);
+  }
+
   await shutdown();
+}
+
+
+/**
+ * Use the canonical Author project import/export endpoints for .ppgame drops.
+ * Existing authored game data is backed up before any replacement.
+ */
+async function importProjectFile(filename, { url, authorKey }) {
+  const fileText = await readFile(filename, "utf8");
+  let document;
+  try {
+    document = JSON.parse(fileText);
+  } catch {
+    throw new Error("The dropped .ppgame file is not valid JSON.");
+  }
+  if (!document || document.format !== "pre-programmed-project" || !Number.isInteger(document.version)) {
+    throw new Error("This file is not a Pre-Programmed .ppgame project.");
+  }
+
+  const loginResponse = await fetch(new URL("api/author/login", url), {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ key: authorKey }),
+  });
+  const login = await loginResponse.json();
+  if (!loginResponse.ok || typeof login?.token !== "string") {
+    throw new Error("Could not authorize the local project import.");
+  }
+  const headers = { authorization: "Bearer " + login.token };
+  const exportResponse = await fetch(new URL("api/author/project/export", url), {
+    headers,
+    cache: "no-store",
+  });
+  if (!exportResponse.ok) {
+    throw new Error("Could not back up the currently loaded project; import was cancelled.");
+  }
+  const existingProject = await exportResponse.text();
+  const backupDirectory = path.join(configuredPortableRoot, "_engine", "data", "backups");
+  await mkdir(backupDirectory, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const backupFile = path.join(backupDirectory, "before-import-" + timestamp + "-" + randomUUID().slice(0, 8) + ".ppgame");
+  await writeFile(backupFile, existingProject, { encoding: "utf8", flag: "wx" });
+
+  const importResponse = await fetch(new URL("api/author/project/import", url), {
+    method: "POST",
+    headers: { ...headers, "content-type": "application/json" },
+    body: fileText,
+  });
+  const result = await importResponse.json().catch(() => null);
+  if (!importResponse.ok || !Number.isInteger(result?.snapshot?.revision)) {
+    throw new Error(result?.error || "The project could not be imported. Your existing project has not been replaced.");
+  }
+  return { backupFile, snapshot: result.snapshot };
+}
+
+function queueDroppedProject(filename) {
+  projectImportQueue = projectImportQueue.then(async () => {
+    if (!mainWindow || !portableHost) {
+      waitingProjectFiles.push(filename);
+      return;
+    }
+    const confirmation = await dialog.showMessageBox(mainWindow, {
+      type: "warning",
+      title: "Load a .ppgame project?",
+      message: "Load " + path.basename(filename) + "?",
+      detail: "This replaces the currently authored game in this installation. Pre-Programmed will save a .ppgame backup of your current game first. Ordinary image/audio assets remain in the assets folder.",
+      buttons: ["Load game", "Cancel"],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (confirmation.response !== 0) return;
+    const { backupFile } = await importProjectFile(filename, portableHost);
+    await mainWindow.loadURL(portableHost.url);
+    await dialog.showMessageBox(mainWindow, {
+      type: "info",
+      title: "Game loaded",
+      message: path.basename(filename) + " is now loaded.",
+      detail: "The previous project was backed up to:\n" + backupFile,
+      buttons: ["OK"],
+    });
+  }).catch((error) => {
+    const detail = error instanceof Error ? error.message : String(error);
+    dialog.showMessageBox(mainWindow, {
+      type: "error",
+      title: "Could not load .ppgame",
+      message: "Pre-Programmed could not load " + path.basename(filename) + ".",
+      detail,
+      buttons: ["OK"],
+    });
+  });
 }
 
 function installSaveAsDownloads(window) {
@@ -458,7 +573,8 @@ function installSaveAsDownloads(window) {
 }
 
 async function createWindow() {
-  const { url, assetWarning } = await startLocalHost();
+  portableHost = await startLocalHost();
+  const { url, assetWarning } = portableHost;
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 860,
@@ -482,12 +598,18 @@ async function createWindow() {
       detail: assetWarning,
     });
   }
+  for (const project of waitingProjectFiles.splice(0)) queueDroppedProject(project);
 }
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on("second-instance", () => {
+  app.on("second-instance", (_event, argv, workingDirectory) => {
+    const droppedProject = projectPathFromArguments(argv, workingDirectory || process.cwd());
+    if (droppedProject) {
+      if (mainWindow && portableHost) queueDroppedProject(droppedProject);
+      else waitingProjectFiles.push(droppedProject);
+    }
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
@@ -507,6 +629,8 @@ if (!app.requestSingleInstanceLock()) {
       return;
     }
     await createWindow();
+    const initialProject = projectPathFromArguments(process.argv);
+    if (initialProject) queueDroppedProject(initialProject);
   }).catch((error) => {
     console.error(error);
     dialog.showErrorBox("Pre-Programmed could not start", error instanceof Error ? error.message : String(error));

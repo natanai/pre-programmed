@@ -1,19 +1,22 @@
 PRE-PROGRAMMED — WINDOWS PORTABLE ENGINE
 
 1. Extract the entire Pre-Programmed folder from the ZIP.
-2. Keep Pre-Programmed.exe, installation.txt, assets, and _engine together. You normally never need to open _engine.
+2. Keep installation.txt, assets, and _engine together. The only executable is _engine\Pre-Programmed.exe.
 3. Open installation.txt. Set AUTHOR_KEY= for your Author password and START_BUTTON_TEXT= for the first button shown before the terminal.
-4. Double-click Pre-Programmed.exe.
+4. Double-click _engine\Pre-Programmed.exe to open the current game.
 5. Type: admin
 6. Enter the Author key from installation.txt.
+
+OPEN A SHARED GAME
+Drag a .ppgame file onto _engine\Pre-Programmed.exe (or a Windows shortcut to it). If the engine is already running, dropping a file on its EXE also sends that game to the existing window. Confirm "Load game" to import the shared authored project. This replaces the currently loaded authored game, so Pre-Programmed first saves a backup in _engine\data\backups. You can restore that backup later using Author mode's PROJECT FILE import.
 
 UPDATING WITHOUT LOSING YOUR GAME
 1. Close Pre-Programmed. Export a .ppgame backup in Author mode first if possible.
 2. Extract the NEW ZIP into a separate empty folder; do not replace only Pre-Programmed.exe.
 3. Copy _engine/data, assets, and installation.txt FROM YOUR OLD FOLDER into the NEW folder. Keep their contents. The old folder is your safety backup.
-4. Open Pre-Programmed.exe in the NEW folder and check your Characters, aliases, and Nodes before deleting the old folder.
+4. Open _engine\Pre-Programmed.exe in the NEW folder and check your Characters, aliases, and Nodes before deleting the old folder.
 
-IMPORTANT: The Pre-Programmed.exe beside installation.txt is only a launcher. The actual application is inside _engine, and your saved game is inside _engine/data. Replacing only the top-level EXE will NOT update the Author tools. An imported .ppgame also cannot update the engine; always open it in the newly extracted engine first.
+IMPORTANT: The only executable is _engine\Pre-Programmed.exe; the other bundled files in _engine are required by the application. Your saved game is inside _engine\data. An imported .ppgame cannot update the engine itself; always use the newly extracted engine before importing.
 
 YOUR GAME
 Author mode → PROJECT FILE can export your authored game to one .ppgame file or import it into another Pre-Programmed build.
