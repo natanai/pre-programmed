@@ -121,3 +121,18 @@ Each trace is a contiguous, executed browser sequence: open the canonical Node w
 A persisted Save transition contains the previous and new snapshot SHA-256 hashes, D1 revision numbers, the exact authored field and expected/read-back value, and evidence that restarting the isolated Worker **retained exactly the same serialized project snapshot and field value**. The validator requires a verified revision increase and a matching post-restart hash. Neither an on-screen notification nor a pending save alone counts as durability evidence.
 
 No production project, real user data, or Author-only persistence path is involved. Each test case starts from the engine's normal seeded project and uses the real workspace editor and its existing persistence contract. Other editable resources, dependent resources, invalid inputs, unsaved navigation and broader input strings remain explicitly outside this finite case suite. The existing breadth, wide, and scroll traces remain unchanged.
+
+## Dirty draft, Back, master X, and nested task navigation
+
+A separate `--draft-navigation` suite records four **literal browser interaction sequences** on disposable, freshly seeded D1 projects, independently on desktop and mobile. It observes navigation and the canonical save path without adding any Author-only editor or mutation mechanism.
+
+    npm run audit:author:explore -- --draft-navigation --viewport both
+    node scripts/author-flow/validate-traces.mjs
+    npm run audit:author:coverage
+    npm run audit:author:trace -- --fixture desktop-navigation-close-save-all
+
+The four finite sequences are **close-keep-discard**, **close-save-all**, **nested-parent-return**, and **dirty-child-back**. These labels identify the executed procedures, *not* hypothetical user goals. The runner uses the real Node narration textarea, real nested Author Tools and Structure panels, real [← BACK] and master [X], and the existing alertdialog buttons.
+
+Every trace stores the actual before/after visible controls, step ordering and proof that the project is unchanged after discard (or changed after Save All). It verifies both the project's exact SHA-256 and its Node narration value **after a local Worker restart**. The nested parent case also records the narration field's actual value when its suspended task resumes. The nested child case observes Back's dirty confirmation, Keep Editing, a second Back, Discard Changes and return to the parent task.
+
+Only the `close-save-all` case is expected to persist a project mutation. Every other case must have identical project content and revision before and after navigation; the validator rejects discrepancies. This is a finite fixture suite: it does not assert that all resources, all nested drafts, all save combinations or arbitrary input values have been covered.
