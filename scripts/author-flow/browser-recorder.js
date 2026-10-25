@@ -128,6 +128,7 @@
       workspace: document.querySelector(".author-task-surface.is-active [data-author-ui-workspace]")?.getAttribute("data-author-ui-workspace")
         || (document.querySelector(".author-tool-index") ? "author-tools" : null),
       overlay_open: Boolean(layer),
+      task_depth: layer ? Number(layer.getAttribute("data-task-depth") ?? 0) : 0,
     };
     const id = "state:" + hash(JSON.stringify({ui, task_stack}));
     return {
