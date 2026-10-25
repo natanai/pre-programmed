@@ -4,6 +4,7 @@ import { authorSemanticReferenceView } from "../../../engine/references/authorSy
 import { findSemanticReferenceTokens } from "../../../engine/references/runtime";
 import { createEmptyPlayState } from "../../../engine/project/playState";
 import { ConditionEditor } from "../../../author/ConditionEditor";
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { ALWAYS, type Condition } from "../../../engine/rules/model";
 import { validateCondition } from "../../../engine/rules/conditions";
 import { OperationHooksEditor } from "../../../author/operations/OperationHooksEditor";
@@ -36,7 +37,7 @@ export const worldLibraryWorkspace = defineAuthorWorkspace({
   buildSpec: ({ context }) => ({
     id: "world-library",
     title: "People + places",
-    context: `${context.snapshot.entities.length} world entries`,
+    context: `${context.snapshot.entities.filter((entity) => entity.type === "character").length} Characters · ${context.snapshot.entities.filter((entity) => entity.type === "location").length} Locations`,
     blocks: [
       {
         type: "action-row",
@@ -127,7 +128,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                 id: "world-character-aliases",
                 role: "specialized-control" as const,
                 content: <div className="author-ui-field">
-                  <label className="author-ui-label" htmlFor="world-character-aliases-input">Aliases</label>
+                  <div className="author-ui-field-heading"><label className="author-ui-label" htmlFor="world-character-aliases-input">Aliases</label><AuthorHelp text="Enter one alternate name per line. Use @ for a variable. To display an alias in play, set SHOW WHEN below." label="About Character aliases" /></div>
                   <ValueMentionField
                     snapshot={context.snapshot}
                     playState={context.playState}
@@ -143,7 +144,6 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                       aliases: aliasesFromInput(value, current.aliases ?? []),
                     }))}
                   />
-                  <small className="author-ui-help">One per line. Type @ to reference a variable. An alias changes the displayed name only when you set SHOW WHEN below.</small>
                 </div>,
               },
               ...(aliasEntries.length ? [{
@@ -167,7 +167,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
                 id: "world-character-alias-rules",
                 role: "rule-editor" as const,
                 content: <div className="world-alias-rules">
-                  <small>Topmost matching display rule wins. An alias without SHOW WHEN is a reference only.</small>
+                  <div className="author-ui-field-heading"><span>DISPLAY NAMES</span><AuthorHelp text="The first matching display rule takes priority. Aliases without SHOW WHEN remain valid alternate names, but aren't displayed automatically." label="About alias display rules" /></div>
                   {aliasEntries.map((alias, index) => <div className={`world-alias-rule${alias.condition ? " world-alias-rule-active" : ""}`} key={index}>
                     <div className="world-alias-rule-header">
                       <span className="world-alias-reference-title">

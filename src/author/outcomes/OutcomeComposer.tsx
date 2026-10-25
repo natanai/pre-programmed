@@ -4,6 +4,7 @@ import type { Condition, Effect } from "../../engine/rules/model";
 import { ConditionEditor } from "../ConditionEditor";
 import { EffectsEditor } from "../EffectsEditor";
 import { AuthorInlineDisclosure } from "../ui/AuthorInlineDisclosure";
+import { AuthorHelp } from "../ui/AuthorHelp";
 import "./outcomeComposer.css";
 
 export function OutcomeComposerSection({ title, summary, children, defaultOpen = false }: {
@@ -46,7 +47,7 @@ export function OutcomeEffectsEditor({ effects, snapshot, onChange, targetKind }
   targetKind?: string;
 }) {
   return <div className="outcome-effects-editor">
-    <p>Optional world and presentation changes. They run from top to bottom after this response is selected.</p>
+    <AuthorHelp label="About response effects" text="Effects change game state or presentation after this response is selected. They run from top to bottom." />
     <EffectsEditor effects={effects} snapshot={snapshot} targetKind={targetKind} onChange={onChange} />
   </div>;
 }

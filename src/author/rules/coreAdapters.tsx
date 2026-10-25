@@ -1,6 +1,7 @@
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "./types";
 import { ComparisonSelect } from "./controls";
 import { ValueMentionField } from "../ValueMentionField";
+import { AuthorHelp } from "../ui/AuthorHelp";
 
 export const alwaysConditionAdapter: ConditionAuthorAdapter = {
   type: "always",
@@ -60,7 +61,7 @@ export const attemptConditionAdapter: ConditionAuthorAdapter = {
     return <>
       <ComparisonSelect value={condition.operator} onChange={(operator) => onChange({ ...condition, operator })} />
       <input aria-label="Attempt number" type="number" min={0} value={condition.value} onChange={(event) => onChange({ ...condition, value: Number(event.target.value) })} />
-      <small>Uses this interaction or operation automatically.</small>
+      <AuthorHelp label="About attempt count" text="Counts attempts for this input or target operation automatically." />
     </>;
   },
 };

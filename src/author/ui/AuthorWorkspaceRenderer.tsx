@@ -2,6 +2,7 @@ import type { ChangeEvent } from "react";
 import { ReferenceField } from "../resources/ReferenceField";
 import { useAuthorCommitPending } from "../tasks/commitState";
 import { AuthorInlineDisclosure } from "./AuthorInlineDisclosure";
+import { AuthorHelp } from "./AuthorHelp";
 import type { AuthorUiNode, AuthorWorkspaceSpec } from "./types";
 import { assertValidAuthorWorkspaceSpec } from "./validation";
 import "./authorUi.css";
@@ -40,8 +41,8 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
       spellCheck: node.spellCheck,
       onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => node.onChange(event.target.value),
     };
-    return <label className="author-ui-field" htmlFor={node.id}>
-      <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
+    return <div className="author-ui-field">
+      <div className="author-ui-field-heading"><label htmlFor={node.id} className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</label>{node.help ? <AuthorHelp text={node.help} label={`About ${node.label}`} /> : null}</div>
       {node.control === "textarea"
         ? <textarea {...common} rows={node.rows ?? 4} />
         : <input
@@ -51,13 +52,12 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
             max={node.max}
             step={node.step}
           />}
-      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
-    </label>;
+      </div>;
   }
 
   if (node.type === "resource") {
     return <div className="author-ui-field author-ui-resource-field">
-      <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
+      <div className="author-ui-field-heading"><span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>{node.help ? <AuthorHelp text={node.help} label={`About ${node.label}`} /> : null}</div>
       <ReferenceField
         kind={node.kind}
         value={node.value}
@@ -66,26 +66,24 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
         allowEmpty={node.allowEmpty}
         showPreview={node.showPreview}
       />
-      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
     </div>;
   }
 
   if (node.type === "select") {
-    return <label className="author-ui-field author-ui-select-field" htmlFor={node.id}>
-      <span className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</span>
+    return <div className="author-ui-field author-ui-select-field">
+      <div className="author-ui-field-heading"><label htmlFor={node.id} className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</label>{node.help ? <AuthorHelp text={node.help} label={`About ${node.label}`} /> : null}</div>
       <select id={node.id} value={node.value} disabled={node.disabled} onChange={(event) => node.onChange(event.target.value)}>
         {node.options.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}
       </select>
-      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
-    </label>;
+    </div>;
   }
 
   if (node.type === "toggle") {
-    return <label className="author-ui-toggle" htmlFor={node.id}>
+    return <div className="author-ui-toggle">
       <input id={node.id} type="checkbox" checked={node.checked} disabled={node.disabled} onChange={(event) => node.onChange(event.target.checked)} />
-      <span>{node.label}</span>
-      {node.help ? <small className="author-ui-help">{node.help}</small> : null}
-    </label>;
+      <label htmlFor={node.id}>{node.label}</label>
+      {node.help ? <AuthorHelp text={node.help} label={`About ${node.label}`} /> : null}
+    </div>;
   }
 
   if (node.type === "choice") {
@@ -93,15 +91,10 @@ function AuthorUiNodeView({ node, parentLabel }: { node: AuthorUiNode; parentLab
     return <fieldset className={`author-ui-choice author-ui-choice-${node.presentation ?? "stacked"}`}>
       <legend className={labelClass(effectiveLabelMode(node.labelMode, node.label, parentLabel))}>{node.label}</legend>
       <div className="author-ui-choice-options">
-        {node.options.map((option) => <button
-          type="button"
-          key={option.value}
-          aria-pressed={option.value === node.value}
-          onClick={() => node.onChange(option.value)}
-        >
-          <span>{option.label}</span>
-          {option.help ? <small>{option.help}</small> : null}
-        </button>)}
+        {node.options.map((option) => <div className={`author-ui-choice-option${option.help ? " has-help" : ""}`} key={option.value}>
+          <button type="button" aria-pressed={option.value === node.value} onClick={() => node.onChange(option.value)}><span>{option.label}</span></button>
+          {option.help ? <AuthorHelp text={option.help} label={`About ${option.label}`} /> : null}
+        </div>)}
       </div>
       {selected?.content?.length ? <div className="author-ui-choice-content">{renderNodes(selected.content, node.label)}</div> : null}
     </fieldset>;

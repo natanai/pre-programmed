@@ -117,6 +117,28 @@ A nested scroll region is appropriate only when the nested region is semanticall
 
 Those nested regions should still size against their actual container or usable visual viewport where practical. A primary resource list, history list, settings page, or other main Author content area should not introduce a second scrollbar merely because an older prototype used a fixed height.
 
+## Contextual explanations and canonical names
+
+Keep the default Author view scannable. Controls should show a short label, the authored
+value, and any operational status. Secondary explanations belong in the shared
+`AuthorHelp` helper beside the control or decision. The same helper must be usable
+with mouse hover, keyboard activation, and touch; hover cannot be the only access path.
+
+Keep actionable errors, disabled or destructive-action reasons, broken links, and
+saving/import feedback directly visible. An author must not need to open help to
+understand why an action cannot be performed.
+
+Feature tools and their destination screens use the names of actual authorable
+resources. Do not enumerate an engine-internal synonym, a role played by a resource,
+or a future resource type as if it were another available editor. Tool descriptions,
+search descriptions, pickers, and workspaces should agree. A Character may speak;
+there is still only a Character resource, not a separate Speaker editor.
+
+Explanations needed by specialized canvas or sequencer controls should use the same
+shared helper instead of inventing additional always-visible instruction rows.
+When necessary, keep short on-surface legends for controls that cannot be
+discovered safely by opening help.
+
 ## Labels describe information, not DOM depth
 
 Fields keep accessible names. A visible label may be accessibility-only when the surrounding choice and placeholder already make the purpose unambiguous.

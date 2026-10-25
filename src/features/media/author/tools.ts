@@ -4,39 +4,39 @@ import type { AuthorSearchContributor } from "../../../author/search/types";
 export const mediaAuthorTools: AuthorToolContributor = (context) => [
   {
     groupId: "media",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     groupOrder: 30,
     toolOrder: 20,
     tool: {
       id: "assets",
       label: "ASSETS",
-      description: "Browse repository Media, draw vectors, and audit stable asset references.",
+      description: "Browse images and audio, draw vectors, and find broken asset links.",
       searchText: "image images sound sounds file files media sprite art audio svg vector draw asset repository",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
     },
   },
   {
     groupId: "media",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     groupOrder: 30,
     toolOrder: 30,
     tool: {
       id: "synth",
       label: "SYNTH",
-      description: "Create and edit procedural Synths stored with project data.",
+      description: "Create and edit Synth sounds.",
       searchText: "synth system sound chirp bleep boot confirm error ascend zap audio voice waveform shape note sequence step tempo attack release volume advanced",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "synth" }),
     },
   },
   {
     groupId: "media",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     groupOrder: 30,
     toolOrder: 40,
     tool: {
       id: "compositions",
       label: "COMPOSITIONS",
-      description: "Import and manage native .premidi scores. Compose in pre-midi.",
+      description: "Import and manage .premidi compositions made in pre-midi.",
       searchText: "premidi pre-midi composition soundtrack notes music midi import export arrangement pattern",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "compositions" }),
     },
@@ -46,7 +46,7 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
 export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
   {
     id: "media:compositions",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     label: "COMPOSITIONS · PRE-MIDI",
     description: "Import, audition, export and manage playable native compositions.",
     searchText: "premidi pre-midi music midi soundtrack composition arrangement import export",
@@ -54,7 +54,7 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
   },
   {
     id: "media:synth-controls",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     label: "SYNTH · PALETTES + SHAPING",
     description: "Start with a Synth palette, then shape wave, envelope, steps, pitch, and optional per-step volume.",
     searchText: "system sound chirp bleep audio recipe synth label loop tempo voice voices waveform square triangle sine saw noise shape tight punch soft ring attack release step steps note notes pitch volume sequence advanced palette preset blip chirp confirm chime alert error boot ascend zap hit",
@@ -62,9 +62,9 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
   },
   {
     id: "media:asset-library",
-    groupLabel: "WORLD + MEDIA",
+    groupLabel: "MEDIA",
     label: "MEDIA ASSETS",
-    description: "Browse repository files or draw scalable 32×32 vector assets behind stable project IDs.",
+    description: "Browse media files or draw vector assets.",
     searchText: "asset assets audio sound image art sprite repository file svg vector draw grid export",
     onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "assets" }),
   },

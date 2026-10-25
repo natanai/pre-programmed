@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import {
   useEffect,
   useRef,
@@ -418,7 +419,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
       <div className="synth-envelope-editor">
         <div className="synth-envelope-heading">
           <span>ENVELOPE</span>
-          <small>A {envelopeLabel(voice.attack)} · R {envelopeLabel(voice.release)}</small>
+          <small>A {envelopeLabel(voice.attack)} · R {envelopeLabel(voice.release)}</small><AuthorHelp label="About Synth envelopes" text="Short attack and release times occupy more slider space, making brief clicks easier to adjust." />
         </div>
         <label className="synth-envelope-rail">
           <span>ATTACK <strong>{envelopeLabel(voice.attack)}</strong></span>
@@ -444,7 +445,6 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
             onChange={(event) => setEnvelope("release", Number(event.target.value))}
           />
         </label>
-        <small className="synth-envelope-help">Short envelope times get more rail space, so tiny retro clicks and bleeps are easier to shape.</small>
       </div>
     </section>
 
@@ -452,7 +452,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
       <div className="synth-sequence-heading">
         <div>
           <strong>SEQUENCE {String(sequenceLength).padStart(2, "0")}</strong>
-          <small>{voice.waveform === "noise" ? "tap beats on/off" : "tap on/off · drag ↑↓ note · drag ←→ sweep"}</small>
+          <AuthorHelp label="How to edit sequence steps" text={voice.waveform === "noise" ? "Tap a beat to turn it on or off." : "Tap to turn a step on or off. Drag vertically to change its note, or horizontally to change its pitch sweep."} />
         </div>
         <div className="synth-length-actions" role="group" aria-label="Sequence length">
           <button

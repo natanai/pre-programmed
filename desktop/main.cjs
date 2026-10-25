@@ -602,6 +602,7 @@ async function checkAndInstallUpdate() {
   }
 }
 
+ipcMain.handle("pre-programmed:app-version", () => app.getVersion());
 ipcMain.handle("pre-programmed:check-for-updates", () => checkAndInstallUpdate());
 
 function installSaveAsDownloads(window) {

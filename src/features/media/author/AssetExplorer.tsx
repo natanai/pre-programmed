@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
 import { isVectorAsset, mediaAssetDimensions, type MediaAssetAuthoringMode, type MediaAssetKind } from "../model";
@@ -71,9 +72,8 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     </div>
     <div className="author-actions media-asset-actions">
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
+      <AuthorHelp label="About media files" text="Vectors are saved in the project. To add image or audio files, place them in public/assets/ in the repository; the next build indexes them automatically." />
     </div>
-    <div className="field-help">GENERATED MEDIA → D1 · FILE MEDIA → public/assets/</div>
-    <div className="field-help">FILE ASSETS: put the media file in the appropriate <code>public/assets/</code> directory; the next build indexes it.</div>
     {missing.length ? <div className="media-asset-warning"><strong>MISSING LINKED ASSETS</strong>{missing.map((reference, index) => <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.resourceId}:${index}`} onClick={() => reference.route && onOpenReference(reference.route)} disabled={!reference.route}>
       <span>{reference.resourceId}</span><small>{reference.ownerLabel} · {reference.detail}</small>
     </button>)}</div> : null}
@@ -83,14 +83,13 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
       ));
       const sourceKind = isVectorAsset(asset) ? "vector" : asset.kind;
       const contentSource = asset.contentSource === "database"
-        ? "D1 generated"
+        ? "project"
         : asset.contentSource === "repository"
-          ? "repository file"
+          ? "file"
           : "broken reference";
       return <button type="button" key={asset.id} onClick={() => onOpenAsset(asset.id, asset.kind, asset.authoringMode)}>
         <span>{asset.name}{asset.available ? "" : " · MISSING CONTENT"}</span>
-        <span>{sourceKind} · {contentSource} · {asset.mimeType}{dimensionLabel(asset)} · {asset.defaultPresentation} · {asset.byteLength}b · {usage.length} use{usage.length === 1 ? "" : "s"}</span>
-        <code>{asset.id}</code>
+        <span>{sourceKind} · {contentSource}{dimensionLabel(asset)} · {usage.length} use{usage.length === 1 ? "" : "s"}</span>
       </button>;
     })}</div>
     {!assets.length ? <span className="media-asset-empty">{normalizedQuery ? "NO ASSETS MATCH." : `NO ${filter === "all" ? "MEDIA" : filter.toUpperCase()} ASSETS.`}</span> : null}

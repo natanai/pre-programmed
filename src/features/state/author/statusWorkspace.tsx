@@ -51,7 +51,7 @@ export const stateStatusAuthorWorkspace = defineAuthorWorkspace({
           content: <div className="state-author-resource-list">
             <div className="state-author-create-row">
               <button type="button" onClick={() => context.pushTask(stateResourceRoute("state-group"))}>[+ GROUP]</button>
-              <button type="button" onClick={() => context.pushTask(stateResourceRoute("variable"))}>[+ VALUE]</button>
+              <button type="button" onClick={() => context.pushTask(stateResourceRoute("variable"))}>[+ VARIABLE]</button>
             </div>
             {groups.map((group) => {
               const groupVisible = evaluateCondition(group.visibleWhen, { snapshot: context.snapshot, state: context.playState });
@@ -84,7 +84,7 @@ export const stateStatusAuthorWorkspace = defineAuthorWorkspace({
                 })}
               </section>;
             })}
-            {!groups.length ? <small className="state-author-empty">No player groups yet. Create a group, then assign State values to it.</small> : null}
+            {!groups.length ? <small className="state-author-empty">No Player Groups yet.</small> : null}
           </div>,
         }],
       }],

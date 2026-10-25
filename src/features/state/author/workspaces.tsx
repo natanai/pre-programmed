@@ -259,7 +259,7 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
       {
         type: "section",
         id: "state-library-values",
-        label: "Variables",
+        label: "Variables + Computed Values",
         importance: "primary",
         children: [{
           type: "custom",
@@ -300,7 +300,7 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
                 <span>{group.label}</span><small>{count} value{count === 1 ? "" : "s"}</small>
               </button>;
             })}
-            {!context.snapshot.stateGroups.length ? <small className="state-author-empty">No player groups yet. Internal variables remain completely hidden.</small> : null}
+            {!context.snapshot.stateGroups.length ? <small className="state-author-empty">No Player Groups yet.</small> : null}
           </div>,
         }],
       },

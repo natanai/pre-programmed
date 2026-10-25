@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import type { AuthorTaskResult } from "../../../author/tasks/types";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import type { AuthorWorkspaceSpec } from "../../../author/ui/types";
@@ -164,7 +165,7 @@ function PlacementList({ placements, options, onAdd, onEdit, onRemove }: {
   return <div className="equipment-placement-list">
     <div className="equipment-placement-toolbar">
       <button type="button" onClick={onAdd}>[+ PLACEMENT]</button>
-      <small>Each anchor may have one placement. A placement can reserve one slot or several.</small>
+      <AuthorHelp label="About equipment placements" text="Each anchor has one placement definition. A placement can reserve one or multiple Body Slots." />
     </div>
     {placements.length ? <div className="equipment-placement-cards">
       {placements.map((placement) => <article className="equipment-placement-card" key={placement.anchorSlotKey}>
@@ -176,7 +177,7 @@ function PlacementList({ placements, options, onAdd, onEdit, onRemove }: {
         </button>
         <button type="button" className="danger equipment-placement-remove" onClick={() => onRemove(placement.anchorSlotKey)}>[REMOVE]</button>
       </article>)}
-    </div> : <p className="field-help">No placements yet. Add one for each slot where the item may anchor.</p>}
+    </div> : <small>No placements yet.</small>}
   </div>;
 }
 
@@ -186,7 +187,7 @@ function OccupiedSlotsControl({ draft, options, onChange }: {
   onChange: (occupiedSlotKeys: string[]) => void;
 }) {
   return <div className="equipment-occupied-control">
-    <p className="field-help">The anchor is always occupied. Select every additional body slot reserved by this placement.</p>
+    <div className="author-ui-field-heading"><span>OCCUPIED SLOTS</span><AuthorHelp label="About occupied slots" text="The anchor slot is always occupied. Select any additional Body Slots reserved by this placement." /></div>
     <div className="equipment-slot-grid">
       {options.map((option) => {
         const anchor = option.key === draft.anchorSlotKey;

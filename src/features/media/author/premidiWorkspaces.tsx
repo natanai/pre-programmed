@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { useState } from "react";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
@@ -41,7 +42,7 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
         }}
       />
     </label>
-    <p className="field-help">Native score, not a recording. Compose and arrange in pre-midi; use this tool to import it into the game.</p>
+    <AuthorHelp label="About importing compositions" text="A .premidi file stores a playable music score, not a recording. Compose it in pre-midi, then import it into this project." />
     {message ? <p role="status">{message}</p> : null}
   </div>;
 }

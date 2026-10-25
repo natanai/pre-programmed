@@ -3,6 +3,7 @@ import { isRuntimeBinding, PLAYER_INPUT_BINDING, runtimeBinding } from "../../..
 import type { ConditionAuthorAdapter, EffectAuthorAdapter } from "../../../author/rules/types";
 import { ComparisonSelect } from "../../../author/rules/controls";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import type { FlagScope } from "../ruleTypes";
 
 function parseValue(value: string, sample: Value): Value {
@@ -51,7 +52,7 @@ function localFlagKeyField(key: string, onChange: (key: string) => void) {
         onChange={(event) => onChange(event.target.value)}
       />
     </label>
-    <small>Starts false until an effect sets it. Private to this Node for the current run; the same name may be reused in other Nodes. For a lasting reveal across Nodes, use a project/global Flag (whose starting value is editable).</small>
+    <AuthorHelp label="About Node-only Flags" text="A Node-only Flag starts false and belongs only to this Node during the current run. You can reuse its name in other Nodes without sharing its value. Use a project Flag for values that persist across Nodes or need an editable starting value." />
   </>;
 }
 
@@ -197,7 +198,7 @@ export const setValueEffectAdapter: EffectAuthorAdapter = {
       {sourceMode === "runtime-binding" ? <label>RUNTIME BINDING
         <input value={binding?.key ?? ""} onChange={(event) => onChange({ ...effect, value: runtimeBinding(event.target.value) })} />
       </label> : null}
-      {sourceMode === "player-input" ? <small>The submitted player text is converted to this variable's type when the effect runs.</small> : null}
+      {sourceMode === "player-input" ? <AuthorHelp label="About saving player input" text="The submitted text is converted to the Variable’s type when this effect runs." /> : null}
       {sourceMode === "literal" ? definition?.valueType === "boolean"
         ? <select value={String(effect.value)} onChange={(event) => onChange({ ...effect, value: event.target.value === "true" })}><option value="true">true</option><option value="false">false</option></select>
         : <input type={definition?.valueType === "number" ? "number" : "text"} value={String(effect.value ?? "")} onChange={(event) => onChange({ ...effect, value: definition?.valueType === "number" ? Number(event.target.value) : event.target.value })} /> : null}

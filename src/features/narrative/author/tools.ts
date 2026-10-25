@@ -9,7 +9,7 @@ export const narrativeAuthorTools: AuthorToolContributor = (context) => [{
   tool: {
     id: "structure",
     label: "STRUCTURE",
-    description: "Browse Nodes, entry routes, and authored interactions.",
+    description: "Browse Nodes, entry responses, valid inputs, and destinations.",
     onSelect: () => context.pushTask({ type: "feature", feature: "narrative", workspace: "structure" }),
   },
 }];

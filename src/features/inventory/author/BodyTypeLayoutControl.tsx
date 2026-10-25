@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { useEffect, useRef, useState } from "react";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
@@ -181,9 +182,7 @@ export function BodyTypeLayoutControl({
         aria-label={`Alignment guides: ${guideMode}. Activate to cycle guides.`}
         onClick={() => setGuideMode((current) => nextGuideMode(current))}
       >[GUIDES: {guideMode.toUpperCase()}]</button>
-      <small>
-        Drag anywhere inside a slot to {tool === "move" ? "move" : "resize"} it. Slots stay square. Guides cycle OFF → QUADRANTS → GRID; visible guides also snap movement{guideMode === "grid" ? " and size" : ""}.
-      </small>
+      <AuthorHelp label="About editing Body Slots" text="Drag inside a slot to move or resize it. Slots stay square. Guides cycle OFF, QUADRANTS, and GRID; visible guides snap movement and GRID also snaps size." />
     </div>
 
     <div className="body-slot-definition-list">
@@ -194,7 +193,7 @@ export function BodyTypeLayoutControl({
         </div>
         <button type="button" onClick={() => onEditSlot(slot)}>[EDIT]</button>
       </article>)}
-      {!(draft.slots ?? []).length ? <p className="field-help">No slots yet. Add only the semantic equipment locations that exist on this body type.</p> : null}
+      {!(draft.slots ?? []).length ? <small>No Body Slots yet.</small> : null}
     </div>
   </div>;
 }

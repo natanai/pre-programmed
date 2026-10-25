@@ -38,11 +38,11 @@ export const commandInteractionsWorkspace = defineAuthorWorkspace({
       {
         type: "section",
         id: "commands-interactions-targets",
-        label: "Target owners",
+        label: "Target types",
         children: [{
           type: "list",
           id: "commands-interactions-target-list",
-          label: "Target owners",
+          label: "Target types",
           items: targetProviders().map((provider) => ({
             id: `commands-interactions-target:${provider.kind}`,
             label: provider.label,

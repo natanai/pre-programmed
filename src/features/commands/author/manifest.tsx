@@ -47,7 +47,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
     tool: {
       id: "player-interactions",
       label: "PLAYER INTERACTIONS",
-      description: "Project-wide commands and target behavior.",
+      description: "Manage Player Commands and the resources they act on.",
       searchText: "project wide interaction interactions inspect use polish player behavior operation response command wording target",
       onSelect: () => context.pushTask({ type: "feature", feature: "commands", workspace: "interactions" }),
     },
@@ -59,7 +59,7 @@ export const commandsAuthorFeature: AuthorFeatureManifest = {
       id: "commands:player-commands",
       groupLabel: "PLAYER LANGUAGE",
       label: "PLAYER COMMANDS",
-      description: "Edit project-wide player inputs and actions.",
+      description: "Edit Player Commands and their actions.",
       searchText: "command commands valid input wording phrase grammar action operation target typed text inspect use polish save load response",
       onSelect: () => context.pushTask({ type: "feature", feature: "commands", workspace: "grammar" }),
     },

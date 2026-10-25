@@ -10,7 +10,7 @@ export const stateAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "state-definitions",
       label: "STATE",
-      description: "Variables, computed values, and player-visible value groups.",
+      description: "Create Variables, Flags, Computed Values, and Player Groups.",
       searchText: "state variable variables flag flags counter timer time computed value values stats attributes relationship reputation status group",
       onSelect: () => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" }),
     },
@@ -35,7 +35,7 @@ export const stateAuthorSearch: AuthorSearchContributor = (context) => [
     id: "state:definitions",
     groupLabel: "GAME SYSTEMS",
     label: "STATE",
-    description: "Find or create variables, flags, computed values, and player groups.",
+    description: "Find or create Variables, Flags, Computed Values, and Player Groups.",
     searchText: "variable variables flag flags number counter timer time computed value values state stats attributes relationships reputation",
     onSelect: () => context.pushTask({ type: "feature", feature: "state", workspace: "definitions" }),
   },

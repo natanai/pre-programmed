@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../ui/AuthorHelp";
 import { useEffect, useRef, useState } from "react";
 import type {
   Condition,
@@ -175,7 +176,7 @@ export function OperationHooksEditor({ capability, snapshot, targetKind, default
           {onCreatePlayerCommand ? <button type="button" onClick={onCreatePlayerCommand}>[+ PLAYER COMMAND]</button> : null}
         </div>
         {capability.interactable ? <>
-          <p className="operation-capability-help">An available operation can use feature defaults even without an authored response. Add responses when this target should say something, apply effects, vary by attempt, or override success.</p>
+          <div className="operation-capability-help"><AuthorHelp label="About target operations" text="Available operations can use engine defaults without an authored response. Add responses to change text, effects, attempt-dependent behavior, or success." /></div>
           <div className="operation-card-list">
             {cardDefinitions.map((operation) => {
               const available = capability.operations.includes(operation.value);

@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { useMemo, useState } from "react";
 import { EffectsEditor } from "../../../author/EffectsEditor";
 import {
@@ -79,15 +80,14 @@ function DestinationEditor({
         <button type="button" onClick={() => onChange(replaceFlowTransition(flow, null))}>[UNLINK]</button>
       </span>
       {destination ? <div className="guided-option-list" aria-label="Destination Node entry response">
-        <button
+        <div className="guided-option-with-help"><button
           type="button"
           className="guided-option-row"
           aria-pressed={!target.openingId}
           onClick={() => chooseTarget(destination.id, null)}
         >
           <span>{!target.openingId ? "[X]" : "[ ]"} AUTO</span>
-          <small>Let Node #{destination.nodeNumber} choose its entry response from current conditions.</small>
-        </button>
+        </button><AuthorHelp label="About automatic entry selection" text={`Node #${destination.nodeNumber} uses the first entry response with a matching WHEN condition.`} /></div>
         {[...destination.openings].sort((a, b) => a.order - b.order || a.id.localeCompare(b.id)).map((opening, index) => <button
           type="button"
           className="guided-option-row"
@@ -96,7 +96,6 @@ function DestinationEditor({
           onClick={() => chooseTarget(destination.id, opening.id)}
         >
           <span>{target.openingId === opening.id ? "[X]" : "[ ]"} {index + 1}. {nodeOpeningSnippet(opening, 64) || "No entry text"}</span>
-          <small>Explicit entry selection</small>
         </button>)}
       </div> : null}
     </div> : null}

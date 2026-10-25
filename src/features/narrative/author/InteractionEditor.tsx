@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { useMemo, type Dispatch, type SetStateAction } from "react";
 import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
@@ -277,12 +278,11 @@ function InteractionOverview({
 }) {
   return <div className="interaction-overview">
     {!fallbackMode ? <section className="guided-section interaction-primary-section">
-      <h3>PLAYER INPUT</h3>
+      <h3>PLAYER INPUT <AuthorHelp label="About Character names in inputs" text="Type @ to insert a Character reference. The canonical name and aliases will all match this input." /></h3>
       <label className="user-input-field">PLAYER ENTERS
         <ValueMentionField snapshot={snapshot} playState={playState} value={draft.wording} onValueChange={onWording} autoFocus={autoFocusWording} ariaLabel="Player enters" />
       </label>
-      <small>Type @ to reference a Character. Their canonical name and aliases match this same input.</small>
-    </section> : <div className="guided-context-copy compact-copy">Response used when player text does not match another valid input at this Node.</div>}
+    </section> : <div className="author-ui-field-heading"><strong>INVALID INPUT</strong><AuthorHelp label="About invalid input" text="This response is used when the text entered by the player matches no valid input on this Node." /></div>}
 
     <section className="guided-section interaction-response-section">
       <h3>RESPONSES</h3>
@@ -321,9 +321,8 @@ function InputSettings({ draft, fallbackMode, snapshot, playState, onChange }: {
   return <div className="guided-subworkspace">
     {!fallbackMode ? <>
       <section className="guided-section">
-        <h3>PLAYER VISIBILITY</h3>
+        <h3>PLAYER VISIBILITY <AuthorHelp label="About input visibility" text="SHOW CHOICE WHEN affects whether the input is suggested to the player, not whether typed text is valid." /></h3>
         <OutcomeComposerSection title="SHOW CHOICE WHEN" summary={conditionSummary(choiceVisibleWhen)}>
-          <p className="guided-context-copy">Controls whether this input is suggested to the player. Typing the input directly still works.</p>
           <ConditionEditor
             condition={choiceVisibleWhen}
             snapshot={snapshot}
@@ -331,16 +330,14 @@ function InputSettings({ draft, fallbackMode, snapshot, playState, onChange }: {
           />
         </OutcomeComposerSection>
         <h4>HOW IT IS SHOWN</h4>
-        <div className="guided-option-list">{revealOptions.map((option) => <button
+        <div className="guided-option-list">{revealOptions.map((option) => <div className="guided-option-with-help" key={option.value}><button
           type="button"
-          key={option.value}
           aria-pressed={draft.choiceVisibility === option.value}
           className="guided-option-row"
           onClick={() => onChange({ ...draft, choiceVisibility: option.value })}
         >
           <span>{draft.choiceVisibility === option.value ? "[X]" : "[ ]"} {option.label}</span>
-          <small>{option.help}</small>
-        </button>)}</div>
+        </button><AuthorHelp label={`About ${option.label}`} text={option.help} /></div>)}</div>
       </section>
       <section className="guided-section">
         <h3>OTHER WORDING</h3>
@@ -355,24 +352,22 @@ function InputSettings({ draft, fallbackMode, snapshot, playState, onChange }: {
     <section className="guided-section">
       <h3>RESPONSE SELECTION</h3>
       <div className="guided-option-list">
-        <button
+        <div className="guided-option-with-help"><button
           type="button"
           className="guided-option-row"
           aria-pressed={(draft.outcomeSelection ?? "first") === "first"}
           onClick={() => onChange({ ...draft, outcomeSelection: "first" })}
         >
           <span>{(draft.outcomeSelection ?? "first") === "first" ? "[X]" : "[ ]"} FIRST MATCHING</span>
-          <small>Use the first response whose WHEN condition currently matches.</small>
-        </button>
-        <button
+        </button><AuthorHelp label="About first matching response" text="Use the first response whose WHEN condition currently matches." /></div>
+        <div className="guided-option-with-help"><button
           type="button"
           className="guided-option-row"
           aria-pressed={draft.outcomeSelection === "random"}
           onClick={() => onChange({ ...draft, outcomeSelection: "random" })}
         >
           <span>{draft.outcomeSelection === "random" ? "[X]" : "[ ]"} RANDOM MATCHING</span>
-          <small>Choose deterministically from all responses whose WHEN conditions currently match.</small>
-        </button>
+        </button><AuthorHelp label="About random matching response" text="Choose deterministically from all responses whose WHEN conditions currently match." /></div>
       </div>
     </section>
     <section className="guided-section">
@@ -412,15 +407,15 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
   return <div className="guided-subworkspace response-workspace">
     <div className="guided-response-status"><span className={outcome.authorStatus === "draft" ? "draft-input" : ""}>{notation}</span><span>Response {index + 1} of {total}</span></div>
     <section className="response-writing-section">
-      {!conversationCharacterId ? <label>SPEAKER
+      {!conversationCharacterId ? <div className="author-ui-field">
+        <div className="author-ui-field-heading"><span>SPEAKER</span><AuthorHelp label="About response speakers" text="Optional outside a conversation. During a conversation, the Node’s conversation Character is the speaker automatically." /></div>
         <ReferenceField
           kind="character"
           value={outcome.speakerId ?? ""}
           onChange={(speakerId) => onChange((current) => ({ ...current, speakerId: speakerId || null }))}
           placeholder="none / narration"
         />
-        <small>Optional outside a conversation. In an active conversation, the Node's conversation character is used automatically.</small>
-      </label> : null}
+      </div> : null}
       <div className={`narrative-prose-grid${showDialogueEditor ? " has-dialogue" : ""}`}>
         <AuthoredTextEditor
           value={{ text: prose.narrationText, performance: prose.narrationPerformance }}
@@ -472,8 +467,7 @@ function ResponseWorkspace({ outcome, snapshot, playState, index, total, notatio
         <OutcomeEffectsEditor effects={outcome.effects} snapshot={snapshot} onChange={(effects) => onChange((current) => ({ ...current, effects }))} />
       </OutcomeComposerSection>
       <OutcomeComposerSection title="AUTHOR DETAILS" summary={outcome.label.trim() || "Optional label"}>
-        <p className="guided-context-copy">Private organization for this response. It is never shown to the player.</p>
-        <label>RESPONSE LABEL <input value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></label>
+        <div className="author-ui-field"><div className="author-ui-field-heading"><label htmlFor="response-private-label">RESPONSE LABEL</label><AuthorHelp label="About response labels" text="A private author-facing label. It never appears to players." /></div><input id="response-private-label" value={outcome.label} placeholder="optional private label" onChange={(event) => onChange((current) => ({ ...current, label: event.target.value }))} /></div>
       </OutcomeComposerSection>
     </div>
     <div className="guided-response-actions">

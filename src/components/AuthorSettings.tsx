@@ -5,6 +5,7 @@ const SETTINGS_KEY = "pre-programmed:display-settings";
 
 type WindowsDesktopBridge = {
   checkForUpdates: () => Promise<{ message: string }>;
+  getInstalledVersion: () => Promise<string>;
 };
 function windowsDesktopBridge() {
   if (typeof window === "undefined") return undefined;
@@ -48,7 +49,17 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
   const [settings, setSettings] = useState(readDisplaySettings);
   const [updating, setUpdating] = useState(false);
   const [updateMessage, setUpdateMessage] = useState("");
+  const [installedVersion, setInstalledVersion] = useState<string | null>(null);
   const desktop = windowsDesktopBridge();
+
+  useEffect(() => {
+    if (!desktop || !open) return;
+    let active = true;
+    void desktop.getInstalledVersion()
+      .then((version) => { if (active) setInstalledVersion(version); })
+      .catch(() => { if (active) setInstalledVersion("unavailable"); });
+    return () => { active = false; };
+  }, [desktop, open]);
   const checkForUpdates = async () => {
     if (!desktop || updating) return;
     setUpdating(true);
@@ -106,6 +117,7 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
         </label>
         <label className="check-label"><input type="checkbox" checked={settings.reduceMotion} onChange={(event) => setSettings({ ...settings, reduceMotion: event.target.checked })} /> reduce motion</label>
         {desktop ? <div className="desktop-options-actions">
+          <div className="desktop-installed-version"><span>INSTALLED VERSION</span><strong>{installedVersion && installedVersion !== "unavailable" ? `v${installedVersion}` : installedVersion ?? "…"}</strong></div>
           <button type="button" onClick={() => { setOpen(false); onNewGame?.(); }} disabled={!onNewGame}>NEW GAME</button>
           <button type="button" onClick={() => { void checkForUpdates(); }} disabled={updating}>
             {updating ? "CHECKING / DOWNLOADING..." : "CHECK FOR UPDATES"}

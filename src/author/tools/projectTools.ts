@@ -22,7 +22,7 @@ export const projectAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "settings",
       label: "ADVANCED SETTINGS",
-      description: "Configure project-wide engine behavior, references, and terminal grammar.",
+      description: "Configure project-wide settings, the terminal, and Player Language.",
       searchText: "player language command commands label aliases grammar prompt settings configuration rules",
       onSelect: () => context.pushTask({ type: "feature", feature: "project", workspace: "settings" }),
     },

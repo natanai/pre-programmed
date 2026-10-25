@@ -181,7 +181,7 @@ export function StructureNavigator({ snapshot, playState, onOpenNode, onEditInte
                 })}
               </div>
             </div>)}
-            {!outgoing.length ? <span className="structural-warning">No interactions from this node.</span> : null}
+            {!outgoing.length ? <span className="structural-warning">No valid inputs from this Node.</span> : null}
           </div>
         </section>;
       })}
