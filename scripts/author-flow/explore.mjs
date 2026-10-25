@@ -31,6 +31,7 @@ function number(name, fallback) {
 }
 const maxStates = number("--max-states", 65);
 const maxDepth = number("--max-depth", 4);
+const maxExecutions = number("--max-executions", 90);
 const selected = arg("--viewport", "both");
 if (!["both", "desktop", "mobile"].includes(selected)) throw new Error("--viewport must be both, desktop or mobile.");
 const viewports = selected === "both" ? [desktop, mobile] : [selected === "mobile" ? mobile : desktop];
@@ -199,10 +200,11 @@ async function newPage(browser, fixture, token) {
 }
 async function traverse(browser, fixture, token) {
   const states=new Map(),transitions=new Map(),frontier=new Map();
-  const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;
+  const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
   const note=(entry)=>frontier.set(JSON.stringify(entry),entry);
   const addState=(state)=>{if(!states.has(state.id))states.set(state.id,state);};
-  while(queue.length && visited.size < maxStates) {
+  while(queue.length && visited.size < maxStates && executedPaths < maxExecutions) {
+    executedPaths++;
     const next=queue.shift();
     const path=next.path;
     const {page,context}=await newPage(browser,fixture,token);
@@ -251,7 +253,7 @@ async function traverse(browser, fixture, token) {
     states:[...states.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     transitions:[...transitions.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     frontier:[...frontier.values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
-    stats:{visited:visited.size,queue_remaining:queue.length,replay_failures:replayFailures},
+    stats:{visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
   };
 }
 let browser;
