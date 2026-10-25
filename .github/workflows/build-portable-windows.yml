@@ -117,6 +117,28 @@ jobs:
       - name: Verify .ppgame drop arguments
         run: node --test desktop/project-drop.nodecheck.cjs
 
+      - name: Verify updater metadata and Windows script
+        shell: pwsh
+        run: |
+          node --test desktop/updater.nodecheck.cjs
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path "desktop/apply-update.ps1"), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_.Message }; throw "Update script has invalid PowerShell syntax." }
+          $root = Join-Path $env:RUNNER_TEMP "Pre-Programmed Update Test"
+          New-Item -ItemType Directory -Path (Join-Path $root "_engine/data"), (Join-Path $root "_engine.next") -Force | Out-Null
+          Set-Content (Join-Path $root "_engine/Pre-Programmed.exe") "old"
+          Set-Content (Join-Path $root "_engine.next/Pre-Programmed.exe") "new"
+          Set-Content (Join-Path $root "_engine/data/game.txt") "saved game"
+          $temp = Join-Path $env:RUNNER_TEMP "Pre-Programmed Update Scratch"
+          New-Item -ItemType Directory -Path $temp -Force | Out-Null
+          & "desktop/apply-update.ps1" -Root $root -OldPid 2147483647 -TempRoot $temp -SkipRestart
+          if ($LASTEXITCODE -ne 0) { throw "Updater dry-run failed." }
+          if ((Get-Content (Join-Path $root "_engine/Pre-Programmed.exe") -Raw).Trim() -ne "new") { throw "Runtime was not replaced." }
+          if ((Get-Content (Join-Path $root "_engine/data/game.txt") -Raw).Trim() -ne "saved game") { throw "Saved game data was lost." }
+          if (Test-Path (Join-Path $root "_engine.previous")) { throw "Updater left stale previous runtime." }
+          Remove-Item $root -Recurse -Force
+
       - name: Bundle Worker through Wrangler
         shell: pwsh
         run: |
@@ -174,6 +196,7 @@ jobs:
           if (-not (Test-Path (Join-Path $engineRoot "Pre-Programmed.exe"))) {
             throw "Contained Electron runtime did not contain its executable."
           }
+          if (-not (Test-Path (Join-Path $engineRoot "resources/apply-update.ps1"))) { throw "Runtime did not package the Windows update helper." }
           "stage_root=$stageRoot" >> $env:GITHUB_OUTPUT
           "app_root=$appRoot" >> $env:GITHUB_OUTPUT
           "engine_root=$engineRoot" >> $env:GITHUB_OUTPUT

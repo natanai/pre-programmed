@@ -6,6 +6,8 @@ directories:
 files:
   - main.cjs
   - project-drop.cjs
+  - updater.cjs
+  - preload.cjs
   - package.json
 extraResources:
   - from: ../dist
@@ -14,6 +16,8 @@ extraResources:
     to: worker.mjs
   - from: ../scripts/asset-manifest-lib.mjs
     to: asset-manifest-lib.mjs
+  - from: apply-update.ps1
+    to: apply-update.ps1
 win:
   target:
     - target: portable

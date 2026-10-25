@@ -10,7 +10,13 @@ PRE-PROGRAMMED — WINDOWS PORTABLE ENGINE
 OPEN A SHARED GAME
 Drag a .ppgame file onto _engine\Pre-Programmed.exe (or a Windows shortcut to it). If the engine is already running, dropping a file on its EXE also sends that game to the existing window. Confirm "Load game" to import the shared authored project. This replaces the currently loaded authored game, so Pre-Programmed first saves a backup in _engine\data\backups. You can restore that backup later using Author mode's PROJECT FILE import.
 
-UPDATING WITHOUT LOSING YOUR GAME
+UPDATING INSIDE THE APP
+Open the small gear button at the upper-right, then choose CHECK FOR UPDATES. If a newer official release exists, approve the update. It is downloaded and SHA-256 verified, then the program restarts with the new engine. Your installation.txt, assets, and _engine/data are preserved. The first install of this feature must be done with a fresh ZIP; subsequent updates can use this button. An internet connection and free disk space are required.
+
+START A FRESH PLAY SESSION
+Open the same gear button and choose NEW GAME. This clears the current player's run and returns to the authored opening. It does not erase the authored project, game assets, or Author settings.
+
+MANUAL UPDATING WITHOUT LOSING YOUR GAME
 1. Close Pre-Programmed. Export a .ppgame backup in Author mode first if possible.
 2. Extract the NEW ZIP into a separate empty folder; do not replace only Pre-Programmed.exe.
 3. Copy _engine/data, assets, and installation.txt FROM YOUR OLD FOLDER into the NEW folder. Keep their contents. The old folder is your safety backup.

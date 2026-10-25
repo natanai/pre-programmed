@@ -3,6 +3,15 @@ import { AuthorDesktopResizeHandle } from "../author/AuthorDesktopResizeHandle";
 
 const SETTINGS_KEY = "pre-programmed:display-settings";
 
+type WindowsDesktopBridge = {
+  checkForUpdates: () => Promise<{ message: string }>;
+};
+function windowsDesktopBridge() {
+  if (typeof window === "undefined") return undefined;
+  return (window as Window & { preProgrammedDesktop?: WindowsDesktopBridge }).preProgrammedDesktop;
+}
+
+
 export type DisplaySettings = {
   fontSize: number;
   reduceMotion: boolean;
@@ -27,15 +36,32 @@ export function readDisplaySettings(): DisplaySettings {
   }
 }
 
-export function AuthorSettings({ authorView, showAuthorViewToggle, visible = true, onToggleAuthorView, onTextSpeedMultiplierChange }: {
+export function AuthorSettings({ authorView, showAuthorViewToggle, visible = true, onToggleAuthorView, onTextSpeedMultiplierChange, onNewGame }: {
   authorView: boolean;
   showAuthorViewToggle: boolean;
   visible?: boolean;
   onToggleAuthorView: () => void;
   onTextSpeedMultiplierChange: (multiplier: number) => void;
+  onNewGame?: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(readDisplaySettings);
+  const [updating, setUpdating] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState("");
+  const desktop = windowsDesktopBridge();
+  const checkForUpdates = async () => {
+    if (!desktop || updating) return;
+    setUpdating(true);
+    setUpdateMessage("CHECKING FOR UPDATES...");
+    try {
+      const result = await desktop.checkForUpdates();
+      setUpdateMessage(result.message);
+    } catch (error) {
+      setUpdateMessage(error instanceof Error ? error.message : "Could not check for updates.");
+    } finally {
+      setUpdating(false);
+    }
+  };
 
   useEffect(() => {
     const root = document.documentElement;
@@ -67,11 +93,11 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
       <div className="author-corner-controls">
         {showAuthorViewToggle ? <button type="button" className="author-view-toggle" aria-label={authorView ? "Preview player experience" : "Return to Author experience"}
           aria-pressed={authorView} onClick={onToggleAuthorView}><span aria-hidden="true" /></button> : null}
-        <button type="button" className="author-settings-gear" aria-label="Display settings" aria-expanded={open}
+        <button type="button" className="author-settings-gear" aria-label={desktop ? "Options" : "Display settings"} aria-expanded={open}
           onClick={() => setOpen((value) => !value)}>⚙</button>
       </div>
       {open ? <section className="author-settings-popover" aria-label="Display settings">
-        <header><span>DISPLAY SETTINGS</span><button type="button" onClick={() => setOpen(false)}>[X]</button></header>
+        <header><span>{desktop ? "OPTIONS" : "DISPLAY SETTINGS"}</span><button type="button" onClick={() => setOpen(false)}>[X]</button></header>
         <label>TEXT SIZE <span>{settings.fontSize}px</span>
           <input type="range" min={12} max={24} step={1} value={settings.fontSize} onChange={(event) => setSettings({ ...settings, fontSize: Number(event.target.value) })} />
         </label>
@@ -79,6 +105,13 @@ export function AuthorSettings({ authorView, showAuthorViewToggle, visible = tru
           <input type="range" min={.25} max={4} step={.25} value={settings.textSpeedMultiplier} onChange={(event) => setSettings({ ...settings, textSpeedMultiplier: Number(event.target.value) })} />
         </label>
         <label className="check-label"><input type="checkbox" checked={settings.reduceMotion} onChange={(event) => setSettings({ ...settings, reduceMotion: event.target.checked })} /> reduce motion</label>
+        {desktop ? <div className="desktop-options-actions">
+          <button type="button" onClick={() => { setOpen(false); onNewGame?.(); }} disabled={!onNewGame}>NEW GAME</button>
+          <button type="button" onClick={() => { void checkForUpdates(); }} disabled={updating}>
+            {updating ? "CHECKING / DOWNLOADING..." : "CHECK FOR UPDATES"}
+          </button>
+          {updateMessage ? <p aria-live="polite">{updateMessage}</p> : null}
+        </div> : null}
       </section> : null}
     </div> : null}
   </>;
