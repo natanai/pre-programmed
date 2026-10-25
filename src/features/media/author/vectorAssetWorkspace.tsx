@@ -1,3 +1,4 @@
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { useEffect, useRef, useState, type CSSProperties, type PointerEvent } from "react";
 import { referencesTo } from "../../../author/references/projectReferences";
 import type { AuthorUiAction, AuthorUiNode } from "../../../author/ui/types";
@@ -306,7 +307,7 @@ function VectorCanvasControl({
           <label>HEIGHT <input type="number" min={1} step={1} value={resizeHeight} onChange={(event) => setResizeHeight(Number(event.target.value))} /></label>
           <button type="button" disabled={Boolean(sizeError) || (resizeWidth === document.width && resizeHeight === document.height)} onClick={applyResize}>[RESIZE CANVAS]</button>
         </div>
-        <small>{sizeError ?? `Custom canvases may contain up to ${VECTOR_GRID_MAX_CELLS.toLocaleString()} logical cells. Resizing preserves existing cells without resampling.`}</small>
+        {sizeError ? <small role="alert">{sizeError}</small> : <AuthorHelp label="About canvas size" text={`Custom canvases support up to ${VECTOR_GRID_MAX_CELLS.toLocaleString()} cells. Resizing preserves cells without resampling.`} />}
       </section>
       <label>COLOR <input type="color" value={color} onChange={(event) => setColor(event.target.value)} /></label>
       <div className="author-actions vector-tool-row" aria-label="Drawing tools">
@@ -317,7 +318,7 @@ function VectorCanvasControl({
         <button type="button" disabled={!redo.length} onClick={redoOnce}>[REDO]</button>
         <button type="button" disabled={!usedCells} onClick={() => commit(emptyVectorDocument(document.width, document.height))}>[CLEAR]</button>
       </div>
-      <small>{usedCells} / {document.width * document.height} cells used · SVG viewBox {document.width}×{document.height}.</small>
+      <small>{usedCells} / {document.width * document.height} cells used</small>
     </div>
   </div>;
 }
