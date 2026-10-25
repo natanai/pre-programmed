@@ -11,6 +11,7 @@ import {
 import { stateProjectReferences } from "./references";
 import { stateAuthorSearch, stateAuthorTools } from "./tools";
 import { stateStatusAuthorWorkspace } from "./statusWorkspace";
+import { variableDefaultsWorkspace } from "./defaultsWorkspace";
 import { STATE_WORKSPACES, type StateAuthorResourceKind } from "./workspaces";
 
 const DEFINITIONS_ROUTE = { type: "feature", feature: "state", workspace: "definitions" } as const;
@@ -34,6 +35,7 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "state") return null;
     if (route.workspace === "status") return "Player status";
+    if (route.workspace === "variable-defaults") return "State variable defaults";
     if (route.workspace !== "definitions") return null;
     const id = route.data?.resourceId;
     const variable = snapshot.variables.find((candidate) => candidate.id === id);
@@ -76,7 +78,13 @@ export const stateAuthorFeature: AuthorFeatureManifest = {
   references: [stateProjectReferences],
   tools: stateAuthorTools,
   search: stateAuthorSearch,
-  workspaces: [stateStatusAuthorWorkspace, ...STATE_WORKSPACES],
+  workspaces: [stateStatusAuthorWorkspace, ...STATE_WORKSPACES, variableDefaultsWorkspace],
+  projectSettings: [{
+    id: "state-variable-defaults", label: "STATE VARIABLES",
+    description: "Initial number, flag, text, and timing values for newly authored variables.",
+    group: "defaults", order: 50,
+    route: { type: "feature", feature: "state", workspace: "variable-defaults" },
+  }],
   resources: [
     {
       kind: "variable",

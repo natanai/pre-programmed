@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "./types";
 import { PROJECT_GENERAL_SETTINGS, projectTerminalSettingsWorkspace } from "../settings/projectGeneralSettings";
+import { projectDefaultsWorkspace } from "../settings/projectDefaultsSettings";
 import { projectTerminalReferences } from "../settings/projectGeneralReferences";
 import { projectTransferAuthorWorkspace } from "../project/projectTransferWorkspace";
 import { projectAuthorTools } from "../tools/projectTools";
@@ -18,6 +19,7 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   describeTask(route) {
     if (route.type === "feature" && route.feature === "project" && route.workspace === "settings") return "Advanced settings";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "terminal-settings") return "Terminal settings";
+    if (route.type === "feature" && route.feature === "project" && route.workspace === "defaults") return "Text and input defaults";
     if (route.type === "feature" && route.feature === "project" && route.workspace === "transfer") return "Project file";
     return null;
   },
@@ -59,6 +61,6 @@ export const projectAuthorFeature: AuthorFeatureManifest = {
   effects: [notificationEffectAdapter],
   references: [projectTerminalReferences],
   tools: projectAuthorTools,
-  workspaces: [projectTerminalSettingsWorkspace, projectTransferAuthorWorkspace],
+  workspaces: [projectTerminalSettingsWorkspace, projectDefaultsWorkspace, projectTransferAuthorWorkspace],
   projectSettings: PROJECT_GENERAL_SETTINGS,
 };

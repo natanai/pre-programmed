@@ -11,6 +11,7 @@ import type {
   StatePlayerPresentation,
   VariableDefinition,
 } from "../model";
+import { DEFAULT_STATE_VARIABLE_DEFAULTS, type StateVariableDefaults } from "../projectSettings";
 import "./stateWorkspaces.css";
 
 const ALWAYS: Condition = { type: "always" };
@@ -206,20 +207,20 @@ function presentationNodes(
   }];
 }
 
-function newVariable(kind?: StateAuthorResourceKind): VariableDefinition {
+function newVariable(kind?: StateAuthorResourceKind, defaults: StateVariableDefaults = DEFAULT_STATE_VARIABLE_DEFAULTS): VariableDefinition {
   const valueType: VariableDefinition["valueType"] = kind === "flag" ? "boolean" : kind === "text-variable" ? "string" : "number";
   return {
     id: crypto.randomUUID(),
     key: "",
     label: "",
     valueType,
-    initialValue: valueType === "boolean" ? false : valueType === "string" ? "" : 0,
+    initialValue: valueType === "boolean" ? defaults.flagValue : valueType === "string" ? defaults.textValue : defaults.numberValue,
     playerPresentation: null,
-    interactable: false,
+    interactable: defaults.interactable,
     operations: [],
     hooks: [],
-    timeRate: 0,
-    timeUnit: "second",
+    timeRate: defaults.timeRate,
+    timeUnit: defaults.timeUnit,
   };
 }
 
@@ -310,7 +311,7 @@ export const stateLibraryWorkspace = defineAuthorWorkspace({
 export const stateVariableWorkspace = defineAuthorWorkspace<VariableDefinition>({
   id: "state-variable",
   matches: (route) => route.type === "feature" && route.feature === "state" && route.workspace === "definitions" && ["variable", "number-variable", "text-variable", "flag"].includes(route.data?.resourceKind ?? ""),
-  createDraft: (route, context) => structuredClone(context.snapshot.variables.find((candidate) => candidate.id === route.data?.resourceId) ?? newVariable(route.data?.resourceKind as StateAuthorResourceKind | undefined)),
+  createDraft: (route, context) => structuredClone(context.snapshot.variables.find((candidate) => candidate.id === route.data?.resourceId) ?? newVariable(route.data?.resourceKind as StateAuthorResourceKind | undefined, context.snapshot.settings.variableDefaults)),
   buildSpec: ({ route, context, draft, setDraft }) => {
     const existing = context.snapshot.variables.some((candidate) => candidate.id === draft.id);
     const lockedType = route.data?.resourceKind === "flag" ? "boolean" : route.data?.resourceKind === "number-variable" ? "number" : route.data?.resourceKind === "text-variable" ? "string" : null;

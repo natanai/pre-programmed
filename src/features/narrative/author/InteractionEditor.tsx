@@ -147,7 +147,7 @@ export function InteractionComposer({
   };
 
   const addResponseDraft = () => {
-    const outcome = createDraftOutcome(draft.outcomes.length);
+    const outcome = createDraftOutcome(draft.outcomes.length, "", snapshot.settings.defaults.textSpeed);
     setDraft((current) => ({ ...current, outcomes: [...current.outcomes, outcome] }));
     setNewOutcomeIds((current) => new Set(current).add(outcome.id));
     setScreen({ type: "response", outcomeId: outcome.id });

@@ -65,7 +65,7 @@ export const worldEntityWorkspace = defineAuthorWorkspace<EntityDraft>({
   matches: (route) => route.type === "feature" && route.feature === "world" && route.workspace === "entity",
   createDraft: (route, context) => {
     return entityAuthorDraft(context.snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId)
-      ?? newEntity(route.data?.entityType === "location" ? "location" : "character"));
+      ?? newEntity(route.data?.entityType === "location" ? "location" : "character", context.snapshot.settings.worldDefaults));
   },
   buildSpec: ({ route, context, draft, setDraft }) => {
     const persisted = context.snapshot.entities.some((entity) => entity.id === draft.id);

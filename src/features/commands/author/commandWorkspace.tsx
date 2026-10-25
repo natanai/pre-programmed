@@ -1,4 +1,5 @@
 import type { AuthorUiAction, AuthorUiNode } from "../../../author/ui/types";
+import { DEFAULT_PROJECT_DEFAULTS } from "../../../engine/project/defaults";
 import { defineAuthorWorkspace, type AuthorWorkspaceBuildContext } from "../../../author/ui/workspaceDefinition";
 import { OutcomeEffectsEditor } from "../../../author/outcomes/OutcomeComposer";
 import { APPLICATION_COMMAND_CAPABILITIES } from "../../../engine/application/catalog";
@@ -41,11 +42,11 @@ function targetProviders() {
   return SEMANTIC_REFERENCE_PROVIDERS.filter((provider) => provider.targetable);
 }
 
-function defaultResponseAction(): CommandAction {
+function defaultResponseAction(textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): CommandAction {
   return {
     type: "response",
     responseText: "",
-    responsePerformance: { charactersPerSecond: 18, cues: [] },
+    responsePerformance: { charactersPerSecond: textSpeed, cues: [] },
     speakerId: null,
     effects: [],
   };
@@ -140,7 +141,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
       slots: [],
       action: initialOperation
         ? { type: "target-operation", operation: initialOperation, targetSlot: "" }
-        : defaultResponseAction(),
+        : defaultResponseAction(context.snapshot.settings.defaults.textSpeed),
     });
     const patternsText = source.patterns.join("\n");
     const command = commandWithPatterns(source, patternsText);
@@ -269,7 +270,7 @@ export const commandWorkspace = defineAuthorWorkspace<CommandWorkspaceDraft>({
           ...current,
           command: {
             ...current.command,
-            action: current.command.action.type === "response" ? current.command.action : defaultResponseAction(),
+            action: current.command.action.type === "response" ? current.command.action : defaultResponseAction(context.snapshot.settings.defaults.textSpeed),
           },
         };
       }

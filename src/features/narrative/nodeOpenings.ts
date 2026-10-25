@@ -1,20 +1,21 @@
 import type { PlayState, ProjectSnapshot } from "../../engine/project/model";
+import { DEFAULT_PROJECT_DEFAULTS } from "../../engine/project/defaults";
 import { selectConditionalCandidate } from "../../engine/rules/conditionalSelection";
 import { ALWAYS } from "../../engine/rules/model";
 import { makeId } from "../../engine/project/id";
 import type { GameNode, NodeOpening, TextPerformance } from "./model";
 
-export const DEFAULT_NODE_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
+export const DEFAULT_NODE_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed, cues: [] };
 
-export function createNodeOpening(order = 0): NodeOpening {
+export function createNodeOpening(order = 0, textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): NodeOpening {
   return {
     id: makeId(),
     order,
     condition: ALWAYS,
     narrationText: "",
     dialogueText: "",
-    narrationPerformance: { ...DEFAULT_NODE_TEXT_PERFORMANCE, cues: [] },
-    dialoguePerformance: { ...DEFAULT_NODE_TEXT_PERFORMANCE, cues: [] },
+    narrationPerformance: { charactersPerSecond: textSpeed, cues: [] },
+    dialoguePerformance: { charactersPerSecond: textSpeed, cues: [] },
     after: [],
   };
 }

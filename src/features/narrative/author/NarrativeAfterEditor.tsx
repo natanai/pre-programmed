@@ -244,7 +244,7 @@ function CaptureFlowEditor({
         </details>
       </section>;
     })}
-    <button type="button" className="guided-add capture-add-turn" onClick={() => onChange(appendCaptureTurn(flow))}>
+    <button type="button" className="guided-add capture-add-turn" onClick={() => onChange(appendCaptureTurn(flow, snapshot.settings.defaults.textSpeed))}>
       [+ CAPTURE ANOTHER INPUT]
     </button>
     <details className="capture-optional-section" open={continuationOpen} onToggle={(event) => setContinuationOpen(event.currentTarget.open)}>
@@ -370,7 +370,7 @@ export function NarrativeAfterEditor({
     }
     if (value === "capture") {
       setChoosingExisting(false);
-      if (!capture) onChange(createCaptureInputFlow());
+      if (!capture) onChange(createCaptureInputFlow(snapshot.settings.defaults.textSpeed));
       return;
     }
     if (value === "previous") {

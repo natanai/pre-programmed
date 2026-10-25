@@ -6,6 +6,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { giveInventoryItem } from "../runtime";
 import type { ItemDefinition } from "../model";
+import { DEFAULT_ITEM_DEFAULTS, type ItemDefaults as ItemDefinitionDefaults } from "../projectSettings";
 import {
   equipmentPolicyFromResult,
   equipmentPolicyRoute,
@@ -60,11 +61,10 @@ export const inventoryItemsWorkspace = defineAuthorWorkspace({
   }),
 });
 
-function emptyItem(): ItemDefinition {
+function emptyItem(defaults: ItemDefinitionDefaults = DEFAULT_ITEM_DEFAULTS): ItemDefinition {
   return {
-    id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", width: 1, height: 1,
-    stackable: false, maxStack: 1, removable: true, startingQuantity: 1,
-    interactable: true, operations: [...NATIVE_ITEM_OPERATIONS], equipmentPlacements: [], equippedStorage: "inventory",
+    id: crypto.randomUUID(), key: "", name: "", description: "", assetId: "", ...defaults,
+    operations: [...NATIVE_ITEM_OPERATIONS], equipmentPlacements: [],
     equipOnGiveSlotKey: null, tags: [], initialState: {}, hooks: [],
   };
 }
@@ -74,7 +74,7 @@ export const inventoryItemWorkspace = defineAuthorWorkspace<ItemDefinition>({
   matches: (route) => route.type === "feature" && route.feature === "inventory" && route.workspace === "item",
   createDraft: (route, context) => {
     const initial = route.data?.itemId ? context.snapshot.items.find((candidate) => candidate.id === route.data?.itemId) : undefined;
-    const item = structuredClone(initial ?? emptyItem());
+    const item = structuredClone(initial ?? emptyItem(context.snapshot.settings.itemDefaults));
     return {
       ...item,
       equipmentPlacements: normalizeEquipmentPlacements(item.equipmentPlacements ?? []),

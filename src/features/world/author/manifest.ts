@@ -1,6 +1,7 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { targetDescriptionEffectAdapter, targetPortraitEffectAdapter } from "./ruleAdapters";
 import { WORLD_WORKSPACES, worldEntityRoute } from "./entityWorkspaces";
+import { worldDefaultsWorkspace } from "./defaultsWorkspace";
 import { worldProjectReferences } from "./references";
 
 const WORLD_LIBRARY_ROUTE = { type: "feature", feature: "world", workspace: "library" } as const;
@@ -10,6 +11,7 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
   describeTask(route, snapshot) {
     if (route.type !== "feature" || route.feature !== "world") return null;
     if (route.workspace === "library") return "People + places";
+    if (route.workspace === "defaults") return "Character and location defaults";
     if (route.workspace === "entity") {
       const entity = snapshot.entities.find((candidate) => candidate.id === route.data?.resourceId);
       return entity?.name || `New ${route.data?.entityType === "location" ? "location" : "character"}`;
@@ -19,7 +21,13 @@ export const worldAuthorFeature: AuthorFeatureManifest = {
   terminalShortcuts: [{ commands: ["/locations", "locations"], route: WORLD_LIBRARY_ROUTE }],
   effects: [targetDescriptionEffectAdapter, targetPortraitEffectAdapter],
   references: [worldProjectReferences],
-  workspaces: [...WORLD_WORKSPACES],
+  workspaces: [...WORLD_WORKSPACES, worldDefaultsWorkspace],
+  projectSettings: [{
+    id: "world-defaults", label: "CHARACTERS & LOCATIONS",
+    description: "Initial name selection and player operations on new people and places.",
+    group: "defaults", order: 30,
+    route: { type: "feature", feature: "world", workspace: "defaults" },
+  }],
   commandTargets: [
     {
       sourceKind: "world.character",

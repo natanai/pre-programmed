@@ -87,6 +87,8 @@ export type AuthorProjectSettingsSection = {
   label: string;
   description: string;
   order?: number;
+  /** Optional shared heading in Advanced Settings; the actual editor remains owned by this feature. */
+  group?: "defaults";
   route: AuthorTaskRoute;
 };
 

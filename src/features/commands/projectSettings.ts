@@ -1,3 +1,4 @@
+import { DEFAULT_PROJECT_DEFAULTS } from "../../engine/project/defaults";
 import {
   CURRENT_COMMAND_STARTER_REVISION,
   DEFAULT_COMMAND_PROJECT_SETTINGS,
@@ -33,7 +34,7 @@ function responseAction(value: Record<string, unknown>): CommandResponseAction {
     responsePerformance: {
       charactersPerSecond: typeof performance.charactersPerSecond === "number" && Number.isFinite(performance.charactersPerSecond)
         ? performance.charactersPerSecond
-        : 18,
+        : DEFAULT_PROJECT_DEFAULTS.textSpeed,
       cues: Array.isArray(performance.cues)
         ? performance.cues as CommandResponseAction["responsePerformance"]["cues"]
         : [],

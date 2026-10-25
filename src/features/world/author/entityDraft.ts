@@ -1,21 +1,22 @@
 import type { EntityDefinition } from "../model";
+import { DEFAULT_WORLD_DEFAULTS, type WorldDefaults } from "../projectSettings";
 import { characterAliasName, characterStartingNameSelection } from "../model";
 
 /** Canonical World Author draft. Used by the one Character/Location editor. */
 export type EntityDraft = EntityDefinition & { aliasesInput?: string };
 
-export function newEntity(type: EntityDefinition["type"]): EntityDraft {
+export function newEntity(type: EntityDefinition["type"], defaults: WorldDefaults = DEFAULT_WORLD_DEFAULTS): EntityDraft {
   return {
     id: crypto.randomUUID(),
     key: "",
     type,
     name: "",
     aliases: [],
-    startingNameSelection: "first",
+    startingNameSelection: defaults.characterStartingNameSelection,
     description: "",
     tags: [],
     portraitAssetId: null,
-    interactable: false,
+    interactable: defaults.interactable,
     operations: [],
     hooks: [],
   };

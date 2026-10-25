@@ -47,7 +47,7 @@ function nodeForRoute(route: AuthorTaskRoute, context: AuthorWorkspaceContext) {
     id: makeId(),
     nodeNumber: nextNodeNumber(context.snapshot),
     authorLabel: "",
-    openings: [createNodeOpening(0)],
+    openings: [createNodeOpening(0, context.snapshot.settings.defaults.textSpeed)],
     ending: false,
     tags: [],
     locationId: null,
@@ -445,7 +445,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
                 onEditDestination={editDestination}
               />;
             })}
-            <button type="button" className="guided-add" onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, openings: [...current.node.openings, createNodeOpening(current.node.openings.length)] } }))}>[+ ADD ENTRY RESPONSE]</button>
+            <button type="button" className="guided-add" onClick={() => setDraft((current) => ({ ...current, node: { ...current.node, openings: [...current.node.openings, createNodeOpening(current.node.openings.length, context.snapshot.settings.defaults.textSpeed)] } }))}>[+ ADD ENTRY RESPONSE]</button>
           </section>,
         },
         {

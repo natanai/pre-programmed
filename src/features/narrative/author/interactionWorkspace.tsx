@@ -54,6 +54,7 @@ export const interactionWorkspace = defineAuthorWorkspace<InteractionWorkspaceDr
       sourceNodeId,
       route.data?.command ?? "",
       fallbackMode,
+      context.snapshot.settings.defaults,
     );
     const requestedOutcomeId = route.data?.outcomeId;
     const screen: InteractionEditorScreen = requestedOutcomeId

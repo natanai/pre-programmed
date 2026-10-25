@@ -1,7 +1,8 @@
 import type { InteractionOutcome, TextPerformance } from "./model";
+import { DEFAULT_PROJECT_DEFAULTS } from "../../engine/project/defaults";
 
 export const DEFAULT_INTERACTION_TEXT_PERFORMANCE: TextPerformance = {
-  charactersPerSecond: 18,
+  charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed,
   cues: [],
 };
 
@@ -18,7 +19,7 @@ export function interactionOutcomeProse(outcome: InteractionOutcome): Interactio
     responsePerformance?: TextPerformance;
   };
   const responsePerformance = legacy.responsePerformance ?? {
-    charactersPerSecond: legacy.responseCharactersPerSecond ?? 18,
+    charactersPerSecond: legacy.responseCharactersPerSecond ?? DEFAULT_PROJECT_DEFAULTS.textSpeed,
     cues: [],
   };
   const legacySpokenResponse = outcome.dialogueText === undefined && Boolean(outcome.speakerId);

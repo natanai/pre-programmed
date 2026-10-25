@@ -34,9 +34,13 @@ export type RadixStartupDefinition = {
   sequenceId: string;
 };
 
+export type RadixSequenceDefaults = Omit<RadixSequenceDefinition, "id">;
+
 export type RadixProjectSettings = {
   sequences: RadixSequenceDefinition[];
   startup: RadixStartupDefinition;
+  /** Seed values for new sort sequences; existing sequences retain their own settings. */
+  sequenceDefaults: RadixSequenceDefaults;
 };
 
 export const DEFAULT_RADIX_STARTUP: RadixStartupDefinition = {
@@ -52,9 +56,7 @@ export const SORT_ALGORITHM_LABELS: Record<SortAlgorithm, string> = {
   shell: "Shell Sort",
 };
 
-export function createRadixSequence(): RadixSequenceDefinition {
-  return {
-    id: crypto.randomUUID(),
+export const DEFAULT_RADIX_SEQUENCE: RadixSequenceDefaults = {
     label: "Universe sort",
     caption: "loading universe",
     widthMode: "viewport",
@@ -78,5 +80,8 @@ export function createRadixSequence(): RadixSequenceDefinition {
     maxFrequency: 1212,
     volume: 0.16,
     toneStride: 1,
-  };
+};
+
+export function createRadixSequence(defaults: RadixSequenceDefaults = DEFAULT_RADIX_SEQUENCE): RadixSequenceDefinition {
+  return { id: crypto.randomUUID(), ...defaults };
 }

@@ -1,4 +1,5 @@
 import { ALWAYS } from "../../../engine/rules/model";
+import { DEFAULT_PROJECT_DEFAULTS, type ProjectDefaults } from "../../../engine/project/defaults";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { createDraftInteraction, createDraftOutcome } from "../drafts";
 import type { Interaction, NarrativeFlowStep, NodeEntryTarget } from "../model";
@@ -32,16 +33,17 @@ export function normalizeInteractionAuthorDraft(
   sourceNodeId: string,
   command: string,
   fallback: boolean,
+  defaults: ProjectDefaults = DEFAULT_PROJECT_DEFAULTS,
 ) {
-  const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback));
+  const value = structuredClone(initial ?? createDraftInteraction(sourceNodeId, command, fallback, defaults));
   value.matchMode = fallback ? "fallback" : "command";
-  value.choiceVisibility ??= fallback ? "typed" : "prompt";
+  value.choiceVisibility ??= fallback ? "typed" : defaults.inputVisibility;
   value.choiceVisibleWhen ??= ALWAYS;
   value.outcomes = value.outcomes.length ? value.outcomes.map((outcome) => normalizeInteractionOutcomeProse({
     ...outcome,
     after: Array.isArray(outcome.after) ? outcome.after : [],
     authorStatus: outcome.authorStatus ?? "configured",
-  })) : [createDraftOutcome()];
+  })) : [createDraftOutcome(0, "", defaults.textSpeed)];
   return value;
 }
 

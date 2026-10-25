@@ -1,5 +1,6 @@
 import {
   DEFAULT_RADIX_STARTUP,
+  DEFAULT_RADIX_SEQUENCE,
   type RadixProjectSettings,
   type RadixSequenceDefinition,
   type SortAlgorithm,
@@ -13,6 +14,7 @@ export const DEFAULT_RADIX_PROJECT_SETTINGS: RadixProjectSettingsSlice = {
   radix: {
     sequences: [],
     startup: structuredClone(DEFAULT_RADIX_STARTUP),
+    sequenceDefaults: { ...DEFAULT_RADIX_SEQUENCE },
   },
 };
 
@@ -69,9 +71,15 @@ export function normalizeRadixProjectSettings(root: Record<string, unknown>): Ra
     ? raw.sequences.map(normalizeSequence).filter((value): value is RadixSequenceDefinition => Boolean(value))
     : [];
   const startupValue = raw.startup && typeof raw.startup === "object" ? raw.startup as Record<string, unknown> : {};
+  const defaultsValue = raw.sequenceDefaults && typeof raw.sequenceDefaults === "object"
+    ? raw.sequenceDefaults as Record<string, unknown>
+    : {};
+  const normalizedDefaults = normalizeSequence({ ...DEFAULT_RADIX_SEQUENCE, ...defaultsValue, id: "sequence-defaults" })!;
+  const { id: _ignoredId, ...sequenceDefaults } = normalizedDefaults;
   return {
     radix: {
       sequences,
+      sequenceDefaults,
       startup: {
         enabled: startupValue.enabled === true,
         sequenceId: typeof startupValue.sequenceId === "string" ? startupValue.sequenceId : "",
