@@ -58,8 +58,8 @@ async function request(uri, options) {
   if (!response.ok) throw new Error(uri + " (" + response.status + "): " + (await response.text()).slice(0,400));
   return response.json();
 }
-async function startLocal() {
-  await rm(dataDir, {recursive:true,force:true});
+async function startLocal({reset=false}={}) {
+  if(reset) await rm(dataDir, {recursive:true,force:true});
   server = spawn(process.execPath, ["scripts/run-local.mjs"], {
     stdio: "inherit",
     env: {...process.env, PRE_PROGRAMMED_LOCAL_DATA_DIR:dataDir},
@@ -76,17 +76,29 @@ async function startLocal() {
   throw new Error("Isolated Author local D1 server was not ready.");
 }
 let closing = false;
+async function stopServer() {
+  const child=server;
+  server=null;
+  if(!child)return;
+  if(child.exitCode===null) {
+    if(process.platform==="win32") {
+      spawnSync("taskkill",["/pid",String(child.pid),"/T","/F"],{stdio:"ignore"});
+    }else{
+      try{process.kill(-child.pid,"SIGTERM");}catch{try{child.kill("SIGTERM");}catch{}}
+    }
+    await Promise.race([once(child,"exit"),new Promise(r=>setTimeout(r,3500))]);
+  }
+}
+async function restartLocal(expectedHash) {
+  await stopServer();
+  await requireExclusiveLocalPorts();
+  await startLocal();
+  const snapshot=await request("/api/project/snapshot");
+  if(SHA(snapshot)!==expectedHash)throw Error("Disposable project fixture changed during local server restart; cannot combine observations.");
+}
 async function stopLocal() {
   closing=true;
-  if(server&&server.exitCode===null) {
-    if (process.platform==="win32") {
-      const {spawnSync}=await import("node:child_process");
-      spawnSync("taskkill",["/pid",String(server.pid),"/T","/F"],{stdio:"ignore"});
-    } else {
-      try { process.kill(-server.pid,"SIGTERM"); } catch { server.kill("SIGTERM"); }
-    }
-    await Promise.race([once(server,"exit"),new Promise(r=>setTimeout(r,3500))]);
-  }
+  await stopServer();
   await rm(dataDir,{recursive:true,force:true});
 }
 const performance = {charactersPerSecond:18,cues:[]};
@@ -213,7 +225,7 @@ async function newPage(browser, fixture, token) {
   await settle(page);
   return {page,context};
 }
-async function traverse(browser, fixture, token) {
+async function traverse(browser, fixture, token, expectedHash) {
   const states=new Map(),transitions=new Map(),frontier=new Map(),replays=[];
   let initialStateId=null;
   const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
@@ -242,6 +254,7 @@ async function traverse(browser, fixture, token) {
   const addState=(state)=>{if(!states.has(state.id))states.set(state.id,state);};
   while(queue.length && visited.size < maxStates && executedPaths < maxExecutions) {
     executedPaths++;
+    if(executedPaths>1 && (executedPaths-1)%10===0) await restartLocal(expectedHash);
     const next=dequeue();
     const path=next.path;
     const {page,context}=await newPage(browser,fixture,token);
@@ -309,7 +322,7 @@ try {
   await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
-  await startLocal();
+  await startLocal({reset:true});
   const {snapshot,token,nodeId}=await seedFixture();
   const fixtureHash=SHA(snapshot);
   browser=await chromium.launch({headless:true,args:["--no-sandbox"]});
@@ -324,7 +337,7 @@ try {
       seed:"runtime-uncontrolled",
       clock:"not-frozen",
     };
-    const result=await traverse(browser,fixture,token);
+    const result=await traverse(browser,fixture,token,fixtureHash);
     const trace={
       schema_version:1,type:"author-observed-transitions",
       provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
