@@ -38,6 +38,10 @@ jobs:
       - run: npm ci --no-audit --no-fund
       - run: npm run audit:author:extract
       - run: npm run audit:author:check
+      - run: node --check scripts/author-flow/browser-recorder.js
+      - run: node --check scripts/author-flow/query.mjs
+      - run: npm run audit:author:query -- --find 'world-character-alias' > /dev/null
+      - run: npm run verify
       - name: Update generated graph on audit branches
         if: github.event_name == 'push'
         shell: bash
