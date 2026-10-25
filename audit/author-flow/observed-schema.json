@@ -282,6 +282,11 @@
                     }
                   }
                 }
+              },
+              "task_depth": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Actual visible Author stack depth from the runtime task-shell data attribute; zero when closed."
               }
             }
           },
@@ -513,6 +518,28 @@
               },
               "observed_value": {
                 "type": "string"
+              }
+            }
+          },
+          "task_depth_observation": {
+            "type": "object",
+            "description": "Actual task depth before/after a user click and whether the Back control appears in the observed destination UI.",
+            "required": [
+              "before",
+              "after",
+              "back_visible"
+            ],
+            "properties": {
+              "before": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "after": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "back_visible": {
+                "type": "boolean"
               }
             }
           }
