@@ -90,7 +90,7 @@ function label(n,sf) {
   const raw=n.children.filter(x=>ts.isJsxText(x)).map(x=>x.getText(sf).trim()).filter(Boolean).join(" ").replace(/\s+/g," ");
   return raw||{expression:"dynamic JSX children"};
 }
-const paths=[...walk(path.join(root,"src/author")),...walk(path.join(root,"src/features")),...walk(path.join(root,"src/engine")),...walk(path.join(root,"src/player")),path.join(root,"src/App.tsx")].filter(fs.existsSync).sort();
+const paths=[...walk(path.join(root,"src/author")),...walk(path.join(root,"src/features")),...walk(path.join(root,"src/engine")),...walk(path.join(root,"src/player")),...walk(path.join(root,"src/components")),...walk(path.join(root,"src/ui")),path.join(root,"src/App.tsx")].filter(fs.existsSync).sort();
 const nodes=[];const edges=[];const calls=[];const sources=[];const branchSites=[];const collectionSites=[];
 for(const p of paths) {
   const file=path.relative(root,p).split(path.sep).join("/");
