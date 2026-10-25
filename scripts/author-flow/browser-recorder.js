@@ -6,6 +6,7 @@
   if (window.__authorFlowAudit) return;
   let session=null;
   let pending=Promise.resolve();
+  let capturing=false;
   const sleepFrame=()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   const hash=text=>{
     let value=0xcbf29ce484222325n;
@@ -64,10 +65,15 @@
     if(!target||!visible(target))return;
     const kind=target.tagName.toLowerCase();
     // Text typing is an unbounded domain, so record only committed changes.
-    if(event.type==="click"&&!["button","summary","a"].includes(kind)&&target.type!=="checkbox"&&target.type!=="radio")return;
+    if(event.type==="click"&&!["button","summary","a"].includes(kind))return;
     if(event.type==="change"&&kind!=="input"&&kind!=="select"&&kind!=="textarea")return;
     const from=insertState(screen());
     const d=descriptor(target,0);
+    if(capturing) {
+      session.frontier.push({state:from,locator:d.locator,reason:"unknown"});
+      return;
+    }
+    capturing=true;
     const action={locator:d.locator,event:event.type,value:event.type==="change"&&target.type!=="checkbox"&&target.type!=="radio"?null:d.value,pointer_activations:event.type==="click"?1:0};
     pending=pending.then(async()=>{
       await waitSettled();
@@ -75,6 +81,7 @@
       const to=insertState(screen());
       const key=from+"|"+JSON.stringify(action)+"|"+to;
       session.transitions.push({id:"transition:"+hash(key),fixture:session.fixture.id,from,to,action,observed:true,effects:[]});
+      capturing=false;
     });
   }
   const onClick=e=>record(e);
@@ -82,7 +89,8 @@
   function start(fixture) {
     if(session)throw new Error("Stop the existing audit capture first.");
     if(!fixture?.id||!fixture?.project_fixture||!fixture?.viewport||!fixture?.initial_run)throw new Error("Fixture requires id, project_fixture, viewport and initial_run.");
-    session={fixture,states:new Map(),transitions:[],from:null};
+    capturing=false;
+    session={fixture,states:new Map(),transitions:[],frontier:session.frontier};
     insertState(screen());
     document.addEventListener("click",onClick,true);
     document.addEventListener("change",onChange,true);
@@ -97,5 +105,5 @@
     session=null;pending=Promise.resolve();
     return result;
   }
-  window.__authorFlowAudit=Object.freeze({start,stop,snapshot:()=>session?screen():null});
+  window.__authorFlowAudit=Object.freeze({start,stop,idle:()=>pending,snapshot:()=>session?screen():null});
 })();
