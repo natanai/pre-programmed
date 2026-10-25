@@ -30,7 +30,7 @@
     const {region, scope} = scopeFor(element);
     const kind = element.tagName.toLowerCase();
     const identifier = element.id || element.getAttribute("aria-label") || element.getAttribute("name") || "";
-    const ordinal = Array.from(region.querySelectorAll(selector)).indexOf(element);
+    const ordinal = Array.from(document.body.querySelectorAll(selector)).indexOf(element);
     const locator = JSON.stringify([scope, kind, identifier, ordinal]);
     element.setAttribute("data-author-flow-probe", locator);
     const label = (element.getAttribute("aria-label")
