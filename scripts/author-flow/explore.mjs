@@ -74,7 +74,7 @@ async function stopLocal() {
   }
   await rm(dataDir,{recursive:true,force:true});
 }
-const performance = {charactersPerSecond:1000,cues:[]};
+const performance = {charactersPerSecond:18,cues:[]};
 async function seedFixture() {
   const initial=await request("/api/project/snapshot");
   const login=await request("/api/author/login", {
