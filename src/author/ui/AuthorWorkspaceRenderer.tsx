@@ -170,12 +170,16 @@ export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWo
   assertValidAuthorWorkspaceSpec(spec);
   const commitPending = useAuthorCommitPending();
   const locked = busy || commitPending;
+  // A different task may be saving in the background. Do not make this
+  // editor inert during that commit: Chromium immediately drops textarea
+  // focus, and Windows authors cannot click or type until persistence finishes.
+  // Only this workspace\'s own explicit Save temporarily freezes its draft.
   return <section
     className="author-panel author-ui-workspace"
     data-author-ui-workspace={spec.id}
     aria-label={spec.title}
     aria-busy={locked || undefined}
-    inert={locked || undefined}
+    inert={busy || undefined}
   >
     <div className="author-panel-body author-ui-workspace-body">
       {spec.context ? <small className="author-ui-workspace-context">{spec.context}</small> : null}

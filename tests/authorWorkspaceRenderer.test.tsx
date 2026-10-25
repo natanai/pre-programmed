@@ -23,4 +23,36 @@ describe("AuthorWorkspaceRenderer", () => {
     expect(html).toContain("[SAVE]");
     expect(html.indexOf("author-ui-workspace-body")).toBeLessThan(html.indexOf("author-ui-workspace-actions"));
   });
+  it("keeps editable field focus available when the shared save lock is active elsewhere", () => {
+    const html = renderToStaticMarkup(
+      <AuthorWorkspaceRenderer
+        spec={{
+          id: "test.fields",
+          title: "Narration",
+          blocks: [{
+            type: "field",
+            id: "narration",
+            control: "textarea",
+            label: "NARRATION",
+            value: "you are born",
+            onChange: () => undefined,
+          }],
+        }}
+      />,
+    );
+    expect(html).toContain("<textarea");
+    expect(html).not.toMatch(/<section[^>]*\\sinert(?:\\s|=|>)/);
+  });
+
+  it("temporarily locks its own inputs only while that workspace is explicitly saving", () => {
+    const html = renderToStaticMarkup(
+      <AuthorWorkspaceRenderer busy spec={{
+        id: "test.saving",
+        title: "Saving",
+        blocks: [{ type: "field", id: "narration", control: "textarea", label: "NARRATION", value: "", onChange: () => undefined }],
+      }} />,
+    );
+    expect(html).toMatch(/<section[^>]*\\sinert(?:\\s|=|>)/);
+  });
+
 });
