@@ -1,0 +1,66 @@
+name: Author flow browser baseline
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'audit/author-flow-browser-*'
+    paths:
+      - '.github/workflows/author-flow-browser.yml'
+      - 'scripts/author-flow/explore.mjs'
+      - 'scripts/author-flow/browser-recorder.js'
+      - 'package.json'
+permissions:
+  contents: write
+concurrency:
+  group: author-flow-browser-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  explore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install test-only browser dependencies
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Validate browser tooling
+        run: |
+          node --check scripts/author-flow/explore.mjs
+          node --check scripts/author-flow/browser-recorder.js
+      - name: Explore isolated mobile and desktop Author screens
+        run: npm run audit:author:explore -- --max-states 30 --max-depth 4 --max-executions 60
+      - name: Recompute evidence-derived coverage
+        run: |
+          npm run audit:author:coverage
+          npm run audit:author:coverage-check
+          node scripts/author-flow/validate-traces.mjs
+          npm run audit:author:trace -- --fixture desktop --find 'TOOLS' > /dev/null
+          node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync("audit/author-flow/coverage.json"));if(x.executed.transition_count<1||x.executed.fixture_count<2)process.exit(1);console.log(x.executed)'
+      - name: Preserve source graph and engine verification
+        run: npm run verify
+      - name: Commit genuine observed evidence (audit branch only)
+        if: github.event_name == 'push'
+        run: |
+          git add audit/author-flow/traces audit/author-flow/coverage.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Record observed Author browser transitions'
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Upload transition evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: author-flow-browser-traces
+          path: |
+            audit/author-flow/traces/
+            audit/author-flow/coverage.json
+          if-no-files-found: warn
+          retention-days: 30
