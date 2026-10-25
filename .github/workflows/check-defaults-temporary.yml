@@ -1,0 +1,25 @@
+name: Verify defaults change
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "worker/**"
+      - "tests/**"
+      - ".github/workflows/check-defaults-temporary.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run verify
