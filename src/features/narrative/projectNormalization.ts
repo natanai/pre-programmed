@@ -1,4 +1,5 @@
 import type { MutationOperation } from "../../engine/project/model";
+import { DEFAULT_PROJECT_DEFAULTS } from "../../engine/project/defaults";
 import type { Condition, Effect } from "../../engine/rules/model";
 import type {
   GameNode,
@@ -10,7 +11,7 @@ import type {
 } from "./model";
 import type { NarrativeProjectSlice } from "./projectSlice";
 
-const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
+const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed, cues: [] };
 const ALWAYS: Condition = { type: "always" };
 
 type NarrativeSnapshotLike = {
