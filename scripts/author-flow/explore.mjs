@@ -182,6 +182,7 @@ async function perform(page,action) {
 async function newPage(browser, fixture, token) {
   const context=await browser.newContext({
     viewport:{width:fixture.viewport.width,height:fixture.viewport.height},
+    ...(fixture.id.endsWith("-mobile") ? {isMobile:true,hasTouch:true,deviceScaleFactor:2} : {}),
     reducedMotion:"reduce",
     serviceWorkers:"block",
   });
@@ -275,7 +276,7 @@ try {
       project_sha256:fixtureHash,
       viewport:{width:viewport.width,height:viewport.height},
       initial_run:{nodeId,revision:snapshot.revision},
-      seed:0,
+      seed:"runtime-uncontrolled",
       clock:"not-frozen",
     };
     const result=await traverse(browser,fixture,token);
