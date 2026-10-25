@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const { createServer } = require("node:http");
 const { mkdir, readFile, stat, unlink, writeFile } = require("node:fs/promises");
 const { createReadStream, existsSync, mkdirSync, renameSync } = require("node:fs");
@@ -6,6 +6,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { randomUUID } = require("node:crypto");
 const { projectPathFromArguments } = require("./project-drop.cjs");
+const { findUpdate, stageUpdate, applyAfterExit } = require("./updater.cjs");
 
 const CONTENT_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -32,6 +33,7 @@ let hostServer = null;
 let mainWindow = null;
 let quitting = false;
 let portableHost = null;
+let updateInProgress = false;
 let projectImportQueue = Promise.resolve();
 const waitingProjectFiles = [];
 
@@ -557,6 +559,51 @@ function queueDroppedProject(filename) {
   });
 }
 
+
+async function checkAndInstallUpdate() {
+  if (!app.isPackaged || process.platform !== "win32") return { message: "Updates are available in the packaged Windows app only." };
+  if (updateInProgress) return { message: "An update is already being prepared." };
+  updateInProgress = true;
+  try {
+    const current = app.getVersion();
+    const release = await findUpdate(current);
+    if (!release) return { message: "Pre-Programmed " + current + " is already up to date." };
+    const choice = await dialog.showMessageBox(mainWindow, {
+      type: "question",
+      title: "Pre-Programmed update",
+      message: "Update from v" + current + " to v" + release.version + "?",
+      detail: "Pre-Programmed will download the official Windows release, verify it, and restart automatically. Your game, saves, Author key, and assets will be kept. This requires an internet connection and free disk space.",
+      buttons: ["Download and update", "Not now"],
+      defaultId: 1,
+      cancelId: 1,
+      noLink: true,
+    });
+    if (choice.response !== 0) return { message: "Update cancelled." };
+    const root = configuredPortableRoot;
+    if (mainWindow) mainWindow.setProgressBar(0);
+    const staged = await stageUpdate({
+      release, root, scriptSource: resourcePath("apply-update.ps1"),
+      onProgress: (currentBytes, totalBytes) => {
+        if (mainWindow && totalBytes > 0) mainWindow.setProgressBar(Math.max(0, Math.min(1, currentBytes / totalBytes)));
+      },
+    });
+    if (mainWindow) mainWindow.setProgressBar(-1);
+    applyAfterExit({ root, ...staged, parentPid: process.pid });
+    // The helper waits for the Electron/Miniflare process to close before it
+    // replaces the engine and transfers the existing local data directory.
+    app.quit();
+    return { message: "Installing v" + release.version + " and restarting..." };
+  } catch (error) {
+    dialog.showErrorBox("Update not installed", error instanceof Error ? error.message : String(error));
+    return { message: "Update failed. No existing game files were intentionally replaced." };
+  } finally {
+    if (mainWindow) mainWindow.setProgressBar(-1);
+    updateInProgress = false;
+  }
+}
+
+ipcMain.handle("pre-programmed:check-for-updates", () => checkAndInstallUpdate());
+
 function installSaveAsDownloads(window) {
   window.webContents.session.on("will-download", (_event, item) => {
     const suggestedName = item.getFilename() || "pre-programmed-export";
@@ -586,6 +633,7 @@ async function createWindow() {
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
+      preload: path.join(__dirname, "preload.cjs"),
     },
   });
   installSaveAsDownloads(mainWindow);

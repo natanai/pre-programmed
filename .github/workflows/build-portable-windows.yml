@@ -117,6 +117,15 @@ jobs:
       - name: Verify .ppgame drop arguments
         run: node --test desktop/project-drop.nodecheck.cjs
 
+      - name: Verify updater metadata and Windows script
+        shell: pwsh
+        run: |
+          node --test desktop/updater.nodecheck.cjs
+          $tokens = $null
+          $parseErrors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path "desktop/apply-update.ps1"), [ref]$tokens, [ref]$parseErrors) | Out-Null
+          if ($parseErrors.Count) { $parseErrors | ForEach-Object { Write-Error $_.Message }; throw "Update script has invalid PowerShell syntax." }
+
       - name: Bundle Worker through Wrangler
         shell: pwsh
         run: |
