@@ -37,6 +37,16 @@ if (!["both", "desktop", "mobile"].includes(selected)) throw new Error("--viewpo
 const viewports = selected === "both" ? [desktop, mobile] : [selected === "mobile" ? mobile : desktop];
 const pageTimeout = number("--page-timeout-ms", 20_000);
 const SHA = value => createHash("sha256").update(typeof value === "string" ? value : JSON.stringify(value)).digest("hex");
+async function requireExclusiveLocalPorts() {
+  const {createServer} = await import("node:net");
+  for (const port of [5173,8787]) {
+    await new Promise((resolve,reject)=>{
+      const probe=createServer();
+      probe.once("error",error=>reject(new Error("Author audit refused to start: 127.0.0.1:"+port+" is occupied ("+error.code+"). Stop other local clients first.")));
+      probe.listen({host:"127.0.0.1",port,exclusive:true},()=>probe.close(resolve));
+    });
+  }
+}
 let server = null;
 
 async function request(uri, options) {
@@ -262,6 +272,7 @@ try {
   const { chromium }=await import("playwright").catch(()=>{
     throw new Error("Playwright is required for the isolated browser audit. CI installs it; locally install with npm install --no-save --no-package-lock playwright@1.56.1 and npx playwright install chromium.");
   });
+  await requireExclusiveLocalPorts();
   const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
   if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
   await startLocal();
