@@ -183,7 +183,7 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
       ...(route.workspace === "sequence-defaults" ? [] : [{
         type: "custom" as const,
         id: "radix-live-preview",
-        role: "preview",
+        role: "preview" as const,
         content: <button type="button" onClick={() => context.runtime.events([{ type: "radix", sequenceId: draft.id }])}>[PREVIEW SAVED VERSION ON PLAYER SURFACE]</button>,
       }]),
     ],
