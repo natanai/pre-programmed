@@ -28,7 +28,7 @@ jobs:
       - name: Install audit-only Chromium
         run: |
           npm install --no-save --no-package-lock playwright@1.56.1
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Syntax-check audit tools
         run: |
           node --check scripts/author-flow/explore.mjs
