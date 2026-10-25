@@ -69,15 +69,25 @@ export const radixSequenceListWorkspace = defineAuthorWorkspace<null>({
 
 export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceDefinition>({
   id: "radix-sequence",
-  matches: (route) => route.type === "feature" && route.feature === "radix" && route.workspace === "sequence",
+  matches: (route) => route.type === "feature" && route.feature === "radix"
+    && (route.workspace === "sequence" || route.workspace === "sequence-defaults"),
   createDraft: (route, context) => {
+    if (route.workspace === "sequence-defaults") {
+      return structuredClone({ id: "sequence-defaults", ...context.snapshot.settings.radix.sequenceDefaults });
+    }
     const id = route.data?.sequenceId ?? "new";
     const existing = context.snapshot.settings.radix.sequences.find((sequence) => sequence.id === id);
-    return structuredClone(existing ?? createRadixSequence());
+    return structuredClone(existing ?? createRadixSequence(context.snapshot.settings.radix.sequenceDefaults));
   },
   canSave: ({ draft }) => validSequence(draft),
   saveLabel: "SAVE",
   save: async ({ route, context, draft }) => {
+    if (route.workspace === "sequence-defaults") {
+      const { id: _ignoredId, ...sequenceDefaults } = draft;
+      const settings = { ...context.snapshot.settings, radix: { ...context.snapshot.settings.radix, sequenceDefaults } };
+      const result = await context.persist([{ type: "project.settings", settings }], "Changed sort sequence defaults");
+      return result.status === "saved" || result.status === "queued" ? { accepted: true, draft } : { accepted: false };
+    }
     const sequences = context.snapshot.settings.radix.sequences.some((sequence) => sequence.id === draft.id)
       ? context.snapshot.settings.radix.sequences.map((sequence) => sequence.id === draft.id ? structuredClone(draft) : sequence)
       : [...context.snapshot.settings.radix.sequences, structuredClone(draft)];
@@ -102,10 +112,12 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
       } : {}),
     };
   },
-  buildSpec: ({ context, draft, setDraft }) => ({
+  buildSpec: ({ context, draft, setDraft, route }) => ({
     id: `radix-sequence-${draft.id}`,
-    title: `SORT · ${draft.label || "NEW"}`,
-    context: "A reusable deterministic sorting presentation. Random seeds vary per run; fixed number/text seeds reproduce the same starting universe.",
+    title: route.workspace === "sequence-defaults" ? "SORT SEQUENCE DEFAULTS" : `SORT · ${draft.label || "NEW"}`,
+    context: route.workspace === "sequence-defaults"
+      ? "Starting values for new sort sequences. Previously saved sequences are unchanged."
+      : "A reusable deterministic sorting presentation. Random seeds vary per run; fixed number/text seeds reproduce the same starting universe.",
     blocks: [
       {
         type: "section",
@@ -168,12 +180,12 @@ export const radixSequenceEditorWorkspace = defineAuthorWorkspace<RadixSequenceD
           { type: "field", id: "radix-tone-stride", label: "TONE EVERY N EVENTS", control: "number", inputMode: "numeric", value: draft.toneStride, onChange: (value) => setDraft({ ...draft, toneStride: numberValue(value, draft.toneStride, 1, 64, true) }), help: "Increase this if a device struggles with very dense sonification." },
         ],
       },
-      {
-        type: "custom",
+      ...(route.workspace === "sequence-defaults" ? [] : [{
+        type: "custom" as const,
         id: "radix-live-preview",
         role: "preview",
         content: <button type="button" onClick={() => context.runtime.events([{ type: "radix", sequenceId: draft.id }])}>[PREVIEW SAVED VERSION ON PLAYER SURFACE]</button>,
-      },
+      }]),
     ],
   }),
 });
