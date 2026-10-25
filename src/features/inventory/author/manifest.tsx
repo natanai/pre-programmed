@@ -1,5 +1,6 @@
 import type { AuthorFeatureManifest } from "../../../author/features/types";
 import { inventoryAuthorSearch, inventoryAuthorTools } from "./tools";
+import { itemDefaultsWorkspace } from "./defaultsWorkspace";
 import {
   giveItemEffectAdapter,
   hasItemConditionAdapter,
@@ -20,6 +21,7 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "feature" || route.feature !== "inventory") return null;
     if (route.workspace === "inventory") return "Inventory";
     if (route.workspace === "items") return "Item definitions";
+    if (route.workspace === "item-defaults") return "Item defaults";
     if (route.workspace === "body-types") return "Body types";
     if (route.workspace === "item") {
       const item = snapshot.items.find((candidate) => candidate.id === route.data?.itemId);
@@ -54,7 +56,13 @@ export const inventoryAuthorFeature: AuthorFeatureManifest = {
   references: [inventoryProjectReferences],
   tools: inventoryAuthorTools,
   search: inventoryAuthorSearch,
-  workspaces: [inventoryAuthorHubWorkspace, ...INVENTORY_WORKSPACES, ...INVENTORY_EQUIPMENT_WORKSPACES, ...BODY_WORKSPACES],
+  workspaces: [inventoryAuthorHubWorkspace, ...INVENTORY_WORKSPACES, ...INVENTORY_EQUIPMENT_WORKSPACES, ...BODY_WORKSPACES, itemDefaultsWorkspace],
+  projectSettings: [{
+    id: "inventory-item-defaults", label: "ITEMS",
+    description: "Initial size, stacks, inventory quantities, and equipment behavior for new items.",
+    group: "defaults", order: 40,
+    route: { type: "feature", feature: "inventory", workspace: "item-defaults" },
+  }],
   resources: [
     {
       kind: "item",
