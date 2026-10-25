@@ -1,5 +1,5 @@
 import { createPortal } from "react-dom";
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import "./authorHelp.css";
 
 /** One optional help affordance for mouse, keyboard, and touch authors. */
@@ -16,6 +16,17 @@ export function AuthorHelp({ text, label = "More information" }: { text: string;
   const left = rect ? Math.max(12, Math.min(rect.left, viewportWidth - width - 12)) : 12;
   const above = Boolean(rect && rect.bottom + 160 > viewportHeight && rect.top > 170);
 
+  useEffect(() => {
+    if (!visible) return;
+    const dismiss = () => { setHovered(false); setExpanded(false); };
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [visible]);
+
   return <span className="author-inline-help">
     <button
       ref={buttonRef}
@@ -24,8 +35,8 @@ export function AuthorHelp({ text, label = "More information" }: { text: string;
       aria-label={label}
       aria-expanded={expanded}
       aria-describedby={visible ? id : undefined}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onPointerEnter={(event) => { if (event.pointerType === "mouse") setHovered(true); }}
+      onPointerLeave={(event) => { if (event.pointerType === "mouse") setHovered(false); }}
       onClick={() => setExpanded((current) => !current)}
       onBlur={() => setExpanded(false)}
       onKeyDown={(event) => {
