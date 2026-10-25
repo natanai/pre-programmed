@@ -13,12 +13,20 @@
   "executed": {
     "status": "partial",
     "trace_files": [
+      "author-audit-desktop-navigation-close-keep-discard.json",
+      "author-audit-desktop-navigation-close-save-all.json",
+      "author-audit-desktop-navigation-dirty-child-back.json",
+      "author-audit-desktop-navigation-nested-parent-return.json",
       "author-audit-desktop-scroll.json",
       "author-audit-desktop-wide.json",
       "author-audit-desktop-write-ascii.json",
       "author-audit-desktop-write-empty.json",
       "author-audit-desktop-write-punctuation.json",
       "author-audit-desktop.json",
+      "author-audit-mobile-navigation-close-keep-discard.json",
+      "author-audit-mobile-navigation-close-save-all.json",
+      "author-audit-mobile-navigation-dirty-child-back.json",
+      "author-audit-mobile-navigation-nested-parent-return.json",
       "author-audit-mobile-scroll.json",
       "author-audit-mobile-wide.json",
       "author-audit-mobile-write-ascii.json",
@@ -26,19 +34,91 @@
       "author-audit-mobile-write-punctuation.json",
       "author-audit-mobile.json"
     ],
-    "fixture_count": 12,
-    "state_count": 285,
-    "transition_count": 461,
-    "explicit_frontier_count": 3485,
-    "contiguous_replay_count": 376,
+    "fixture_count": 20,
+    "state_count": 325,
+    "transition_count": 507,
+    "explicit_frontier_count": 3487,
+    "contiguous_replay_count": 384,
     "by_event": {
       "change": 40,
-      "click": 407,
-      "fill": 6,
+      "click": 445,
+      "fill": 14,
       "scroll": 2,
       "toggle": 6
     },
     "by_fixture": [
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "fixture_ids": [
+          "author-audit-desktop-navigation-close-keep-discard"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 6,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 4,
+          "maxDepth": 6,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "fixture_ids": [
+          "author-audit-desktop-navigation-close-save-all"
+        ],
+        "observed_states": 5,
+        "observed_transitions": 4,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 5,
+          "maxDepth": 4,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "fixture_ids": [
+          "author-audit-desktop-navigation-dirty-child-back"
+        ],
+        "observed_states": 6,
+        "observed_transitions": 7,
+        "unexplored_frontier_entries": 1,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 6,
+          "maxDepth": 7,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "fixture_ids": [
+          "author-audit-desktop-navigation-nested-parent-return"
+        ],
+        "observed_states": 5,
+        "observed_transitions": 6,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 5,
+          "maxDepth": 6,
+          "maxExecutions": 1
+        }
+      },
       {
         "file": "author-audit-desktop-scroll.json",
         "fixture_ids": [
@@ -142,6 +222,78 @@
         "verified_contiguous_replays": null,
         "source_commit": "fbdf6c22dbb4dc3620ee0b114eb5b2df13ae2dd0",
         "explorer": null
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "fixture_ids": [
+          "author-audit-mobile-navigation-close-keep-discard"
+        ],
+        "observed_states": 4,
+        "observed_transitions": 6,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 4,
+          "maxDepth": 6,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "fixture_ids": [
+          "author-audit-mobile-navigation-close-save-all"
+        ],
+        "observed_states": 5,
+        "observed_transitions": 4,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 5,
+          "maxDepth": 4,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "fixture_ids": [
+          "author-audit-mobile-navigation-dirty-child-back"
+        ],
+        "observed_states": 6,
+        "observed_transitions": 7,
+        "unexplored_frontier_entries": 1,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 6,
+          "maxDepth": 7,
+          "maxExecutions": 1
+        }
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "fixture_ids": [
+          "author-audit-mobile-navigation-nested-parent-return"
+        ],
+        "observed_states": 5,
+        "observed_transitions": 6,
+        "unexplored_frontier_entries": 0,
+        "verified_contiguous_replays": 1,
+        "source_commit": "d04fb1bd6ff6832afa1451e10213442e8b88d778",
+        "explorer": {
+          "strategy": "finite-draft-navigation",
+          "suite": "navigation",
+          "maxStates": 5,
+          "maxDepth": 6,
+          "maxExecutions": 1
+        }
       },
       {
         "file": "author-audit-mobile-scroll.json",
@@ -251,8 +403,8 @@
     "by_workspace": [
       {
         "workspace": "author-tools",
-        "observed_states": 26,
-        "observed_transitions_from": 41,
+        "observed_states": 30,
+        "observed_transitions_from": 45,
         "frontier_by_reason": {
           "unvisited": 202,
           "unbounded-input": 30,
@@ -260,9 +412,13 @@
         },
         "fixture_ids": [
           "author-audit-desktop",
+          "author-audit-desktop-navigation-dirty-child-back",
+          "author-audit-desktop-navigation-nested-parent-return",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
           "author-audit-mobile",
+          "author-audit-mobile-navigation-dirty-child-back",
+          "author-audit-mobile-navigation-nested-parent-return",
           "author-audit-mobile-scroll",
           "author-audit-mobile-wide"
         ]
@@ -324,15 +480,17 @@
       },
       {
         "workspace": "narrative-structure",
-        "observed_states": 4,
-        "observed_transitions_from": 2,
+        "observed_states": 6,
+        "observed_transitions_from": 4,
         "frontier_by_reason": {
           "unvisited": 30,
           "unbounded-input": 4
         },
         "fixture_ids": [
+          "author-audit-desktop-navigation-dirty-child-back",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
+          "author-audit-mobile-navigation-dirty-child-back",
           "author-audit-mobile-scroll",
           "author-audit-mobile-wide"
         ]
@@ -357,21 +515,30 @@
       },
       {
         "workspace": "narrative.node",
-        "observed_states": 113,
-        "observed_transitions_from": 111,
+        "observed_states": 137,
+        "observed_transitions_from": 143,
         "frontier_by_reason": {
+          "unknown": 2,
           "unvisited": 1778,
           "unbounded-input": 213,
           "unsafe-mutation": 58
         },
         "fixture_ids": [
           "author-audit-desktop",
+          "author-audit-desktop-navigation-close-keep-discard",
+          "author-audit-desktop-navigation-close-save-all",
+          "author-audit-desktop-navigation-dirty-child-back",
+          "author-audit-desktop-navigation-nested-parent-return",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
           "author-audit-desktop-write-ascii",
           "author-audit-desktop-write-empty",
           "author-audit-desktop-write-punctuation",
           "author-audit-mobile",
+          "author-audit-mobile-navigation-close-keep-discard",
+          "author-audit-mobile-navigation-close-save-all",
+          "author-audit-mobile-navigation-dirty-child-back",
+          "author-audit-mobile-navigation-nested-parent-return",
           "author-audit-mobile-scroll",
           "author-audit-mobile-wide",
           "author-audit-mobile-write-ascii",
@@ -409,20 +576,28 @@
       },
       {
         "workspace": "terminal-or-unidentified",
-        "observed_states": 78,
-        "observed_transitions_from": 244,
+        "observed_states": 88,
+        "observed_transitions_from": 252,
         "frontier_by_reason": {
           "unbounded-input": 140,
           "unvisited": 274
         },
         "fixture_ids": [
           "author-audit-desktop",
+          "author-audit-desktop-navigation-close-keep-discard",
+          "author-audit-desktop-navigation-close-save-all",
+          "author-audit-desktop-navigation-dirty-child-back",
+          "author-audit-desktop-navigation-nested-parent-return",
           "author-audit-desktop-scroll",
           "author-audit-desktop-wide",
           "author-audit-desktop-write-ascii",
           "author-audit-desktop-write-empty",
           "author-audit-desktop-write-punctuation",
           "author-audit-mobile",
+          "author-audit-mobile-navigation-close-keep-discard",
+          "author-audit-mobile-navigation-close-save-all",
+          "author-audit-mobile-navigation-dirty-child-back",
+          "author-audit-mobile-navigation-nested-parent-return",
           "author-audit-mobile-scroll",
           "author-audit-mobile-wide",
           "author-audit-mobile-write-ascii",
@@ -469,6 +644,22 @@
   "evidence": {
     "fixtures": [
       {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
         "file": "author-audit-desktop-scroll.json",
         "id": "author-audit-desktop-scroll"
       },
@@ -491,6 +682,22 @@
       {
         "file": "author-audit-desktop.json",
         "id": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "author-audit-mobile-navigation-nested-parent-return"
       },
       {
         "file": "author-audit-mobile-scroll.json",
@@ -518,6 +725,106 @@
       }
     ],
     "states": [
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "state:04909b83eb8025de",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "state:e077e191f2b95a01",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "state:04909b83eb8025de",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "state:b2ad2ae9a2d6ff00",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "state:5f4eb68a72104c2e",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:04909b83eb8025de",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:540d749e1e06a0c6",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:2301c9c6b09e6ca4",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:b79ef8da0b051040",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "state:04909b83eb8025de",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "state:7feba06607654682",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "state:378ff816bb5f9218",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
       {
         "file": "author-audit-desktop-scroll.json",
         "id": "state:0009ccd170ca3111",
@@ -1227,6 +1534,106 @@
         "file": "author-audit-desktop.json",
         "id": "state:fd779c3543ab654e",
         "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "state:8739e5786beead63",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "state:eb838a0109b0b136",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "state:8739e5786beead63",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "state:a24b23e0c4d61b0d",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "state:5f4eb68a72104c2e",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:8739e5786beead63",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:488105ea3e65454d",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:2301c9c6b09e6ca4",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:4909803cf7d9104d",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "state:b0840eebb3246c5a",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "state:8739e5786beead63",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "state:ec962f4bb6fc1a13",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "state:8718bddf23a14f57",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "state:f58302d5b2091008",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
       },
       {
         "file": "author-audit-mobile-scroll.json",
@@ -1945,6 +2352,121 @@
       }
     ],
     "transitions": [
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:f69e14b1d5ddfe0b4b16",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:50588d0c60c9ed37c66d",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:8e2fc12250da3e9ec0e1",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:95d00ae183c8fb9dc1e1",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:8e2fc12250da3e9ec0e1",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-keep-discard.json",
+        "id": "transition:330a8c825902f16fa901",
+        "fixture": "author-audit-desktop-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "transition:cc3b1e5d2bb912663695",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "transition:78666edb835c28a92d57",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "transition:67440099572a56abbd56",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-close-save-all.json",
+        "id": "transition:891c4948c3c2040af8ff",
+        "fixture": "author-audit-desktop-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:65693759b5fb45641daf",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:8065cc5ae18fc5e83d4c",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:68d82ee8c87b1fa9f3f6",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:b3f119511b731b9d687b",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:6014eef9358c5db81b2d",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:a0c1afc07db30c899c26",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-dirty-child-back.json",
+        "id": "transition:a60a406110f068ade67b",
+        "fixture": "author-audit-desktop-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:6de41a08f2edf9f5e4c3",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:3355f6ceacadc5620cfa",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:f90c5fd260b0ffee3028",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:da24f0d49b7f05a56421",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:37d2aa31eaec88d99b0c",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-desktop-navigation-nested-parent-return.json",
+        "id": "transition:2a7fdc0e1f79c9f0b093",
+        "fixture": "author-audit-desktop-navigation-nested-parent-return"
+      },
       {
         "file": "author-audit-desktop-scroll.json",
         "id": "transition:0771ef74c2a135d83fb0",
@@ -3101,6 +3623,121 @@
         "fixture": "author-audit-desktop"
       },
       {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:11724c259164cb3f8b31",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:6a42c571497ed8c4af23",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:33684c6525de455babe6",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:4d361b36ff482225d4d3",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:33684c6525de455babe6",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-keep-discard.json",
+        "id": "transition:f50b6bcf9a2981c5ec32",
+        "fixture": "author-audit-mobile-navigation-close-keep-discard"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "transition:e7bb8840eb02599662b2",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "transition:0935b91fbc48e4b5e0ff",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "transition:78a843990c60edb2f551",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-close-save-all.json",
+        "id": "transition:ba97d758e2e9bac95047",
+        "fixture": "author-audit-mobile-navigation-close-save-all"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:a181fa84491ddf2b5b26",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:56e10a4e61ba989c0ff6",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:0e0e1752045efc195d37",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:b379d6052281d7bc7c7b",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:6a9a9fc4ea46d997f081",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:4dbc95ed185a6429dfa4",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-dirty-child-back.json",
+        "id": "transition:67045c648a619e25a225",
+        "fixture": "author-audit-mobile-navigation-dirty-child-back"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:0c65e98094ad9916ce04",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:1e50cde429571e382cde",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:1d7336ebdbef6aa17a49",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:8abd698639beea7f525f",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:64a77a94c4f800863870",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
+        "file": "author-audit-mobile-navigation-nested-parent-return.json",
+        "id": "transition:7837596bf00216d02774",
+        "fixture": "author-audit-mobile-navigation-nested-parent-return"
+      },
+      {
         "file": "author-audit-mobile-scroll.json",
         "id": "transition:055795e83a0b975bc685",
         "fixture": "author-audit-mobile-scroll"
@@ -4252,6 +4889,12 @@
       }
     ],
     "frontier": [
+      {
+        "state": "state:b79ef8da0b051040",
+        "locator": "author-workspace-back",
+        "reason": "unknown",
+        "file": "author-audit-desktop-navigation-dirty-child-back.json"
+      },
       {
         "state": "state:0009ccd170ca3111",
         "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
@@ -22143,6 +22786,12 @@
         "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",21]",
         "reason": "unbounded-input",
         "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:4909803cf7d9104d",
+        "locator": "author-workspace-back",
+        "reason": "unknown",
+        "file": "author-audit-mobile-navigation-dirty-child-back.json"
       },
       {
         "state": "state:0009ccd170ca3111",

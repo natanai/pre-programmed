@@ -55,6 +55,29 @@ for (const filename of files) {
         ||!/^([a-f0-9]{64})$/.test(p.snapshot_sha256_after))
         throw Error(filename+": unverified canonical Save readback "+transition.id);
     }
+    if(transition.draft_observation){
+      const d=transition.draft_observation;
+      const rendered=after.ui.visible_controls.filter(c=>c.kind==="textarea"&&c.label==="NARRATION"&&c.value===d.observed_value);
+      if(d.kind!=="resumed-parent"||d.expected_value!==d.observed_value||rendered.length!==1||after.ui.workspace!=="narrative.node")
+        throw Error(filename+": unverified resumed parent draft observation "+transition.id);
+    }
+    if(transition.task_depth_observation){
+      const d=transition.task_depth_observation;
+      const backShown=after.ui.visible_controls.some(c=>c.kind==="button"&&c.label==="[← BACK]"&&c.enabled);
+      if(before.ui.task_depth!==d.before||after.ui.task_depth!==d.after||backShown!==d.back_visible)
+        throw Error(filename+": recorded task depth or Back visibility does not match observed before/after UI states");
+    }
+    if(transition.project_observation){
+      const p=transition.project_observation;
+      if(p.source!=="local-d1-readback"||p.field!=="openings[0].narrationText"||p.restart_verified!==true
+        ||p.expected_value!==p.readback_value||p.snapshot_sha256_after!==p.restart_snapshot_sha256
+        ||!/^([a-f0-9]{64})$/.test(p.snapshot_sha256_before)||!/^([a-f0-9]{64})$/.test(p.snapshot_sha256_after))
+        throw Error(filename+": invalid local project observation "+transition.id);
+      if(p.changed?!(p.revision_after>p.revision_before&&p.snapshot_sha256_before!==p.snapshot_sha256_after)
+        :!(p.revision_after===p.revision_before&&p.snapshot_sha256_before===p.snapshot_sha256_after))
+        throw Error(filename+": dirty navigation project mutation mismatch "+transition.id);
+      if(after.ui.overlay_open)throw Error(filename+": Author mode remained open after final navigation "+transition.id);
+    }
     edgeKeys.add(JSON.stringify([transition.from,transition.to,transition.action]));
     edges++;
   }
@@ -78,6 +101,30 @@ for (const filename of files) {
     if(fills.length!==1||saves.length!==1||fills[0].action.value!==domain.value||saves[0].persistence.expected_value!==domain.value
       ||saves[0].persistence.snapshot_sha256_before===saves[0].persistence.snapshot_sha256_after)
       throw Error(filename+": finite text sample or persistence readback does not match fixture domain");
+  }
+  if(trace.fixtures.some(f=>f.navigation_case)){
+    if(trace.fixtures.length!==1||!Array.isArray(trace.replays)||trace.replays.length!==1)
+      throw Error(filename+": dirty navigation fixture must contain exactly one actual browser replay");
+    const fixture=trace.fixtures[0],cases=["close-keep-discard","close-save-all","nested-parent-return","dirty-child-back"];
+    if(!cases.includes(fixture.navigation_case))throw Error(filename+": unknown dirty-navigation case");
+    const observations=trace.transitions.filter(t=>t.project_observation);
+    if(observations.length!==1||observations[0].project_observation.case_id!==fixture.navigation_case)
+      throw Error(filename+": missing post-restart project evidence for "+fixture.navigation_case);
+    if(observations[0].project_observation.changed!==(fixture.navigation_case==="close-save-all"))
+      throw Error(filename+": project changed in wrong navigation case");
+    if(!trace.transitions.some(t=>t.action.event==="fill") || !trace.transitions.some(t=>t.action.event==="click"))
+      throw Error(filename+": no executed draft action or navigation");
+    if(fixture.navigation_case==="dirty-child-back"){
+      const taskDepths=trace.transitions.filter(t=>t.task_depth_observation);
+      if(taskDepths.length!==1)throw Error(filename+": expected a recorded Structure-to-Node task transition");
+      const blocked=!taskDepths[0].task_depth_observation.back_visible;
+      if(blocked&&!trace.frontier.some(item=>item.locator==="author-workspace-back"&&item.reason==="unknown"))
+        throw Error(filename+": no frontier entry for unobserved nested Back");
+      if(blocked&&trace.transitions.some(t=>t.action.event==="click"&&states.get(t.from)?.ui.visible_controls.some(c=>c.locator===t.action.locator&&c.label==="[← BACK]")))
+        throw Error(filename+": an unobserved Back action was fabricated after task stack reset");
+    }
+    if(fixture.navigation_case==="nested-parent-return"&&!trace.transitions.some(t=>t.draft_observation))
+      throw Error(filename+": no verified suspended parent draft restoration");
   }
   for(const item of trace.frontier){
     if(!states.has(item.state))throw Error(filename+": unanchored frontier "+JSON.stringify(item));

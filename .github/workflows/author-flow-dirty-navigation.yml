@@ -1,0 +1,71 @@
+name: Author flow dirty task navigation evidence
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'audit/author-flow-dirty-navigation-*'
+    paths:
+      - '.github/workflows/author-flow-dirty-navigation.yml'
+      - 'scripts/author-flow/**'
+      - 'audit/author-flow/**'
+      - 'package.json'
+permissions:
+  contents: write
+concurrency:
+  group: author-flow-dirty-navigation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install audit-only Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install chromium
+      - name: Syntax-check audit tools
+        run: |
+          node --check scripts/author-flow/explore.mjs
+          node --check scripts/author-flow/browser-recorder.js
+          node --check scripts/author-flow/validate-traces.mjs
+      - name: Exercise real dirty Author Back and X flows
+        run: npm run audit:author:explore -- --draft-navigation --viewport both
+      - name: Validate actual navigation and D1 evidence
+        run: |
+          node scripts/author-flow/validate-traces.mjs
+          npm run audit:author:coverage
+          npm run audit:author:coverage-check
+          node -e 'const fs=require("fs");const c=JSON.parse(fs.readFileSync("audit/author-flow/coverage.json"));if(c.executed.fixture_count<20||(c.executed.by_event.fill??0)<14)process.exit(1);console.log(c.executed.by_event)'
+      - name: Verify engine and client
+        run: npm run verify
+      - name: Commit observed traces before deriving merged coverage
+        if: github.event_name == 'push'
+        run: |
+          git add audit/author-flow/traces
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Record observed dirty Author task navigation'
+            git restore -- audit/author-flow/coverage.json
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            npm run audit:author:coverage
+            git add audit/author-flow/coverage.json
+            if ! git diff --cached --quiet; then
+              git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Refresh Author flow coverage with dirty task traces'
+            fi
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Archive audit JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: author-flow-dirty-navigation-traces
+          path: |
+            audit/author-flow/traces/
+            audit/author-flow/coverage.json
+          retention-days: 30
