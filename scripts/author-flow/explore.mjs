@@ -5,7 +5,7 @@
  * Persistent mutations are *never* clicked: they remain explicit frontier records.
  * No inferred author intentions, imagined destinations, or simulated UI states.
  */
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
 import { mkdir, rm, writeFile } from "node:fs/promises";
@@ -256,6 +256,8 @@ try {
   const { chromium }=await import("playwright").catch(()=>{
     throw new Error("Playwright is required for the isolated browser audit. CI installs it; locally install with npm install --no-save --no-package-lock playwright@1.56.1 and npx playwright install chromium.");
   });
+  const generated=spawnSync(process.execPath,["scripts/generate-asset-manifest.mjs"],{stdio:"inherit"});
+  if(generated.status!==0)throw new Error("Cannot prepare repository asset manifest for local Author client.");
   await startLocal();
   const {snapshot,token,nodeId}=await seedFixture();
   const fixtureHash=SHA(snapshot);
