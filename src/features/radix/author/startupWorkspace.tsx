@@ -30,7 +30,7 @@ export const radixStartupWorkspace = defineAuthorWorkspace<RadixStartupDraft>({
   buildSpec: ({ context, draft, setDraft }) => ({
     id: "radix-startup-settings",
     title: "PLAYER LAUNCH",
-    context: "Optional launch presentation before normal play",
+    context: "Before normal play",
     blocks: [{
       type: "section",
       id: "radix-startup",
