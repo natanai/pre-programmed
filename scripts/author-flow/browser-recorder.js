@@ -17,6 +17,12 @@
     if (style.visibility === "hidden" || style.display === "none" || (style.pointerEvents === "none" && !element.disabled)) return false;
     const rect = element.getBoundingClientRect();
     if (rect.width <= 0 || rect.height <= 0) return false;
+    // Native confirmation actions sit in a fixed overlay outside the normal
+    // author task clipping flow. Their own actual viewport geometry is enough
+    // to list them; Playwright must still click them for any recorded edge.
+    if (element.closest('[role="alertdialog"]')) {
+      return rect.bottom > 0 && rect.right > 0 && rect.top < innerHeight && rect.left < innerWidth;
+    }
     let left = Math.max(0, rect.left), right = Math.min(innerWidth, rect.right);
     let top = Math.max(0, rect.top), bottom = Math.min(innerHeight, rect.bottom);
     for (let ancestor = element.parentElement; ancestor && left < right && top < bottom; ancestor = ancestor.parentElement) {
@@ -107,7 +113,7 @@
     if (!fixture) throw new Error("Start the audit with a named fixture first.");
     const layer = document.querySelector(".author-workspace-layer");
     const root = layer || document.body;
-    const roots = [root, ...document.querySelectorAll(".author-picker-surface,[role=dialog]")];
+    const roots = [root, ...document.querySelectorAll(".author-picker-surface,[role=dialog],[role=alertdialog]")];
     // The master X is deliberately outside the Author workspace portal. It must
     // be inventoried as an actual visible control rather than omitted.
     const extraControls = [...document.querySelectorAll(".work-surface-close")];
