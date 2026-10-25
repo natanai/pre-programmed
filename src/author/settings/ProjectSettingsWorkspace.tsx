@@ -1,4 +1,4 @@
-import type { AuthorProjectSettingsSection } from "../features/types";
+import type { AuthorProjectSettingsSection, AuthorWorkspaceContext } from "../features/types";
 import { defineAuthorWorkspace } from "../ui/workspaceDefinition";
 
 export function createProjectSettingsWorkspace(sections: readonly AuthorProjectSettingsSection[]) {
@@ -8,7 +8,7 @@ export function createProjectSettingsWorkspace(sections: readonly AuthorProjectS
 
   const defaults = ordered.filter((section) => section.group === "defaults");
   const other = ordered.filter((section) => section.group !== "defaults");
-  const openSection = (section: AuthorProjectSettingsSection) => ({
+  const openSection = (section: AuthorProjectSettingsSection, context: AuthorWorkspaceContext) => ({
     type: "section" as const,
     id: `project-settings:${section.id}`,
     label: section.label,
@@ -37,9 +37,9 @@ export function createProjectSettingsWorkspace(sections: readonly AuthorProjectS
             type: "section" as const,
             id: "project-settings-defaults",
             label: "DEFAULTS",
-            children: defaults.map(openSection),
+            children: defaults.map((section) => openSection(section, context)),
           }] : []),
-          ...other.map(openSection),
+          ...other.map((section) => openSection(section, context)),
         ]
         : [{
           type: "status" as const,
