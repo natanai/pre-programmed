@@ -69,6 +69,7 @@ import type {
   ProjectSnapshot,
 } from "./engine/project/model";
 import type { GameNode, TextPerformance } from "./features/narrative/model";
+import { DEFAULT_PROJECT_DEFAULTS } from "./engine/project/defaults";
 import { executeOperation } from "./features/operations/runtime";
 import { parseCommand, type ParserResult } from "./features/commands/parser";
 import { executeInteraction } from "./features/narrative/runtime";
@@ -91,7 +92,7 @@ import { PlayerSessionGate } from "./ui/PlayerSessionGate";
 import { useTerminalViewport } from "./ui/useTerminalViewport";
 
 const AUTHOR_TOKEN_KEY = "pre-programmed:author-token";
-const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: 18, cues: [] };
+const DEFAULT_TEXT_PERFORMANCE: TextPerformance = { charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed, cues: [] };
 
 type TranscriptLine = PersistedTranscriptLine;
 
