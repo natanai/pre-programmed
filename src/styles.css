@@ -340,6 +340,8 @@ button:disabled { opacity: .45; cursor: default; }
 .author-settings-popover label { display: grid; grid-template-columns: 1fr auto; gap: .4em; margin-top: .6em; }
 .author-settings-popover input[type="range"] { grid-column: 1 / -1; width: 100%; }
 .desktop-options-actions { display: grid; gap: .4em; margin-top: .8em; padding-top: .65em; border-top: 1px solid var(--dos-line); }
+.desktop-installed-version { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: .2em .6em; color: var(--dos-muted); font-size: .82em; }
+.desktop-installed-version strong { color: var(--dos-text); font-weight: normal; }
 .author-settings-popover .desktop-options-actions > button { padding: .3em .45em; border: 1px solid var(--dos-line); text-align: left; cursor: pointer; }
 .author-settings-popover .desktop-options-actions > button:disabled { opacity: .5; cursor: default; }
 .desktop-options-actions p { margin: .2em 0 0; line-height: 1.45; font-size: .85em; overflow-wrap: anywhere; }
