@@ -93,6 +93,19 @@ async function stopServer() {
     await Promise.race([once(child,"exit"),new Promise(r=>setTimeout(r,3500))]);
   }
 }
+async function startFreshDisposable() {
+  await stopServer();
+  for(let attempt=0;attempt<30;attempt++){
+    try{
+      await requireExclusiveLocalPorts();
+      await startLocal({reset:true});
+      return;
+    }catch(error){
+      if(attempt===29)throw error;
+      await new Promise(resolve=>setTimeout(resolve,200));
+    }
+  }
+}
 async function restartLocal(expectedHash) {
   await stopServer();
   let available=false;
@@ -366,9 +379,7 @@ const writeDomains=[
 ];
 async function captureWrite(browser,viewport,test) {
   // One independently bootstrapped disposable D1 project per value/viewport.
-  await stopServer();
-  await requireExclusiveLocalPorts();
-  await startLocal({reset:true});
+  await startFreshDisposable();
   const {snapshot,token,nodeId}=await seedFixture();
   const before=await request("/api/project/snapshot");
   const initialText=before.nodes.find(node=>node.id===nodeId)?.openings?.[0]?.narrationText;
@@ -462,9 +473,7 @@ const navigationCases=[
 ];
 async function captureDraftNavigationCase(browser,viewport,test) {
   // Reset ALL persisted authored data between cases. No user or live DB access.
-  await stopServer();
-  await requireExclusiveLocalPorts();
-  await startLocal({reset:true});
+  await startFreshDisposable();
   const {snapshot,token,nodeId}=await seedFixture();
   const before=await request("/api/project/snapshot");
   const original=before.nodes.find(n=>n.id===nodeId)?.openings?.[0]?.narrationText;
