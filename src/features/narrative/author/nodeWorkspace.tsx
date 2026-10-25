@@ -5,6 +5,7 @@ import { ReferenceField } from "../../../author/resources/ReferenceField";
 import { ValueMentionField } from "../../../author/ValueMentionField";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 import { AuthorInlineDisclosure } from "../../../author/ui/AuthorInlineDisclosure";
+import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { makeId } from "../../../engine/project/id";
 import { resolveActiveNodeAnchor } from "../anchor";
@@ -196,7 +197,7 @@ function OpeningEditor({
         <button type="button" disabled={index === total - 1} onClick={() => onMove(1)}>[MOVE DOWN]</button>
         <button type="button" disabled={total === 1 || references > 0} onClick={onRemove}>[REMOVE OPENING]</button>
       </div>
-      {references > 0 ? <small>This opening is explicitly targeted by {references} response{references === 1 ? "" : "s"}. Reassign those links before removing it.</small> : null}
+      {references > 0 ? <small>LINKED BY {references} RESPONSE{references === 1 ? "" : "S"} · reassign links to remove</small> : null}
     </div>
   </AuthorInlineDisclosure>;
 }
@@ -408,8 +409,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           id: "node-openings",
           role: "specialized-control",
           content: <section className="guided-section">
-            <h3>ENTRY RESPONSES</h3>
-            <small>AUTO entry evaluates these in order and uses the first matching condition. Other responses may explicitly target one opening by its stable identity.</small>
+            <h3>ENTRY RESPONSES <AuthorHelp label="About Node entry responses" text="AUTO entry checks these responses in order and uses the first matching WHEN condition. Other responses can link directly to a specific entry response." /></h3>
             {orderedOpenings.map((opening, index) => {
               const interactionReferences = context.snapshot.interactions.reduce((count, interaction) => count + interaction.outcomes.reduce(
                 (outcomeCount, outcome) => outcomeCount + flowDestinations(outcome.after).filter(
@@ -480,7 +480,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           label: "ON ENTER",
           summary: entryEffects.length ? `${entryEffects.length} effect${entryEffects.length === 1 ? "" : "s"}` : "No entry effects",
           children: [{ type: "custom", id: "node-entry-effects-editor", role: "specialized-control", content: <div className="node-focused-form">
-            <small>These effects run whenever player traversal enters this Node. They use the same canonical effect definitions as responses, rules, and operations.</small>
+            <AuthorHelp label="About on-enter effects" text="These effects run whenever the player enters this Node. They use the same effects as responses and other rules." />
             <EffectsEditor effects={entryEffects} snapshot={context.snapshot} onChange={(effects) => setDraft((current) => ({ ...current, node: { ...current.node, entryEffects: effects } }))} />
           </div> }],
         },
@@ -491,7 +491,7 @@ export const nodeWorkspace = defineAuthorWorkspace<NodeWorkspaceDraft>({
           summary: draft.node.authorLabel.trim() || (draft.node.tags.length ? `${draft.node.tags.length} tag${draft.node.tags.length === 1 ? "" : "s"}` : "Untitled"),
           children: [{ type: "custom", id: "node-organization-fields", role: "specialized-control", content: <div className="node-focused-form">
             <label>NODE NAME <input value={draft.node.authorLabel} placeholder={`Node #${draft.node.nodeNumber}`} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, authorLabel: event.target.value } }))} /></label>
-            <small>Private author-facing name. Renaming it never changes entry text or links.</small>
+            <AuthorHelp label="About Node names" text="Node names are private organization. Changing a name does not change entry text or links." />
             <label>AUTHOR TAGS <input value={draft.node.tags.join(", ")} onChange={(event) => setDraft((current) => ({ ...current, node: { ...current.node, tags: event.target.value.split(",").map((value) => value.trim()).filter(Boolean) } }))} /></label>
           </div> }],
         },
