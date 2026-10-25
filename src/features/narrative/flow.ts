@@ -1,4 +1,5 @@
 import type { Effect } from "../../engine/rules/model";
+import { DEFAULT_PROJECT_DEFAULTS } from "../../engine/project/defaults";
 import { isRuntimeBinding, PLAYER_INPUT_BINDING, runtimeBinding } from "../../engine/rules/runtimeBindings";
 import type {
   NarrativeFlowStep,
@@ -7,7 +8,7 @@ import type {
 } from "./model";
 
 export const DEFAULT_FLOW_TEXT_PERFORMANCE: TextPerformance = {
-  charactersPerSecond: 18,
+  charactersPerSecond: DEFAULT_PROJECT_DEFAULTS.textSpeed,
   cues: [],
 };
 
@@ -23,15 +24,15 @@ export function createEffectsStep(effects: Effect[] = []): NarrativeFlowStep {
   return { id: makeId(), type: "effects", effects };
 }
 
-export function createPresentStep(): NarrativeFlowStep {
+export function createPresentStep(textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): NarrativeFlowStep {
   return {
     id: makeId(),
     type: "present",
     responseText: "",
     dialogueText: "",
     speakerId: null,
-    responsePerformance: { ...DEFAULT_FLOW_TEXT_PERFORMANCE, cues: [] },
-    dialoguePerformance: { ...DEFAULT_FLOW_TEXT_PERFORMANCE, cues: [] },
+    responsePerformance: { charactersPerSecond: textSpeed, cues: [] },
+    dialoguePerformance: { charactersPerSecond: textSpeed, cues: [] },
   };
 }
 
@@ -51,11 +52,11 @@ export function createReturnPreviousStep(): NarrativeFlowStep {
  * Present steps are retained so opening the preset immediately exposes the
  * common "save the input, answer it, then continue" workflow.
  */
-export function createCaptureInputFlow(): NarrativeFlowStep[] {
+export function createCaptureInputFlow(textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): NarrativeFlowStep[] {
   return [
     createAwaitInputStep(),
     createEffectsStep(),
-    createPresentStep(),
+    createPresentStep(textSpeed),
   ];
 }
 
@@ -141,14 +142,14 @@ export function captureFlowSegments(flow: readonly NarrativeFlowStep[]): Capture
 }
 
 /** Continue after this reply by waiting for one more submission. */
-export function appendCaptureTurn(flow: readonly NarrativeFlowStep[]): NarrativeFlowStep[] {
+export function appendCaptureTurn(flow: readonly NarrativeFlowStep[], textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): NarrativeFlowStep[] {
   const turns = captureFlowSegments(flow);
   if (!turns.length) return flow.slice();
   const finalPresentIndex = turns[turns.length - 1].presentIndex;
   // Preserve the original final destination: the new turn runs before it.
   return [
     ...flow.slice(0, finalPresentIndex + 1),
-    ...createCaptureInputFlow(),
+    ...createCaptureInputFlow(textSpeed),
     ...flow.slice(finalPresentIndex + 1),
   ];
 }
