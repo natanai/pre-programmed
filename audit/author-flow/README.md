@@ -12,13 +12,15 @@ The interface includes loops, conditional choices, nested task returns, resource
 
 **Executed transitions** conform to [observed-schema.json](observed-schema.json). [browser-recorder.js](../../scripts/author-flow/browser-recorder.js) is a passive capture helper for a dedicated test browser. Each state records the currently visible controls and task trail; each transition records an actual click/change and its subsequent visible state. The recorder does not explore branches by itself, inspect internal React state, or change the game. A DOM snapshot does not certify persistence succeeded.
 
-**There are zero claimed executed transitions in the initial source baseline.** A declared callback is not an observed click-to-screen edge. Dynamic collections are not invented into concrete instances.
+[coverage.json](coverage.json) is generated from the source graph and committed executed traces (if any). Its runtime completeness field is null rather than a fabricated percentage. **There are zero claimed executed transitions in the initial source baseline.** A declared callback is not an observed click-to-screen edge. Dynamic collections are not invented into concrete instances.
 
 ## Commands
 
     npm ci
     npm run audit:author:extract
     npm run audit:author:check
+    npm run audit:author:coverage
+    npm run audit:author:coverage-check
     npm run audit:author:query -- --find 'world-character-alias'
     npm run audit:author:query -- --api 'pushTask' --limit 20
     npm run audit:author:query -- --branch 'world-character'
