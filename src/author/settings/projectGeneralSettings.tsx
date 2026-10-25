@@ -1,4 +1,5 @@
 import type { AuthorProjectSettingsSection } from "../features/types";
+import { AuthorHelp } from "../ui/AuthorHelp";
 import { ValueMentionField } from "../ValueMentionField";
 import { MAX_TERMINAL_PROMPT_LENGTH } from "../../engine/project/settings";
 import { defineAuthorWorkspace } from "../ui/workspaceDefinition";
@@ -56,7 +57,7 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
         id: "project-terminal-prompt-value",
         role: "specialized-control",
         content: <div className="author-ui-field">
-          <span className="author-ui-label author-ui-label-always">Player prompt</span>
+          <div className="author-ui-field-heading"><span className="author-ui-label author-ui-label-always">Player prompt</span><AuthorHelp label="About the Player prompt" text="Type @ to insert a variable or other reference. The current value appears in play. Spaces, including trailing spaces, are kept." /></div>
           <ValueMentionField
             snapshot={context.snapshot}
             playState={context.playState}
@@ -64,7 +65,6 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
             onValueChange={(terminalPrompt) => setDraft({ ...draft, terminalPrompt })}
             ariaLabel="Player prompt"
           />
-          <small className="author-ui-help">Type @ to insert an existing variable or other reference. Its current value appears in the player terminal. Spaces, including a final space, are preserved.</small>
           {draft.terminalPrompt.length > MAX_TERMINAL_PROMPT_LENGTH
             ? <small className="author-ui-help" role="alert">Prompt is too long (maximum {MAX_TERMINAL_PROMPT_LENGTH} stored characters).</small>
             : null}
@@ -74,7 +74,7 @@ export const projectTerminalSettingsWorkspace = defineAuthorWorkspace<ProjectTer
       type: "disclosure",
       id: "project-terminal-advanced",
       label: "ADVANCED",
-      summary: "Optional authored presentation details for the player terminal.",
+      summary: "Suggestion menu",
       children: [{
         type: "section",
         id: "project-terminal-suggestion-menu",
