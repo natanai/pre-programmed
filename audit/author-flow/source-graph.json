@@ -12,12 +12,12 @@
     "guards": "Raw source expressions, not evaluated."
   },
   "counts": {
-    "source_files": 313,
-    "controls": 695,
+    "source_files": 320,
+    "controls": 713,
     "declared_nesting": 230,
     "api_calls": 160,
-    "branch_sites": 4316,
-    "collection_sites": 713,
+    "branch_sites": 4428,
+    "collection_sites": 715,
     "observed_transitions": 0
   },
   "sources": [
@@ -334,6 +334,11 @@
     {
       "file": "src/author/workspace/WorkspacePanel.tsx",
       "control_declarations": 16,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/components/AuthorSettings.tsx",
+      "control_declarations": 8,
       "api_call_sites": 0
     },
     {
@@ -1583,6 +1588,36 @@
     },
     {
       "file": "src/player/workspaces/types.ts",
+      "control_declarations": 0,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/PlayerSessionGate.tsx",
+      "control_declarations": 2,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/TerminalCommandComposer.tsx",
+      "control_declarations": 7,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/UniverseBootstrap.tsx",
+      "control_declarations": 1,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/effectPresentationCatalog.ts",
+      "control_declarations": 0,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/useTerminalViewport.ts",
+      "control_declarations": 0,
+      "api_call_sites": 0
+    },
+    {
+      "file": "src/ui/viewport.ts",
       "control_declarations": 0,
       "api_call_sites": 0
     }
@@ -4893,6 +4928,207 @@
       ],
       "handlers": {
         "onClick": "{() => setConfirmUndo(false)}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:105:33",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": {
+        "expression": "authorView ? \"Preview player experience\" : \"Return to Author experience\""
+      },
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 105,
+        "column": 33
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "showAuthorViewToggle",
+        "visible"
+      ],
+      "handlers": {
+        "onClick": "{onToggleAuthorView}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:107:9",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": {
+        "expression": "desktop ? \"Options\" : \"Display settings\""
+      },
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 107,
+        "column": 9
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "visible"
+      ],
+      "handlers": {
+        "onClick": "{() => setOpen((value) => !value)}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:111:72",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "[X]",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 111,
+        "column": 72
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onClick": "{() => setOpen(false)}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:113:11",
+      "kind": "jsx.input",
+      "declared_id": null,
+      "label": null,
+      "selected_value": {
+        "expression": "settings.fontSize"
+      },
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 113,
+        "column": 11
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onChange": "{(event) => setSettings({ ...settings, fontSize: Number(event.target.value) })}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:116:11",
+      "kind": "jsx.input",
+      "declared_id": null,
+      "label": null,
+      "selected_value": {
+        "expression": "settings.textSpeedMultiplier"
+      },
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 116,
+        "column": 11
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onChange": "{(event) => setSettings({ ...settings, textSpeedMultiplier: Number(event.target.value) })}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:118:40",
+      "kind": "jsx.input",
+      "declared_id": null,
+      "label": null,
+      "selected_value": {
+        "expression": "settings.reduceMotion"
+      },
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 118,
+        "column": 40
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onChange": "{(event) => setSettings({ ...settings, reduceMotion: event.target.checked })}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:121:11",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "NEW GAME",
+      "selected_value": null,
+      "disabled": {
+        "expression": "!onNewGame"
+      },
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 121,
+        "column": 11
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "desktop",
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onClick": "{() => { setOpen(false); onNewGame?.(); }}"
+      }
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:122:11",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": {
+        "expression": "dynamic JSX children"
+      },
+      "selected_value": null,
+      "disabled": {
+        "expression": "updating"
+      },
+      "default_open": null,
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 122,
+        "column": 11
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "desktop",
+        "open",
+        "visible"
+      ],
+      "handlers": {
+        "onClick": "{() => { void checkForUpdates(); }}"
       }
     },
     {
@@ -17595,6 +17831,240 @@
       ],
       "handlers": {
         "onClick": "{action.onAction}"
+      }
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:28:9",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "[CONTINUE]",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 28,
+        "column": 9
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [],
+      "handlers": {
+        "onClick": "{onContinue}"
+      }
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:29:9",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "[NEW GAME]",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 29,
+        "column": 9
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [],
+      "handlers": {
+        "onClick": "{onNewGame}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:319:25",
+      "kind": "jsx.input",
+      "declared_id": null,
+      "label": {
+        "expression": "ariaLabel"
+      },
+      "selected_value": {
+        "expression": "value"
+      },
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 319,
+        "column": 25
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "secret"
+      ],
+      "handlers": {
+        "onChange": "{(event) => onChange(normalizeTerminalDraft(event.target.value))}",
+        "onSelect": "{queueCaretSync}",
+        "onClick": "{queueCaretSync}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:340:20",
+      "kind": "jsx.textarea",
+      "declared_id": null,
+      "label": {
+        "expression": "ariaLabel"
+      },
+      "selected_value": {
+        "expression": "value"
+      },
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 340,
+        "column": 20
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "secret"
+      ],
+      "handlers": {
+        "onChange": "{(event) => onChange(normalizeTerminalDraft(event.target.value))}",
+        "onSelect": "{queueCaretSync}",
+        "onClick": "{queueCaretSync}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:370:46",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": {
+        "expression": "menuOpen ? \"Hide suggestions\" : \"Show suggestions\""
+      },
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 370,
+        "column": 46
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "!secret && menuChoices.length"
+      ],
+      "handlers": {
+        "onClick": "{toggleMenu}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:391:17",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "About these suggestions",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 391,
+        "column": 17
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "menuOpen && menuHelpText",
+        "!secret && choices.length"
+      ],
+      "handlers": {
+        "onClick": "{() => {\n                    if (window.matchMedia(COARSE_POINTER_QUERY).matches) setMenuHelpOpen((open) => !open);\n                    else setMenuHelpOpen(true);\n                  }}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:413:40",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": {
+        "expression": "dynamic JSX children"
+      },
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 413,
+        "column": 40
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "!secret && choices.length"
+      ],
+      "handlers": {
+        "onClick": "{() => insertChoice(choice)}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:423:22",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "Submit command",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 423,
+        "column": 22
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "!secret"
+      ],
+      "handlers": {
+        "onClick": "{submit}"
+      }
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:438:11",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "Edit anchor source",
+      "selected_value": null,
+      "disabled": null,
+      "default_open": null,
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 438,
+        "column": 11
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [
+        "anchor.onEdit",
+        "!secret && anchor?.text"
+      ],
+      "handlers": {
+        "onClick": "{anchor.onEdit}"
+      }
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:41:5",
+      "kind": "jsx.button",
+      "declared_id": null,
+      "label": "[ ]",
+      "selected_value": null,
+      "disabled": {
+        "expression": "initializing"
+      },
+      "default_open": null,
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 41,
+        "column": 5
+      },
+      "workspace": null,
+      "parent_id": null,
+      "guards": [],
+      "handlers": {
+        "onClick": "{() => void initialize()}"
       }
     }
   ],
@@ -37140,6 +37610,396 @@
       },
       "syntax": "ConditionalExpression",
       "predicate": "undoing",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:11:3:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 11,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "typeof window === \"undefined\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:25:3:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 25,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "typeof window === \"undefined\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:29:17:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 29,
+        "column": 17
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "typeof stored.fontSize === \"number\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:31:28:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 31,
+        "column": 28
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "typeof stored.textSpeedMultiplier === \"number\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:56:5:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 56,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!desktop || !open",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:56:9:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 56,
+        "column": 9
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!desktop",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:59:28:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 59,
+        "column": 28
+      },
+      "syntax": "IfStatement",
+      "predicate": "active",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:60:22:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 60,
+        "column": 22
+      },
+      "syntax": "IfStatement",
+      "predicate": "active",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:64:5:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 64,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!desktop || updating",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:64:9:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 64,
+        "column": 9
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!desktop",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:71:24:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 71,
+        "column": 24
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "error instanceof Error",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:91:44:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 91,
+        "column": 44
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "showAuthorViewToggle",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:98:5:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 98,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!visible",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:102:6:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 102,
+        "column": 6
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "showAuthorViewToggle && authorView",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:102:6:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 102,
+        "column": 6
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "showAuthorViewToggle",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:103:6:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 103,
+        "column": 6
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "visible",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:105:10:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 105,
+        "column": 10
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "showAuthorViewToggle",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:105:98:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 105,
+        "column": 98
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "authorView",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:107:76:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 107,
+        "column": 76
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "desktop",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:110:8:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 110,
+        "column": 8
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "open",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:111:24:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 111,
+        "column": 24
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "desktop",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:119:10:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 119,
+        "column": 10
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "desktop",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:120:93:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 120,
+        "column": 93
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "installedVersion && installedVersion !== \"unavailable\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:120:93:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 120,
+        "column": 93
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "installedVersion",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:123:14:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 123,
+        "column": 14
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "updating",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/components/AuthorSettings.tsx:125:12:branch",
+      "source": {
+        "file": "src/components/AuthorSettings.tsx",
+        "line": 125,
+        "column": 12
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "updateMessage",
       "workspace": null,
       "alternatives": [
         "taken",
@@ -86513,6 +87373,1296 @@
         "taken",
         "not-taken"
       ]
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:13:5:branch",
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 13,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!session.resumeImmediately || immediatelyResumedSessions.has(session)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:13:9:branch",
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 13,
+        "column": 9
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!session.resumeImmediately",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:18:3:branch",
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 18,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "session.resumeImmediately",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:21:22:branch",
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 21,
+        "column": 22
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "Number.isNaN(savedAt.valueOf())",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/PlayerSessionGate.tsx:26:8:branch",
+      "source": {
+        "file": "src/ui/PlayerSessionGate.tsx",
+        "line": 26,
+        "column": 8
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "session.projectRevision !== 0",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:56:36:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 56,
+        "column": 36
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:57:5:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 57,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!choice.text || seen.has(choice.id)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:57:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 57,
+        "column": 9
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!choice.text",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:66:3:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 66,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "start === end",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:67:10:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 67,
+        "column": 10
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "field.selectionDirection === \"backward\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:98:25:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 98,
+        "column": 25
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:111:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 111,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "text",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:118:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 118,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:127:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 127,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!current || !editor || !mirror || !marker",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:127:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 127,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!current || !editor || !mirror",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:127:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 127,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!current || !editor",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:127:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 127,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:133:26:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 133,
+        "column": 26
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.lineHeight) || parseFloat(style.fontSize)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:133:26:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 133,
+        "column": 26
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.lineHeight)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:134:40:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 134,
+        "column": 40
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.fontSize)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:153:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 153,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!stack",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:182:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 182,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:184:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 184,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!textarea",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:187:26:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 187,
+        "column": 26
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.lineHeight) || parseFloat(style.fontSize)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:187:26:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 187,
+        "column": 26
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.lineHeight)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:188:26:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 188,
+        "column": 26
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.paddingTop)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:189:29:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 189,
+        "column": 29
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "parseFloat(style.paddingBottom)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:195:34:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 195,
+        "column": 34
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "textarea.scrollHeight > maxHeight + 1",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:200:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 200,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:202:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 202,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "next !== caretIndex",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:215:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 215,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!menuHelpOpen || !menuHelpText",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:215:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 215,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!menuHelpOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:219:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 219,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "!trigger || !choiceSurface",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:219:13:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 219,
+        "column": 13
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!trigger",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:243:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 243,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!menuHelpOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:246:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 246,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "target instanceof Node && menuHelpTriggerRef.current?.contains(target)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:246:13:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 246,
+        "column": 13
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "target instanceof Node",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:254:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 254,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "composingRef.current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:266:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 266,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "event.key !== \"Enter\" || event.nativeEvent.isComposing || composingRef.current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:266:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 266,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "event.key !== \"Enter\" || event.nativeEvent.isComposing",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:266:11:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 266,
+        "column": 11
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "event.key !== \"Enter\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:278:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 278,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "!current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:280:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 280,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "!coarsePointer || document.activeElement === current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:280:13:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 280,
+        "column": 13
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!coarsePointer",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:292:7:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 292,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "!nextOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:295:9:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 295,
+        "column": 9
+      },
+      "syntax": "IfStatement",
+      "predicate": "current && !window.matchMedia(COARSE_POINTER_QUERY).matches",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:295:13:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 295,
+        "column": 13
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "current",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:302:25:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 302,
+        "column": 25
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:310:22:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 310,
+        "column": 22
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:315:49:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 315,
+        "column": 49
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:316:28:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 316,
+        "column": 28
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuChoices.length",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:319:16:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 319,
+        "column": 16
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:365:24:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 365,
+        "column": 24
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "mirrorValue.slice(mirrorCaret)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:370:14:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 370,
+        "column": 14
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "!secret && menuChoices.length",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:370:14:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 370,
+        "column": 14
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:373:27:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 373,
+        "column": 27
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:377:17:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 377,
+        "column": 17
+      },
+      "syntax": "IfStatement",
+      "predicate": "!window.matchMedia(COARSE_POINTER_QUERY).matches",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:380:15:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 380,
+        "column": 15
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:382:14:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 382,
+        "column": 14
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "!secret && choices.length",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:382:14:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 382,
+        "column": 14
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:387:16:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 387,
+        "column": 16
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuOpen && menuHelpText",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:387:16:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 387,
+        "column": 16
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "menuOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:389:28:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 389,
+        "column": 28
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuHelpOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:396:37:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 396,
+        "column": 37
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuHelpOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:400:21:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 400,
+        "column": 21
+      },
+      "syntax": "IfStatement",
+      "predicate": "!window.matchMedia(COARSE_POINTER_QUERY).matches",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:403:21:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 403,
+        "column": 21
+      },
+      "syntax": "IfStatement",
+      "predicate": "!window.matchMedia(COARSE_POINTER_QUERY).matches",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:408:21:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 408,
+        "column": 21
+      },
+      "syntax": "IfStatement",
+      "predicate": "window.matchMedia(COARSE_POINTER_QUERY).matches",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:423:12:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 423,
+        "column": 12
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "!secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:437:8:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 437,
+        "column": 8
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "!secret && anchor?.text",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:437:8:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 437,
+        "column": 8
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "!secret",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:437:34:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 437,
+        "column": 34
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "anchor.onEdit",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:448:8:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 448,
+        "column": 8
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuHelpOpen && menuHelpText",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:448:8:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 448,
+        "column": 8
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "menuHelpOpen",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:472:25:branch",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 472,
+        "column": 25
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "menuHelpPosition.width",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:19:5:branch",
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 19,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "initializing",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:24:5:branch",
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 24,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "!audioReady",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:38:3:branch",
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 38,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "initialized",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:46:25:branch",
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 46,
+        "column": 25
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "initializing",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/UniverseBootstrap.tsx:47:6:branch",
+      "source": {
+        "file": "src/ui/UniverseBootstrap.tsx",
+        "line": 47,
+        "column": 6
+      },
+      "syntax": "ConditionalExpression",
+      "predicate": "audioRetry",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/effectPresentationCatalog.ts:8:3:branch",
+      "source": {
+        "file": "src/ui/effectPresentationCatalog.ts",
+        "line": 8,
+        "column": 3
+      },
+      "syntax": "IfStatement",
+      "predicate": "event.type !== \"notification\"",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/effectPresentationCatalog.ts:23:5:branch",
+      "source": {
+        "file": "src/ui/effectPresentationCatalog.ts",
+        "line": 23,
+        "column": 5
+      },
+      "syntax": "IfStatement",
+      "predicate": "presenter(event, context)",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/useTerminalViewport.ts:21:7:branch",
+      "source": {
+        "file": "src/ui/useTerminalViewport.ts",
+        "line": 21,
+        "column": 7
+      },
+      "syntax": "IfStatement",
+      "predicate": "Math.abs(width - viewportWidth) > 80",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/useTerminalViewport.ts:28:31:branch",
+      "source": {
+        "file": "src/ui/useTerminalViewport.ts",
+        "line": 28,
+        "column": 31
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/useTerminalViewport.ts:28:31:branch",
+      "source": {
+        "file": "src/ui/useTerminalViewport.ts",
+        "line": 28,
+        "column": 31
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "active instanceof HTMLInputElement",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/viewport.ts:16:10:branch",
+      "source": {
+        "file": "src/ui/viewport.ts",
+        "line": 16,
+        "column": 10
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "editableFocused && viewportWidth <= MOBILE_WIDTH",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
+    },
+    {
+      "id": "src/ui/viewport.ts:16:10:branch",
+      "source": {
+        "file": "src/ui/viewport.ts",
+        "line": 16,
+        "column": 10
+      },
+      "syntax": "BinaryExpression",
+      "predicate": "editableFocused",
+      "workspace": null,
+      "alternatives": [
+        "taken",
+        "not-taken"
+      ]
     }
   ],
   "collection_sites": [
@@ -95069,6 +97219,30 @@
       },
       "method": "filter",
       "source_expression": "entries.filter",
+      "workspace": null,
+      "enumeration": "runtime-dependent"
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:56:10:collection",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 56,
+        "column": 10
+      },
+      "method": "filter",
+      "source_expression": "[...immediateChoices, ...(menuOpen ? menuChoices : [])].filter",
+      "workspace": null,
+      "enumeration": "runtime-dependent"
+    },
+    {
+      "id": "src/ui/TerminalCommandComposer.tsx:413:16:collection",
+      "source": {
+        "file": "src/ui/TerminalCommandComposer.tsx",
+        "line": 413,
+        "column": 16
+      },
+      "method": "map",
+      "source_expression": "choices.map",
       "workspace": null,
       "enumeration": "runtime-dependent"
     }
