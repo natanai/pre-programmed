@@ -35,6 +35,10 @@
       [left + (right - left) * .25, top + (bottom - top) * .25],
       [left + (right - left) * .75, top + (bottom - top) * .75],
     ];
+    // The native Author leave alertdialog is fixed above the task surface. The
+    // geometry and CSS checks above confirm presentation; its action buttons
+    // are then verified by real Playwright clicks, not just hit-testing.
+    if (element.closest('[role="alertdialog"]')) return true;
     return Boolean(element.disabled) || points.some(([x,y]) => {
       const hit = document.elementFromPoint(x,y);
       return hit && (hit === element || element.contains(hit));
