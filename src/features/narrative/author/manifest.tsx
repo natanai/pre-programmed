@@ -116,7 +116,7 @@ export const narrativeAuthorFeature: AuthorFeatureManifest = {
         message: `DRAFT ALREADY EXISTS: ${existing.wording || existing.aliases[0]}`,
         value: existing.id,
       };
-      const interaction = createDraftInteraction(sourceNodeId, input);
+      const interaction = createDraftInteraction(sourceNodeId, input, false, snapshot.settings.defaults);
       return {
         type: "mutation",
         operations: [{ type: "interaction.upsert", interaction }],
