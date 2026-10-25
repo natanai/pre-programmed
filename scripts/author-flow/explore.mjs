@@ -32,6 +32,7 @@ function number(name, fallback) {
 const maxStates = number("--max-states", 65);
 const maxDepth = number("--max-depth", 4);
 const maxExecutions = number("--max-executions", 90);
+const enableScroll=args.includes("--scroll");
 const strategy = arg("--strategy", "breadth");
 if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
 const suite = arg("--suite", "baseline");
@@ -189,6 +190,12 @@ function actionDomain(state) {
       actions.push({...base,event:"toggle",value:!control.value,pointer_activations:1});
     }
   }
+  if(enableScroll)for(const region of state.ui.scrollable_regions??[]) {
+    const step=Math.max(48,Math.round(region.client_height*.7));
+    const remaining=region.max_top-region.top;
+    if(remaining>2)actions.push({locator:region.locator,event:"scroll",value:Math.min(step,remaining),pointer_activations:0});
+    if(region.top>2)actions.push({locator:region.locator,event:"scroll",value:-Math.min(step,region.top),pointer_activations:0});
+  }
   const unique=actions.filter(a=>{
     const key=JSON.stringify(a);if(seen.has(key))return false;seen.add(key);return true;
   });
@@ -205,6 +212,18 @@ async function settle(page) {
   }
 }
 async function perform(page,action) {
+  if(action.event==="scroll") {
+    const region=page.locator("[data-author-flow-scroll-probe="+quote(action.locator)+"]");
+    if(await region.count()!==1)throw Error("Missing or ambiguous scroll region: "+action.locator);
+    const rect=await region.boundingBox();
+    if(!rect)throw Error("Scroll region has no visible bounds: "+action.locator);
+    const x=Math.min(page.viewportSize().width-2,Math.max(1,rect.x+rect.width/2));
+    const y=Math.min(page.viewportSize().height-2,Math.max(1,rect.y+rect.height/2));
+    await page.mouse.move(x,y);
+    await page.mouse.wheel(0,action.value);
+    await settle(page);
+    return;
+  }
   const probe=page.locator(selectorFor(action.locator));
   if(await probe.count()!==1) throw new Error("Nonunique or missing probe: "+action.locator);
   if(action.event==="change")await probe.selectOption(action.value,{timeout:4000});
@@ -356,7 +375,7 @@ try {
     const result=await traverse(browser,fixture,token,fixtureHash);
     const trace={
       schema_version:1,type:"author-observed-transitions",
-      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions,enableScroll,scrollMechanism:enableScroll?"wheel":"none"}},
       fixtures:[fixture],
       states:result.states,transitions:result.transitions,frontier:result.frontier,replays:result.replays,
     };
