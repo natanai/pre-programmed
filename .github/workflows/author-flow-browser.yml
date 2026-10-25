@@ -40,6 +40,7 @@ jobs:
           npm run audit:author:coverage
           npm run audit:author:coverage-check
           node scripts/author-flow/validate-traces.mjs
+          npm run audit:author:trace -- --fixture desktop --find 'TOOLS' > /dev/null
           node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync("audit/author-flow/coverage.json"));if(x.executed.transition_count<1||x.executed.fixture_count<2)process.exit(1);console.log(x.executed)'
       - name: Preserve source graph and engine verification
         run: npm run verify
