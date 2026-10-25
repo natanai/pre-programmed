@@ -614,7 +614,7 @@ async function captureDraftNavigationCase(browser,viewport,test) {
       provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:initialId,
         fixture_reset:"disposable-d1-per-case",input_mechanism:"playwright.fill",navigation_mechanism:"canonical-task-shell",
         explorer:{strategy:"finite-draft-navigation",suite:"navigation",maxStates:states.size,maxDepth:steps.length,maxExecutions:1}},
-      fixtures:[fixture],states:[...states.values()],transitions,frontier:[],
+      fixtures:[fixture],states:[...states.values()],transitions,frontier,
       replays:[{id:"replay:"+SHA([fixture.id,steps]).slice(0,20),fixture:fixture.id,initial_state:initialId,steps,completed:true}],
     };
     const dest=path.join(outputDir,fixture.id+".json");
