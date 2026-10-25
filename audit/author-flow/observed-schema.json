@@ -122,6 +122,25 @@
               "number",
               "string"
             ]
+          },
+          "input_domain": {
+            "type": "object",
+            "required": [
+              "kind",
+              "case_id",
+              "value"
+            ],
+            "properties": {
+              "kind": {
+                "type": "string"
+              },
+              "case_id": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              }
+            }
           }
         }
       }
@@ -316,7 +335,8 @@
                   "submit",
                   "key",
                   "toggle",
-                  "scroll"
+                  "scroll",
+                  "fill"
                 ]
               },
               "value": {
@@ -340,6 +360,65 @@
             "type": "array",
             "items": {
               "type": "object"
+            }
+          },
+          "persistence": {
+            "type": "object",
+            "description": "Evidence-only canonical Save outcome, checked by reading the disposable local D1 project before and after a Worker restart.",
+            "required": [
+              "source",
+              "node_id",
+              "field",
+              "prior_value",
+              "expected_value",
+              "readback_value",
+              "revision_before",
+              "revision_after",
+              "snapshot_sha256_before",
+              "snapshot_sha256_after",
+              "restart_verified",
+              "restart_snapshot_sha256"
+            ],
+            "properties": {
+              "source": {
+                "const": "local-d1-readback"
+              },
+              "node_id": {
+                "type": "string"
+              },
+              "field": {
+                "const": "openings[0].narrationText"
+              },
+              "prior_value": {
+                "type": "string"
+              },
+              "expected_value": {
+                "type": "string"
+              },
+              "readback_value": {
+                "type": "string"
+              },
+              "revision_before": {
+                "type": "integer"
+              },
+              "revision_after": {
+                "type": "integer"
+              },
+              "snapshot_sha256_before": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "snapshot_sha256_after": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "restart_verified": {
+                "const": true
+              },
+              "restart_snapshot_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
             }
           }
         }
@@ -390,7 +469,8 @@
                   "submit",
                   "key",
                   "toggle",
-                  "scroll"
+                  "scroll",
+                  "fill"
                 ]
               },
               "value": {
@@ -469,7 +549,8 @@
                         "toggle",
                         "submit",
                         "key",
-                        "scroll"
+                        "scroll",
+                        "fill"
                       ]
                     },
                     "value": {
