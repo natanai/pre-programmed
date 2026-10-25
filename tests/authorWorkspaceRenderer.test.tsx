@@ -55,4 +55,30 @@ describe("AuthorWorkspaceRenderer", () => {
     expect(html).toMatch(/<section[^>]*\sinert(?:\s|=|>)/);
   });
 
+  it("keeps explanatory text available through adjacent helpers instead of permanent field descriptions", () => {
+    const html = renderToStaticMarkup(
+      <AuthorWorkspaceRenderer spec={{
+        id: "test.help",
+        title: "Help",
+        blocks: [
+          { type: "field", id: "field", label: "Name", value: "", help: "Name instructions", onChange: () => undefined },
+          { type: "select", id: "select", label: "Mode", value: "one", options: [{ value: "one", label: "One" }], help: "Mode instructions", onChange: () => undefined },
+          { type: "toggle", id: "toggle", label: "Enabled", checked: false, help: "Toggle instructions", onChange: () => undefined },
+          { type: "choice", id: "choice", label: "Choose", value: "a", options: [{ value: "a", label: "Option A", help: "Option instructions" }], onChange: () => undefined },
+        ],
+      }} />,
+    );
+    expect(html.match(/class="author-inline-help"/g)).toHaveLength(4);
+    expect(html).toContain('aria-label="About Name"');
+    expect(html).toContain('aria-label="About Mode"');
+    expect(html).toContain('aria-label="About Enabled"');
+    expect(html).toContain('aria-label="About Option A"');
+    expect(html).toContain('for="field"');
+    expect(html).not.toContain("Name instructions");
+    expect(html).not.toContain("Mode instructions");
+    expect(html).not.toContain("Toggle instructions");
+    expect(html).not.toContain("Option instructions");
+  });
+
+
 });
