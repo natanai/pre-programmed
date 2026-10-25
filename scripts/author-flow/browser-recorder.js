@@ -42,9 +42,11 @@
   }
   function scopeFor(element) {
     const region = element.closest("[data-author-ui-workspace],[data-author-ui-role],[data-task-id],.author-picker-surface,[role=dialog]") || document.body;
+    const task = region.closest(".author-task-surface");
+    const taskDepth = task ? Array.from(document.querySelectorAll(".author-task-surface")).indexOf(task) : -1;
     const scope = region.getAttribute("data-author-ui-workspace")
       || region.getAttribute("data-author-ui-role")
-      || region.getAttribute("data-task-id")
+      || (taskDepth >= 0 ? "task-depth:" + taskDepth : "")
       || region.getAttribute("aria-label")
       || (typeof region.className === "string" ? region.className.split(" ")[0] : "")
       || "page";
