@@ -17,6 +17,9 @@ import {
   type RadixProjectSettingsSlice,
 } from "../../features/radix/projectSettings";
 import { normalizeStateProjectSlice } from "../../features/state/projectNormalization";
+import { DEFAULT_INVENTORY_PROJECT_SETTINGS, normalizeInventoryProjectSettings, type InventoryProjectSettingsSlice } from "../../features/inventory/projectSettings";
+import { DEFAULT_WORLD_PROJECT_SETTINGS, normalizeWorldProjectSettings, type WorldProjectSettingsSlice } from "../../features/world/projectSettings";
+import { DEFAULT_STATE_PROJECT_SETTINGS, normalizeStateProjectSettings, type StateProjectSettingsSlice } from "../../features/state/projectSettings";
 import { migrateSnapshotReferenceTokens } from "../references/migration";
 import type { ProjectMutation, ProjectSnapshot } from "./model";
 import { DEFAULT_PROJECT_DEFAULTS, normalizeProjectDefaults, type ProjectDefaults } from "./defaults";
@@ -29,7 +32,10 @@ export type ProjectSettings = {
   /** Author-selected values used when creating new project content. */
   defaults: ProjectDefaults;
 } & CommandsProjectSettingsSlice
-  & RadixProjectSettingsSlice;
+  & RadixProjectSettingsSlice
+  & InventoryProjectSettingsSlice
+  & WorldProjectSettingsSlice
+  & StateProjectSettingsSlice;
 
 /** Stored semantic-reference tokens can exceed their short Author-visible @ names. */
 export const MAX_TERMINAL_PROMPT_LENGTH = 512;
@@ -40,6 +46,9 @@ export const DEFAULT_PROJECT_SETTINGS: ProjectSettings = {
   defaults: { ...DEFAULT_PROJECT_DEFAULTS },
   ...structuredClone(DEFAULT_COMMANDS_PROJECT_SETTINGS),
   ...structuredClone(DEFAULT_RADIX_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_INVENTORY_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_WORLD_PROJECT_SETTINGS),
+  ...structuredClone(DEFAULT_STATE_PROJECT_SETTINGS),
 };
 
 /**
@@ -61,6 +70,9 @@ export function normalizeProjectSettings(value: unknown): ProjectSettings {
     defaults: normalizeProjectDefaults(root.defaults),
     ...normalizeCommandsProjectSettings(root),
     ...normalizeRadixProjectSettings(root),
+    ...normalizeInventoryProjectSettings(root),
+    ...normalizeWorldProjectSettings(root),
+    ...normalizeStateProjectSettings(root),
   };
 }
 
