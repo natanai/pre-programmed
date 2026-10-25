@@ -173,7 +173,7 @@ export function AuthorWorkspaceRenderer({ spec, busy = false }: { spec: AuthorWo
   // A different task may be saving in the background. Do not make this
   // editor inert during that commit: Chromium immediately drops textarea
   // focus, and Windows authors cannot click or type until persistence finishes.
-  // Only this workspace\'s own explicit Save temporarily freezes its draft.
+  // Only this workspace's own explicit Save temporarily freezes its draft.
   return <section
     className="author-panel author-ui-workspace"
     data-author-ui-workspace={spec.id}
