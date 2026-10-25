@@ -11,6 +11,7 @@ import type {
   StatePlayerPresentation,
   VariableDefinition,
 } from "../model";
+import { DEFAULT_STATE_VARIABLE_DEFAULTS, type StateVariableDefaults } from "../projectSettings";
 import "./stateWorkspaces.css";
 
 const ALWAYS: Condition = { type: "always" };
