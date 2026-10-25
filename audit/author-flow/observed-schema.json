@@ -141,6 +141,14 @@
                 "type": "string"
               }
             }
+          },
+          "navigation_case": {
+            "enum": [
+              "close-keep-discard",
+              "close-save-all",
+              "nested-parent-return",
+              "dirty-child-back"
+            ]
           }
         }
       }
@@ -418,6 +426,93 @@
               "restart_snapshot_sha256": {
                 "type": "string",
                 "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "project_observation": {
+            "type": "object",
+            "description": "D1 readback and exact post-restart persisted project verification after an actual close/back/Save All UI transition.",
+            "required": [
+              "source",
+              "case_id",
+              "field",
+              "node_id",
+              "expected_value",
+              "readback_value",
+              "revision_before",
+              "revision_after",
+              "snapshot_sha256_before",
+              "snapshot_sha256_after",
+              "changed",
+              "restart_verified",
+              "restart_snapshot_sha256"
+            ],
+            "properties": {
+              "source": {
+                "const": "local-d1-readback"
+              },
+              "case_id": {
+                "type": "string"
+              },
+              "field": {
+                "const": "openings[0].narrationText"
+              },
+              "node_id": {
+                "type": "string"
+              },
+              "expected_value": {
+                "type": "string"
+              },
+              "readback_value": {
+                "type": "string"
+              },
+              "revision_before": {
+                "type": "integer"
+              },
+              "revision_after": {
+                "type": "integer"
+              },
+              "snapshot_sha256_before": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "snapshot_sha256_after": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "changed": {
+                "type": "boolean"
+              },
+              "restart_verified": {
+                "const": true
+              },
+              "restart_snapshot_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              }
+            }
+          },
+          "draft_observation": {
+            "type": "object",
+            "description": "DOM-observed draft field after returning from an actual nested task, before any persistent Save.",
+            "required": [
+              "kind",
+              "field",
+              "expected_value",
+              "observed_value"
+            ],
+            "properties": {
+              "kind": {
+                "const": "resumed-parent"
+              },
+              "field": {
+                "const": "openings[0].narrationText"
+              },
+              "expected_value": {
+                "type": "string"
+              },
+              "observed_value": {
+                "type": "string"
               }
             }
           }
