@@ -96,7 +96,6 @@ function DestinationEditor({
           onClick={() => chooseTarget(destination.id, opening.id)}
         >
           <span>{target.openingId === opening.id ? "[X]" : "[ ]"} {index + 1}. {nodeOpeningSnippet(opening, 64) || "No entry text"}</span>
-          <small>Explicit entry selection</small>
         </button>)}
       </div> : null}
     </div> : null}
