@@ -1,0 +1,68 @@
+name: Author flow scroll evidence
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - 'audit/author-flow-scroll-*'
+    paths:
+      - '.github/workflows/author-flow-scroll.yml'
+      - 'scripts/author-flow/**'
+      - 'audit/author-flow/**'
+      - 'package.json'
+permissions:
+  contents: write
+concurrency:
+  group: author-flow-scroll-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Install audit-only Chromium
+        run: |
+          npm install --no-save --no-package-lock playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Validate audit tools
+        run: |
+          node --check scripts/author-flow/browser-recorder.js
+          node --check scripts/author-flow/explore.mjs
+          node --check scripts/author-flow/validate-traces.mjs
+          node --check scripts/author-flow/query-traces.mjs
+      - name: Execute bounded real wheel traversal
+        run: npm run audit:author:explore -- --suite scroll --strategy stratified --scroll --max-states 55 --max-executions 75 --max-depth 5
+      - name: Validate recorded transitions and frontier
+        run: |
+          node scripts/author-flow/validate-traces.mjs
+          npm run audit:author:coverage
+          npm run audit:author:coverage-check
+          npm run audit:author:trace -- --fixture mobile-scroll --find 'author-panel-body' > /dev/null
+          node -e 'const fs=require("fs");const c=JSON.parse(fs.readFileSync("audit/author-flow/coverage.json")); if(c.executed.fixture_count<6 || (c.executed.by_event.scroll??0)<1)process.exit(1);console.log(c.executed.by_event)'
+      - name: Preserve engine checks
+        run: npm run verify
+      - name: Commit audit-only observations
+        if: github.event_name == 'push'
+        run: |
+          git add audit/author-flow/traces audit/author-flow/coverage.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Capture observed scrolling paths in Author mode'
+            git fetch origin "$GITHUB_REF_NAME"
+            git rebase "origin/$GITHUB_REF_NAME"
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Archive audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: author-flow-scroll-traces
+          path: |
+            audit/author-flow/traces/
+            audit/author-flow/coverage.json
+          if-no-files-found: warn
+          retention-days: 30
