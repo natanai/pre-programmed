@@ -1,7 +1,8 @@
 import { ALWAYS } from "../../engine/rules/model";
+import { DEFAULT_PROJECT_DEFAULTS, type ProjectDefaults } from "../../engine/project/defaults";
 import type { Interaction, InteractionOutcome } from "./model";
 
-export function createDraftOutcome(order = 0, responseText = ""): InteractionOutcome {
+export function createDraftOutcome(order = 0, responseText = "", textSpeed = DEFAULT_PROJECT_DEFAULTS.textSpeed): InteractionOutcome {
   return {
     id: crypto.randomUUID(),
     order,
@@ -11,26 +12,26 @@ export function createDraftOutcome(order = 0, responseText = ""): InteractionOut
     responseText,
     dialogueText: "",
     speakerId: null,
-    responsePerformance: { charactersPerSecond: 18, cues: [] },
-    dialoguePerformance: { charactersPerSecond: 18, cues: [] },
+    responsePerformance: { charactersPerSecond: textSpeed, cues: [] },
+    dialoguePerformance: { charactersPerSecond: textSpeed, cues: [] },
     effects: [],
     after: [],
   };
 }
 
-export function createDraftInteraction(sourceNodeId: string, command = "", fallback = false): Interaction {
+export function createDraftInteraction(sourceNodeId: string, command = "", fallback = false, defaults: ProjectDefaults = DEFAULT_PROJECT_DEFAULTS): Interaction {
   return {
     id: crypto.randomUUID(),
     sourceNodeId,
     order: 0,
     wording: fallback ? "" : command,
     matchMode: fallback ? "fallback" : "command",
-    outcomeSelection: "first",
-    choiceVisibility: fallback ? "typed" : "prompt",
+    outcomeSelection: defaults.responseSelection,
+    choiceVisibility: fallback ? "typed" : defaults.inputVisibility,
     choiceVisibleWhen: ALWAYS,
     aliases: fallback ? [] : command ? [command] : [],
     tags: [],
     notes: "",
-    outcomes: [createDraftOutcome()],
+    outcomes: [createDraftOutcome(0, "", defaults.textSpeed)],
   };
 }
