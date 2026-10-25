@@ -68,3 +68,12 @@ Use `--viewport desktop` or `--viewport mobile` to restrict captures; the defaul
 **Important determinism boundary:** the captured states describe observable controls and labels, not full in-memory React drafts or player internals. Equal screen signatures can hide distinct internal states. The trace accurately says `draft_state.observed=false` and `run_state.observed=false`. Do not interpret state-ID equality as proof of identical project state or player semantics. Source hash and fixture SHA, browser version, and bounded exploration parameters should be retained for comparing runs.
 
 The progress ledger in `coverage.json` counts only saved executed fixtures/states/edges. An agent can reproduce the trace or extend the explicit frontier without supplying any imaginary author goals.
+
+Query the **executed** graph separately from source declarations:
+
+    npm run audit:author:trace -- --fixture desktop
+    npm run audit:author:trace -- --fixture mobile --find 'Character'
+    npm run audit:author:trace -- --fixture desktop --state 'state:...'
+    npm run audit:author:trace -- --fixture desktop --from 'state:...' --to 'state:...'
+
+The last command runs breadth-first search over only **observed edges** and reports the shortest recorded action sequence and actually instrumented pointer activations. It does **not** invent transitions through unobserved UI states. The recorded mobile fixture uses Chromium mobile emulation with touch and a 390×844 viewport. Fixture clock and runtime random seed are explicitly marked uncontrolled where they have not been frozen.
