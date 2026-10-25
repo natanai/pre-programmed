@@ -19,8 +19,8 @@
     return style.display!=="none"&&style.visibility!=="hidden"&&node.getClientRects().length>0;
   }
   function descriptor(node,index) {
-    const region=node.closest("[data-author-ui-workspace],[data-author-ui-role],[data-task-id]")||document.body;
-    const scope=region.getAttribute("data-author-ui-workspace")||region.getAttribute("data-author-ui-role")||region.getAttribute("data-task-id")||"page";
+    const region=node.closest("[data-author-ui-workspace],[data-author-ui-role],[data-task-id],.author-picker-surface,[role=dialog]")||document.body;
+    const scope=region.getAttribute("data-author-ui-workspace")||region.getAttribute("data-author-ui-role")||region.getAttribute("data-task-id")||region.getAttribute("aria-label")||region.className?.split?.(" ")[0]||"page";
     const kind=node.tagName.toLowerCase();
     const id=node.id||node.getAttribute("aria-label")||node.getAttribute("name");
     const label=(node.getAttribute("aria-label")||node.labels?.[0]?.textContent||node.innerText||node.textContent||"").replace(/\s+/g," ").trim().slice(0,180);
@@ -36,7 +36,9 @@
   function screen() {
     const overlay=document.querySelector(".author-workspace-layer");
     const root=overlay||document.querySelector(".author-input-surface")||document.body;
-    const controls=Array.from(root.querySelectorAll("button,input,textarea,select,summary,a[href]")).filter(visible).map(descriptor);
+    const selectors="button,input,textarea,select,summary,a[href]";
+    const roots=[root,...document.querySelectorAll(".author-picker-surface,[role=dialog]")];
+    const controls=[...new Set(roots.flatMap(r=>Array.from(r.querySelectorAll(selectors))))].filter(visible).map(descriptor);
     const trail=Array.from(document.querySelectorAll(".author-task-trail:first-of-type li")).map(n=>({label:n.textContent.trim(),current:n.getAttribute("aria-current")==="page"}));
     const ui={visible_controls:controls,workspace:document.querySelector(".author-task-surface.is-active [data-author-ui-workspace]")?.getAttribute("data-author-ui-workspace")??null};
     const task_stack=trail;
