@@ -32,6 +32,10 @@ function number(name, fallback) {
 const maxStates = number("--max-states", 65);
 const maxDepth = number("--max-depth", 4);
 const maxExecutions = number("--max-executions", 90);
+const strategy = arg("--strategy", "breadth");
+if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
+const suite = arg("--suite", "baseline");
+if (!/^[a-z][a-z0-9-]{0,24}$/.test(suite)) throw Error("--suite must be a short lowercase identifier");
 const selected = arg("--viewport", "both");
 if (!["both", "desktop", "mobile"].includes(selected)) throw new Error("--viewport must be both, desktop or mobile.");
 const viewports = selected === "both" ? [desktop, mobile] : [selected === "mobile" ? mobile : desktop];
@@ -192,7 +196,7 @@ async function perform(page,action) {
 async function newPage(browser, fixture, token) {
   const context=await browser.newContext({
     viewport:{width:fixture.viewport.width,height:fixture.viewport.height},
-    ...(fixture.id.endsWith("-mobile") ? {isMobile:true,hasTouch:true,deviceScaleFactor:2} : {}),
+    ...(fixture.id.includes("-mobile") ? {isMobile:true,hasTouch:true,deviceScaleFactor:2} : {}),
     reducedMotion:"reduce",
     serviceWorkers:"block",
   });
@@ -212,11 +216,32 @@ async function newPage(browser, fixture, token) {
 async function traverse(browser, fixture, token) {
   const states=new Map(),transitions=new Map(),frontier=new Map();
   const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
+  const servedFirst=new Map(),servedSecond=new Map();
+  function dequeue() {
+    if(strategy==="breadth" || queue.length<2) return queue.shift();
+    // Fairness depends only on the literal interaction sequence, never on presumed author goals.
+    // Every first-hop branch gets equal opportunities; within it, balance second-hop branches.
+    const firstKey=item=>item.path[0] ? JSON.stringify(item.path[0]) : "__root__";
+    const secondKey=item=>JSON.stringify(item.path.slice(0,2));
+    let best=0,score=null;
+    for(let i=0;i<queue.length;i++) {
+      const candidate=queue[i];
+      const next=[servedFirst.get(firstKey(candidate))??0,servedSecond.get(secondKey(candidate))??0,candidate.path.length,i];
+      if(!score||next.some((value,k)=>value<score[k]&&next.slice(0,k).every((prior,j)=>prior===score[j]))) {
+        best=i;score=next;
+      }
+    }
+    const [chosen]=queue.splice(best,1);
+    const first=firstKey(chosen),second=secondKey(chosen);
+    servedFirst.set(first,(servedFirst.get(first)??0)+1);
+    servedSecond.set(second,(servedSecond.get(second)??0)+1);
+    return chosen;
+  }
   const note=(entry)=>frontier.set(JSON.stringify(entry),entry);
   const addState=(state)=>{if(!states.has(state.id))states.set(state.id,state);};
   while(queue.length && visited.size < maxStates && executedPaths < maxExecutions) {
     executedPaths++;
-    const next=queue.shift();
+    const next=dequeue();
     const path=next.path;
     const {page,context}=await newPage(browser,fixture,token);
     let lastObserved=null;
@@ -264,7 +289,7 @@ async function traverse(browser, fixture, token) {
     states:[...states.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     transitions:[...transitions.values()].sort((a,b)=>a.id.localeCompare(b.id)),
     frontier:[...frontier.values()].sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))),
-    stats:{visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
+    stats:{strategy,visited:visited.size,executed_paths:executedPaths,queue_remaining:queue.length,replay_failures:replayFailures},
   };
 }
 let browser;
@@ -282,7 +307,7 @@ try {
   await mkdir(outputDir,{recursive:true});
   for(const viewport of viewports) {
     const fixture={
-      id:"author-audit-"+viewport.id,
+      id:"author-audit-"+viewport.id+(suite==="baseline"?"":"-"+suite),
       project_fixture:"isolated-local-d1-seeded-v1",
       project_sha256:fixtureHash,
       viewport:{width:viewport.width,height:viewport.height},
@@ -293,7 +318,7 @@ try {
     const result=await traverse(browser,fixture,token);
     const trace={
       schema_version:1,type:"author-observed-transitions",
-      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local"},
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",explorer:{strategy,suite,maxStates,maxDepth,maxExecutions}},
       fixtures:[fixture],
       states:result.states,transitions:result.transitions,frontier:result.frontier,
     };
