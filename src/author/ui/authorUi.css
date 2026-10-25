@@ -168,7 +168,7 @@
   text-align: center;
 }
 
-.author-ui-choice-option.has-help > button {
+.author-ui-choice-options > .author-ui-choice-option.has-help > button {
   padding-right: 2em !important;
 }
 
