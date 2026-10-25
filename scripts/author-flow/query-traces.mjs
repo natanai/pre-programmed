@@ -31,28 +31,37 @@ let result;
 if(from||to){
   if(!from||!to)throw Error("Shortest path requires both --from and --to state IDs");
   if(!states.has(from)||!states.has(to))throw Error("Path endpoints must both be observed states");
-  const queue=[from],prior=new Map([[from,null]]);
-  for(let index=0;index<queue.length;index++){
-    const current=queue[index];
-    if(current===to)break;
-    for(const edge of outgoing.get(current)??[]){
-      if(prior.has(edge.to))continue;
-      prior.set(edge.to,edge);
-      queue.push(edge.to);
-    }
-  }
-  if(!prior.has(to))result={reachable:false,from,to,reason:"No path exists among the executed transitions in this fixture."};
+  if(from===to)result={reachable:true,sequence_verified:true,from,to,action_count:0,observed_pointer_activations:0,path:[]};
+  else if(!Array.isArray(trace.replays))result={
+    reachable:null,sequence_verified:false,from,to,
+    reason:"This older trace records individual edges but not their contiguous browser replay sequences. Do not compose its edges across UI-only state hashes."
+  };
   else{
-    const edges=[];
-    for(let at=to;at!==from;){
-      const edge=prior.get(at);
-      edges.push(edge);
-      at=edge.from;
+    let best=null;
+    for(const replay of trace.replays){
+      if(replay.completed!==true||!Array.isArray(replay.steps))continue;
+      const positions=[replay.initial_state,...replay.steps.map(step=>step.to)];
+      for(let i=0;i<positions.length;i++){
+        if(positions[i]!==from)continue;
+        for(let j=i+1;j<positions.length;j++){
+          if(positions[j]!==to)continue;
+          const steps=replay.steps.slice(i,j);
+          if(!best||steps.length<best.steps.length||(steps.length===best.steps.length&&replay.id<best.replay_id)){
+            best={replay_id:replay.id,steps};
+          }
+          break;
+        }
+      }
     }
-    edges.reverse();
-    result={reachable:true,from,to,action_count:edges.length,
-      observed_pointer_activations:edges.reduce((n,e)=>n+(e.action.pointer_activations??0),0),
-      path:edges.map(e=>({from:e.from,action:e.action,to:e.to}))};
+    result=best ? {
+      reachable:true,sequence_verified:true,from,to,replay_id:best.replay_id,
+      action_count:best.steps.length,
+      observed_pointer_activations:best.steps.reduce((n,step)=>n+(step.action.pointer_activations??0),0),
+      path:best.steps.map(step=>({from:step.from,action:step.action,to:step.to})),
+    } : {
+      reachable:false,sequence_verified:true,from,to,
+      reason:"No single recorded browser replay contains this contiguous state-to-state sequence. It may remain unobserved."
+    };
   }
 }else if(wantedState){
   const state=states.get(wantedState);
@@ -71,7 +80,9 @@ if(from||to){
     observed_state_count:trace.states.length,
     observed_transition_count:trace.transitions.length,
     unexplored_frontier_count:trace.frontier.length,
-    graph_roots:trace.states.filter(state=>!incoming.has(state.id)).map(state=>state.id),
+    initial_state:trace.provenance?.initial_state_id??null,
+    graph_roots:trace.provenance?.initial_state_id?[trace.provenance.initial_state_id]:trace.states.filter(state=>!incoming.has(state.id)).map(state=>state.id),
+    contiguous_replays:trace.replays?.length??null,
     caveat:"State equality is UI-only. In-memory draft and Player run internals remain unobserved.",
   };
 }
