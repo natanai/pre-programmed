@@ -19,7 +19,89 @@
     "fixture_count": 2,
     "state_count": 60,
     "transition_count": 77,
-    "explicit_frontier_count": 780
+    "explicit_frontier_count": 780,
+    "contiguous_replay_count": 0,
+    "by_fixture": [
+      {
+        "file": "author-audit-desktop.json",
+        "fixture_ids": [
+          "author-audit-desktop"
+        ],
+        "observed_states": 30,
+        "observed_transitions": 39,
+        "unexplored_frontier_entries": 389,
+        "verified_contiguous_replays": null,
+        "source_commit": "fbdf6c22dbb4dc3620ee0b114eb5b2df13ae2dd0",
+        "explorer": null
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "fixture_ids": [
+          "author-audit-mobile"
+        ],
+        "observed_states": 30,
+        "observed_transitions": 38,
+        "unexplored_frontier_entries": 391,
+        "verified_contiguous_replays": null,
+        "source_commit": "fbdf6c22dbb4dc3620ee0b114eb5b2df13ae2dd0",
+        "explorer": null
+      }
+    ],
+    "by_workspace": [
+      {
+        "workspace": "author-tools",
+        "observed_states": 5,
+        "observed_transitions_from": 0,
+        "frontier_by_reason": {
+          "unvisited": 48,
+          "unbounded-input": 5
+        },
+        "fixture_ids": [
+          "author-audit-desktop",
+          "author-audit-mobile"
+        ]
+      },
+      {
+        "workspace": "narrative.interaction",
+        "observed_states": 2,
+        "observed_transitions_from": 2,
+        "frontier_by_reason": {
+          "unvisited": 22,
+          "unbounded-input": 8
+        },
+        "fixture_ids": [
+          "author-audit-desktop",
+          "author-audit-mobile"
+        ]
+      },
+      {
+        "workspace": "narrative.node",
+        "observed_states": 39,
+        "observed_transitions_from": 43,
+        "frontier_by_reason": {
+          "unvisited": 500,
+          "unbounded-input": 85,
+          "unsafe-mutation": 26
+        },
+        "fixture_ids": [
+          "author-audit-desktop",
+          "author-audit-mobile"
+        ]
+      },
+      {
+        "workspace": "terminal-or-unidentified",
+        "observed_states": 14,
+        "observed_transitions_from": 32,
+        "frontier_by_reason": {
+          "unvisited": 64,
+          "unbounded-input": 22
+        },
+        "fixture_ids": [
+          "author-audit-desktop",
+          "author-audit-mobile"
+        ]
+      }
+    ]
   },
   "completeness": {
     "global": null,
