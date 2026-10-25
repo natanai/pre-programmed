@@ -25,13 +25,22 @@ for (const filename of files) {
     const before=states.get(transition.from),after=states.get(transition.to);
     if(!before||!after||before.fixture!==transition.fixture||after.fixture!==transition.fixture)throw Error(filename+": edge lacks matching fixture states: "+transition.id);
     const action=transition.action;
-    const controlsBefore=before.ui.visible_controls.filter(c=>c.locator===action.locator);
-    if(controlsBefore.length!==1||!controlsBefore[0].enabled)throw Error(filename+": unavailable/missing control for "+transition.id);
-    const control=controlsBefore[0];
-    if(action.event==="change"&&(control.kind!=="select"||!control.options.some(o=>o.value===action.value&&o.enabled)))throw Error(filename+": invalid selection "+transition.id);
-    if(action.event==="toggle"&&(control.kind!=="input"||typeof control.value!=="boolean"))throw Error(filename+": invalid toggle "+transition.id);
-    if(action.event==="click"&&!["button","summary"].includes(control.kind))throw Error(filename+": invalid pointer click "+transition.id);
-    if(action.pointer_activations!==(action.event==="change"?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
+    if(action.event==="scroll"){
+      const matches=(before.ui.scrollable_regions??[]).filter(r=>r.locator===action.locator);
+      if(matches.length!==1||!Number.isInteger(action.value)||action.value===0)throw Error(filename+": invalid scroll region or delta "+transition.id);
+      const region=matches[0];
+      if(action.value>0&&region.top>=region.max_top)throw Error(filename+": scroll past recorded end "+transition.id);
+      if(action.value<0&&region.top<=0)throw Error(filename+": scroll past recorded start "+transition.id);
+    }else{
+      const controlsBefore=before.ui.visible_controls.filter(c=>c.locator===action.locator);
+      if(controlsBefore.length!==1||!controlsBefore[0].enabled)throw Error(filename+": unavailable/missing control for "+transition.id);
+      const control=controlsBefore[0];
+      if(action.event==="change"&&(control.kind!=="select"||!control.options.some(o=>o.value===action.value&&o.enabled)))throw Error(filename+": invalid selection "+transition.id);
+      if(action.event==="toggle"&&(control.kind!=="input"||typeof control.value!=="boolean"))throw Error(filename+": invalid toggle "+transition.id);
+      if(action.event==="click"&&!["button","summary"].includes(control.kind))throw Error(filename+": invalid pointer click "+transition.id);
+      if(!["click","change","toggle"].includes(action.event))throw Error(filename+": unsupported UI input event "+transition.id);
+    }
+    if(action.pointer_activations!==(action.event==="change"||action.event==="scroll"?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
     edgeKeys.add(JSON.stringify([transition.from,transition.to,transition.action]));
     edges++;
   }
