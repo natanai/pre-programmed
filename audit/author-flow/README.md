@@ -77,3 +77,18 @@ Query the **executed** graph separately from source declarations:
     npm run audit:author:trace -- --fixture desktop --from 'state:...' --to 'state:...'
 
 The last command runs breadth-first search over only **observed edges** and reports the shortest recorded action sequence and actually instrumented pointer activations. It does **not** invent transitions through unobserved UI states. The recorded mobile fixture uses Chromium mobile emulation with touch and a 390×844 viewport. Fixture clock and runtime random seed are explicitly marked uncontrolled where they have not been frozen.
+
+## Distinct exploration schedules and replay-certified paths
+
+The original `author-audit-desktop.json` and `author-audit-mobile.json` remain unchanged. A second schedule (`--suite wide --strategy stratified`) saves separate `author-audit-desktop-wide.json` and `author-audit-mobile-wide.json` traces. Stratification rotates among **recorded interaction prefixes** to distribute a finite browsing budget across branches. It does not classify developer intentions or prefer an authored feature. All schedules remain partial; their unexplored frontier is preserved.
+
+    npm run audit:author:explore -- --suite wide --strategy stratified --max-states 80 --max-executions 110 --max-depth 4
+    npm run audit:author:coverage
+    npm run audit:author:trace -- --fixture desktop-wide
+    npm run audit:author:trace -- --fixture mobile-wide --find 'CHARACTER'
+
+New browser traces also include the actual initial UI state, completed **contiguous browser replays**, and the selected value for each unvisited finite selector alternative. Older traces remain valid evidence of individual edges but do **not** have replay sequence provenance. For those older traces, the path query correctly returns **sequence not verified**, rather than linking separate edges merely because visible screen fingerprints happen to be identical.
+
+For newer traces, `--from` and `--to` return the shortest action subsequence **observed together in a single completed replay**, not an invented shortest path over the union graph. The fingerprint excludes internal draft and Player state, so equal visible states are not proof that arbitrarily composed actions will work. These queries cannot prove that an unseen path is impossible.
+
+The generated `coverage.json` includes per-fixture and per-workspace **observed** state counts, transitions, and frontier reasons. Those are raw coverage inventories, not success rates, inferred goal completion, or a fraction of the engine's unbounded state space. All generated traces come exclusively from isolated local fixtures, never from the live project.
