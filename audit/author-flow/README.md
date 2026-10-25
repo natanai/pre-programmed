@@ -8,7 +8,7 @@ The interface includes loops, conditional choices, nested task returns, resource
 
 ## Evidence layers
 
-**Generated source declarations** are in [source-graph.json](source-graph.json), produced by [extract.mjs](../../scripts/author-flow/extract.mjs) using the TypeScript AST. It records control declarations, UI option literals/dynamic expressions, conditional guard expressions, explicit if/ternary/short-circuit/switch branch sites, dynamic collection sites, callback source, nested controls, and task/resource API call sites across Author and feature source. Entries include source file and line/column. This is deterministic and has no guessed author goals, quality ratings, or imagined transitions.
+**Generated source declarations** are in [source-graph.json](source-graph.json), produced by [extract.mjs](../../scripts/author-flow/extract.mjs) using the TypeScript AST. It records control declarations, UI option literals/dynamic expressions, conditional guard expressions, explicit if/ternary/short-circuit/switch branch sites, dynamic collection sites, callback source, nested controls, and task/resource API call sites across Author, feature, engine, player, terminal and Author-settings support source. Entries include source file and line/column. This is deterministic and has no guessed author goals, quality ratings, or imagined transitions.
 
 **Executed transitions** conform to [observed-schema.json](observed-schema.json). [browser-recorder.js](../../scripts/author-flow/browser-recorder.js) is a passive capture helper for a dedicated test browser. Each state records the currently visible controls and task trail; each transition records an actual click/change and its subsequent visible state. The recorder does not explore branches by itself, inspect internal React state, or change the game. A DOM snapshot does not certify persistence succeeded.
 
@@ -25,7 +25,7 @@ The interface includes loops, conditional choices, nested task returns, resource
     npm run audit:author:query -- --collection 'map'
     npm run audit:author:query -- --node 'src/author/EffectsEditor.tsx:1:1'
 
-Queries emit JSON. The node argument is an exact source-location ID (replace the illustrative coordinate with a real one from --find). Node source positions can change after edits; compare declared_id, workspace, and source context to reconcile them. The [graph workflow](../../.github/workflows/author-flow-graph.yml) detects stale source files in relevant PRs.
+Queries emit JSON. The node argument is an exact source-location ID (replace the illustrative coordinate with a real one from --find). Node source positions can change after edits; compare declared_id, workspace, and source context to reconcile them. The [graph workflow](../../.github/workflows/author-flow-graph.yml) detects drift in relevant PRs. It warns without blocking unrelated development, and requires an up-to-date graph for audit-specific PRs.
 
 ## Deterministic observation protocol
 
