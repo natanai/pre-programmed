@@ -181,6 +181,28 @@
   white-space: normal;
 }
 
+.guided-option-with-help {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  border-bottom: 1px dotted var(--dos-line);
+}
+
+.guided-option-with-help:last-child {
+  border-bottom: 0;
+}
+
+.guided-option-with-help > .guided-option-row {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-bottom: 0 !important;
+}
+
+.guided-option-with-help > .author-inline-help {
+  align-self: center;
+  margin-right: .55em;
+}
+
 .guided-option-row {
   grid-template-columns: 1fr;
 }
