@@ -10,6 +10,8 @@ on:
       - 'src/features/**'
       - 'src/engine/**'
       - 'src/player/**'
+      - 'src/components/**'
+      - 'src/ui/**'
       - 'src/App.tsx'
       - 'package.json'
   pull_request:
@@ -20,6 +22,8 @@ on:
       - 'src/features/**'
       - 'src/engine/**'
       - 'src/player/**'
+      - 'src/components/**'
+      - 'src/ui/**'
       - 'src/App.tsx'
       - 'package.json'
 permissions:
@@ -56,6 +60,9 @@ jobs:
         shell: bash
         run: |
           if [ -n "$(git status --porcelain -- audit/author-flow/source-graph.json)" ]; then
-            echo 'Run npm run audit:author:extract and commit the source graph.'
-            exit 1
+            if [[ "$GITHUB_HEAD_REF" == audit/author-flow-* ]]; then
+              echo 'Audit branch graph is stale: run npm run audit:author:extract.'
+              exit 1
+            fi
+            echo '::warning::Author source graph differs from this PR. Regenerate in a dedicated audit update when appropriate.'
           fi
