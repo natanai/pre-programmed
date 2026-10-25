@@ -419,7 +419,7 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
       <div className="synth-envelope-editor">
         <div className="synth-envelope-heading">
           <span>ENVELOPE</span>
-          <small>A {envelopeLabel(voice.attack)} · R {envelopeLabel(voice.release)}</small>
+          <small>A {envelopeLabel(voice.attack)} · R {envelopeLabel(voice.release)}</small><AuthorHelp label="About Synth envelopes" text="Short attack and release times occupy more slider space, making brief clicks easier to adjust." />
         </div>
         <label className="synth-envelope-rail">
           <span>ATTACK <strong>{envelopeLabel(voice.attack)}</strong></span>
@@ -445,7 +445,6 @@ function VoiceEditor({ sound, voiceIndex, onChange }: {
             onChange={(event) => setEnvelope("release", Number(event.target.value))}
           />
         </label>
-        <AuthorHelp label="About Synth envelopes" text="Short attack and release times occupy more slider space, making brief clicks easier to adjust." />
       </div>
     </section>
 
