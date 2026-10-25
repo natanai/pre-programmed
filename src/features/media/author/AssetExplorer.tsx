@@ -89,8 +89,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
           : "broken reference";
       return <button type="button" key={asset.id} onClick={() => onOpenAsset(asset.id, asset.kind, asset.authoringMode)}>
         <span>{asset.name}{asset.available ? "" : " · MISSING CONTENT"}</span>
-        <span>{sourceKind} · {contentSource} · {asset.mimeType}{dimensionLabel(asset)} · {asset.defaultPresentation} · {asset.byteLength}b · {usage.length} use{usage.length === 1 ? "" : "s"}</span>
-        <code>{asset.id}</code>
+        <span>{sourceKind} · {contentSource}{dimensionLabel(asset)} · {usage.length} use{usage.length === 1 ? "" : "s"}</span>
       </button>;
     })}</div>
     {!assets.length ? <span className="media-asset-empty">{normalizedQuery ? "NO ASSETS MATCH." : `NO ${filter === "all" ? "MEDIA" : filter.toUpperCase()} ASSETS.`}</span> : null}
