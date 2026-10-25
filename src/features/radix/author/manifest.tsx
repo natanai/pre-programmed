@@ -14,6 +14,7 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
     if (route.type !== "feature" || route.feature !== "radix") return null;
     if (route.workspace === "startup") return "Player launch";
     if (route.workspace === "sequences") return "Sort sequences";
+    if (route.workspace === "sequence-defaults") return "Sort sequence defaults";
     if (route.workspace === "sequence") {
       const sequence = snapshot.settings.radix.sequences.find((candidate) => candidate.id === route.data?.sequenceId);
       return sequence?.label || "New sort sequence";
@@ -22,7 +23,14 @@ export const radixAuthorFeature: AuthorFeatureManifest = {
   },
   effects: [radixEffectAdapter],
   textCues: RADIX_TEXT_CUE_AUTHOR_ADAPTERS,
-  projectSettings: RADIX_PROJECT_SETTINGS,
+  projectSettings: [...RADIX_PROJECT_SETTINGS, {
+    id: "radix-sequence-defaults",
+    label: "SORT SEQUENCES",
+    description: "Starting sort, display, and sound values for new sequences.",
+    group: "defaults",
+    order: 20,
+    route: { type: "feature", feature: "radix", workspace: "sequence-defaults" },
+  }],
   resources: [{
     kind: "radix-sequence",
     label: "Sort Sequence",
