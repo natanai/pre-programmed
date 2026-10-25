@@ -1,0 +1,57 @@
+name: Author flow source graph
+on:
+  push:
+    branches:
+      - 'audit/author-flow-*'
+    paths:
+      - 'scripts/author-flow/**'
+      - 'audit/author-flow/**'
+      - 'src/author/**'
+      - 'src/features/**'
+      - 'src/engine/**'
+      - 'src/player/**'
+      - 'src/App.tsx'
+      - 'package.json'
+  pull_request:
+    paths:
+      - 'scripts/author-flow/**'
+      - 'audit/author-flow/**'
+      - 'src/author/**'
+      - 'src/features/**'
+      - 'src/engine/**'
+      - 'src/player/**'
+      - 'src/App.tsx'
+      - 'package.json'
+permissions:
+  contents: write
+jobs:
+  graph:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run audit:author:extract
+      - run: npm run audit:author:check
+      - name: Update generated graph on audit branches
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          git add audit/author-flow/source-graph.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Record generated Author source graph'
+            git push origin "HEAD:$GITHUB_REF_NAME"
+          fi
+      - name: Reject stale graph in pull requests
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          if [ -n "$(git status --porcelain -- audit/author-flow/source-graph.json)" ]; then
+            echo 'Run npm run audit:author:extract and commit the source graph.'
+            exit 1
+          fi
