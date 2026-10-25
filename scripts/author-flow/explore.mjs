@@ -189,6 +189,9 @@ async function newPage(browser, fixture, token) {
   const page=await context.newPage();
   page.setDefaultTimeout(pageTimeout);
   await page.goto(origin,{waitUntil:"domcontentloaded"});
+  const bootstrap=page.locator(".universe-bootstrap-action");
+  await bootstrap.waitFor({state:"visible",timeout:pageTimeout});
+  await bootstrap.click();
   await page.locator(".author-home").waitFor({state:"visible",timeout:pageTimeout});
   await page.evaluate(fixture=>window.__authorFlowAudit.start(fixture),fixture);
   await settle(page);
