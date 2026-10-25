@@ -247,9 +247,11 @@ async function traverse(browser, fixture, token) {
     const {page,context}=await newPage(browser,fixture,token);
     let lastObserved=null;
     const replaySteps=[];
+    let replayInitialId=null;
     try {
       let state=await page.evaluate(()=>window.__authorFlowAudit.snapshot());
       if(!initialStateId) initialStateId=state.id;
+      replayInitialId=state.id;
       lastObserved=state;
       addState(state);
       for(const action of path){
@@ -262,7 +264,7 @@ async function traverse(browser, fixture, token) {
         transitions.set(id,{id:"transition:"+id,fixture:fixture.id,from:before.id,to:state.id,action,observed:true});
         replaySteps.push({from:before.id,to:state.id,action});
       }
-      replays.push({id:"replay:"+SHA([fixture.id,path]).slice(0,20),fixture:fixture.id,initial_state:initialStateId,steps:replaySteps,completed:true});
+      replays.push({id:"replay:"+SHA([fixture.id,path]).slice(0,20),fixture:fixture.id,initial_state:replayInitialId,steps:replaySteps,completed:true});
       if(visited.has(state.id))continue;
       visited.add(state.id);
       const choices=actionDomain(state);
