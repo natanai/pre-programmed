@@ -531,12 +531,9 @@ async function captureDraftNavigationCase(browser,viewport,test) {
       if(current.ui.workspace!=="author-tools")throw Error("Expected nested Tools.");
       await move("button","STRUCTURE Browse Nodes, entry responses, valid inputs, and destinations. ›");
       if(current.ui.workspace!=="narrative-structure")throw Error("Expected nested Structure workspace.");
-      if(!current.ui.visible_controls.some(c=>c.kind==="button"&&c.label==="[EDIT]"&&c.enabled)){
-        const row=current.ui.visible_controls.find(c=>c.kind==="button"&&c.label.includes("Node #1")&&c.enabled);
-        if(!row)throw Error("No original Node available from Structure.");
-        await move("button",row.label);
-      }
-      await move("button","[EDIT]");
+      const row=current.ui.visible_controls.find(c=>c.kind==="button"&&c.label.startsWith("Node #1")&&c.enabled);
+      if(!row)throw Error("No actual Node #1 navigation control available from Structure.");
+      await move("button",row.label);
       expectNarration(original);
       await move("textarea","NARRATION","fill",test.value);
       expectNarration(test.value);
