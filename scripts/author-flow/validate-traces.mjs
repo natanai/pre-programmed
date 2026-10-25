@@ -30,7 +30,7 @@ for (const filename of files) {
     if(action.event==="change"&&(control.kind!=="select"||!control.options.some(o=>o.value===action.value&&o.enabled)))throw Error(filename+": invalid selection "+transition.id);
     if(action.event==="toggle"&&(control.kind!=="input"||typeof control.value!=="boolean"))throw Error(filename+": invalid toggle "+transition.id);
     if(action.event==="click"&&!["button","summary"].includes(control.kind))throw Error(filename+": invalid pointer click "+transition.id);
-    if(action.pointer_activations!==1)throw Error(filename+": pointer metric must match actual single pointer action");
+    if(action.pointer_activations!==(action.event==="change"?0:1))throw Error(filename+": pointer metric must match observed event mechanism");
     edges++;
   }
   for(const item of trace.frontier){
