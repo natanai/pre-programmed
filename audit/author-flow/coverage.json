@@ -11,21 +11,5434 @@
     "collection_sites": 715
   },
   "executed": {
-    "status": "not-started",
-    "trace_files": [],
-    "fixture_count": 0,
-    "state_count": 0,
-    "transition_count": 0,
-    "explicit_frontier_count": 0
+    "status": "partial",
+    "trace_files": [
+      "author-audit-desktop.json",
+      "author-audit-mobile.json"
+    ],
+    "fixture_count": 2,
+    "state_count": 60,
+    "transition_count": 74,
+    "explicit_frontier_count": 788
   },
   "completeness": {
     "global": null,
     "reason": "The UI has unbounded input, resource cardinality, state and task depth; completeness is defined only over separately declared finite fixture domains."
   },
   "evidence": {
-    "fixtures": [],
-    "states": [],
-    "transitions": [],
-    "frontier": []
+    "fixtures": [
+      {
+        "file": "author-audit-desktop.json",
+        "id": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "author-audit-mobile"
+      }
+    ],
+    "states": [
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:037fa4760eded28d",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:04e45121aef00c2c",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:061d6348497a86e8",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:263543d261fc3275",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:276cd20f77f3560e",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:3b1d594bfb506929",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:3ed320e8d14cf5f7",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:54a4992077598451",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:55dc407bae432b96",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:576f9977f67db486",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:68478bbf67d5975e",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:71b65397c5449a7d",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:840a7fb6d5bcab4c",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:845718e95d583323",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:8576b08188e556dc",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:928dc99aaf9bca29",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:95e664408f77c854",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:9d6227cdacab4d2d",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:a70da5688b05b662",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:ab24c9f4f734a2b0",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:c4db821189f5eca7",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:cdf73ed279f8b5bd",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:e24d3bffc071d2ce",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:e83dccf934f07405",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:e9f4564e45d91280",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:eb939bdeebfdcf34",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:ec128ab79f39a177",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:f516aeeb491d1eea",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:f57f021630f356a2",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "state:fd5cd51ab3aaf4b9",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:04643feeffe8d303",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:0658085a4f17830c",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:0947e393d172b51e",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:0e434dbb704b956d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:12d8492d108a18b0",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:1fdafff7129c2f2d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:214797c5b79e1043",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:276cd20f77f3560e",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:292cc04fbe97ea99",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:2b480b2ca433be93",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:39f02fe632f54930",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:3ed320e8d14cf5f7",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:47e8d2143cefac71",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:54a4992077598451",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:55dc407bae432b96",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:5859af42fb4f0842",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:68478bbf67d5975e",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:71b65397c5449a7d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:7464adf69955af31",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:759d41a96deacc48",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:840a7fb6d5bcab4c",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:8696f8bdca6045f9",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:a069b132abfe9cd4",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:b79deea72ab5539d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:b83fbb35b35019bd",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:cdf73ed279f8b5bd",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:d7c7677a7e219f6d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:eb939bdeebfdcf34",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:f516aeeb491d1eea",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "state:fcfa726ca284cef0",
+        "fixture": "author-audit-mobile"
+      }
+    ],
+    "transitions": [
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:0b83d38a8569b48677ca",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:0fcd68cc12851b81c24b",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:171e3c750b8233ae0c78",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:1b822b93bbed4d3705d6",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:260d0957eba0c54cfa90",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:28b1b556609c11c5a00b",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:2cd293a2aa88761b0ec6",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:4936f5a5ef9f5efde598",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:4bcfd52485ceea947755",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:4da5dead939974df6267",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:4ed9fcff1b65d5c0de55",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:5217e946d562e3965e2d",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:54ecd8a8de4ddf23b3c3",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:5739b32485f511abd599",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:5ec0bf1e3a860e788e3c",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:61082d0f0011e41d9aed",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:614b45705cf24b36c65a",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:7aef04106324a1ca7637",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:7ccea6511fc18e20fd5d",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:802064e7108a6a403602",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:8c6f07ae188879a65df6",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:8e4741b11ff7c711d069",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:91f9f75e346dfdfe8bb5",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:9380c5e9ed31acd93a30",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:95bf9594352b0593ad90",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:b6bb689bd90a470a7fb5",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:b98aeb7c63229a59f972",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:c7f0a3087f3218d82687",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:c95c35abe101f681767a",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:dbb875d65adcd7be2d16",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:e2393d3b4a176327c3a2",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:e78b49c7433d165a466e",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:f162b88f19ee5b37f468",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:fa2544fff3d4f281505e",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:fcdb051fd02d0992e493",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:fd6a5e89e12d4f9d1db2",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-desktop.json",
+        "id": "transition:ffa4369f2e94d08585ea",
+        "fixture": "author-audit-desktop"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:0086e869e6ad854dd8b9",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:063315c71362da277794",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:07e1f51413b012e9fd28",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:0bb2673d5aeaf2c69bbd",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:0f1464ba960b4d357e93",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:1429b45434096393cffd",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:15259a04a75cf85fddad",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:165aeb63c01c41e5140a",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:1c755bee5549bfadbe29",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:1dde933489ba0155f194",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:261f757da4f0cbe92c7d",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:2981d8b243e428f4b1ac",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:2fd650a85ae185feffda",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:3320aefb065df3c50ddb",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:3378125d47825f2b7efc",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:381da6f6a7f98ae62901",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:46a4940d631f64f9f344",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:48112d915bbeb53bc4cd",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:49aa28c64f3b73349a03",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:58eee06b6605b07de11e",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:5f16465a12f616b7b1ac",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:6035748876f27a096ba9",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:64ada7911b4d7a36e5e0",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:6a68b222370a9b537760",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:6e897718537bc8978422",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:821f382729e46d01f826",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:82bdc86daa8c111f6436",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:87f19b2b5fd061c9e149",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:9ce51435ff37a9ebd217",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:a03a6b50865447738557",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:a4809f98a656005f0506",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:b2a187d0889460d29227",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:c34f54ed8b6fffa9fe97",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:d11a5e8e527e3a64f312",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:d6daffb680694d559eb1",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:ec20d38c45d6a618865a",
+        "fixture": "author-audit-mobile"
+      },
+      {
+        "file": "author-audit-mobile.json",
+        "id": "transition:ed1cf9eadde64c041092",
+        "fixture": "author-audit-mobile"
+      }
+    ],
+    "frontier": [
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:037fa4760eded28d",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04e45121aef00c2c",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",73]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",74]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",75]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",76]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",77]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",78]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",79]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"button\",\"\",80]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"fa9ab09e-9807-49dc-af01-64be97276ff0\",\"input\",\"\",72]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:061d6348497a86e8",
+        "locator": "[\"page\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"input\",\"\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"select\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"select\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:263543d261fc3275",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"\",1]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Return to Author experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3b1d594bfb506929",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:3ed320e8d14cf5f7",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",0]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Display settings\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Edit who are you?\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Preview player experience\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Submit command\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",11]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",12]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",13]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:576f9977f67db486",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",42]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",44]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",46]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About CAPTURE INPUT\",47]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About CREATE NEW\",43]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About LINK EXISTING\",45]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About RETURN PREVIOUS\",41]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About STAY HERE\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"\",0]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Preview player experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"\",1]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Return to Author experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:845718e95d583323",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:8576b08188e556dc",
+        "locator": "[\"06fcd1e9-c497-419b-88f7-8cd5d9c91dd7\",\"input\",\"\",3]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:928dc99aaf9bca29",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:928dc99aaf9bca29",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:95e664408f77c854",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"\",0]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"Display settings\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"Preview player experience\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"button\",\"Submit command\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"input\",\"\",10]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"input\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"input\",\"\",9]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:9d6227cdacab4d2d",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"narrative.node\",\"button\",\"\",73]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"input\",\"Minimum quantity\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"summary\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"summary\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:a70da5688b05b662",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ab24c9f4f734a2b0",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:c4db821189f5eca7",
+        "locator": "[\"90bfcaf1-9cac-454e-881d-d1ddbefc59e1\",\"input\",\"\",3]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",113]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",76]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",95]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"About response speakers\",75]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"Back to input\",74]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"Edit Mysterious Voice\",77]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"input\",\"MYSTERIOUS VOICE SAYS speed in characters per second\",96]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",78]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",80]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",98]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"textarea\",\"MYSTERIOUS VOICE SAYS\",97]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",79]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"narrative.node\",\"button\",\"\",72]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"summary\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"summary\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e24d3bffc071d2ce",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"input\",\"Comparison value\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e83dccf934f07405",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"FIND\",\"button\",\"Close FIND\",72]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"FIND\",\"input\",\"name or system\",73]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:e9f4564e45d91280",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"narrative.node\",\"button\",\"\",73]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"select\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"summary\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"summary\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:ec128ab79f39a177",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f516aeeb491d1eea",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"narrative.node\",\"button\",\"\",72]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"summary\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"summary\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:f57f021630f356a2",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",25]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",26]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",27]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",32]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",33]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"\",34]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:fd5cd51ab3aaf4b9",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-desktop.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:04643feeffe8d303",
+        "locator": "[\"1b00272d-bd6c-4569-bcba-98b38fc47ad8\",\"input\",\"\",3]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"\",54]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0658085a4f17830c",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"\",54]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0947e393d172b51e",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:0e434dbb704b956d",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:12d8492d108a18b0",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"\",54]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"About attempt count\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"input\",\"Attempt number\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:1fdafff7129c2f2d",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:214797c5b79e1043",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:214797c5b79e1043",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"\",1]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Return to Author experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:276cd20f77f3560e",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"narrative.node\",\"button\",\"\",72]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"\",52]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"summary\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"summary\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:292cc04fbe97ea99",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:2b480b2ca433be93",
+        "locator": "[\"FIND\",\"button\",\"Close FIND\",72]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:2b480b2ca433be93",
+        "locator": "[\"FIND\",\"input\",\"name or system\",73]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"narrative.node\",\"button\",\"\",109]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",49]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"\",50]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"summary\",\"\",13]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"summary\",\"\",51]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:39f02fe632f54930",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:3ed320e8d14cf5f7",
+        "locator": "[\"page\",\"button\",\"Display settings\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:3ed320e8d14cf5f7",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"narrative.node\",\"button\",\"\",73]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"input\",\"Minimum quantity\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"summary\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"summary\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:47e8d2143cefac71",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",0]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Display settings\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Edit who are you?\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Preview player experience\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"button\",\"Submit command\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",11]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",12]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"input\",\"\",13]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:55dc407bae432b96",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"\",54]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"input\",\"\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"select\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"select\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:5859af42fb4f0842",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",42]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",44]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"\",46]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About CAPTURE INPUT\",47]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About CREATE NEW\",43]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About LINK EXISTING\",45]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About RETURN PREVIOUS\",41]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"button\",\"About STAY HERE\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:68478bbf67d5975e",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"\",0]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Preview player experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:71b65397c5449a7d",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"narrative.node\",\"button\",\"\",73]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"\",53]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"select\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"summary\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"summary\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:7464adf69955af31",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",23]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",25]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",26]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",27]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",28]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",29]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",30]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",31]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",32]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",33]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"\",34]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:759d41a96deacc48",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"\",1]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Display settings\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Return to Author experience\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"button\",\"Submit command\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:840a7fb6d5bcab4c",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",0]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"input\",\"Comparison value\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"select\",\"Comparison\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:8696f8bdca6045f9",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"\",51]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"summary\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:a069b132abfe9cd4",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",10]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",7]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b79deea72ab5539d",
+        "locator": "[\"1edf7e82-6a84-4589-b092-b2b233a4ba74\",\"input\",\"\",3]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"narrative.node\",\"button\",\"\",72]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",37]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",52]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",22]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",38]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:b83fbb35b35019bd",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",21]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"page\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",113]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",76]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"\",95]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"About response speakers\",75]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"Back to input\",74]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"button\",\"Edit Mysterious Voice\",77]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"input\",\"MYSTERIOUS VOICE SAYS speed in characters per second\",96]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",78]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",80]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"summary\",\"\",98]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"textarea\",\"MYSTERIOUS VOICE SAYS\",97]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:cdf73ed279f8b5bd",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",79]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",73]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",74]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",75]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",76]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",77]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",78]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",79]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"button\",\"\",80]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"b929d55f-6e09-4380-8830-9b7ecce0c53a\",\"input\",\"\",72]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:d7c7677a7e219f6d",
+        "locator": "[\"page\",\"button\",\"\",4]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"narrative.node\",\"button\",\"\",74]",
+        "reason": "unsafe-mutation",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",20]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"\",39]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",22]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"\",19]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",24]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",40]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:eb939bdeebfdcf34",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",23]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:f516aeeb491d1eea",
+        "locator": "[\"page\",\"textarea\",\"Universe command\",1]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"page\",\"button\",\"\",2]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"page\",\"button\",\"\",3]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",11]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",14]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",15]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",16]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",17]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",36]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",6]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",8]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"\",9]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"button\",\"About Node entry responses\",12]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"input\",\"NARRATION speed in characters per second\",19]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"select\",\"Condition type\",18]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",21]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"summary\",\"\",5]",
+        "reason": "unvisited",
+        "file": "author-audit-mobile.json"
+      },
+      {
+        "state": "state:fcfa726ca284cef0",
+        "locator": "[\"specialized-control\",\"textarea\",\"NARRATION\",20]",
+        "reason": "unbounded-input",
+        "file": "author-audit-mobile.json"
+      }
+    ]
   }
 }
