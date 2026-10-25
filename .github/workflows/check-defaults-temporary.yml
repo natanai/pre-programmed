@@ -1,6 +1,8 @@
 name: Verify defaults change
 
 on:
+  push:
+    branches: ["feature/project-author-defaults-20261024"]
   pull_request:
     branches: [main]
     paths:
