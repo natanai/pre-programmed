@@ -14,13 +14,18 @@ permissions:
   pages: write
   id-token: write
 
+# A release may put a new Worker live before its matching Pages client. Never
+# cancel a release in that interval; queue the next commit and let each pair
+# finish coherently.
 concurrency:
   group: pre-programmed-production
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build-and-worker:
     runs-on: ubuntu-latest
+    outputs:
+      api_origin: ${{ vars.PRE_PROGRAMMED_API_ORIGIN || steps.deploy-worker.outputs.api_origin }}
     steps:
       - uses: actions/checkout@v7
 
@@ -79,49 +84,15 @@ jobs:
           appendFileSync(process.argv[3], `api_origin=${apiOrigin}\n`);
           NODE
 
-      - name: Build client for this installation
+      - name: Build matching client for this installation
         run: npm run build:pages
         env:
           VITE_API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN || steps.deploy-worker.outputs.api_origin }}
           VITE_BASE_PATH: ${{ steps.pages.outputs.base_path }}/
 
-      - name: Verify deployed API
-        env:
-          API_ORIGIN: ${{ vars.PRE_PROGRAMMED_API_ORIGIN || steps.deploy-worker.outputs.api_origin }}
-        run: |
-          node --input-type=module <<'NODE'
-          const origin = process.env.API_ORIGIN?.trim().replace(/\/+$/, "");
-          if (!origin) process.exit(1);
-
-          let healthy = false;
-          for (let attempt = 0; attempt < 12; attempt += 1) {
-            try {
-              const response = await fetch(`${origin}/api/health`, { cache: "no-store" });
-              const health = await response.json();
-              if (
-                response.ok &&
-                health?.ok === true &&
-                health?.authorConfigured === true &&
-                health?.mediaGeneratedPersistence === "d1" &&
-                health?.mediaFilePersistence === "repository"
-              ) {
-                healthy = true;
-                break;
-              }
-            } catch {}
-            await new Promise((resolve) => setTimeout(resolve, 5000));
-          }
-          if (!healthy) process.exit(1);
-
-          try {
-            const response = await fetch(`${origin}/api/project/snapshot`, { cache: "no-store" });
-            const snapshot = await response.json();
-            if (!response.ok || typeof snapshot !== "object" || snapshot === null || typeof snapshot.revision !== "number") process.exit(1);
-          } catch {
-            process.exit(1);
-          }
-          NODE
-
+      # Publish the client artifact before treating a post-Worker probe as a
+      # release gate. A transient schema/read failure must never strand the old
+      # client against the new Worker indefinitely.
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
@@ -132,6 +103,97 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  verify-production:
+    needs: [build-and-worker, deploy-pages]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify coherent production release
+        env:
+          API_ORIGIN: ${{ needs.build-and-worker.outputs.api_origin }}
+          PAGE_URL: ${{ needs.deploy-pages.outputs.page_url }}
+        run: |
+          node --input-type=module <<'NODE'
+          const apiOrigin = process.env.API_ORIGIN?.trim().replace(/\/+$/, "");
+          const pageUrl = process.env.PAGE_URL?.trim();
+          if (!apiOrigin || !pageUrl) {
+            console.error("Deployment did not expose both API and Pages origins.");
+            process.exit(1);
+          }
+
+          const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+          const preview = (text) => text.replace(/\s+/g, " ").slice(0, 800);
+
+          async function retry(label, operation) {
+            let lastError = "not attempted";
+            for (let attempt = 1; attempt <= 12; attempt += 1) {
+              try {
+                return await operation();
+              } catch (error) {
+                lastError = error instanceof Error ? error.message : String(error);
+                console.error(`${label} attempt ${attempt}/12 failed: ${lastError}`);
+                if (attempt < 12) await sleep(5000);
+              }
+            }
+            throw new Error(`${label} failed after retries: ${lastError}`);
+          }
+
+          await retry("API health", async () => {
+            const response = await fetch(`${apiOrigin}/api/health`, { cache: "no-store" });
+            const text = await response.text();
+            let health;
+            try { health = JSON.parse(text); } catch { throw new Error(`HTTP ${response.status}: ${preview(text)}`); }
+            if (!response.ok
+              || health?.ok !== true
+              || health?.authorConfigured !== true
+              || health?.mediaGeneratedPersistence !== "d1"
+              || health?.mediaFilePersistence !== "repository") {
+              throw new Error(`HTTP ${response.status}: ${preview(text)}`);
+            }
+            return health;
+          });
+
+          const snapshot = await retry("Project snapshot", async () => {
+            const response = await fetch(`${apiOrigin}/api/project/snapshot`, { cache: "no-store" });
+            const text = await response.text();
+            let value;
+            try { value = JSON.parse(text); } catch { throw new Error(`HTTP ${response.status}: ${preview(text)}`); }
+            if (!response.ok || !value || typeof value !== "object") {
+              throw new Error(`HTTP ${response.status}: ${preview(text)}`);
+            }
+            if (typeof value.schemaVersion !== "number" || typeof value.revision !== "number") {
+              throw new Error(`Snapshot is missing schema/revision: ${preview(text)}`);
+            }
+            if (typeof value.startNodeId !== "string" || !Array.isArray(value.nodes)) {
+              throw new Error(`Snapshot is missing Narrative root data: ${preview(text)}`);
+            }
+            const startNode = value.nodes.find((node) => node?.id === value.startNodeId);
+            if (!startNode || !Array.isArray(startNode.openings) || startNode.openings.length === 0) {
+              throw new Error("Start Node is missing its canonical Entry Responses.");
+            }
+            const startup = value.settings?.radix?.startup;
+            if (startup?.enabled) {
+              const sequences = value.settings?.radix?.sequences;
+              if (!Array.isArray(sequences) || !sequences.some((sequence) => sequence?.id === startup.sequenceId)) {
+                throw new Error("Enabled startup sequencer does not resolve to an authored sequence.");
+              }
+            }
+            return value;
+          });
+
+          await retry("Published Pages client", async () => {
+            const response = await fetch(pageUrl, { cache: "no-store", redirect: "follow" });
+            const text = await response.text();
+            if (!response.ok || !/<script\b/i.test(text)) {
+              throw new Error(`HTTP ${response.status}: ${preview(text)}`);
+            }
+            return text;
+          });
+
+          console.log(`Production coherent: schema ${snapshot.schemaVersion}, revision ${snapshot.revision}, start ${snapshot.startNodeId}.`);
+          NODE

@@ -1,7 +1,7 @@
 import { WORKER_FEATURE_PERSISTENCE } from "../features/catalog";
 import { CORE_PLATFORM_MIGRATIONS } from "./coreMigrations";
 import type { WorkerMigration } from "./migrationContract";
-import { executeSqlScript, MIGRATION_SCRIPTS as HISTORICAL_MIGRATIONS } from "./migrations";
+import { MIGRATION_SCRIPTS as HISTORICAL_MIGRATIONS, splitSqlStatements } from "./migrations";
 import {
   restorePreReplacementStateInventorySchema,
   STATE_INVENTORY_ROLLBACK_ID,
@@ -30,6 +30,22 @@ function migrationPlan(): WorkerMigration[] {
 
 let ready: Promise<void> | null = null;
 
+/**
+ * Apply one migration and record its id in the same D1 transaction.
+ *
+ * D1 batch() is transactional: if any schema/data statement fails, the marker
+ * and every earlier statement in this migration roll back together. A later
+ * request therefore never retries against a half-applied migration.
+ */
+async function applyMigration(db: D1Database, migration: WorkerMigration) {
+  const statements = splitSqlStatements(migration.sql).map((statement) => db.prepare(statement));
+  statements.push(
+    db.prepare("INSERT INTO schema_migrations (id, name) VALUES (?, ?)")
+      .bind(migration.id, migration.name),
+  );
+  await db.batch(statements);
+}
+
 async function migrate(db: D1Database) {
   await db.prepare(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -56,10 +72,7 @@ async function migrate(db: D1Database) {
 
   for (const migration of migrationPlan()) {
     if (appliedIds.has(migration.id)) continue;
-    await executeSqlScript(db, migration.sql);
-    await db.prepare("INSERT INTO schema_migrations (id, name) VALUES (?, ?)")
-      .bind(migration.id, migration.name)
-      .run();
+    await applyMigration(db, migration);
   }
 }
 
