@@ -1,4 +1,5 @@
 import type {PrototypeEvent,PrototypePlan} from "../modernPremidiPlan";
+import {runningProceduralAudioContext} from "./proceduralTone";
 
 /**
  * Limited proof of playback and compiled footprint. The studio Web Audio
@@ -17,8 +18,8 @@ function levelAt(e:PrototypeEvent,peak:number,elapsed:number){
  return peak*sustain;
 }
 export async function playModernPremidi(plan:PrototypePlan):Promise<ModernPreviewSession>{
- const context=new AudioContext();
- try{await context.resume();}catch(err){void context.close();throw err;}
+ const context=await runningProceduralAudioContext();
+ if(!context)throw Error("Audio playback is unavailable. Try again after interacting with the game.");
  const master=context.createGain();
  master.gain.value=.85;master.connect(context.destination);
  const offset=context.currentTime+.065;
@@ -37,7 +38,8 @@ export async function playModernPremidi(plan:PrototypePlan):Promise<ModernPrevie
   for(const oscillator of sources){
    try{oscillator.stop(now+.03);}catch{ /* may already have an end scheduled */ }
   }
-  setTimeout(()=>{try{master.disconnect();}catch{}void context.close();},80);
+  // Media owns this shared AudioContext; only disconnect our music graph.
+  setTimeout(()=>{try{master.disconnect();}catch{}},80);
   resolveFinished();
  }
  function schedule(e:PrototypeEvent){
