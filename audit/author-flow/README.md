@@ -27,7 +27,22 @@ The interface includes loops, conditional choices, nested task returns, resource
     npm run audit:author:query -- --collection 'map'
     npm run audit:author:query -- --node 'src/author/EffectsEditor.tsx:1:1'
 
-Queries emit JSON. The node argument is an exact source-location ID (replace the illustrative coordinate with a real one from --find). Node source positions can change after edits; compare declared_id, workspace, and source context to reconcile them. The [graph workflow](../../.github/workflows/author-flow-graph.yml) detects drift in relevant PRs. It warns without blocking unrelated development, and requires an up-to-date graph for audit-specific PRs.
+Queries emit JSON. The node argument is an exact source-location ID (replace the illustrative coordinate with a real one from --find). Node source positions can change after edits; compare declared_id, workspace, and source context to reconcile them. This audit is **on demand**; it no longer has GitHub Actions. Run the local commands when the graph is needed. Do not enable automatic graph rebuilding or browser traversal as part of ordinary game development.
+
+
+## Lightweight declared navigation model (no browser)
+
+`navigation-model.json` is generated from the existing TypeScript AST inventory, without running the game. It connects a source-associated Author workspace to the *statically explicit* `pushTask` / `openTask` feature route requested by an Author handler. It preserves the originating source file, line, declaring control, and raw guard expressions. Computed routes and handlers without a reliable workspace origin are recorded separately under `unresolved`, not silently invented.
+
+    npm run audit:author:extract
+    node scripts/author-flow/navigation-model.mjs
+    node scripts/author-flow/navigation-model.mjs --check
+    node scripts/author-flow/navigation-model.mjs --from narrative-structure --to narrative.node
+    node scripts/author-flow/navigation-model.mjs --find world-entity
+
+The direct-route query reports **one declared handler invocation** for Structure → Node, not a guaranteed one-click end-to-end operation. Source code does not reveal which specific list row is enabled in a particular game, whether the user's click takes an extra chooser step, whether a condition hides it, or whether a nested Save/Back correctly returns. The model therefore sets `pointer_actions: null`. Source workspace names and route identities are **not** automatically linked via guessed naming conventions.
+
+This intentionally narrow graph already allows agents to answer “Is there a source-declared transition from this editor to that owner?” and to track changes without a headless browser or GitHub Action. **It is not yet a complete static decision tree nor a certified global shortest-path click-count model.** A richer model can extend the same data using the actual resource-provider contracts and task-stack semantics, but should never infer conditional runtime behavior without a declared fixture or lightweight engine evaluation.
 
 ## Deterministic observation protocol
 
