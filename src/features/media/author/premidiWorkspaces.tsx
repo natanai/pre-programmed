@@ -4,6 +4,7 @@ import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { parse, filename, type PremidiComposition } from "../vendor/premidi-schema.js";
 import { play } from "../vendor/premidi-audio.js";
+import { unlockProceduralAudio } from "../ui/proceduralTone";
 
 function download(doc: PremidiComposition) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
@@ -54,9 +55,12 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
         onChange={async (event) => {
           const file = event.currentTarget.files?.[0];
           if (!file) return;
+          // Request Web Audio access while the user-selected file gesture is active.
+          const audioReady = unlockProceduralAudio();
           event.currentTarget.value = "";
           setBusy(true);
           try {
+            if (!(await audioReady)) throw Error("Audio output was not unlocked.");
             if (file.size > 8_000_000) throw Error("Modern score exceeds the 8 MB preview limit.");
             const { parseModernPremidi } = await import("../modernPremidiPlan");
             const plan = parseModernPremidi(await file.text());
