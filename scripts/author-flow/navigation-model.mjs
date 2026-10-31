@@ -168,11 +168,14 @@ function parseProviders(files) {
 }
 function authorResourceSourceFiles(graph) {
   const paths=new Set();
-  for(const feature of ["commands","inventory","media","narrative","radix","state","world"])
+  // Derive feature manifests from the actual Author composition registry.
+  const registry=fs.readFileSync("src/author/features/registry.tsx","utf8");
+  for(const match of registry.matchAll(/from\s+["']\.\.\/\.\.\/(features\/[^"']+\/author\/manifest)["']/g)){
     for(const extension of [".ts",".tsx"]){
-      const file="src/features/"+feature+"/author/manifest"+extension;
+      const file="src/"+match[1]+extension;
       if(fs.existsSync(file))paths.add(file);
     }
+  }
   paths.add("src/author/features/projectManifest.tsx");
   // Resolve imported canonical route helpers using real source definitions,
   // not a second hand-maintained registry of resource destinations.
@@ -271,7 +274,7 @@ if(args.includes("--path")){
     declared_task_opens:route.declared_task_opens,steps:route.steps,
     observed:false,actual_pointer_actions:null,actual_save_return_verified:false,
     warning:"A candidate through source declarations, not proof of a rendered, enabled, successful Author workflow. Absent path means unknown, not unreachable."
-  },null,2)+"\\n");
+  },null,2)+"\n");
 }else if(create){
   const matches=model.contextual_creates.filter(x=>x.via==="resource:"+create && (!from||x.from==="workspace:"+from));
   process.stdout.write(JSON.stringify({type:"contextual-resource-create-query",from:from??null,resource:create,candidates:matches,
