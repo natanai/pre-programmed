@@ -224,7 +224,7 @@ function discoverWorkspaceBindings(files) {
   }
   return bindings.sort((a,b)=>a.from.localeCompare(b.from)||a.to.localeCompare(b.to)||a.source.file.localeCompare(b.source.file));
 }
-function findDeclaredRoutePath(model,sourceWorkspace,targetRoute) {
+function findDeclaredRoutePath(model,sourceWorkspace,targetRoute,firstResource=null) {
   const start=sourceWorkspace.startsWith("workspace:")?sourceWorkspace:"workspace:"+sourceWorkspace;
   const end=targetRoute.startsWith("route:")?targetRoute:"route:"+targetRoute;
   const outgoing=new Map();
@@ -239,6 +239,7 @@ function findDeclaredRoutePath(model,sourceWorkspace,targetRoute) {
     if(current.at===end)return {found:true,steps:current.steps,
       declared_task_opens:current.steps.reduce((total,step)=>total+(step.handler_invocations??0),0)};
     for(const step of outgoing.get(current.at)??[]){
+      if(firstResource&&current.at===start&&step.via&&step.via!=="resource:"+firstResource)continue;
       if(seen.has(step.to))continue;
       seen.add(step.to);pending.push({at:step.to,steps:[...current.steps,step]});
     }
@@ -261,12 +262,12 @@ model.counts.registered_resource_providers=model.resource_providers.length;
 model.counts.contextual_create_declarations=model.contextual_creates.length;
 const args=process.argv.slice(2);
 const value=k=>{const index=args.indexOf(k);return index===-1?null:args[index+1]};
-const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create");
+const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create"),via=value("--via");
 if(args.includes("--path")){
   if(!from||!to)throw Error("--path requires --from and --to");
-  const route=findDeclaredRoutePath(model,from,to);
+  const route=findDeclaredRoutePath(model,from,to,via);
   process.stdout.write(JSON.stringify({
-    type:"candidate-declared-task-path",from,to,found:route.found,
+    type:"candidate-declared-task-path",from,to,via:via??null,found:route.found,
     declared_task_opens:route.declared_task_opens,steps:route.steps,
     observed:false,actual_pointer_actions:null,actual_save_return_verified:false,
     warning:"A candidate through source declarations, not proof of a rendered, enabled, successful Author workflow. Absent path means unknown, not unreachable."
@@ -295,6 +296,9 @@ if(args.includes("--path")){
   process.stdout.write(JSON.stringify({
     type:"author-declared-search",term:find,
     transitions:model.transitions.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100),
+    resource_providers:model.resource_providers.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100),
+    contextual_creates:model.contextual_creates.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100),
+    workspace_route_bindings:model.workspace_route_bindings.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100),
     unresolved:model.unresolved.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100)
   },null,2)+"\n");
 }else{
