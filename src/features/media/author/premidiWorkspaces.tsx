@@ -60,7 +60,7 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
             if (file.size > 8_000_000) throw Error("Modern score exceeds the 8 MB preview limit.");
             const { parseModernPremidi } = await import("../modernPremidiPlan");
             const plan = parseModernPremidi(await file.text());
-            const { playModernPremidi } = await import("../modernPremidiPlayback");
+            const { playModernPremidi } = await import("../ui/modernPremidiPlayback");
             modernPreviewSession?.stop();
             modernPreviewSession = await playModernPremidi(plan);
             const playing = modernPreviewSession;
@@ -93,7 +93,7 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
   </div>;
 }
 
-let modernPreviewSession: { stop: () => void } | null = null;
+let modernPreviewSession: { stop: () => void; finished: Promise<void> } | null = null;
 let previewSession: { stop: () => void } | null = null;
 async function preview(composition: PremidiComposition) {
   previewSession?.stop();
