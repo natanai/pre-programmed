@@ -136,3 +136,22 @@ The four finite sequences are **close-keep-discard**, **close-save-all**, **nest
 Every trace stores the actual before/after visible controls, step ordering and proof that the project is unchanged after discard (or changed after Save All). It verifies both the project's exact SHA-256 and its Node narration value **after a local Worker restart**. The nested parent case also records the narration field's actual value when its suspended task resumes. The nested child case attempts Back from a Node opened through Structure. If Back is actually presented, it records dirty confirmation, Keep Editing, a second Back, Discard Changes and return. If the task stack instead resets and Back is unavailable, it records the **observed before/after task depths**, the absent Back control, and an explicit unexplored frontier entry. It then exits through the real master X and Discard All without inventing a Back transition.
 
 Only the `close-save-all` case is expected to persist a project mutation. Every other case must have identical project content and revision before and after navigation; the validator rejects discrepancies. This is a finite fixture suite: it does not assert that all resources, all nested drafts, all save combinations or arbitrary input values have been covered.
+
+
+## Replay previously unexplored finite controls (frontier continuation)
+
+The original browser explorer can also replay recorded `unvisited` actions from a named existing trace. It does **not** regenerate imaginary pathways from source declarations. It finds the shortest *contiguous, completed browser replay* that ended in the recorded frontier origin state, appends the literal unvisited action and executes that entire sequence again on a disposable D1 fixture. Each successful click/change/scroll is newly observed. Input strings and destructive/persistent actions continue to require separately controlled test domains.
+
+    npm run audit:author:explore -- --resume-from scroll --suite frontier --strategy stratified --scroll --max-states 95 --max-depth 7 --max-executions 120
+    node scripts/author-flow/validate-traces.mjs
+    node scripts/author-flow/frontier-progress.mjs --source scroll --suite frontier
+    node scripts/author-flow/measure.mjs
+    npm run audit:author:coverage
+
+The prior fixture's SHA-256 and viewport must match the new fixture. The continuation keeps the prior trace immutable. `frontier-progress.json` reports a source entry as **verified-executed only when its exact source state ID and action appear as an actually executed new transition**. Entries not meeting this threshold remain `not-verified`, even when similar actions executed in different UI states. Entries that were never replayable from a completed earlier path remain unproven, not impossible. The finite run budget makes this a *frontier-reduction pass*, not proof that every option has been exhausted. To resume again, use a separately named input suite and output suite, preserving the previous traces.
+
+## Objective Author navigation costs, without a goal model
+
+`scripts/author-flow/measure.mjs` produces `access-costs.json` from complete, replay-certified sequences only. For each fixture and reached workspace, it records the smallest **observed** prefix from a terminal screen with Author already enabled, ranked first by physical pointer activations and then by total discrete interactions. It separately records scrolling, selections, task depth, and whether a form field, Save control, and Back control were actually visible on arrival.
+
+This measures *access to an observed workspace*, **not** time spent deciding, success at authoring, a globally shortest route, or fun. A visible form field is not proof of a completed edit, and a visible Save is not persistence evidence. Use the existing independent D1 write traces for verified durable Save claims. Comparing identical fixture endpoints across revisions can establish whether a proposed interface change reduced verified input/navigation costs without inserting any invented author intention into the raw trace. For author-to-player round trips, resource-specific persistence, and end-to-end creation costs, gather complete, separately reset browser fixtures first; do not extrapolate from navigation-only evidence.
