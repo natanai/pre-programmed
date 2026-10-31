@@ -32,17 +32,45 @@ Queries emit JSON. The node argument is an exact source-location ID (replace the
 
 ## Lightweight declared navigation model (no browser)
 
-`navigation-model.json` is generated from the existing TypeScript AST inventory, without running the game. It connects a source-associated Author workspace to the *statically explicit* `pushTask` / `openTask` feature route requested by an Author handler. It preserves the originating source file, line, declaring control, and raw guard expressions. Computed routes and handlers without a reliable workspace origin are recorded separately under `unresolved`, not silently invented.
+[Navigation model JSON](navigation-model.json) is produced from the existing TypeScript AST inventory plus the real feature-owned resource-provider and workspace declarations. It **does not open a browser, run the game, invoke handlers, mutate project data, or add CI**.
 
-    npm run audit:author:extract
-    node scripts/author-flow/navigation-model.mjs
-    node scripts/author-flow/navigation-model.mjs --check
-    node scripts/author-flow/navigation-model.mjs --from narrative-structure --to narrative.node
-    node scripts/author-flow/navigation-model.mjs --find world-entity
+```sh
+npm run audit:author:extract
+node scripts/author-flow/navigation-model.mjs
+node scripts/author-flow/navigation-model.mjs --check
+```
 
-The direct-route query reports **one declared handler invocation** for Structure → Node, not a guaranteed one-click end-to-end operation. Source code does not reveal which specific list row is enabled in a particular game, whether the user's click takes an extra chooser step, whether a condition hides it, or whether a nested Save/Back correctly returns. The model therefore sets `pointer_actions: null`. Source workspace names and route identities are **not** automatically linked via guessed naming conventions.
+The model contains four complementary kinds of source evidence:
 
-This intentionally narrow graph already allows agents to answer “Is there a source-declared transition from this editor to that owner?” and to track changes without a headless browser or GitHub Action. **It is not yet a complete static decision tree nor a certified global shortest-path click-count model.** A richer model can extend the same data using the actual resource-provider contracts and task-stack semantics, but should never infer conditional runtime behavior without a declared fixture or lightweight engine evaluation.
+- **Direct handler declarations:** a known Author workspace calls `pushTask` / `openTask` with an explicit route. Computed route calls remain `unresolved`.
+- **Canonical resource providers:** actual manifest-owned kinds and their `listRoute`, `createRoute`, and `editRoute`. An unresolved helper stays null. Provider routes are owner-owned, not duplicate editors.
+- **Contextual resource fields:** literal `ReferenceField` and declarative resource controls in named workspaces, joined to the provider's canonical Create route. Dynamic kinds, source locations not linked to a workspace, and missing create routes are not silently fabricated.
+- **Route/workspace bindings:** a source-declared `defineAuthorWorkspace` `matches()` associates a feature route with a workspace definition. Extra route-data predicates are explicitly marked; a binding is not a successful runtime transition.
+
+### Queries for the two reference games
+
+```sh
+# Dating visual novel: while editing a Node, find the Character creation route
+node scripts/author-flow/navigation-model.mjs --from narrative.node --create character
+
+# RPG: while editing a Node, find the Location creation route
+node scripts/author-flow/navigation-model.mjs --from narrative.node --create location
+
+# A candidate two-level nest: Node -> Character editor -> portrait Media editor
+node scripts/author-flow/navigation-model.mjs --path --from narrative.node --to media.vector-asset --via character
+
+# Existing direct route, without assuming UI click counts
+node scripts/author-flow/navigation-model.mjs --from narrative-structure --to narrative.node
+
+# Search all navigation, reference, resource, and workspace-binding evidence
+node scripts/author-flow/navigation-model.mjs --find media-image
+```
+
+The `--path` query uses ordinary graph traversal, following **only** declared task-opening and route-to-workspace edges, with a zero-action association for a workspace matcher. The optional `--via` filter is enforced by actual path traversal. It returns the number of **source-declared task-opening invocations** along a candidate path, not a measured click minimum, not an exact sequence of player inputs, and not proof that any child was saved or returned correctly.
+
+The shared `ReferenceField` has two source-declared entry branches: **one pointer activation** can open Create directly when nothing is selected and no options exist; otherwise opening its chooser and selecting Create requires **two**. These are conditional subpaths, not universally guaranteed actions. The path JSON leaves `pointer_actions: null` because the actual rendered controls, content-dependent conditions, dirty-draft handling, and save/return behavior are not statically certified.
+
+The useful next step is to expose more of the owning resource/task contracts as **structured navigation decisions** so this graph can describe larger play → author → nested create → parent → play sequences with fewer unresolved edges. Check the real browser only at selected checkpoints where source/engine contracts cannot prove visual behavior or persistence. Do not turn these queries into automated browser exhaustions or new GitHub Actions.
 
 ## Deterministic observation protocol
 

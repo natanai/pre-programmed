@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "type": "author-declared-navigation-model",
   "provenance": {
     "source": "audit/author-flow/source-graph.json",
@@ -7,18 +7,22 @@
     "runtime_executed": false
   },
   "semantics": {
-    "graph_type": "directed multigraph of statically provable task-push declarations",
+    "graph_type": "Directed multigraph of declared task pushes, canonical resource contracts, contextual reference fields and workspace matchers.",
     "one_edge": "One declared pushTask/openTask invocation, not a guaranteed visible click, successful navigation, Save, or round trip.",
     "guard": "Unevaluated source conditions; runtime visibility, disabled state, resource counts, and parent drafts are not resolved.",
     "path_cost": "Only a count of declared handler invocations along explicitly linked edges; absent paths mean unknown, not unreachable.",
     "nested_return": "The runtime's push/pop task contract is known, but specific successful return/save behaviors cannot be inferred from static AST.",
-    "workspace_route_identity": "Workspace identifiers and feature route keys are not automatically joined by naming convention. Exact string overlaps are reported as candidates only."
+    "workspace_route_identity": "Joins use declared defineAuthorWorkspace matches predicates; any additional route-data conditions remain unresolved until evaluated.",
+    "resource_paths": "Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts."
   },
   "counts": {
     "declared_transition_edges": 21,
     "unresolved_navigation_calls": 75,
     "route_destinations": 25,
-    "workspace_sources": 20
+    "workspace_sources": 20,
+    "registered_resource_providers": 19,
+    "contextual_create_declarations": 8,
+    "workspace_route_bindings": 21
   },
   "workspace_sources": [
     "commands-grammar",
@@ -1942,6 +1946,943 @@
       "route_expression": "WORLD_LIBRARY_ROUTE",
       "reason": "computed-or-indirect-route",
       "candidate_route": null
+    }
+  ],
+  "resource_providers": [
+    {
+      "kind": "body-type",
+      "label": "Body Type",
+      "owner": {
+        "file": "src/features/inventory/author/manifest.tsx",
+        "line": 80
+      },
+      "create": {
+        "declared": true,
+        "route": "inventory.body-type",
+        "expression": "inventoryRoute(\"body-type\", undefined, true)"
+      },
+      "edit": {
+        "declared": true,
+        "route": "inventory.body-type",
+        "expression": "inventoryRoute(\"body-type\", resource.id, true)"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "character",
+      "label": "Character",
+      "owner": {
+        "file": "src/features/world/author/manifest.ts",
+        "line": 58
+      },
+      "create": {
+        "declared": true,
+        "route": "world.entity",
+        "expression": "worldEntityRoute(\"character\", undefined, true)"
+      },
+      "edit": {
+        "declared": true,
+        "route": "world.entity",
+        "expression": "worldEntityRoute(\"character\", resource.id, true)"
+      },
+      "list": {
+        "declared": true,
+        "route": "world.library",
+        "expression": "WORLD_LIBRARY_ROUTE"
+      }
+    },
+    {
+      "kind": "computed",
+      "label": "Computed Value",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 128
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"computed\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"computed\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    },
+    {
+      "kind": "flag",
+      "label": "Flag",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 118
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"flag\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"flag\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    },
+    {
+      "kind": "interaction",
+      "label": "Interaction",
+      "owner": {
+        "file": "src/features/narrative/author/manifest.tsx",
+        "line": 73
+      },
+      "create": {
+        "declared": true,
+        "route": "narrative.interaction",
+        "expression": "({\n        type: \"feature\",\n        feature: \"narrative\",\n        workspace: \"interaction\",\n        data: { resourceTask: \"interaction\" },\n      }"
+      },
+      "edit": {
+        "declared": true,
+        "route": "narrative.interaction",
+        "expression": "({\n        type: \"feature\",\n        feature: \"narrative\",\n        workspace: \"interaction\",\n        data: { interactionId: resource.id, resourceTask: \"interaction\" },\n      }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "item",
+      "label": "Item",
+      "owner": {
+        "file": "src/features/inventory/author/manifest.tsx",
+        "line": 67
+      },
+      "create": {
+        "declared": true,
+        "route": "inventory.item",
+        "expression": "inventoryRoute(\"item\", undefined, true)"
+      },
+      "edit": {
+        "declared": true,
+        "route": "inventory.item",
+        "expression": "inventoryRoute(\"item\", resource.id, true)"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "location",
+      "label": "Location",
+      "owner": {
+        "file": "src/features/world/author/manifest.ts",
+        "line": 67
+      },
+      "create": {
+        "declared": true,
+        "route": "world.entity",
+        "expression": "worldEntityRoute(\"location\", undefined, true)"
+      },
+      "edit": {
+        "declared": true,
+        "route": "world.entity",
+        "expression": "worldEntityRoute(\"location\", resource.id, true)"
+      },
+      "list": {
+        "declared": true,
+        "route": "world.library",
+        "expression": "WORLD_LIBRARY_ROUTE"
+      }
+    },
+    {
+      "kind": "media-audio",
+      "label": "Audio File",
+      "owner": {
+        "file": "src/features/media/author/manifest.tsx",
+        "line": 124
+      },
+      "create": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      },
+      "edit": {
+        "declared": true,
+        "route": "media.asset",
+        "expression": "({\n        type: \"feature\",\n        feature: \"media\",\n        workspace: \"asset\",\n        data: { kind: \"audio\", assetId: resource.id, resourceTask: \"media-audio\" },\n      }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "media-image",
+      "label": "Image",
+      "owner": {
+        "file": "src/features/media/author/manifest.tsx",
+        "line": 143
+      },
+      "create": {
+        "declared": true,
+        "route": "media.vector-asset",
+        "expression": "({\n        type: \"feature\",\n        feature: \"media\",\n        workspace: \"vector-asset\",\n        data: { kind: \"image\", resourceTask: \"media-image\" },\n      }"
+      },
+      "edit": {
+        "declared": true,
+        "route": null,
+        "expression": "mediaImageEditRoute"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "media-sound",
+      "label": "Audio Source",
+      "owner": {
+        "file": "src/features/media/author/manifest.tsx",
+        "line": 89
+      },
+      "create": {
+        "declared": true,
+        "route": "media.synth-sound",
+        "expression": "({\n        type: \"feature\",\n        feature: \"media\",\n        workspace: \"synth-sound\",\n        data: { soundId: \"new\", resourceTask: \"media-sound\" },\n      }"
+      },
+      "edit": {
+        "declared": true,
+        "route": null,
+        "expression": "mediaSoundEditRoute"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "node",
+      "label": "Node",
+      "owner": {
+        "file": "src/features/narrative/author/manifest.tsx",
+        "line": 46
+      },
+      "create": {
+        "declared": true,
+        "route": "narrative.node",
+        "expression": "({\n        type: \"feature\",\n        feature: \"narrative\",\n        workspace: \"node\",\n        data: { resourceTask: \"node\" },\n      }"
+      },
+      "edit": {
+        "declared": true,
+        "route": "narrative.node",
+        "expression": "({\n        type: \"feature\",\n        feature: \"narrative\",\n        workspace: \"node\",\n        data: { nodeId: resource.id, resourceTask: \"node\" },\n      }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "number-variable",
+      "label": "Number Variable",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 108
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"number-variable\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"number-variable\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    },
+    {
+      "kind": "player-command",
+      "label": "Player Command",
+      "owner": {
+        "file": "src/features/commands/author/manifest.tsx",
+        "line": 29
+      },
+      "create": {
+        "declared": true,
+        "route": "commands.command",
+        "expression": "({ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: \"new\", resourceTask: \"player-command\" } }"
+      },
+      "edit": {
+        "declared": true,
+        "route": "commands.command",
+        "expression": "({ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: resource.id, resourceTask: \"player-command\" } }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "project-terminal",
+      "label": "Terminal Prompt",
+      "owner": {
+        "file": "src/author/features/projectManifest.tsx",
+        "line": 36
+      },
+      "create": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      },
+      "edit": {
+        "declared": true,
+        "route": "project.terminal-settings",
+        "expression": "({\n      type: \"feature\",\n      feature: \"project\",\n      workspace: \"terminal-settings\",\n    }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "radix-sequence",
+      "label": "Sort Sequence",
+      "owner": {
+        "file": "src/features/radix/author/manifest.tsx",
+        "line": 34
+      },
+      "create": {
+        "declared": true,
+        "route": "radix.sequence",
+        "expression": "({\n      type: \"feature\",\n      feature: \"radix\",\n      workspace: \"sequence\",\n      data: { sequenceId: \"new\", resourceTask: \"radix-sequence\" },\n    }"
+      },
+      "edit": {
+        "declared": true,
+        "route": "radix.sequence",
+        "expression": "({\n      type: \"feature\",\n      feature: \"radix\",\n      workspace: \"sequence\",\n      data: { sequenceId: resource.id, resourceTask: \"radix-sequence\" },\n    }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "state-group",
+      "label": "Player Group",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 137
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"state-group\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"state-group\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    },
+    {
+      "kind": "synth-sound",
+      "label": "Synth",
+      "owner": {
+        "file": "src/features/media/author/manifest.tsx",
+        "line": 66
+      },
+      "create": {
+        "declared": true,
+        "route": "media.synth-sound",
+        "expression": "({\n        type: \"feature\",\n        feature: \"media\",\n        workspace: \"synth-sound\",\n        data: { soundId: \"new\", resourceTask: \"synth-sound\" },\n      }"
+      },
+      "edit": {
+        "declared": true,
+        "route": "media.synth-sound",
+        "expression": "({\n        type: \"feature\",\n        feature: \"media\",\n        workspace: \"synth-sound\",\n        data: { soundId: resource.id, resourceTask: \"synth-sound\" },\n      }"
+      },
+      "list": {
+        "declared": false,
+        "route": null,
+        "expression": null
+      }
+    },
+    {
+      "kind": "text-variable",
+      "label": "Text Variable",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 98
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"text-variable\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"text-variable\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    },
+    {
+      "kind": "variable",
+      "label": "Variable",
+      "owner": {
+        "file": "src/features/state/author/manifest.tsx",
+        "line": 89
+      },
+      "create": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"variable\")"
+      },
+      "edit": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "stateResourceRoute(\"variable\", resource.id)"
+      },
+      "list": {
+        "declared": true,
+        "route": "state.definitions",
+        "expression": "DEFINITIONS_ROUTE"
+      }
+    }
+  ],
+  "reference_sites": [
+    {
+      "id": "src/features/commands/author/commandWorkspace.tsx:454:11",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 454,
+        "column": 11
+      },
+      "workspace": "commands-command",
+      "resource_kind": "character",
+      "ui_contract": "declarative.resource",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/inventory/author/bodyWorkspaces.tsx:307:13",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 307,
+        "column": 13
+      },
+      "workspace": "inventory-body-type",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:128:13",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 128,
+        "column": 13
+      },
+      "workspace": "inventory-item",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:390:17",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 390,
+        "column": 17
+      },
+      "workspace": "narrative.node",
+      "resource_kind": "location",
+      "ui_contract": "jsx.ReferenceField",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:398:17",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 398,
+        "column": 17
+      },
+      "workspace": "narrative.node",
+      "resource_kind": "character",
+      "ui_contract": "jsx.ReferenceField",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/radix/author/startupWorkspace.tsx:48:9",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 48,
+        "column": 9
+      },
+      "workspace": "radix-startup-settings",
+      "resource_kind": "radix-sequence",
+      "ui_contract": "declarative.resource",
+      "create_route": "radix.sequence",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/radix/author/workspaces.tsx:176:11",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 176,
+        "column": 11
+      },
+      "workspace": "radix-sequence",
+      "resource_kind": "synth-sound",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.synth-sound",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:203:15",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 203,
+        "column": 15
+      },
+      "workspace": "world-entity",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    }
+  ],
+  "workspace_route_bindings": [
+    {
+      "from": "route:commands.command",
+      "to": "workspace:commands-command",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 130
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-slot",
+      "to": "workspace:inventory-body-slot",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 376
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-type",
+      "to": "workspace:inventory-body-type",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 190
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-types",
+      "to": "workspace:inventory-body-types",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 159
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.item",
+      "to": "workspace:inventory-item",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 72
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.items",
+      "to": "workspace:inventory-items",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 35
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.asset",
+      "to": "workspace:media-file-asset",
+      "source": {
+        "file": "src/features/media/author/mediaAssetWorkspace.tsx",
+        "line": 38
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.asset",
+      "to": "workspace:media-file-help",
+      "source": {
+        "file": "src/features/media/author/mediaAssetWorkspace.tsx",
+        "line": 280
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.synth-sound",
+      "to": "workspace:media-synth-sound",
+      "source": {
+        "file": "src/features/media/author/synthSoundWorkspace.tsx",
+        "line": 20
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.vector-asset",
+      "to": "workspace:media-vector-asset",
+      "source": {
+        "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+        "line": 326
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:narrative.interaction",
+      "to": "workspace:narrative.interaction",
+      "source": {
+        "file": "src/features/narrative/author/interactionWorkspace.tsx",
+        "line": 37
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:narrative.node",
+      "to": "workspace:narrative.node",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 205
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.sequence",
+      "to": "workspace:radix-sequence",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 70
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.sequences",
+      "to": "workspace:radix-sequences",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 41
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.startup",
+      "to": "workspace:radix-startup-settings",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 9
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-computed",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 493
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-group",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 575
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-library",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 250
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-variable",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 311
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:world.entity",
+      "to": "workspace:world-entity",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 64
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:world.library",
+      "to": "workspace:world-library",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 33
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    }
+  ],
+  "contextual_creates": [
+    {
+      "from": "workspace:commands-command",
+      "to": "route:world.entity",
+      "via": "resource:character",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 454,
+        "column": 11
+      },
+      "site_id": "src/features/commands/author/commandWorkspace.tsx:454:11",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:inventory-body-type",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 307,
+        "column": 13
+      },
+      "site_id": "src/features/inventory/author/bodyWorkspaces.tsx:307:13",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:inventory-item",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 128,
+        "column": 13
+      },
+      "site_id": "src/features/inventory/author/workspaces.tsx:128:13",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:narrative.node",
+      "to": "route:world.entity",
+      "via": "resource:location",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 390,
+        "column": 17
+      },
+      "site_id": "src/features/narrative/author/nodeWorkspace.tsx:390:17",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:narrative.node",
+      "to": "route:world.entity",
+      "via": "resource:character",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 398,
+        "column": 17
+      },
+      "site_id": "src/features/narrative/author/nodeWorkspace.tsx:398:17",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:radix-startup-settings",
+      "to": "route:radix.sequence",
+      "via": "resource:radix-sequence",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 48,
+        "column": 9
+      },
+      "site_id": "src/features/radix/author/startupWorkspace.tsx:48:9",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:radix-sequence",
+      "to": "route:media.synth-sound",
+      "via": "resource:synth-sound",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 176,
+        "column": 11
+      },
+      "site_id": "src/features/radix/author/workspaces.tsx:176:11",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:world-entity",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 203,
+        "column": 15
+      },
+      "site_id": "src/features/world/author/entityWorkspaces.tsx:203:15",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
     }
   ]
 }
