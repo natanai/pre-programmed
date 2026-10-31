@@ -414,7 +414,11 @@ async function traverse(browser, fixture, token, expectedHash, initialQueue=null
   if(queue.length) {
     // Record budget-limited branches as an explicit unexplored frontier.
     for(const remaining of queue) {
-      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
+      // Prior source-frontier origins were not necessarily reached again.
+      // Their original unvisited records remain in the immutable source trace;
+      // never introduce unobserved source state IDs into this new trace.
+      if(!remaining.from || !states.has(remaining.from))continue;
+      note({state:remaining.from,locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
     }
   }
   return {
