@@ -72,7 +72,7 @@ describe("experimental modern pre-midi playback-only boundary",()=>{
   expect(()=>planModernPremidi({...version,version:9})).toThrow(/v7 Beats/);
   const sample=createBeat();sample.instruments[0].sounds[0].patch={
    type:"sample",presetId:"piano",zones:[{assetId:"piano",root:60}]
-  } as ReturnType<typeof patch>;
+  } as unknown as ReturnType<typeof patch>;
   expect(()=>planModernPremidi(sample)).toThrow(/sample instruments/);
   const moved=createBeat();moved.instruments[0].sounds[0].patch.movement.depth=17;
   expect(()=>planModernPremidi(moved)).toThrow(/vibrato/);
@@ -80,7 +80,7 @@ describe("experimental modern pre-midi playback-only boundary",()=>{
  });
  it("does not reinterpret modern scores as legacy saved v2 documents",()=>{
   expect(()=>parseLegacy(JSON.stringify(createBeat()))).toThrow(/v2/);
-  expect(()=>parseModernPremidi(" ".repeat(1_000_001))).toThrow(/1 MB/);
+  expect(()=>parseModernPremidi(JSON.stringify(createBeat())+" ".repeat(1_000_001))).toThrow(/1 MB/);
   expect(()=>parseModernPremidi(JSON.stringify(createBeat()))).not.toThrow();
  });
 });
