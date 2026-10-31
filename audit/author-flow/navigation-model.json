@@ -20,7 +20,7 @@
     "route_destinations": 25,
     "workspace_sources": 20,
     "registered_resource_providers": 19,
-    "contextual_create_declarations": 0
+    "contextual_create_declarations": 8
   },
   "workspace_sources": [
     "commands-grammar",
@@ -2385,6 +2385,248 @@
       }
     }
   ],
-  "reference_sites": [],
-  "contextual_creates": []
+  "reference_sites": [
+    {
+      "id": "src/features/commands/author/commandWorkspace.tsx:454:11",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 454,
+        "column": 11
+      },
+      "workspace": "commands-command",
+      "resource_kind": "character",
+      "ui_contract": "declarative.resource",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/inventory/author/bodyWorkspaces.tsx:307:13",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 307,
+        "column": 13
+      },
+      "workspace": "inventory-body-type",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:128:13",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 128,
+        "column": 13
+      },
+      "workspace": "inventory-item",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:390:17",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 390,
+        "column": 17
+      },
+      "workspace": "narrative.node",
+      "resource_kind": "location",
+      "ui_contract": "jsx.ReferenceField",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:398:17",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 398,
+        "column": 17
+      },
+      "workspace": "narrative.node",
+      "resource_kind": "character",
+      "ui_contract": "jsx.ReferenceField",
+      "create_route": "world.entity",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/radix/author/startupWorkspace.tsx:48:9",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 48,
+        "column": 9
+      },
+      "workspace": "radix-startup-settings",
+      "resource_kind": "radix-sequence",
+      "ui_contract": "declarative.resource",
+      "create_route": "radix.sequence",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/radix/author/workspaces.tsx:176:11",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 176,
+        "column": 11
+      },
+      "workspace": "radix-sequence",
+      "resource_kind": "synth-sound",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.synth-sound",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:203:15",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 203,
+        "column": 15
+      },
+      "workspace": "world-entity",
+      "resource_kind": "media-image",
+      "ui_contract": "declarative.resource",
+      "create_route": "media.vector-asset",
+      "create_declared": true,
+      "visibility": "runtime-dependent",
+      "clicks_to_open_child": null
+    }
+  ],
+  "contextual_creates": [
+    {
+      "from": "workspace:commands-command",
+      "to": "route:world.entity",
+      "via": "resource:character",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 454,
+        "column": 11
+      },
+      "site_id": "src/features/commands/author/commandWorkspace.tsx:454:11",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:inventory-body-type",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 307,
+        "column": 13
+      },
+      "site_id": "src/features/inventory/author/bodyWorkspaces.tsx:307:13",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:inventory-item",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 128,
+        "column": 13
+      },
+      "site_id": "src/features/inventory/author/workspaces.tsx:128:13",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:narrative.node",
+      "to": "route:world.entity",
+      "via": "resource:location",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 390,
+        "column": 17
+      },
+      "site_id": "src/features/narrative/author/nodeWorkspace.tsx:390:17",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:narrative.node",
+      "to": "route:world.entity",
+      "via": "resource:character",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 398,
+        "column": 17
+      },
+      "site_id": "src/features/narrative/author/nodeWorkspace.tsx:398:17",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:radix-startup-settings",
+      "to": "route:radix.sequence",
+      "via": "resource:radix-sequence",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 48,
+        "column": 9
+      },
+      "site_id": "src/features/radix/author/startupWorkspace.tsx:48:9",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:radix-sequence",
+      "to": "route:media.synth-sound",
+      "via": "resource:synth-sound",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 176,
+        "column": 11
+      },
+      "site_id": "src/features/radix/author/workspaces.tsx:176:11",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    },
+    {
+      "from": "workspace:world-entity",
+      "to": "route:media.vector-asset",
+      "via": "resource:media-image",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 203,
+        "column": 15
+      },
+      "site_id": "src/features/world/author/entityWorkspaces.tsx:203:15",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "reference-field-and-canonical-provider",
+      "conditional": true
+    }
+  ]
 }
