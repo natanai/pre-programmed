@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "type": "author-declared-navigation-model",
   "provenance": {
     "source": "audit/author-flow/source-graph.json",
@@ -7,12 +7,13 @@
     "runtime_executed": false
   },
   "semantics": {
-    "graph_type": "directed multigraph of statically provable task-push declarations",
+    "graph_type": "Directed multigraph of declared task pushes, canonical resource contracts, contextual reference fields and workspace matchers.",
     "one_edge": "One declared pushTask/openTask invocation, not a guaranteed visible click, successful navigation, Save, or round trip.",
     "guard": "Unevaluated source conditions; runtime visibility, disabled state, resource counts, and parent drafts are not resolved.",
     "path_cost": "Only a count of declared handler invocations along explicitly linked edges; absent paths mean unknown, not unreachable.",
     "nested_return": "The runtime's push/pop task contract is known, but specific successful return/save behaviors cannot be inferred from static AST.",
-    "workspace_route_identity": "Workspace identifiers and feature route keys are not automatically joined by naming convention. Exact string overlaps are reported as candidates only."
+    "workspace_route_identity": "Joins use declared defineAuthorWorkspace matches predicates; any additional route-data conditions remain unresolved until evaluated.",
+    "resource_paths": "Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts."
   },
   "counts": {
     "declared_transition_edges": 21,
@@ -20,7 +21,8 @@
     "route_destinations": 25,
     "workspace_sources": 20,
     "registered_resource_providers": 19,
-    "contextual_create_declarations": 8
+    "contextual_create_declarations": 8,
+    "workspace_route_bindings": 21
   },
   "workspace_sources": [
     "commands-grammar",
