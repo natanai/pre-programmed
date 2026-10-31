@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { extname, join, relative, resolve, sep } from "node:path";
 
-const EXTENSIONS = new Set([".png", ".webp", ".gif", ".svg", ".mp3", ".wav", ".ogg"]);
+const EXTENSIONS = new Set([".png", ".webp", ".gif", ".svg", ".mp3", ".wav", ".ogg", ".premidi"]);
 
 async function walk(directory) {
   try {
@@ -64,6 +64,7 @@ function mimeTypeFor(extension) {
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
     ".ogg": "audio/ogg",
+    ".premidi": "audio/x-premidi",
   })[extension] ?? "application/octet-stream";
 }
 

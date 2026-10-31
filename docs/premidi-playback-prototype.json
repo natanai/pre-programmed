@@ -1,0 +1,123 @@
+{
+  "schemaVersion": 1,
+  "stage": "prototype",
+  "createdOn": "2026-10-31",
+  "source": {
+    "gameMainBaseline": "926240d27176cd2d2fee370908f6940ae0f64f8b",
+    "preMidiReference": "a21d223d89fa50df6e2a5ea7cf74025a62c4eddf",
+    "pr": "https://github.com/natanai/pre-programmed/pull/244",
+    "ciRun": "https://github.com/natanai/pre-programmed/actions/runs/41244495965",
+    "qualification": "Successful same-run main worktree and candidate builds, TypeScript, Vitest, Vite, and local runtime verification"
+  },
+  "browserBuild": {
+    "baseline": {
+      "totalJsBytes": 740666,
+      "totalJsGzipBytes": 207005,
+      "cssBytes": 134397
+    },
+    "prototypeAtMeasuredCommit": "3b7cddb75d992baf3b8db8f7e5a43c1aaa0229db",
+    "prototype": {
+      "totalJsBytes": 752747,
+      "totalJsGzipBytes": 211986,
+      "cssBytes": 134397
+    },
+    "delta": {
+      "jsBytes": 12081,
+      "jsGzipBytes": 4981,
+      "cssBytes": 0
+    },
+    "lazyModules": [
+      {
+        "filename": "assets/modernPremidiPlan-CGikPHvC.js",
+        "bytes": 6876,
+        "gzipBytes": 2757
+      },
+      {
+        "filename": "assets/modernPremidiPlayback-D4DWFWg4.js",
+        "bytes": 2531,
+        "gzipBytes": 1228
+      }
+    ],
+    "qualification": "Measured in successful CI run #41244495965 after shared AudioContext integration and source-aligned filter resonance; zipped JS is zlib gzip level 9."
+  },
+  "available": {
+    "scoreVersions": [
+      7,
+      8
+    ],
+    "kinds": [
+      "Beat v7",
+      "Song v8"
+    ],
+    "semantics": [
+      "two classic waveform oscillators",
+      "ADSR",
+      "static biquad filter",
+      "pan",
+      "Sound/Rack synthesis",
+      "Chunk placements",
+      "offsets/repeats/polymeter",
+      "Beat Clip layering/repetition"
+    ],
+    "entrypoint": "Audition-only file input inside Media library; dynamically imported JS; no writes to stored game",
+    "transport": "AudioContext bounded lookahead with stop/cleanup"
+  },
+  "unsupported": [
+    "Patch v2 modulation",
+    "Beat v9/v11",
+    "Song v10/v12/v14",
+    "sample Assets and zones",
+    "recordings and vocal Clips",
+    "harmonic oscillators",
+    "noise",
+    "drive/delay effects",
+    "pitch expressions/bends",
+    "glide/vibrato/tremolo/tone movement",
+    "game condition/effect control of track levels",
+    "sample-exact native/Web Audio acoustic parity"
+  ],
+  "persistence": {
+    "legacyV2Unchanged": true,
+    "modernScoresSavedToGame": false,
+    "gamePPGameFormatChanged": false
+  },
+  "limits": {
+    "beatJsonBytes": 1000000,
+    "songJsonBytes": 8000000,
+    "maxEvents": 16384,
+    "maxDurationSeconds": 900,
+    "maxSongClips": 256
+  },
+  "nextGates": [
+    {
+      "id": "C1",
+      "name": "same-build source footprint",
+      "status": "passed for final prototype audio code in CI #41244495965"
+    },
+    {
+      "id": "C2",
+      "name": "full TypeScript/test/build/local verification",
+      "status": "passed for final prototype audio code in CI #41244495965"
+    },
+    {
+      "id": "C3",
+      "name": "real browser audition and stop",
+      "status": "not run on physical/browser audio device"
+    },
+    {
+      "id": "C4",
+      "name": "acoustic parity with studio for admitted patch subset",
+      "status": "not qualified"
+    },
+    {
+      "id": "C5",
+      "name": "real-time CPU/memory and voice stress",
+      "status": "not qualified"
+    },
+    {
+      "id": "C6",
+      "name": "game-owned media project persistence and interactive controls",
+      "status": "not implemented"
+    }
+  ]
+}

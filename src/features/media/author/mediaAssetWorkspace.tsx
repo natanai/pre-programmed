@@ -4,6 +4,8 @@ import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { configuredAssetContentStore, configuredAssetStore } from "../../../platform/assets/configuredAssetStore";
 import type { MediaAssetDescriptor } from "../assets";
 import { mediaAssetDimensions, type MediaAsset } from "../model";
+import { isPremidiAsset } from "../ui/premidiRepository";
+import { PremidiFilePreview } from "./PremidiFilePreview";
 
 function persistedAsset(asset: MediaAssetDescriptor): MediaAsset {
   return {
@@ -207,7 +209,9 @@ export const mediaFileAssetWorkspace = defineAuthorWorkspace<FileMediaWorkspaceD
           content: <div className="media-asset-preview">
             {previewUrl
               ? kind === "audio"
-                ? <audio controls src={previewUrl} />
+                ? isPremidiAsset(descriptor!)
+                  ? <PremidiFilePreview asset={descriptor!} />
+                  : <audio controls src={previewUrl} />
                 : <img src={previewUrl} alt="Asset preview" />
               : <span>REPOSITORY FILE UNAVAILABLE.</span>}
           </div>,
@@ -232,7 +236,7 @@ export const mediaFileAssetWorkspace = defineAuthorWorkspace<FileMediaWorkspaceD
       blocks.push({
         type: "section",
         id: "media-file-definition",
-        label: kind === "audio" ? "Audio file" : "Image file",
+        label: kind === "audio" ? (descriptor && isPremidiAsset(descriptor) ? "Music file" : "Audio file") : "Image file",
         importance: "primary",
         children,
       });
@@ -265,7 +269,7 @@ export const mediaFileAssetWorkspace = defineAuthorWorkspace<FileMediaWorkspaceD
 
     return {
       id: "media-file-asset",
-      title: `${kind === "audio" ? "Audio file" : "Image file"} · ${asset?.name ?? "Unavailable"}`,
+      title: `${kind === "audio" ? (descriptor && isPremidiAsset(descriptor) ? "Music file" : "Audio file") : "Image file"} · ${asset?.name ?? "Unavailable"}`,
       context: descriptor?.contentSource === "repository"
         ? "repository file"
         : descriptor?.contentSource === "missing"

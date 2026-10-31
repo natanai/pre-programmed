@@ -36,8 +36,8 @@ export const mediaAuthorTools: AuthorToolContributor = (context) => [
     tool: {
       id: "compositions",
       label: "COMPOSITIONS",
-      description: "Import and manage .premidi compositions made in pre-midi.",
-      searchText: "premidi pre-midi composition soundtrack notes music midi import export arrangement pattern",
+      description: "Browse .premidi music discovered in the assets folder.",
+      searchText: "premidi pre-midi composition soundtrack notes music midi assets arrangement pattern",
       onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "compositions" }),
     },
   },
@@ -48,8 +48,8 @@ export const mediaAuthorSearch: AuthorSearchContributor = (context) => [
     id: "media:compositions",
     groupLabel: "MEDIA",
     label: "COMPOSITIONS · PRE-MIDI",
-    description: "Import, audition, export and manage playable native compositions.",
-    searchText: "premidi pre-midi music midi soundtrack composition arrangement import export",
+    description: "Find music files discovered from the project assets folder.",
+    searchText: "premidi pre-midi music midi soundtrack composition arrangement assets",
     onSelect: () => context.pushTask({ type: "feature", feature: "media", workspace: "compositions" }),
   },
   {
