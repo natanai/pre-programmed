@@ -7,6 +7,8 @@ on:
     paths:
       - '.github/workflows/author-flow-browser.yml'
       - 'scripts/author-flow/explore.mjs'
+      - 'scripts/author-flow/measure.mjs'
+      - 'scripts/author-flow/frontier-progress.mjs'
       - 'scripts/author-flow/browser-recorder.js'
       - 'package.json'
 permissions:
@@ -17,7 +19,7 @@ concurrency:
 jobs:
   explore:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -33,13 +35,25 @@ jobs:
         run: |
           node --check scripts/author-flow/explore.mjs
           node --check scripts/author-flow/browser-recorder.js
-      - name: Explore isolated mobile and desktop Author screens
-        run: npm run audit:author:explore -- --max-states 30 --max-depth 4 --max-executions 60
+      - name: Resume verified frontier or collect original safe baseline
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_NAME" == audit/author-flow-browser-frontier-* ]]; then
+            npm run audit:author:explore -- --resume-from scroll --suite frontier --strategy stratified --scroll --max-states 95 --max-depth 7 --max-executions 120
+          else
+            npm run audit:author:explore -- --max-states 30 --max-depth 4 --max-executions 60
+          fi
       - name: Recompute evidence-derived coverage
         run: |
           npm run audit:author:coverage
           npm run audit:author:coverage-check
           node scripts/author-flow/validate-traces.mjs
+          node scripts/author-flow/measure.mjs
+          node scripts/author-flow/measure.mjs --check
+          if [[ "$GITHUB_REF_NAME" == audit/author-flow-browser-frontier-* ]]; then
+            node scripts/author-flow/frontier-progress.mjs --source scroll --suite frontier
+            node scripts/author-flow/frontier-progress.mjs --check --source scroll --suite frontier
+          fi
           npm run audit:author:trace -- --fixture desktop --find 'TOOLS' > /dev/null
           node -e 'const fs=require("fs");const x=JSON.parse(fs.readFileSync("audit/author-flow/coverage.json"));if(x.executed.transition_count<1||x.executed.fixture_count<2)process.exit(1);console.log(x.executed)'
       - name: Preserve source graph and engine verification
@@ -47,11 +61,25 @@ jobs:
       - name: Commit genuine observed evidence (audit branch only)
         if: github.event_name == 'push'
         run: |
-          git add audit/author-flow/traces audit/author-flow/coverage.json
+          git add audit/author-flow/traces
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Record observed Author browser transitions'
+            git restore -- audit/author-flow/coverage.json
+            git restore -- audit/author-flow/access-costs.json audit/author-flow/frontier-progress.json || true
             git fetch origin "$GITHUB_REF_NAME"
             git rebase "origin/$GITHUB_REF_NAME"
+            npm run audit:author:coverage
+            node scripts/author-flow/measure.mjs
+            if [[ "$GITHUB_REF_NAME" == audit/author-flow-browser-frontier-* ]]; then
+              node scripts/author-flow/frontier-progress.mjs --source scroll --suite frontier
+            fi
+            git add audit/author-flow/coverage.json audit/author-flow/access-costs.json
+            if [[ "$GITHUB_REF_NAME" == audit/author-flow-browser-frontier-* ]]; then
+              git add audit/author-flow/frontier-progress.json
+            fi
+            if ! git diff --cached --quiet; then
+              git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Update verified Author frontier and access metrics'
+            fi
             git push origin "HEAD:$GITHUB_REF_NAME"
           fi
       - name: Upload transition evidence
@@ -62,5 +90,7 @@ jobs:
           path: |
             audit/author-flow/traces/
             audit/author-flow/coverage.json
+            audit/author-flow/access-costs.json
+            audit/author-flow/frontier-progress.json
           if-no-files-found: warn
           retention-days: 30
