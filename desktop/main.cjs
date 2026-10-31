@@ -21,6 +21,7 @@ const CONTENT_TYPES = {
   ".mp3": "audio/mpeg",
   ".wav": "audio/wav",
   ".ogg": "audio/ogg",
+  ".premidi": "audio/x-premidi",
   ".woff": "font/woff",
   ".woff2": "font/woff2",
 };
