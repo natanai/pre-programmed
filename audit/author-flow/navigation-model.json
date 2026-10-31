@@ -2628,5 +2628,259 @@
       "evidence": "reference-field-and-canonical-provider",
       "conditional": true
     }
+  ],
+  "workspace_route_bindings": [
+    {
+      "from": "route:commands.command",
+      "to": "workspace:commands-command",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 130
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-slot",
+      "to": "workspace:inventory-body-slot",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 376
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-type",
+      "to": "workspace:inventory-body-type",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 190
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.body-types",
+      "to": "workspace:inventory-body-types",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 159
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.item",
+      "to": "workspace:inventory-item",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 72
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:inventory.items",
+      "to": "workspace:inventory-items",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 35
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.asset",
+      "to": "workspace:media-file-asset",
+      "source": {
+        "file": "src/features/media/author/mediaAssetWorkspace.tsx",
+        "line": 38
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.asset",
+      "to": "workspace:media-file-help",
+      "source": {
+        "file": "src/features/media/author/mediaAssetWorkspace.tsx",
+        "line": 280
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.synth-sound",
+      "to": "workspace:media-synth-sound",
+      "source": {
+        "file": "src/features/media/author/synthSoundWorkspace.tsx",
+        "line": 20
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:media.vector-asset",
+      "to": "workspace:media-vector-asset",
+      "source": {
+        "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+        "line": 326
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:narrative.interaction",
+      "to": "workspace:narrative.interaction",
+      "source": {
+        "file": "src/features/narrative/author/interactionWorkspace.tsx",
+        "line": 37
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:narrative.node",
+      "to": "workspace:narrative.node",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 205
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.sequence",
+      "to": "workspace:radix-sequence",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 70
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.sequences",
+      "to": "workspace:radix-sequences",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 41
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:radix.startup",
+      "to": "workspace:radix-startup-settings",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 9
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-computed",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 493
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-group",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 575
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-library",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 250
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:state.definitions",
+      "to": "workspace:state-variable",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 311
+      },
+      "match_constraints": "additional route-data conditions",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:world.entity",
+      "to": "workspace:world-entity",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 64
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    },
+    {
+      "from": "route:world.library",
+      "to": "workspace:world-library",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 33
+      },
+      "match_constraints": "feature and workspace predicates",
+      "evidence": "workspace matches() source declaration",
+      "pointer_actions": 0,
+      "handler_invocations": 0
+    }
   ]
 }
