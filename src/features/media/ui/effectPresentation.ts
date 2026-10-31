@@ -1,5 +1,7 @@
 import type { EffectEventPresenter } from "../../../engine/presentation/effectPresentation";
 import { configuredAssetStore } from "./assetStore";
+import { isPremidiAsset } from "./premidiRepository";
+import { playRepositoryPremidi } from "./premidiAssetPlayback";
 import { playSynthSound } from "./synthPlayback";
 import { play as playPremidiComposition } from "../vendor/premidi-audio.js";
 
@@ -37,6 +39,10 @@ export const presentMediaEffectEvent: EffectEventPresenter = (event, context) =>
       const asset = configuredAssetStore.resolve(context.snapshot, event.assetId);
       if (!asset?.available || !asset.url) {
         reportMissingSound(event.assetId);
+        return true;
+      }
+      if (isPremidiAsset(asset)) {
+        void playRepositoryPremidi(asset).catch((error) => console.warn(`[MEDIA] Music ${event.assetId} could not play.`, error));
         return true;
       }
       void new Audio(asset.url).play().catch((error) => console.warn(`[MEDIA] Audio ${event.assetId} could not play.`, error));
