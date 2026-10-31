@@ -38,13 +38,17 @@ jobs:
           node scripts/author-flow/measure.mjs --check
           node scripts/author-flow/frontier-progress.mjs --source scroll --suite frontier
           node scripts/author-flow/frontier-progress.mjs --check --source scroll --suite frontier
+          node scripts/author-flow/sequence-progress.mjs --source scroll --suite frontier
+          node scripts/author-flow/sequence-progress.mjs --check --source scroll --suite frontier
+          node scripts/author-flow/choice-load.mjs
+          node scripts/author-flow/choice-load.mjs --check
       - name: Verify unchanged production engine
         run: npm run verify
       - name: Commit executed traces and recoverable provenance
         shell: bash
         run: |
           git add audit/author-flow/traces/author-audit-desktop-frontier.json audit/author-flow/traces/author-audit-mobile-frontier.json
-          git add audit/author-flow/frontier-filter-report.json audit/author-flow/coverage.json audit/author-flow/access-costs.json audit/author-flow/frontier-progress.json
+          git add audit/author-flow/frontier-filter-report.json audit/author-flow/coverage.json audit/author-flow/access-costs.json audit/author-flow/frontier-progress.json audit/author-flow/sequence-progress.json audit/author-flow/choice-exposure.json
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Recover executed frontier replays with anchored observed states'
           git fetch origin "$GITHUB_REF_NAME"
           git rebase "origin/$GITHUB_REF_NAME"
