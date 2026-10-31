@@ -64,7 +64,7 @@ function mimeTypeFor(extension) {
     ".mp3": "audio/mpeg",
     ".wav": "audio/wav",
     ".ogg": "audio/ogg",
-    ".premidi": "application/x-premidi",
+    ".premidi": "audio/x-premidi",
   })[extension] ?? "application/octet-stream";
 }
 
