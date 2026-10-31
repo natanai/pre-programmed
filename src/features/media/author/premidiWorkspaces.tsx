@@ -43,10 +43,41 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
       />
     </label>
     <AuthorHelp label="About importing compositions" text="A .premidi file stores a playable music score, not a recording. Compose it in pre-midi, then import it into this project." />
+    <label>
+      PREVIEW MODERN .PREMIDI (EXPERIMENTAL)
+      <input
+        type="file"
+        accept=".premidi,application/json"
+        disabled={busy}
+        onChange={async (event) => {
+          const file = event.currentTarget.files?.[0];
+          if (!file) return;
+          event.currentTarget.value = "";
+          setBusy(true);
+          try {
+            if (file.size > 8_000_000) throw Error("Modern score exceeds the 8 MB preview limit.");
+            const { parseModernPremidi } = await import("../modernPremidiPlan");
+            const plan = parseModernPremidi(await file.text());
+            const { playModernPremidi } = await import("../modernPremidiPlayback");
+            modernPreviewSession?.stop();
+            modernPreviewSession = await playModernPremidi(plan);
+            setMessage("Previewing " + plan.title + " · " + plan.kind +
+              " · experimental playback only, not saved to the game.");
+          } catch (error) {
+            setMessage(error instanceof Error ? error.message : "Modern preview failed.");
+          } finally {
+            setBusy(false);
+          }
+        }}
+      />
+    </label>
+    <AuthorHelp label="Modern music preview limits"
+      text="Audition synth-only Beat v7 or Song v8 files. This does not import or save them. Samples, advanced effects, modulation, pitch bends and vocals are not yet supported. Existing v2 music stays unchanged." />
     {message ? <p role="status">{message}</p> : null}
   </div>;
 }
 
+let modernPreviewSession: { stop: () => void } | null = null;
 let previewSession: { stop: () => void } | null = null;
 async function preview(composition: PremidiComposition) {
   previewSession?.stop();
