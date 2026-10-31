@@ -255,6 +255,125 @@ function findDeclaredRoutePath(model,sourceWorkspace,targetRoute,firstResource=n
   return {found:false,steps:[],declared_task_opens:null};
 }
 
+
+/**
+ * Read-only evidence of shared Author lifecycle contracts. These are checks of
+ * real source expressions, not an independent implementation of their effects.
+ */
+function describeTaskLifecycle(readFile) {
+  const witnesses=[
+    ["push-preserves-stack","src/author/tasks/useAuthorTaskRuntime.ts","commitTasks([...tasksRef.current, task]);"],
+    ["root-open-replaces-stack","src/author/tasks/useAuthorTaskRuntime.ts","commitTasks([task]);"],
+    ["completion-pops-child","src/author/tasks/useAuthorTaskRuntime.ts","return popTask(taskId, result);"],
+    ["completion-sends-result","src/author/tasks/useAuthorTaskRuntime.ts","queueMicrotask(() => completion(result));"],
+    ["root-completion-shows-tools","src/author/tasks/useAuthorTaskRuntime.ts",'commitTasks([taskFor({ type: "tools" })]);'],
+    ["back-guards-dirty-draft","src/author/tasks/useAuthorTaskRuntime.ts",'setLeaveConfirmation({ action: "back", dirtyCount: 1, taskId: active.id });'],
+    ["close-guards-dirty-tasks","src/author/tasks/useAuthorTaskRuntime.ts",'setLeaveConfirmation({ action: "close", dirtyCount: currentDirtyCount });'],
+    ["master-close-clears-stack","src/author/tasks/useAuthorTaskRuntime.ts","commitTasks([]);"],
+    ["resource-create-pushes-owner","src/author/resources/runtime.ts","pushTask(route, (result) => {"],
+    ["resource-callback-checks-kind","src/author/resources/runtime.ts",'result?.type === "resource" && result.kind === kind'],
+    ["reference-field-adopts-child","src/author/resources/ReferenceField.tsx","onChangeRef.current(resource.value);"],
+    ["reference-picker-direct-create","src/author/resources/ReferenceField.tsx","if (!value && !options.length && canCreate) {"],
+    ["reference-picker-chooser","src/author/resources/ReferenceField.tsx","setOpen(true);"],
+    ["accepted-save-required","src/author/ui/workspaceDefinition.tsx","if (!result.accepted) return false;"],
+    ["accepted-child-save-completes","src/author/ui/workspaceDefinition.tsx","if (result.completion && options.completeTask !== false && context.hasParentTask) context.completeTask(result.completion);"],
+    ["save-control-requires-dirty-valid","src/author/ui/workspaceDefinition.tsx","disabled: saving || !dirty || !validForSave,"],
+    ["parent-workspace-suspended-mounted","src/author/workspace/AuthorWorkspaceHost.tsx",'style={active ? undefined : { display: "none" }}'],
+    ["master-x-returns-to-player","src/author/workspace/AuthorWorkspaceHost.tsx",'aria-label="Close Author tasks and return to play"'],
+    ["master-x-invokes-request-close","src/author/workspace/AuthorWorkspaceHost.tsx","onClick={requestClose}"],
+  ];
+  const contracts=witnesses.map(([id,file,needle])=>{
+    const source=readFile(file);
+    const index=source?.indexOf(needle)??-1;
+    return {id,status:index<0?"unresolved":"source-declared",source:index<0?{file,line:null}:{file,line:source.slice(0,index).split("\n").length}};
+  });
+  return {
+    evidence:"matched expressions in shared Author source; no browser or handlers executed",
+    contracts,
+    unresolved_contracts:contracts.filter(c=>c.status==="unresolved").map(c=>c.id),
+    observed_runtime_behavior:false,
+  };
+}
+function resourceSaveCompletionContract(model,route,readFile) {
+  const bindings=model.workspace_route_bindings.filter(b=>b.from===route);
+  return bindings.map(binding=>{
+    const source=readFile(binding.source.file);
+    const hasAccepted=Boolean(source?.includes("accepted: true"));
+    const hasCompletion=Boolean(source?.includes("completion:"));
+    const hasResourceType=Boolean(source?.includes('type: "resource"'));
+    return {
+      workspace:binding.to,
+      source:binding.source,
+      route_conditions:binding.match_constraints,
+      status:hasAccepted&&hasCompletion&&hasResourceType?"conditional-owner-completion-declared":"unresolved",
+      conditions:["owner Save is enabled","owner validation accepts the draft","canonical persistence succeeds or is accepted for queuing","resource task returns a matching typed completion"],
+    };
+  });
+}
+function traceNestedRoundTrip(model,from,chain,readFile) {
+  const root=from.startsWith("workspace:")?from:"workspace:"+from;
+  const frames=[];
+  const unknown=[];
+  let cursor=root;
+  if(!chain.length)unknown.push("A nonempty --chain is required");
+  for(const kind of chain){
+    const choices=model.contextual_creates.filter(e=>e.from===cursor&&e.via==="resource:"+kind);
+    if(choices.length!==1){
+      unknown.push({at:cursor,kind,reason:choices.length?"multiple-source-declared-reference-sites":"no-source-declared-contextual-create",candidates:choices});
+      break;
+    }
+    const edge=choices[0],provider=model.resource_providers.find(p=>p.kind===kind);
+    const bindings=model.workspace_route_bindings.filter(b=>b.from===edge.to);
+    if(!provider||"route:"+provider.create.route!==edge.to){
+      unknown.push({at:cursor,kind,reason:"canonical-provider-route-mismatch"});
+      break;
+    }
+    if(bindings.length!==1){
+      unknown.push({at:cursor,kind,reason:bindings.length?"multiple-route-matcher-candidates":"unresolved-route-workspace-binding",candidates:bindings});
+      break;
+    }
+    const binding=bindings[0];
+    const completion=resourceSaveCompletionContract(model,edge.to,readFile);
+    if(!completion.some(entry=>entry.workspace===binding.to&&entry.status==="conditional-owner-completion-declared"))
+      unknown.push({at:binding.to,kind,reason:"owner-resource-completion-source-unconfirmed"});
+    frames.push({
+      parent_workspace:cursor,resource_kind:kind,
+      reference_site:edge.source,canonical_provider:provider.owner,
+      child_route:edge.to,child_workspace:binding.to,
+      entry:{action:"create-from-reference-field",pointer_actions:{direct_if_empty:1,chooser_if_options_present:2},conditional:true},
+      save:{action:"canonical-owner-save",control:"author-core-save",pointer_actions_if_enabled:1,completion:completion[0]??null},
+      handoff:{action:"typed-resource-result-to-parent-field",automatic_if_accepted:true,pointer_actions:0},
+      return:{action:"completeTask-pop-to-immediate-parent",automatic_if_accepted:true,pointer_actions:0},
+      unverified:["field visibility","draft validity","persistence success","focus and scroll restoration","actual rendered click sequence"],
+    });
+    cursor=binding.to;
+  }
+  const lifecycle=model.task_lifecycle;
+  const needed=["push-preserves-stack","completion-pops-child","completion-sends-result","resource-create-pushes-owner","resource-callback-checks-kind","reference-field-adopts-child","accepted-save-required","accepted-child-save-completes","parent-workspace-suspended-mounted","master-x-returns-to-player","master-x-invokes-request-close"];
+  const missing=needed.filter(id=>lifecycle.contracts.find(c=>c.id===id)?.status!=="source-declared");
+  if(missing.length)unknown.push({reason:"unconfirmed-shared-runtime-contracts",ids:missing});
+  const complete=frames.length===chain.length&&!unknown.length;
+  return {
+    type:"candidate-contextual-nested-round-trip",from:root,resource_chain:chain,
+    source_path_resolved:complete,
+    frames,return_order:[...frames].reverse().map(f=>({saved_child:f.resource_kind,resumes:f.parent_workspace,condition:"accepted matching resource completion; not an executed result"})),
+    after_nested_tasks:{at:root,save_parent_if_dirty:"conditional; not counted as a verified Save",master_x:"requestClose; dirty tasks require confirmation"},
+    declared_child_task_opens:complete?frames.length:null,
+    possible_pointer_actions_for_opening_references:complete?{lower:frames.length,upper:frames.length*2,assumes_each_reference_field_rendered:true}:null,
+    possible_child_save_button_activations_if_all_enabled:complete?frames.length:null,
+    conditional_known_control_subtotal:complete?{
+      lower:frames.length*2+1,upper:frames.length*3+1,
+      includes:"nested Create controls, one enabled Save per child, and master X",
+      excludes:["field editing and typing","parent Save","dirty-leave confirmation","any intervening choices or dialogs"],
+      warning:"Only conditional source-declared controls, not a measured path or universal minimum.",
+    }:null,
+    exact_total_pointer_actions:null,
+    browser_verified:false,persistence_verified:false,parent_draft_verified:false,
+    unresolved:unknown,
+    note:"This is a conditional source-derived sequence, never a certified successful play-to-author-to-play interaction.",
+  };
+}
+
 const source=JSON.parse(fs.readFileSync("audit/author-flow/source-graph.json","utf8"));
 const model=buildGraph(source);
 const providerFiles=authorResourceSourceFiles(source);
@@ -273,10 +392,19 @@ model.schema_version=2;
 model.semantics.graph_type="Directed multigraph of declared task pushes, canonical resource contracts, contextual reference fields and workspace matchers.";
 model.semantics.workspace_route_identity="Joins use declared defineAuthorWorkspace matches predicates; any additional route-data conditions remain unresolved until evaluated.";
 model.semantics.resource_paths="Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts.";
+model.task_lifecycle=describeTaskLifecycle(path=>fs.existsSync(path)?fs.readFileSync(path,"utf8"):null);
+model.schema_version=3;
+model.semantics.task_lifecycle="Source-witnessed shared task mechanics and conditional owner completion; never an execution or Save guarantee.";
 const args=process.argv.slice(2);
 const value=k=>{const index=args.indexOf(k);return index===-1?null:args[index+1]};
 const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create"),via=value("--via");
-if(args.includes("--path")){
+const chain=value("--chain");
+if(args.includes("--roundtrip")){
+  if(!from||!chain)throw Error("--roundtrip requires --from and --chain (comma-separated resource kinds)");
+  const result=traceNestedRoundTrip(model,from,chain.split(",").map(s=>s.trim()).filter(Boolean),
+    path=>fs.existsSync(path)?fs.readFileSync(path,"utf8"):null);
+  process.stdout.write(JSON.stringify(result,null,2)+"\n");
+}else if(args.includes("--path")){
   if(!from||!to)throw Error("--path requires --from and --to");
   const route=findDeclaredRoutePath(model,from,to,via);
   process.stdout.write(JSON.stringify({
