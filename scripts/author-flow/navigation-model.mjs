@@ -268,6 +268,11 @@ model.contextual_creates=model.reference_sites.filter(s=>s.create_route).map(s=>
 }));
 model.counts.registered_resource_providers=model.resource_providers.length;
 model.counts.contextual_create_declarations=model.contextual_creates.length;
+model.counts.workspace_route_bindings=model.workspace_route_bindings.length;
+model.schema_version=2;
+model.semantics.graph_type="Directed multigraph of declared task pushes, canonical resource contracts, contextual reference fields and workspace matchers.";
+model.semantics.workspace_route_identity="Joins use declared defineAuthorWorkspace matches predicates; any additional route-data conditions remain unresolved until evaluated.";
+model.semantics.resource_paths="Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts.";
 const args=process.argv.slice(2);
 const value=k=>{const index=args.indexOf(k);return index===-1?null:args[index+1]};
 const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create"),via=value("--via");
