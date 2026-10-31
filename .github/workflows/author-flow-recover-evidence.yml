@@ -1,0 +1,62 @@
+name: Recover executed Author frontier trace artifact
+on:
+  push:
+    branches:
+      - 'audit/author-flow-browser-frontier-*'
+    paths:
+      - '.github/workflows/author-flow-recover-evidence.yml'
+permissions:
+  actions: read
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - name: Retrieve actual completed browser execution from failed metadata-validation run
+        uses: actions/download-artifact@v4
+        with:
+          name: author-flow-browser-traces
+          run-id: 41222328493
+          github-token: ${{ github.token }}
+          path: audit/author-flow
+      - name: Exclude only unobserved source-frontier references
+        run: |
+          node scripts/author-flow/sanitize-frontier.mjs
+          node scripts/author-flow/validate-traces.mjs
+      - name: Recompute deterministic coverage and path access measures
+        run: |
+          npm run audit:author:coverage
+          npm run audit:author:coverage-check
+          node scripts/author-flow/measure.mjs
+          node scripts/author-flow/measure.mjs --check
+          node scripts/author-flow/frontier-progress.mjs --source scroll --suite frontier
+          node scripts/author-flow/frontier-progress.mjs --check --source scroll --suite frontier
+      - name: Verify unchanged production engine
+        run: npm run verify
+      - name: Commit executed traces and recoverable provenance
+        shell: bash
+        run: |
+          git add audit/author-flow/traces/author-audit-desktop-frontier.json audit/author-flow/traces/author-audit-mobile-frontier.json
+          git add audit/author-flow/frontier-filter-report.json audit/author-flow/coverage.json audit/author-flow/access-costs.json audit/author-flow/frontier-progress.json
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Recover executed frontier replays with anchored observed states'
+          git fetch origin "$GITHUB_REF_NAME"
+          git rebase "origin/$GITHUB_REF_NAME"
+          git push origin "HEAD:$GITHUB_REF_NAME"
+      - name: Archive verified evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovered-author-frontier-verified
+          path: |
+            audit/author-flow/traces/author-audit-*-frontier.json
+            audit/author-flow/frontier-filter-report.json
+            audit/author-flow/coverage.json
+            audit/author-flow/access-costs.json
+            audit/author-flow/frontier-progress.json
