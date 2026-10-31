@@ -13,6 +13,15 @@ on:
       - .github/workflows/**
       - .github/portable-release.version
   workflow_dispatch:
+  # Temporary PR-only qualification while the modern playback prototype is isolated.
+  # This trigger and job will be removed before the PR can merge.
+  pull_request:
+    branches: [main]
+    paths:
+      - src/features/media/**
+      - tests/premidiModernPrototype.test.ts
+      - scripts/measure-premidi-runtime.mjs
+      - .github/workflows/deploy.yml
 
 permissions:
   contents: read
@@ -24,7 +33,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  prototype-qualification:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Build exact game baseline from main
+        run: |
+          git worktree add --detach ../pre-programmed-baseline origin/main
+          cd ../pre-programmed-baseline
+          npm ci --no-audit --no-fund
+          npm run build
+      - name: Build and verify isolated modern playback prototype
+        run: |
+          npm ci --no-audit --no-fund
+          npm run verify
+          npm run verify:local
+      - name: Measure exact same-run browser bundle delta
+        run: node scripts/measure-premidi-runtime.mjs ../pre-programmed-baseline/dist dist
+
   build-and-worker:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
