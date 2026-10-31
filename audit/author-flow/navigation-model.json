@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "type": "author-declared-navigation-model",
   "provenance": {
     "source": "audit/author-flow/source-graph.json",
@@ -13,7 +13,8 @@
     "path_cost": "Only a count of declared handler invocations along explicitly linked edges; absent paths mean unknown, not unreachable.",
     "nested_return": "The runtime's push/pop task contract is known, but specific successful return/save behaviors cannot be inferred from static AST.",
     "workspace_route_identity": "Joins use declared defineAuthorWorkspace matches predicates; any additional route-data conditions remain unresolved until evaluated.",
-    "resource_paths": "Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts."
+    "resource_paths": "Path queries trace only declared edges; they do not execute handlers, Save or Back, and do not establish actual click counts.",
+    "task_lifecycle": "Source-witnessed shared task mechanics and conditional owner completion; never an execution or Save guarantee."
   },
   "counts": {
     "declared_transition_edges": 21,
@@ -2884,5 +2885,164 @@
       "evidence": "reference-field-and-canonical-provider",
       "conditional": true
     }
-  ]
+  ],
+  "task_lifecycle": {
+    "evidence": "matched expressions in shared Author source; no browser or handlers executed",
+    "contracts": [
+      {
+        "id": "push-preserves-stack",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 68
+        }
+      },
+      {
+        "id": "root-open-replaces-stack",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 59
+        }
+      },
+      {
+        "id": "completion-pops-child",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 96
+        }
+      },
+      {
+        "id": "completion-sends-result",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 79
+        }
+      },
+      {
+        "id": "root-completion-shows-tools",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 93
+        }
+      },
+      {
+        "id": "back-guards-dirty-draft",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 122
+        }
+      },
+      {
+        "id": "close-guards-dirty-tasks",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 134
+        }
+      },
+      {
+        "id": "master-close-clears-stack",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/tasks/useAuthorTaskRuntime.ts",
+          "line": 102
+        }
+      },
+      {
+        "id": "resource-create-pushes-owner",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/resources/runtime.ts",
+          "line": 57
+        }
+      },
+      {
+        "id": "resource-callback-checks-kind",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/resources/runtime.ts",
+          "line": 58
+        }
+      },
+      {
+        "id": "reference-field-adopts-child",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/resources/ReferenceField.tsx",
+          "line": 65
+        }
+      },
+      {
+        "id": "reference-picker-direct-create",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/resources/ReferenceField.tsx",
+          "line": 90
+        }
+      },
+      {
+        "id": "reference-picker-chooser",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/resources/ReferenceField.tsx",
+          "line": 94
+        }
+      },
+      {
+        "id": "accepted-save-required",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/ui/workspaceDefinition.tsx",
+          "line": 125
+        }
+      },
+      {
+        "id": "accepted-child-save-completes",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/ui/workspaceDefinition.tsx",
+          "line": 130
+        }
+      },
+      {
+        "id": "save-control-requires-dirty-valid",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/ui/workspaceDefinition.tsx",
+          "line": 163
+        }
+      },
+      {
+        "id": "parent-workspace-suspended-mounted",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+          "line": 146
+        }
+      },
+      {
+        "id": "master-x-returns-to-player",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+          "line": 339
+        }
+      },
+      {
+        "id": "master-x-invokes-request-close",
+        "status": "source-declared",
+        "source": {
+          "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+          "line": 341
+        }
+      }
+    ],
+    "unresolved_contracts": [],
+    "observed_runtime_behavior": false
+  }
 }
