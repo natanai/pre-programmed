@@ -49,8 +49,8 @@ export async function playModernPremidi(plan:PrototypePlan):Promise<ModernPrevie
   const normal=1/Math.max(1,sum),peak=Math.max(.000001,Math.min(.31,e.level*e.velocity*.27)*normal);
   const filter=context.createBiquadFilter();filter.type=cutoff.type;
   filter.frequency.setValueAtTime(Math.min(context.sampleRate/2,cutoff.cutoff),start);
-  // Browser low/high pass resonance is expressed in dB, as in the studio.
-  filter.Q.value=cutoff.type==="lowpass"||cutoff.type==="highpass"?Math.max(.001,10**(cutoff.resonance/20)):cutoff.resonance;
+  // Match pre-midi's Web Audio host: pass authored resonance directly to Q.
+  filter.Q.setValueAtTime(cutoff.resonance,start);
   const env=context.createGain();env.gain.setValueAtTime(0,start);
   const attackEnd=start+Math.max(.002,envelope.attack),decayEnd=attackEnd+envelope.decay;
   const releaseLevel=levelAt(e,peak,off-start);
