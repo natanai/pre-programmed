@@ -35,6 +35,9 @@ const maxExecutions = number("--max-executions", 90);
 const enableScroll=args.includes("--scroll");
 const captureWrites=args.includes("--writes");
 const captureDraftNavigation=args.includes("--draft-navigation");
+const resumeFrom=arg("--resume-from",null);
+if(resumeFrom && !/^[a-z][a-z0-9-]{0,24}$/.test(resumeFrom))throw Error("--resume-from must name an existing recorded suite.");
+if(resumeFrom&&(captureWrites||captureDraftNavigation))throw Error("--resume-from requires ordinary safe browser exploration.");
 if(captureWrites&&captureDraftNavigation)throw Error("Choose only one targeted audit mode.");
 const strategy = arg("--strategy", "breadth");
 if (!["breadth","stratified"].includes(strategy)) throw Error("--strategy must be breadth or stratified");
@@ -279,10 +282,61 @@ async function newPage(browser, fixture, token) {
     throw error;
   }
 }
-async function traverse(browser, fixture, token, expectedHash) {
+/**
+ * Queue only *recorded* unvisited actions from an earlier compatible fixture.
+ * A prior UI state does not certify current behavior: each full prefix must
+ * execute again in the real browser. Missing replay prefixes stay unknown.
+ */
+function pendingFrontierPaths(viewport, fixtureHash) {
+  const filename=path.join(outputDir,"author-audit-"+viewport.id+"-"+resumeFrom+".json");
+  const prior=JSON.parse(fs.readFileSync(filename,"utf8"));
+  const sourceFixture=prior.fixtures?.[0];
+  if(prior.provenance?.runtime_executed!==true || sourceFixture?.project_sha256!==fixtureHash)
+    throw Error("Prior frontier has incompatible executed provenance or project fixture: "+filename);
+  if(sourceFixture.viewport?.width!==viewport.width||sourceFixture.viewport?.height!==viewport.height)
+    throw Error("Prior frontier viewport differs: "+filename);
+  if(!Array.isArray(prior.replays))throw Error("Prior frontier has no contiguous replay evidence");
+  const prefixes=new Map();
+  const put=(state,actions)=>{
+    const current=prefixes.get(state);
+    if(!current || actions.length<current.length ||
+      (actions.length===current.length&&JSON.stringify(actions)<JSON.stringify(current)))
+      prefixes.set(state,actions);
+  };
+  for(const replay of prior.replays){
+    if(replay.completed!==true || !Array.isArray(replay.steps))continue;
+    let current=replay.initial_state, actions=[];
+    put(current,actions);
+    for(const step of replay.steps){
+      if(step.from!==current)throw Error("Noncontiguous prior replay: "+replay.id);
+      actions=[...actions,step.action];
+      current=step.to;
+      put(current,actions);
+    }
+  }
+  const candidates=new Map();
+  let lackingPrefix=0;
+  for(const entry of prior.frontier){
+    if(entry.reason!=="unvisited"||!entry.action)continue;
+    const prefix=prefixes.get(entry.state);
+    if(!prefix){lackingPrefix++;continue;}
+    const actions=[...prefix,entry.action];
+    if(actions.length>maxDepth)continue;
+    const key=JSON.stringify([entry.state,entry.action]);
+    if(!candidates.has(key))candidates.set(key,{path:actions,from:entry.state});
+  }
+  const queue=[...candidates.values()].sort((a,b)=>a.path.length-b.path.length||JSON.stringify(a.path).localeCompare(JSON.stringify(b.path)));
+  if(queue.length===0)throw Error("No replay-certified unvisited actions within max-depth for "+filename);
+  console.log("Replaying prior observed frontier",{
+    source:filename,source_entries:prior.frontier.length,replayable:queue.length,
+    lacks_replay_prefix:lackingPrefix,max_depth:maxDepth
+  });
+  return queue;
+}
+async function traverse(browser, fixture, token, expectedHash, initialQueue=null) {
   const states=new Map(),transitions=new Map(),frontier=new Map(),replays=[];
   let initialStateId=null;
-  const queue=[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
+  const queue=initialQueue??[{path:[],from:null}];const visited=new Set();let replayFailures=0;let executedPaths=0;
   const servedFirst=new Map(),servedSecond=new Map();
   function dequeue() {
     if(strategy==="breadth" || queue.length<2) return queue.shift();
@@ -360,7 +414,11 @@ async function traverse(browser, fixture, token, expectedHash) {
   if(queue.length) {
     // Record budget-limited branches as an explicit unexplored frontier.
     for(const remaining of queue) {
-      note({state:remaining.from??states.values().next().value?.id??"state:unavailable",locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
+      // Prior source-frontier origins were not necessarily reached again.
+      // Their original unvisited records remain in the immutable source trace;
+      // never introduce unobserved source state IDs into this new trace.
+      if(!remaining.from || !states.has(remaining.from))continue;
+      note({state:remaining.from,locator:remaining.path.at(-1)?.locator??"unknown",...(remaining.path.at(-1)?{action:remaining.path.at(-1)}:{}),reason:"unvisited"});
     }
   }
   return {
@@ -658,10 +716,11 @@ try {
       seed:"runtime-uncontrolled",
       clock:"not-frozen",
     };
-    const result=await traverse(browser,fixture,token,fixtureHash);
+    const priorQueue=resumeFrom?pendingFrontierPaths(viewport,fixtureHash):null;
+    const result=await traverse(browser,fixture,token,fixtureHash,priorQueue);
     const trace={
       schema_version:1,type:"author-observed-transitions",
-      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions,enableScroll,scrollMechanism:enableScroll?"wheel":"none"}},
+      provenance:{method:"browser-observation",runtime_executed:true,recorder_version:"2",source_commit:process.env.GITHUB_SHA??"local",initial_state_id:result.initialStateId,explorer:{strategy,suite,maxStates,maxDepth,maxExecutions,enableScroll,scrollMechanism:enableScroll?"wheel":"none",...(resumeFrom?{resumeFrom}: {})}},
       fixtures:[fixture],
       states:result.states,transitions:result.transitions,frontier:result.frontier,replays:result.replays,
     };

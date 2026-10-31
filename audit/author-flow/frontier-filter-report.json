@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "type": "author-frontier-bookkeeping-recovery",
+  "method": "delete unanchored frontier references only; executed states, transitions and completed replays untouched",
+  "original_artifact_run": "https://github.com/natanai/pre-programmed/actions/runs/41222328493",
+  "interpretation": "Unobserved source states cannot be asserted in the new trace. Prior source frontier remains recorded in the immutable earlier scroll fixtures.",
+  "files": [
+    {
+      "file": "author-audit-desktop-frontier.json",
+      "prior_frontier_count": 1118,
+      "retained_frontier_count": 1116,
+      "skipped_unanchored": [
+        {
+          "state": "state:00d7a99aa0ed67a5",
+          "locator": "[\"page\",\"button\",\"\",2]",
+          "reason": "unknown",
+          "action": {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        },
+        {
+          "state": "state:4a92fb05bc522aa8",
+          "locator": "[\"page\",\"button\",\"\",2]",
+          "reason": "unknown",
+          "action": {
+            "locator": "[\"page\",\"button\",\"\",2]",
+            "event": "click",
+            "value": null,
+            "pointer_activations": 1
+          }
+        }
+      ]
+    },
+    {
+      "file": "author-audit-mobile-frontier.json",
+      "prior_frontier_count": 1139,
+      "retained_frontier_count": 1139,
+      "skipped_unanchored": []
+    }
+  ]
+}
