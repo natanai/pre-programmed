@@ -1,5 +1,5 @@
 import { AuthorHelp } from "../../../author/ui/AuthorHelp";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
 import { parse, filename, type PremidiComposition } from "../vendor/premidi-schema.js";
@@ -17,6 +17,8 @@ function download(doc: PremidiComposition) {
 function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) => Promise<string> }) {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [modernPlaying, setModernPlaying] = useState(false);
+  useEffect(() => () => { modernPreviewSession?.stop(); modernPreviewSession = null; }, []);
   return <div className="media-premidi-import">
     <label>
       IMPORT .PREMIDI
@@ -61,6 +63,14 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
             const { playModernPremidi } = await import("../modernPremidiPlayback");
             modernPreviewSession?.stop();
             modernPreviewSession = await playModernPremidi(plan);
+            const playing = modernPreviewSession;
+            setModernPlaying(true);
+            void playing.finished.then(() => {
+              if (modernPreviewSession === playing) {
+                modernPreviewSession = null;
+                setModernPlaying(false);
+              }
+            });
             setMessage("Previewing " + plan.title + " · " + plan.kind +
               " · experimental playback only, not saved to the game.");
           } catch (error) {
@@ -71,6 +81,12 @@ function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) =
         }}
       />
     </label>
+    {modernPlaying ? <button type="button" onClick={() => {
+      modernPreviewSession?.stop();
+      modernPreviewSession = null;
+      setModernPlaying(false);
+      setMessage("Preview stopped. No changes saved.");
+    }}>STOP MODERN PREVIEW</button> : null}
     <AuthorHelp label="Modern music preview limits"
       text="Audition synth-only Beat v7 or Song v8 files. This does not import or save them. Samples, advanced effects, modulation, pitch bends and vocals are not yet supported. Existing v2 music stays unchanged." />
     {message ? <p role="status">{message}</p> : null}
