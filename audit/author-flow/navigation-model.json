@@ -1,0 +1,1947 @@
+{
+  "schema_version": 1,
+  "type": "author-declared-navigation-model",
+  "provenance": {
+    "source": "audit/author-flow/source-graph.json",
+    "generator": "scripts/author-flow/navigation-model.mjs",
+    "runtime_executed": false
+  },
+  "semantics": {
+    "graph_type": "directed multigraph of statically provable task-push declarations",
+    "one_edge": "One declared pushTask/openTask invocation, not a guaranteed visible click, successful navigation, Save, or round trip.",
+    "guard": "Unevaluated source conditions; runtime visibility, disabled state, resource counts, and parent drafts are not resolved.",
+    "path_cost": "Only a count of declared handler invocations along explicitly linked edges; absent paths mean unknown, not unreachable.",
+    "nested_return": "The runtime's push/pop task contract is known, but specific successful return/save behaviors cannot be inferred from static AST.",
+    "workspace_route_identity": "Workspace identifiers and feature route keys are not automatically joined by naming convention. Exact string overlaps are reported as candidates only."
+  },
+  "counts": {
+    "declared_transition_edges": 21,
+    "unresolved_navigation_calls": 75,
+    "route_destinations": 25,
+    "workspace_sources": 20
+  },
+  "workspace_sources": [
+    "commands-grammar",
+    "commands-interactions",
+    "commands-reference-sources",
+    "commands-settings",
+    "commands-target-behaviors",
+    "inventory-author-hub",
+    "inventory-body-types",
+    "inventory-item",
+    "inventory-items",
+    "media-assets",
+    "media-premidi-library",
+    "media-synth-library",
+    "narrative-structure",
+    "narrative.interaction",
+    "radix-sequences",
+    "radix-startup-settings",
+    "state-library",
+    "state-status-author",
+    "world-entity",
+    "world-library"
+  ],
+  "destinations": [
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "command",
+      "key": "commands.command"
+    },
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "grammar",
+      "key": "commands.grammar"
+    },
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "interactions",
+      "key": "commands.interactions"
+    },
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "reference-source",
+      "key": "commands.reference-source"
+    },
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "references",
+      "key": "commands.references"
+    },
+    {
+      "type": "feature",
+      "feature": "commands",
+      "workspace": "target-behaviors",
+      "key": "commands.target-behaviors"
+    },
+    {
+      "type": "feature",
+      "feature": "inventory",
+      "workspace": "inventory",
+      "key": "inventory.inventory"
+    },
+    {
+      "type": "feature",
+      "feature": "inventory",
+      "workspace": "item-equipment-placement",
+      "key": "inventory.item-equipment-placement"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "assets",
+      "key": "media.assets"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "composition",
+      "key": "media.composition"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "compositions",
+      "key": "media.compositions"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "synth",
+      "key": "media.synth"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "synth-sound",
+      "key": "media.synth-sound"
+    },
+    {
+      "type": "feature",
+      "feature": "media",
+      "workspace": "vector-asset",
+      "key": "media.vector-asset"
+    },
+    {
+      "type": "feature",
+      "feature": "narrative",
+      "workspace": "interaction",
+      "key": "narrative.interaction"
+    },
+    {
+      "type": "feature",
+      "feature": "narrative",
+      "workspace": "node",
+      "key": "narrative.node"
+    },
+    {
+      "type": "feature",
+      "feature": "narrative",
+      "workspace": "structure",
+      "key": "narrative.structure"
+    },
+    {
+      "type": "feature",
+      "feature": "project",
+      "workspace": "settings",
+      "key": "project.settings"
+    },
+    {
+      "type": "feature",
+      "feature": "project",
+      "workspace": "transfer",
+      "key": "project.transfer"
+    },
+    {
+      "type": "feature",
+      "feature": "radix",
+      "workspace": "sequence",
+      "key": "radix.sequence"
+    },
+    {
+      "type": "feature",
+      "feature": "radix",
+      "workspace": "sequences",
+      "key": "radix.sequences"
+    },
+    {
+      "type": "feature",
+      "feature": "state",
+      "workspace": "definitions",
+      "key": "state.definitions"
+    },
+    {
+      "type": "feature",
+      "feature": "state",
+      "workspace": "status",
+      "key": "state.status"
+    },
+    {
+      "type": "workspace",
+      "view": "history",
+      "key": "workspace.history"
+    },
+    {
+      "type": "workspace",
+      "view": "navigation",
+      "key": "workspace.navigation"
+    }
+  ],
+  "matching_workspace_id_candidates": [
+    "narrative.interaction"
+  ],
+  "transitions": [
+    {
+      "from": "workspace:commands-grammar",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/structuredWorkspaces.ts:82:29:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 82,
+        "column": 29
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-grammar",
+      "origin_control_id": "src/features/commands/author/structuredWorkspaces.ts:72:32",
+      "control_kind": "declarative.list",
+      "control_label": "Player commands",
+      "source_guards": [
+        "commands.length"
+      ],
+      "route_expression": "{\n              type: \"feature\",\n              feature: \"commands\",\n              workspace: \"command\",\n              data: { commandId: command.id },\n            }"
+    },
+    {
+      "from": "workspace:commands-interactions",
+      "to": "route:commands.grammar",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/structuredWorkspaces.ts:34:29:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 34,
+        "column": 29
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-interactions",
+      "origin_control_id": "src/features/commands/author/structuredWorkspaces.ts:28:20",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"grammar\" }"
+    },
+    {
+      "from": "workspace:commands-reference-sources",
+      "to": "route:commands.reference-source",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/structuredWorkspaces.ts:131:31:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 131,
+        "column": 31
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-reference-sources",
+      "origin_control_id": "src/features/commands/author/structuredWorkspaces.ts:120:20",
+      "control_kind": "declarative.list",
+      "control_label": "Target types",
+      "source_guards": [],
+      "route_expression": "{\n                type: \"feature\",\n                feature: \"commands\",\n                workspace: \"reference-source\",\n                data: { sourceKind: provider.kind },\n              }"
+    },
+    {
+      "from": "workspace:commands-settings",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/CommandSettings.tsx:32:31:call",
+      "source": {
+        "file": "src/features/commands/author/CommandSettings.tsx",
+        "line": 32,
+        "column": 31
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-settings",
+      "origin_control_id": "src/features/commands/author/CommandSettings.tsx:25:20",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: \"new\" } }"
+    },
+    {
+      "from": "workspace:commands-settings",
+      "to": "route:commands.grammar",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/CommandSettings.tsx:37:31:call",
+      "source": {
+        "file": "src/features/commands/author/CommandSettings.tsx",
+        "line": 37,
+        "column": 31
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-settings",
+      "origin_control_id": "src/features/commands/author/CommandSettings.tsx:25:20",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"grammar\" }"
+    },
+    {
+      "from": "workspace:commands-settings",
+      "to": "route:commands.references",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/commands/author/CommandSettings.tsx:42:31:call",
+      "source": {
+        "file": "src/features/commands/author/CommandSettings.tsx",
+        "line": 42,
+        "column": 31
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-settings",
+      "origin_control_id": "src/features/commands/author/CommandSettings.tsx:25:20",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"references\" }"
+    },
+    {
+      "from": "workspace:inventory-item",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/inventory/author/workspaces.tsx:163:44:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 163,
+        "column": 44
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-item",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:157:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: \"new\" } }"
+    },
+    {
+      "from": "workspace:inventory-item",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/inventory/author/workspaces.tsx:164:51:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 164,
+        "column": 51
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-item",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:157:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId } }"
+    },
+    {
+      "from": "workspace:inventory-item",
+      "to": "route:commands.grammar",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/inventory/author/workspaces.tsx:162:43:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 162,
+        "column": 43
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-item",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:157:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"grammar\" }"
+    },
+    {
+      "from": "workspace:media-assets",
+      "to": "route:media.vector-asset",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/media/author/structuredWorkspaces.tsx:32:30:call",
+      "source": {
+        "file": "src/features/media/author/structuredWorkspaces.tsx",
+        "line": 32,
+        "column": 30
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "media-assets",
+      "origin_control_id": "src/features/media/author/structuredWorkspaces.tsx:20:16",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n            type: \"feature\",\n            feature: \"media\",\n            workspace: \"vector-asset\",\n            data: { kind: \"image\" },\n          }"
+    },
+    {
+      "from": "workspace:media-premidi-library",
+      "to": "route:media.composition",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/media/author/premidiWorkspaces.tsx:90:25:call",
+      "source": {
+        "file": "src/features/media/author/premidiWorkspaces.tsx",
+        "line": 90,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "media-premidi-library",
+      "origin_control_id": "src/features/media/author/premidiWorkspaces.tsx:82:58",
+      "control_kind": "declarative.list",
+      "control_label": "Compositions",
+      "source_guards": [
+        "context.snapshot.mediaCompositions?.length"
+      ],
+      "route_expression": "{\n          type: \"feature\", feature: \"media\", workspace: \"composition\",\n          data: { compositionId: composition.id },\n        }"
+    },
+    {
+      "from": "workspace:media-synth-library",
+      "to": "route:media.synth-sound",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/media/author/structuredWorkspaces.tsx:64:29:call",
+      "source": {
+        "file": "src/features/media/author/structuredWorkspaces.tsx",
+        "line": 64,
+        "column": 29
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "media-synth-library",
+      "origin_control_id": "src/features/media/author/structuredWorkspaces.tsx:56:30",
+      "control_kind": "declarative.list",
+      "control_label": "Synths",
+      "source_guards": [
+        "synths.length"
+      ],
+      "route_expression": "{\n              type: \"feature\",\n              feature: \"media\",\n              workspace: \"synth-sound\",\n              data: { soundId: synth.id },\n            }"
+    },
+    {
+      "from": "workspace:narrative-structure",
+      "to": "route:narrative.interaction",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/narrative/author/structureWorkspace.tsx:28:47:call",
+      "source": {
+        "file": "src/features/narrative/author/structureWorkspace.tsx",
+        "line": 28,
+        "column": 47
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "narrative-structure",
+      "origin_control_id": "src/features/narrative/author/structureWorkspace.tsx:14:16",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n            type: \"feature\",\n            feature: \"narrative\",\n            workspace: \"interaction\",\n            data: { interactionId: interaction.id },\n          }"
+    },
+    {
+      "from": "workspace:narrative-structure",
+      "to": "route:narrative.node",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/narrative/author/structureWorkspace.tsx:22:35:call",
+      "source": {
+        "file": "src/features/narrative/author/structureWorkspace.tsx",
+        "line": 22,
+        "column": 35
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "narrative-structure",
+      "origin_control_id": "src/features/narrative/author/structureWorkspace.tsx:14:16",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n            type: \"feature\",\n            feature: \"narrative\",\n            workspace: \"node\",\n            data: { nodeId },\n          }"
+    },
+    {
+      "from": "workspace:narrative.interaction",
+      "to": "route:narrative.node",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/narrative/author/interactionWorkspace.tsx:207:45:call",
+      "source": {
+        "file": "src/features/narrative/author/interactionWorkspace.tsx",
+        "line": 207,
+        "column": 45
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "narrative.interaction",
+      "origin_control_id": "src/features/narrative/author/interactionWorkspace.tsx:184:37",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n          type: \"feature\",\n          feature: \"narrative\",\n          workspace: \"node\",\n          data: {\n            resourceTask: \"node\",\n            inheritContextFromNodeId: interaction.sourceNodeId,\n          },\n        }"
+    },
+    {
+      "from": "workspace:radix-sequences",
+      "to": "route:radix.sequence",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/radix/author/workspaces.tsx:57:26:call",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 57,
+        "column": 26
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "radix-sequences",
+      "origin_control_id": "src/features/radix/author/workspaces.tsx:54:71",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [
+        "context.snapshot.settings.radix.sequences.length"
+      ],
+      "route_expression": "{ type: \"feature\", feature: \"radix\", workspace: \"sequence\", data: { sequenceId: sequence.id } }"
+    },
+    {
+      "from": "workspace:radix-startup-settings",
+      "to": "route:radix.sequences",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/radix/author/startupWorkspace.tsx:70:31:call",
+      "source": {
+        "file": "src/features/radix/author/startupWorkspace.tsx",
+        "line": 70,
+        "column": 31
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "radix-startup-settings",
+      "origin_control_id": "src/features/radix/author/startupWorkspace.tsx:58:9",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"radix\", workspace: \"sequences\" }"
+    },
+    {
+      "from": "workspace:state-library",
+      "to": "route:state.status",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/state/author/workspaces.tsx:294:52:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 294,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:294:15",
+      "control_kind": "jsx.button",
+      "control_label": "[PLAYER STATUS]",
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"state\", workspace: \"status\" }"
+    },
+    {
+      "from": "workspace:world-entity",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/world/author/entityWorkspaces.tsx:236:44:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 236,
+        "column": 44
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-entity",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:229:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: \"new\" } }"
+    },
+    {
+      "from": "workspace:world-entity",
+      "to": "route:commands.command",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/world/author/entityWorkspaces.tsx:237:51:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 237,
+        "column": 51
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-entity",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:229:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId } }"
+    },
+    {
+      "from": "workspace:world-entity",
+      "to": "route:commands.grammar",
+      "action": "invoke-declared-handler",
+      "handler_invocations": 1,
+      "pointer_actions": null,
+      "evidence": "source-ast",
+      "id": "src/features/world/author/entityWorkspaces.tsx:235:43:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 235,
+        "column": 43
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-entity",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:229:22",
+      "control_kind": "jsx.OperationHooksEditor",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"grammar\" }"
+    }
+  ],
+  "unresolved": [
+    {
+      "id": "src/App.tsx:161:61:call",
+      "source": {
+        "file": "src/App.tsx",
+        "line": 161,
+        "column": 61
+      },
+      "api": "authorTasks.openTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "next"
+      ],
+      "route_expression": "next",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/App.tsx:206:16:call",
+      "source": {
+        "file": "src/App.tsx",
+        "line": 206,
+        "column": 16
+      },
+      "api": "authorTasks.openTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "route"
+      ],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/App.tsx:212:16:call",
+      "source": {
+        "file": "src/App.tsx",
+        "line": 212,
+        "column": 16
+      },
+      "api": "authorTasks.openTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "route"
+      ],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/App.tsx:1208:60:call",
+      "source": {
+        "file": "src/App.tsx",
+        "line": 1208,
+        "column": 60
+      },
+      "api": "authorTasks.openTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "authorExperience"
+      ],
+      "route_expression": "{\n                type: \"feature\",\n                feature,\n                workspace,\n                data,\n              }",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/App.tsx:1216:28:call",
+      "source": {
+        "file": "src/App.tsx",
+        "line": 1216,
+        "column": 28
+      },
+      "api": "authorTasks.openTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "route",
+        "authorExperience"
+      ],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/author/search/authorSearch.ts:65:25:call",
+      "source": {
+        "file": "src/author/search/authorSearch.ts",
+        "line": 65,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n          type: \"feature\",\n          feature: \"project\",\n          workspace: \"settings\",\n          data: { section: section.id },\n        }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "project.settings"
+    },
+    {
+      "id": "src/author/search/authorSearch.ts:84:22:call",
+      "source": {
+        "file": "src/author/search/authorSearch.ts",
+        "line": 84,
+        "column": 22
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "route",
+        "provider.createRoute"
+      ],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/author/search/authorSearch.ts:97:27:call",
+      "source": {
+        "file": "src/author/search/authorSearch.ts",
+        "line": 97,
+        "column": 27
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/author/settings/ProjectSettingsWorkspace.tsx:22:25:call",
+      "source": {
+        "file": "src/author/settings/ProjectSettingsWorkspace.tsx",
+        "line": 22,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": "src/author/settings/ProjectSettingsWorkspace.tsx:16:16",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "section.route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/author/tools/projectTools.ts:14:23:call",
+      "source": {
+        "file": "src/author/tools/projectTools.ts",
+        "line": 14,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"workspace\", view: \"navigation\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "workspace.navigation"
+    },
+    {
+      "id": "src/author/tools/projectTools.ts:27:23:call",
+      "source": {
+        "file": "src/author/tools/projectTools.ts",
+        "line": 27,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"project\", workspace: \"settings\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "project.settings"
+    },
+    {
+      "id": "src/author/tools/projectTools.ts:40:23:call",
+      "source": {
+        "file": "src/author/tools/projectTools.ts",
+        "line": 40,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"workspace\", view: \"history\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "workspace.history"
+    },
+    {
+      "id": "src/author/tools/projectTools.ts:53:23:call",
+      "source": {
+        "file": "src/author/tools/projectTools.ts",
+        "line": 53,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"project\", workspace: \"transfer\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "project.transfer"
+    },
+    {
+      "id": "src/author/workspace/AuthorWorkspaceHost.tsx:233:25:call",
+      "source": {
+        "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+        "line": 233,
+        "column": 25
+      },
+      "api": "shared.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/commands/author/commandWorkspace.tsx:310:7:call",
+      "source": {
+        "file": "src/features/commands/author/commandWorkspace.tsx",
+        "line": 310,
+        "column": 7
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n        type: \"feature\",\n        feature: \"commands\",\n        workspace: \"target-behaviors\",\n        data: { sourceKind, operation: targetAction.operation, commandLabel: normalized.label },\n      }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.target-behaviors"
+    },
+    {
+      "id": "src/features/commands/author/manifest.tsx:52:23:call",
+      "source": {
+        "file": "src/features/commands/author/manifest.tsx",
+        "line": 52,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"interactions\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.interactions"
+    },
+    {
+      "id": "src/features/commands/author/manifest.tsx:64:23:call",
+      "source": {
+        "file": "src/features/commands/author/manifest.tsx",
+        "line": 64,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"grammar\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.grammar"
+    },
+    {
+      "id": "src/features/commands/author/manifest.tsx:72:23:call",
+      "source": {
+        "file": "src/features/commands/author/manifest.tsx",
+        "line": 72,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"references\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.references"
+    },
+    {
+      "id": "src/features/commands/author/manifest.tsx:80:23:call",
+      "source": {
+        "file": "src/features/commands/author/manifest.tsx",
+        "line": 80,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\" as const, feature: \"commands\", workspace: \"command\", data: { commandId: command.id } }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.command"
+    },
+    {
+      "id": "src/features/commands/author/structuredWorkspaces.ts:98:25:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 98,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"commands\", workspace: \"command\", data: { commandId: \"new\" } }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "commands.command"
+    },
+    {
+      "id": "src/features/commands/author/structuredWorkspaces.ts:277:29:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 277,
+        "column": 29
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "commands-target-behaviors",
+      "origin_control_id": "src/features/commands/author/structuredWorkspaces.ts:269:42",
+      "control_kind": "declarative.list",
+      "control_label": "Targets",
+      "source_guards": [
+        "adapter && targets.length"
+      ],
+      "route_expression": "adapter.editRoute(target.id, operation)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/commands/author/structuredWorkspaces.ts:295:25:call",
+      "source": {
+        "file": "src/features/commands/author/structuredWorkspaces.ts",
+        "line": 295,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [
+        "adapter?.createRoute"
+      ],
+      "route_expression": "adapter.createRoute!(operation)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/bodyWorkspaces.tsx:172:46:call",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 172,
+        "column": 46
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-body-types",
+      "origin_control_id": "src/features/inventory/author/bodyWorkspaces.tsx:172:9",
+      "control_kind": "jsx.button",
+      "control_label": "[+ BODY TYPE]",
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"body-type\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/bodyWorkspaces.tsx:176:93:call",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 176,
+        "column": 93
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-body-types",
+      "origin_control_id": "src/features/inventory/author/bodyWorkspaces.tsx:176:13",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"body-type\", bodyType.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/bodyWorkspaces.tsx:219:53:call",
+      "source": {
+        "file": "src/features/inventory/author/bodyWorkspaces.tsx",
+        "line": 219,
+        "column": 53
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "bodySlotRoute(draft.bodyType, slot)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/equipmentWorkspaces.tsx:215:73:call",
+      "source": {
+        "file": "src/features/inventory/author/equipmentWorkspaces.tsx",
+        "line": 215,
+        "column": 73
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n      type: \"feature\",\n      feature: \"inventory\",\n      workspace: \"item-equipment-placement\",\n      data: {\n        itemName: route.data?.itemName ?? \"Item\",\n        ...(placement ? { placement: JSON.stringify(placement) } : {}),\n      },\n    }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "inventory.item-equipment-placement"
+    },
+    {
+      "id": "src/features/inventory/author/hubWorkspace.tsx:25:50:call",
+      "source": {
+        "file": "src/features/inventory/author/hubWorkspace.tsx",
+        "line": 25,
+        "column": 50
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-author-hub",
+      "origin_control_id": "src/features/inventory/author/hubWorkspace.tsx:25:13",
+      "control_kind": "jsx.button",
+      "control_label": "[+ ITEM]",
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"item\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/hubWorkspace.tsx:30:30:call",
+      "source": {
+        "file": "src/features/inventory/author/hubWorkspace.tsx",
+        "line": 30,
+        "column": 30
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-author-hub",
+      "origin_control_id": "src/features/inventory/author/hubWorkspace.tsx:26:51",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"item\", item.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/hubWorkspace.tsx:48:50:call",
+      "source": {
+        "file": "src/features/inventory/author/hubWorkspace.tsx",
+        "line": 48,
+        "column": 50
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-author-hub",
+      "origin_control_id": "src/features/inventory/author/hubWorkspace.tsx:48:13",
+      "control_kind": "jsx.button",
+      "control_label": "[+ BODY TYPE]",
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"body-type\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/hubWorkspace.tsx:56:32:call",
+      "source": {
+        "file": "src/features/inventory/author/hubWorkspace.tsx",
+        "line": 56,
+        "column": 32
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-author-hub",
+      "origin_control_id": "src/features/inventory/author/hubWorkspace.tsx:52:22",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"body-type\", bodyType.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/tools.ts:15:23:call",
+      "source": {
+        "file": "src/features/inventory/author/tools.ts",
+        "line": 15,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"inventory\", workspace: \"inventory\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "inventory.inventory"
+    },
+    {
+      "id": "src/features/inventory/author/tools.ts:27:21:call",
+      "source": {
+        "file": "src/features/inventory/author/tools.ts",
+        "line": 27,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"inventory\", workspace: \"inventory\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "inventory.inventory"
+    },
+    {
+      "id": "src/features/inventory/author/tools.ts:35:21:call",
+      "source": {
+        "file": "src/features/inventory/author/tools.ts",
+        "line": 35,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"inventory\", workspace: \"inventory\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "inventory.inventory"
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:48:46:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 48,
+        "column": 46
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-items",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:48:9",
+      "control_kind": "jsx.button",
+      "control_label": "[+ ITEM]",
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"item\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:50:91:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 50,
+        "column": 91
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-items",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:50:11",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"item\", item.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:55:50:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 55,
+        "column": 50
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "inventory-items",
+      "origin_control_id": "src/features/inventory/author/workspaces.tsx:55:13",
+      "control_kind": "jsx.button",
+      "control_label": "[EDIT]",
+      "source_guards": [],
+      "route_expression": "inventoryRoute(\"item\", item.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/inventory/author/workspaces.tsx:95:33:call",
+      "source": {
+        "file": "src/features/inventory/author/workspaces.tsx",
+        "line": 95,
+        "column": 33
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "equipmentPolicyRoute(draft)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/media/author/structuredWorkspaces.tsx:26:58:call",
+      "source": {
+        "file": "src/features/media/author/structuredWorkspaces.tsx",
+        "line": 26,
+        "column": 58
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "media-assets",
+      "origin_control_id": "src/features/media/author/structuredWorkspaces.tsx:20:16",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n            type: \"feature\",\n            feature: \"media\",\n            workspace: authoringMode === \"vector-grid\" ? \"vector-asset\" : \"asset\",\n            data: { assetId, kind },\n          }",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/media/author/structuredWorkspaces.tsx:38:39:call",
+      "source": {
+        "file": "src/features/media/author/structuredWorkspaces.tsx",
+        "line": 38,
+        "column": 39
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "media-assets",
+      "origin_control_id": "src/features/media/author/structuredWorkspaces.tsx:20:16",
+      "control_kind": "declarative.custom",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "route",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/media/author/structuredWorkspaces.tsx:80:25:call",
+      "source": {
+        "file": "src/features/media/author/structuredWorkspaces.tsx",
+        "line": 80,
+        "column": 25
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n          type: \"feature\",\n          feature: \"media\",\n          workspace: \"synth-sound\",\n          data: { soundId: \"new\" },\n        }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.synth-sound"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:15:23:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 15,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"assets\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.assets"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:28:23:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 28,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"synth\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.synth"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:41:23:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 41,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"compositions\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.compositions"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:53:21:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 53,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"compositions\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.compositions"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:61:21:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 61,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"synth\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.synth"
+    },
+    {
+      "id": "src/features/media/author/tools.ts:69:21:call",
+      "source": {
+        "file": "src/features/media/author/tools.ts",
+        "line": 69,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"media\", workspace: \"assets\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "media.assets"
+    },
+    {
+      "id": "src/features/narrative/author/manifest.tsx:147:9:call",
+      "source": {
+        "file": "src/features/narrative/author/manifest.tsx",
+        "line": 147,
+        "column": 9
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n          type: \"feature\",\n          feature: \"narrative\",\n          workspace: \"node\",\n          data: { nodeId: interaction.sourceNodeId },\n        }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "narrative.node"
+    },
+    {
+      "id": "src/features/narrative/author/manifest.tsx:154:9:call",
+      "source": {
+        "file": "src/features/narrative/author/manifest.tsx",
+        "line": 154,
+        "column": 9
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n          type: \"feature\",\n          feature: \"narrative\",\n          workspace: \"interaction\",\n          data: {\n            interactionId: interaction.id,\n            ...(directOutcomeId ? { outcomeId: directOutcomeId } : {}),\n          },\n        }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "narrative.interaction"
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:319:7:call",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 319,
+        "column": 7
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "inputRoute(draft.node.id, interactionId, fallback)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/narrative/author/nodeWorkspace.tsx:322:7:call",
+      "source": {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "line": 322,
+        "column": 7
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n        type: \"feature\",\n        feature: \"narrative\",\n        workspace: \"node\",\n        data: {\n          resourceTask: \"node\",\n          inheritContextFromNodeId: draft.node.id,\n        },\n      }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "narrative.node"
+    },
+    {
+      "id": "src/features/narrative/author/tools.ts:13:21:call",
+      "source": {
+        "file": "src/features/narrative/author/tools.ts",
+        "line": 13,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"narrative\", workspace: \"structure\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "narrative.structure"
+    },
+    {
+      "id": "src/features/narrative/author/tools.ts:20:26:call",
+      "source": {
+        "file": "src/features/narrative/author/tools.ts",
+        "line": 20,
+        "column": 26
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{\n    type: \"feature\" as const,\n    feature: \"narrative\",\n    workspace: \"node\",\n    data: { nodeId: currentNode.id },\n  }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "narrative.node"
+    },
+    {
+      "id": "src/features/radix/author/manifest.tsx:67:23:call",
+      "source": {
+        "file": "src/features/radix/author/manifest.tsx",
+        "line": 67,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"radix\", workspace: \"sequences\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "radix.sequences"
+    },
+    {
+      "id": "src/features/radix/author/workspaces.tsx:65:23:call",
+      "source": {
+        "file": "src/features/radix/author/workspaces.tsx",
+        "line": 65,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"radix\", workspace: \"sequence\", data: { sequenceId: \"new\" } }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "radix.sequence"
+    },
+    {
+      "id": "src/features/state/author/statusWorkspace.tsx:53:52:call",
+      "source": {
+        "file": "src/features/state/author/statusWorkspace.tsx",
+        "line": 53,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-status-author",
+      "origin_control_id": "src/features/state/author/statusWorkspace.tsx:53:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ GROUP]",
+      "source_guards": [],
+      "route_expression": "stateResourceRoute(\"state-group\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/statusWorkspace.tsx:54:52:call",
+      "source": {
+        "file": "src/features/state/author/statusWorkspace.tsx",
+        "line": 54,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-status-author",
+      "origin_control_id": "src/features/state/author/statusWorkspace.tsx:54:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ VARIABLE]",
+      "source_guards": [],
+      "route_expression": "stateResourceRoute(\"variable\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/statusWorkspace.tsx:70:54:call",
+      "source": {
+        "file": "src/features/state/author/statusWorkspace.tsx",
+        "line": 70,
+        "column": 54
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-status-author",
+      "origin_control_id": "src/features/state/author/statusWorkspace.tsx:70:17",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "stateResourceRoute(\"state-group\", group.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/statusWorkspace.tsx:80:96:call",
+      "source": {
+        "file": "src/features/state/author/statusWorkspace.tsx",
+        "line": 80,
+        "column": 96
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-status-author",
+      "origin_control_id": "src/features/state/author/statusWorkspace.tsx:80:26",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "stateResourceRoute(kind, definition.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/tools.ts:15:23:call",
+      "source": {
+        "file": "src/features/state/author/tools.ts",
+        "line": 15,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"state\", workspace: \"definitions\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "state.definitions"
+    },
+    {
+      "id": "src/features/state/author/tools.ts:28:23:call",
+      "source": {
+        "file": "src/features/state/author/tools.ts",
+        "line": 28,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"state\", workspace: \"status\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "state.status"
+    },
+    {
+      "id": "src/features/state/author/tools.ts:40:21:call",
+      "source": {
+        "file": "src/features/state/author/tools.ts",
+        "line": 40,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"state\", workspace: \"definitions\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "state.definitions"
+    },
+    {
+      "id": "src/features/state/author/tools.ts:48:21:call",
+      "source": {
+        "file": "src/features/state/author/tools.ts",
+        "line": 48,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "{ type: \"feature\", feature: \"state\", workspace: \"status\" }",
+      "reason": "source-workspace-unbound",
+      "candidate_route": "state.status"
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:270:52:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 270,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:270:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ VARIABLE]",
+      "source_guards": [],
+      "route_expression": "stateRoute(\"variable\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:271:52:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 271,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:271:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ FLAG]",
+      "source_guards": [],
+      "route_expression": "stateRoute(\"flag\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:272:52:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 272,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:272:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ COMPUTED]",
+      "source_guards": [],
+      "route_expression": "stateRoute(\"computed\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:274:118:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 274,
+        "column": 118
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:274:61",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "stateRoute(\"variable\", definition.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:277:123:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 277,
+        "column": 123
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:277:66",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "stateRoute(\"computed\", definition.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:293:52:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 293,
+        "column": 52
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:293:15",
+      "control_kind": "jsx.button",
+      "control_label": "[+ GROUP]",
+      "source_guards": [],
+      "route_expression": "stateRoute(\"state-group\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/state/author/workspaces.tsx:299:74:call",
+      "source": {
+        "file": "src/features/state/author/workspaces.tsx",
+        "line": 299,
+        "column": 74
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "state-library",
+      "origin_control_id": "src/features/state/author/workspaces.tsx:299:22",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "stateRoute(\"state-group\", group.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:46:88:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 46,
+        "column": 88
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-library",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:42:7",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "worldEntityRoute(\"character\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:47:86:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 47,
+        "column": 86
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-library",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:42:7",
+      "control_kind": "declarative.action-row",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "worldEntityRoute(\"location\")",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:55:107:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 55,
+        "column": 107
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-library",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:55:54",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "worldEntityRoute(entity.type, entity.id)",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/entityWorkspaces.tsx:254:137:call",
+      "source": {
+        "file": "src/features/world/author/entityWorkspaces.tsx",
+        "line": 254,
+        "column": 137
+      },
+      "api": "context.pushTask",
+      "origin_workspace": "world-entity",
+      "origin_control_id": "src/features/world/author/entityWorkspaces.tsx:254:19",
+      "control_kind": "jsx.button",
+      "control_label": null,
+      "source_guards": [
+        "reference.route",
+        "usages.length"
+      ],
+      "route_expression": "reference.route!",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/manifest.ts:87:23:call",
+      "source": {
+        "file": "src/features/world/author/manifest.ts",
+        "line": 87,
+        "column": 23
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "WORLD_LIBRARY_ROUTE",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    },
+    {
+      "id": "src/features/world/author/manifest.ts:96:21:call",
+      "source": {
+        "file": "src/features/world/author/manifest.ts",
+        "line": 96,
+        "column": 21
+      },
+      "api": "context.pushTask",
+      "origin_workspace": null,
+      "origin_control_id": null,
+      "control_kind": null,
+      "control_label": null,
+      "source_guards": [],
+      "route_expression": "WORLD_LIBRARY_ROUTE",
+      "reason": "computed-or-indirect-route",
+      "candidate_route": null
+    }
+  ]
+}
