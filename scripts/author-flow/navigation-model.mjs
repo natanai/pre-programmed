@@ -324,7 +324,7 @@ function traceNestedRoundTrip(model,from,chain,readFile) {
     }
     const edge=choices[0],provider=model.resource_providers.find(p=>p.kind===kind);
     const bindings=model.workspace_route_bindings.filter(b=>b.from===edge.to);
-    if(!provider||provider.create.route!==edge.to){
+    if(!provider||"route:"+provider.create.route!==edge.to){
       unknown.push({at:cursor,kind,reason:"canonical-provider-route-mismatch"});
       break;
     }
