@@ -1,11 +1,11 @@
-import { AuthorHelp } from "../../../author/ui/AuthorHelp";
-import { useEffect, useState } from "react";
 import { referencesTo } from "../../../author/references/projectReferences";
 import { defineAuthorWorkspace } from "../../../author/ui/workspaceDefinition";
+import { repositoryPremidiAssets } from "../ui/premidiRepository";
 import { parse, filename, type PremidiComposition } from "../vendor/premidi-schema.js";
 import { play } from "../vendor/premidi-audio.js";
-import { unlockProceduralAudio } from "../ui/proceduralTone";
 
+// Legacy v2 project music is still readable/exportable. This screen does not
+// create or upload music: current scores live in discovered repository Assets.
 function download(doc: PremidiComposition) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(doc, null, 2)], { type: "application/json" }));
   const link = document.createElement("a");
@@ -14,90 +14,6 @@ function download(doc: PremidiComposition) {
   link.click();
   window.setTimeout(() => URL.revokeObjectURL(url), 10_000);
 }
-
-function ImportComposition({ onImport }: { onImport: (doc: PremidiComposition) => Promise<string> }) {
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [modernPlaying, setModernPlaying] = useState(false);
-  useEffect(() => () => { modernPreviewSession?.stop(); modernPreviewSession = null; }, []);
-  return <div className="media-premidi-import">
-    <label>
-      IMPORT .PREMIDI
-      <input
-        type="file"
-        accept=".premidi,application/json"
-        disabled={busy}
-        onChange={async (event) => {
-          const file = event.currentTarget.files?.[0];
-          if (!file) return;
-          const input = event.currentTarget;
-          setBusy(true);
-          try {
-            if (file.size > 1_000_000) throw new Error("Composition file exceeds the 1 MB limit.");
-            const composition = parse(await file.text());
-            setMessage(await onImport(composition));
-          } catch (error) {
-            setMessage(error instanceof Error ? error.message : "Import failed.");
-          } finally {
-            input.value = "";
-            setBusy(false);
-          }
-        }}
-      />
-    </label>
-    <AuthorHelp label="About importing compositions" text="A .premidi file stores a playable music score, not a recording. Compose it in pre-midi, then import it into this project." />
-    <label>
-      PREVIEW MODERN .PREMIDI (EXPERIMENTAL)
-      <input
-        type="file"
-        accept=".premidi,application/json"
-        disabled={busy}
-        onChange={async (event) => {
-          const file = event.currentTarget.files?.[0];
-          if (!file) return;
-          // Request Web Audio access while the user-selected file gesture is active.
-          const audioReady = unlockProceduralAudio();
-          event.currentTarget.value = "";
-          setBusy(true);
-          try {
-            if (!(await audioReady)) throw Error("Audio output was not unlocked.");
-            if (file.size > 8_000_000) throw Error("Modern score exceeds the 8 MB preview limit.");
-            const { parseModernPremidi } = await import("../modernPremidiPlan");
-            const plan = parseModernPremidi(await file.text());
-            const { playModernPremidi } = await import("../ui/modernPremidiPlayback");
-            modernPreviewSession?.stop();
-            modernPreviewSession = await playModernPremidi(plan);
-            const playing = modernPreviewSession;
-            setModernPlaying(true);
-            void playing.finished.then(() => {
-              if (modernPreviewSession === playing) {
-                modernPreviewSession = null;
-                setModernPlaying(false);
-              }
-            });
-            setMessage("Previewing " + plan.title + " · " + plan.kind +
-              " · experimental playback only, not saved to the game.");
-          } catch (error) {
-            setMessage(error instanceof Error ? error.message : "Modern preview failed.");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
-    </label>
-    {modernPlaying ? <button type="button" onClick={() => {
-      modernPreviewSession?.stop();
-      modernPreviewSession = null;
-      setModernPlaying(false);
-      setMessage("Preview stopped. No changes saved.");
-    }}>STOP MODERN PREVIEW</button> : null}
-    <AuthorHelp label="Modern music preview limits"
-      text="Audition synth-only Beat v7 or Song v8 files. This does not import or save them. Samples, advanced effects, modulation, pitch bends and vocals are not yet supported. Existing v2 music stays unchanged." />
-    {message ? <p role="status">{message}</p> : null}
-  </div>;
-}
-
-let modernPreviewSession: { stop: () => void; finished: Promise<void> } | null = null;
 let previewSession: { stop: () => void } | null = null;
 async function preview(composition: PremidiComposition) {
   previewSession?.stop();
@@ -108,47 +24,51 @@ export const mediaCompositionsWorkspace = defineAuthorWorkspace({
   id: "media-premidi-library",
   matches: (route) => route.type === "feature" && route.feature === "media" && route.workspace === "compositions",
   createDraft: () => ({}),
-  buildSpec: ({ context }) => ({
-    id: "media-premidi-library",
-    title: "Compositions",
-    context: String(context.snapshot.mediaCompositions?.length ?? 0) + " native scores",
-    blocks: [{
-      type: "custom",
-      id: "media-premidi-import-control",
-      role: "specialized-control",
-      content: <ImportComposition onImport={async (composition) => {
-        const exists = context.snapshot.mediaCompositions?.some((entry) => entry.id === composition.id);
-        if (exists && !window.confirm("Replace existing composition " + composition.title + "? Existing references will keep the same ID.")) {
-          return "Import canceled. The original composition was not changed.";
-        }
-        const result = await context.persist(
-          [{ type: "premidi.upsert", composition }],
-          (exists ? "Updated " : "Imported ") + composition.title,
-        );
-        if (result.status === "saved" || result.status === "queued") return "Imported " + composition.title + ".";
-        throw new Error(result.status === "conflict"
-          ? "The project changed during import. Please try again."
-          : result.message ?? "The composition could not be saved.");
-      }} />,
-    }, ...(context.snapshot.mediaCompositions?.length ? [{
-      type: "list" as const,
-      id: "media-premidi-list",
-      label: "Compositions",
-      items: context.snapshot.mediaCompositions.map((composition) => ({
-        id: "premidi:" + composition.id,
-        label: composition.title,
-        detail: composition.instruments.length + " instruments · " + composition.bars + " bars · " + composition.bpm + " BPM",
-        onAction: () => context.pushTask({
-          type: "feature", feature: "media", workspace: "composition",
-          data: { compositionId: composition.id },
-        }),
-      })),
-    }] : [{
-      type: "status" as const,
-      id: "media-premidi-empty",
-      text: "No native compositions yet. Export a .premidi from pre-midi and import it here.",
-    }])],
-  }),
+  buildSpec: ({ context }) => {
+    const files = repositoryPremidiAssets(context.snapshot);
+    const legacy = context.snapshot.mediaCompositions ?? [];
+    return {
+      id: "media-premidi-library",
+      title: "Compositions",
+      context: `${files.length} music file${files.length === 1 ? "" : "s"}`,
+      blocks: [
+        {
+          type: "status",
+          id: "media-premidi-discovery",
+          text: "Music is discovered automatically from assets/ beside the portable application when it launches, or public/assets/ at website build time. No upload or import is needed.",
+        },
+        ...(files.length || legacy.length ? [{
+          type: "list" as const,
+          id: "media-premidi-list",
+          label: "Compositions",
+          items: [
+            ...files.map((asset) => ({
+              id: "premidi-file:" + asset.id,
+              label: asset.name,
+              detail: "Repository .premidi · " + asset.byteLength + " bytes",
+              onAction: () => context.pushTask({
+                type: "feature", feature: "media", workspace: "asset",
+                data: { assetId: asset.id, kind: "audio" },
+              }),
+            })),
+            ...legacy.map((composition) => ({
+              id: "premidi-legacy:" + composition.id,
+              label: composition.title,
+              detail: "Legacy v2 · " + composition.instruments.length + " instruments",
+              onAction: () => context.pushTask({
+                type: "feature", feature: "media", workspace: "composition",
+                data: { compositionId: composition.id },
+              }),
+            })),
+          ],
+        }] : [{
+          type: "status" as const,
+          id: "media-premidi-empty",
+          text: "No .premidi files were found in the installation's assets folder.",
+        }]),
+      ],
+    };
+  },
 });
 
 export const mediaCompositionWorkspace = defineAuthorWorkspace({
@@ -174,7 +94,7 @@ export const mediaCompositionWorkspace = defineAuthorWorkspace({
         children: [
           { type: "status", id: "premidi-summary", text: composition.instruments.length + " instruments · " + composition.bars + " bars · " + composition.bpm + " BPM" },
           { type: "status", id: "premidi-id", text: "STABLE MEDIA ID · " + composition.id },
-          { type: "status", id: "premidi-editing", text: "Edit notes, chunks and instrument settings in pre-midi, then reimport with the same ID to update this resource without breaking references." },
+          { type: "status", id: "premidi-editing", text: "This is a legacy v2 score already saved in this project. New .premidi music is discovered from the assets folder instead of being imported into the project." },
         ],
       }],
       actions: [
