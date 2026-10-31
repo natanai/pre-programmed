@@ -113,9 +113,12 @@ function prepareBeat(beat:unknown){
  }
  return {data:beat,instruments};
 }
-function eventsFromBeat(prepared:ReturnType<typeof prepareBeat>,localStep:number){
- const out:{instrument:any;sound:any;note:any}[]=[];
- const beat=prepared.data;
+type BeatEvent={step:number;instrument:any;sound:any;note:any};
+function compileBeatEvents(prepared:ReturnType<typeof prepareBeat>):BeatEvent[]{
+ const out:BeatEvent[]=[],beat=prepared.data;
+ const maxStep=beat.bars*16;
+ // Compile the authored Chunk placements once. The previous per-step scan
+ // multiplied work by every Song Clip and by every 16th-step of playback.
  for(const {data:inst,chunks,sounds} of prepared.instruments){
   for(let bar=0;bar<beat.bars;bar++){
    const chunk=chunks.get(inst.timeline[bar]);if(!chunk)continue;
@@ -124,17 +127,19 @@ function eventsFromBeat(prepared:ReturnType<typeof prepareBeat>,localStep:number
    requireFeature(integer(offset,0,15)&&integer(length,1,16)&&integer(every,1,256)&&
     integer(repeats,1,32),"invalid Chunk placement");
    for(let repeat=0;repeat<repeats;repeat++){
-    const at=bar*16+offset+every*repeat,relative=localStep-at;
-    if(at>=beat.bars*16)break;
-    if(relative<0||relative>=length)continue;
-    for(const note of chunk.notes)if(note.start===relative){
+    const at=bar*16+offset+every*repeat;
+    if(at>=maxStep)break;
+    for(const note of chunk.notes)if(note.start<length){
+     const step=at+note.start;
+     if(step>=maxStep)continue;
      const sound=inst.layout==="rack"?sounds.get(note.soundId):inst.sounds[0];
-     if(sound)out.push({instrument:inst,sound,note});
+     if(sound)out.push({step,instrument:inst,sound,note});
+     requireFeature(out.length<=MAX_EVENTS,"Beat exceeds event budget");
     }
    }
   }
  }
- return out;
+ return out.sort((a,b)=>a.step-b.step);
 }
 function planInput(input:unknown){
  requireFeature(object(input)&&input.format==="pre-midi","not a pre-midi document");
@@ -151,11 +156,13 @@ function planInput(input:unknown){
    requireFeature(!beats.has(prepared.data.id),"duplicate Beat identity");
    beats.set(prepared.data.id,prepared);
   }
-  let durationSteps=0;
+  let durationSteps=0,clipCount=0;
   for(const track of input.tracks){
    requireFeature(object(track)&&track.kind==="beat"&&name(track.id)&&Array.isArray(track.clips),
     "vocal or invalid Song Track is not supported");
    for(const clip of track.clips){
+    clipCount++;
+    requireFeature(clipCount<=256,"Song exceeds the 256-Clip preview limit");
     requireFeature(object(clip)&&name(clip.id)&&beats.has(clip.beatId)&&
      integer(clip.startStep,0,4096)&&integer(clip.lengthSteps,1,4096),"invalid Song Beat Clip");
     durationSteps=Math.max(durationSteps,clip.startStep+clip.lengthSteps);
@@ -172,28 +179,31 @@ export function planModernPremidi(input:unknown):PrototypePlan{
  const bpm=source.data.bpm,unit=60/bpm/4;
  requireFeature(source.durationSteps*unit<=MAX_DURATION_SECONDS,"preview exceeds the 15-minute duration bound");
  const events:PrototypeEvent[]=[];
- for(let step=0;step<source.durationSteps;step++){
-  const entries:{prepared:ReturnType<typeof prepareBeat>;local:number;trackId:string|null;clipId:string|null}[]=[];
-  if(source.kind==="beat"){
-   entries.push({prepared:source.beats.values().next().value!,local:step,trackId:null,clipId:null});
-  }else for(const track of source.data.tracks)for(const clip of track.clips){
-   if(step<clip.startStep||step>=clip.startStep+clip.lengthSteps)continue;
-   const prepared=source.beats.get(clip.beatId)!;
-   entries.push({prepared,local:(step-clip.startStep)%(prepared.data.bars*16),trackId:track.id,clipId:clip.id});
-  }
-  for(const entry of entries)for(const e of eventsFromBeat(entry.prepared,entry.local)){
-   const patch=e.sound.patch as PrototypePatch;
-   // Rack hits use a short one-shot gate, just like pre-midi's synth Rack.
-   const steps=entry.prepared.data.kind==="song"?1:e.note.duration;
-   const duration=e.instrument.layout==="rack"?
-    Math.max(.015,patch.envelope.attack+patch.envelope.decay):steps*unit;
-   events.push({step,time:step*unit,duration,pitch:e.instrument.layout==="rack"?e.sound.referencePitch:e.note.pitch,
-    velocity:e.note.velocity,level:e.instrument.volume*e.sound.gain,patch,
-    beatId:entry.prepared.data.id,trackId:entry.trackId,clipId:entry.clipId,
-    instrumentId:e.instrument.id,soundId:e.sound.id});
-   requireFeature(events.length<=MAX_EVENTS,"score has too many events for the prototype");
+ const compiled=new Map([...source.beats].map(([id,beat])=>[id,compileBeatEvents(beat)]));
+ const add=(event:BeatEvent,step:number,beatId:string,trackId:string|null,clipId:string|null)=>{
+  const {note,sound,instrument}=event,patch=sound.patch as PrototypePatch;
+  const duration=instrument.layout==="rack"?
+   Math.max(.015,patch.envelope.attack+patch.envelope.decay):note.duration*unit;
+  events.push({step,time:step*unit,duration,pitch:instrument.layout==="rack"?sound.referencePitch:note.pitch,
+   velocity:note.velocity,level:instrument.volume*sound.gain,patch,
+   beatId,trackId,clipId,instrumentId:instrument.id,soundId:sound.id});
+  requireFeature(events.length<=MAX_EVENTS,"score exceeds the 16,384-event preview limit");
+ };
+ if(source.kind==="beat"){
+  for(const event of compiled.values().next().value!)add(event,event.step,source.data.id,null,null);
+ }else for(const track of source.data.tracks)for(const clip of track.clips){
+  const prepared=source.beats.get(clip.beatId)!;
+  const eventsInBeat=compiled.get(clip.beatId)!;
+  const beatLength=prepared.data.bars*16;
+  for(let offset=0;offset<clip.lengthSteps;offset+=beatLength){
+   for(const event of eventsInBeat){
+    const step=clip.startStep+offset+event.step;
+    if(event.step+offset>=clip.lengthSteps)break;
+    add(event,step,clip.beatId,track.id,clip.id);
+   }
   }
  }
+ events.sort((a,b)=>a.step-b.step);
  return {version:source.version,kind:source.kind,title:source.data.title,bpm,
   durationSteps:source.durationSteps,durationSeconds:source.durationSteps*unit,
   events,capabilities:["v7 synth Beat","v8 Beat Clips","two simple oscillator slots","ADSR","static filter","pan","Chunk placements","synthetic Racks"]};
