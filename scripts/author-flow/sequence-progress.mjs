@@ -29,7 +29,7 @@ for(const viewport of ["desktop","mobile"]){
     oldFixture.viewport.height!==newFixture.viewport.height)throw Error("Fixture mismatch for "+viewport);
   const originStates=new Map(source.states.map(s=>[s.id,s]));
   const prefixes=new Map();
-  const prefixRank=list=>list.map(stable).join("|");
+  const prefixRank=list=>JSON.stringify(list);
   const set=(state,actions)=>{
     const prior=prefixes.get(state);
     if(!prior||actions.length<prior.length||
