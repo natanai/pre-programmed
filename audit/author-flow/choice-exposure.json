@@ -5,6 +5,846 @@
   "interpretation": "Direct controls and alternative select values are recorded separately. Alternatives may be inside closed dropdowns; their sum is not a count of simultaneously visible choices. No cognitive-load, enjoyment or information-theoretic probability estimate is asserted.",
   "groups": [
     {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "author-tools",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 15,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 12,
+          "p90": 12,
+          "max": 13
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1,
+          "p90": 2,
+          "max": 3
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 12,
+          "p90": 12,
+          "max": 13
+        },
+        "visible_controls": {
+          "min": 10,
+          "median": 13,
+          "p90": 13,
+          "max": 14
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:1caf69af8e3b116b",
+        "direct_pointer_controls": 13,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 13,
+        "visible_controls": 14,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "commands-grammar",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:846ccd881e634d4d",
+        "direct_pointer_controls": 11,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 11,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "commands-interactions",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:a431181ae23d9e87",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 10,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "inventory-author-hub",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "visible_controls": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:9508b0a863107015",
+        "direct_pointer_controls": 7,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 7,
+        "visible_controls": 7,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "media-assets",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 2,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 14,
+          "median": 14.5,
+          "p90": 15,
+          "max": 15
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1.5,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 14,
+          "median": 14.5,
+          "p90": 15,
+          "max": 15
+        },
+        "visible_controls": {
+          "min": 16,
+          "median": 16,
+          "p90": 16,
+          "max": 16
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:90c0611c265192e4",
+        "direct_pointer_controls": 15,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 15,
+        "visible_controls": 16,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "narrative-structure",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 9,
+          "p90": 9,
+          "max": 9
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 9,
+          "p90": 9,
+          "max": 9
+        },
+        "visible_controls": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:5de7bdbb40f66974",
+        "direct_pointer_controls": 9,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 9,
+        "visible_controls": 10,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "narrative.interaction",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 13,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 0,
+          "median": 13,
+          "p90": 18,
+          "max": 20
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 3,
+          "p90": 4,
+          "max": 5
+        },
+        "total_finite_action_alternatives": {
+          "min": 0,
+          "median": 13,
+          "p90": 18,
+          "max": 20
+        },
+        "visible_controls": {
+          "min": 0,
+          "median": 18,
+          "p90": 21,
+          "max": 22
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:32d7e5ae542f64a8",
+        "direct_pointer_controls": 20,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 20,
+        "visible_controls": 22,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "narrative.node",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 30,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 0,
+          "median": 14,
+          "p90": 15,
+          "max": 22
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 10,
+          "p90": 15,
+          "max": 20
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 2,
+          "p90": 3,
+          "max": 3
+        },
+        "total_finite_action_alternatives": {
+          "min": 0,
+          "median": 24.5,
+          "p90": 32,
+          "max": 35
+        },
+        "visible_controls": {
+          "min": 0,
+          "median": 22,
+          "p90": 24,
+          "max": 28
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:c99351ba6e927450",
+        "direct_pointer_controls": 15,
+        "dropdown_alternatives": 20,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 35,
+        "visible_controls": 23,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "state-group",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 8,
+          "median": 8,
+          "p90": 8,
+          "max": 8
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 2,
+          "median": 2,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 8,
+          "median": 8,
+          "p90": 8,
+          "max": 8
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:eec94fc8ea01cb74",
+        "direct_pointer_controls": 8,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 8,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "state-library",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "visible_controls": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:e697b34e1b8976f3",
+        "direct_pointer_controls": 13,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 13,
+        "visible_controls": 13,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "state-status-author",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 2,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "visible_controls": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:6cd1dd1e13b195fa",
+        "direct_pointer_controls": 9,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 9,
+        "visible_controls": 9,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "terminal-or-unidentified",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 20,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 3,
+          "median": 5,
+          "p90": 10,
+          "max": 11
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 3,
+          "p90": 3,
+          "max": 3
+        },
+        "total_finite_action_alternatives": {
+          "min": 3,
+          "median": 6,
+          "p90": 11,
+          "max": 11
+        },
+        "visible_controls": {
+          "min": 4,
+          "median": 9,
+          "p90": 12,
+          "max": 14
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:35872c1eaca0b561",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 1,
+        "unbounded_text_fields": 3,
+        "total_finite_action_alternatives": 11,
+        "visible_controls": 14,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "world-entity",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 12,
+          "median": 12,
+          "p90": 12,
+          "max": 12
+        },
+        "dropdown_alternatives": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 2,
+          "median": 2,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 25,
+          "median": 25,
+          "p90": 25,
+          "max": 25
+        },
+        "visible_controls": {
+          "min": 20,
+          "median": 20,
+          "p90": 20,
+          "max": 20
+        },
+        "scroll_regions": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:21180e81a9a22743",
+        "direct_pointer_controls": 12,
+        "dropdown_alternatives": 13,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 25,
+        "visible_controls": 20,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-desktop-frontier.json",
+      "workspace": "world-library",
+      "fixture": "author-audit-desktop-frontier",
+      "observed_states": 2,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "visible_controls": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:ccfad25e2a691210",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 10,
+        "visible_controls": 10,
+        "scroll_regions": 0
+      }
+    },
+    {
       "trace_file": "author-audit-desktop-navigation-close-keep-discard.json",
       "workspace": "narrative.node",
       "fixture": "author-audit-desktop-navigation-close-keep-discard",
@@ -2701,6 +3541,966 @@
         "unbounded_text_fields": 3,
         "total_finite_action_alternatives": 11,
         "visible_controls": 14,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "author-tools",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 17,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 12,
+          "p90": 12,
+          "max": 13
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 12,
+          "p90": 12,
+          "max": 13
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 13,
+          "p90": 13,
+          "max": 14
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:cf3d4c20b444f50f",
+        "direct_pointer_controls": 13,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 13,
+        "visible_controls": 14,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "commands-grammar",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:846ccd881e634d4d",
+        "direct_pointer_controls": 11,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 11,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "commands-interactions",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:a431181ae23d9e87",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 10,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "inventory-author-hub",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "visible_controls": {
+          "min": 7,
+          "median": 7,
+          "p90": 7,
+          "max": 7
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:9508b0a863107015",
+        "direct_pointer_controls": 7,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 7,
+        "visible_controls": 7,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "media-assets",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 15,
+          "median": 15,
+          "p90": 15,
+          "max": 15
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        },
+        "total_finite_action_alternatives": {
+          "min": 15,
+          "median": 15,
+          "p90": 15,
+          "max": 15
+        },
+        "visible_controls": {
+          "min": 16,
+          "median": 16,
+          "p90": 16,
+          "max": 16
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:90c0611c265192e4",
+        "direct_pointer_controls": 15,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 15,
+        "visible_controls": 16,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "media-synth-library",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 6,
+          "median": 6,
+          "p90": 6,
+          "max": 6
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 6,
+          "median": 6,
+          "p90": 6,
+          "max": 6
+        },
+        "visible_controls": {
+          "min": 6,
+          "median": 6,
+          "p90": 6,
+          "max": 6
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:f3a26915f4b1f50e",
+        "direct_pointer_controls": 6,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 6,
+        "visible_controls": 6,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "media-synth-sound",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 20,
+          "median": 20,
+          "p90": 20,
+          "max": 20
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 2,
+          "median": 2,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 20,
+          "median": 20,
+          "p90": 20,
+          "max": 20
+        },
+        "visible_controls": {
+          "min": 24,
+          "median": 24,
+          "p90": 24,
+          "max": 24
+        },
+        "scroll_regions": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:d2a58ccc32cc374d",
+        "direct_pointer_controls": 20,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 20,
+        "visible_controls": 24,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "narrative-structure",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 9,
+          "p90": 9,
+          "max": 9
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 9,
+          "p90": 9,
+          "max": 9
+        },
+        "visible_controls": {
+          "min": 10,
+          "median": 10,
+          "p90": 10,
+          "max": 10
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:5de7bdbb40f66974",
+        "direct_pointer_controls": 9,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 1,
+        "total_finite_action_alternatives": 9,
+        "visible_controls": 10,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "narrative.interaction",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 13,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 0,
+          "median": 13,
+          "p90": 23,
+          "max": 23
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 2,
+          "p90": 4,
+          "max": 4
+        },
+        "total_finite_action_alternatives": {
+          "min": 0,
+          "median": 13,
+          "p90": 23,
+          "max": 23
+        },
+        "visible_controls": {
+          "min": 0,
+          "median": 18,
+          "p90": 26,
+          "max": 26
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:498f3a6243931302",
+        "direct_pointer_controls": 23,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 23,
+        "visible_controls": 26,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "narrative.node",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 29,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 0,
+          "median": 14,
+          "p90": 16,
+          "max": 22
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 10,
+          "p90": 20,
+          "max": 20
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 2,
+          "p90": 3,
+          "max": 3
+        },
+        "total_finite_action_alternatives": {
+          "min": 0,
+          "median": 25,
+          "p90": 33,
+          "max": 35
+        },
+        "visible_controls": {
+          "min": 0,
+          "median": 23,
+          "p90": 25,
+          "max": 28
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:8625af164ae86e84",
+        "direct_pointer_controls": 15,
+        "dropdown_alternatives": 20,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 35,
+        "visible_controls": 24,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "state-group",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 8,
+          "median": 8,
+          "p90": 8,
+          "max": 8
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 2,
+          "median": 2,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 8,
+          "median": 8,
+          "p90": 8,
+          "max": 8
+        },
+        "visible_controls": {
+          "min": 11,
+          "median": 11,
+          "p90": 11,
+          "max": 11
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:eec94fc8ea01cb74",
+        "direct_pointer_controls": 8,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 8,
+        "visible_controls": 11,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "state-library",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "visible_controls": {
+          "min": 13,
+          "median": 13,
+          "p90": 13,
+          "max": 13
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:e697b34e1b8976f3",
+        "direct_pointer_controls": 13,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 13,
+        "visible_controls": 13,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "state-status-author",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 2,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "visible_controls": {
+          "min": 8,
+          "median": 8.5,
+          "p90": 9,
+          "max": 9
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:6cd1dd1e13b195fa",
+        "direct_pointer_controls": 9,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 9,
+        "visible_controls": 9,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "terminal-or-unidentified",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 20,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 3,
+          "median": 5,
+          "p90": 10,
+          "max": 11
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        },
+        "unbounded_text_fields": {
+          "min": 1,
+          "median": 3,
+          "p90": 3,
+          "max": 3
+        },
+        "total_finite_action_alternatives": {
+          "min": 3,
+          "median": 6,
+          "p90": 11,
+          "max": 11
+        },
+        "visible_controls": {
+          "min": 4,
+          "median": 9,
+          "p90": 12,
+          "max": 14
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:35872c1eaca0b561",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 1,
+        "unbounded_text_fields": 3,
+        "total_finite_action_alternatives": 11,
+        "visible_controls": 14,
+        "scroll_regions": 0
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "world-entity",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 1,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 12,
+          "median": 12,
+          "p90": 12,
+          "max": 12
+        },
+        "dropdown_alternatives": {
+          "min": 12,
+          "median": 12,
+          "p90": 12,
+          "max": 12
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 2,
+          "median": 2,
+          "p90": 2,
+          "max": 2
+        },
+        "total_finite_action_alternatives": {
+          "min": 24,
+          "median": 24,
+          "p90": 24,
+          "max": 24
+        },
+        "visible_controls": {
+          "min": 19,
+          "median": 19,
+          "p90": 19,
+          "max": 19
+        },
+        "scroll_regions": {
+          "min": 1,
+          "median": 1,
+          "p90": 1,
+          "max": 1
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:8751d6c91f30ed17",
+        "direct_pointer_controls": 12,
+        "dropdown_alternatives": 12,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 2,
+        "total_finite_action_alternatives": 24,
+        "visible_controls": 19,
+        "scroll_regions": 1
+      }
+    },
+    {
+      "trace_file": "author-audit-mobile-frontier.json",
+      "workspace": "world-library",
+      "fixture": "author-audit-mobile-frontier",
+      "observed_states": 2,
+      "distributions": {
+        "direct_pointer_controls": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "dropdown_alternatives": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "boolean_toggles": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "unbounded_text_fields": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        },
+        "total_finite_action_alternatives": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "visible_controls": {
+          "min": 9,
+          "median": 9.5,
+          "p90": 10,
+          "max": 10
+        },
+        "scroll_regions": {
+          "min": 0,
+          "median": 0,
+          "p90": 0,
+          "max": 0
+        }
+      },
+      "highest_finite_exposure": {
+        "state_id": "state:ccfad25e2a691210",
+        "direct_pointer_controls": 10,
+        "dropdown_alternatives": 0,
+        "boolean_toggles": 0,
+        "unbounded_text_fields": 0,
+        "total_finite_action_alternatives": 10,
+        "visible_controls": 10,
         "scroll_regions": 0
       }
     },
