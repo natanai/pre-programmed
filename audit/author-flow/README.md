@@ -70,7 +70,25 @@ The `--path` query uses ordinary graph traversal, following **only** declared ta
 
 The shared `ReferenceField` has two source-declared entry branches: **one pointer activation** can open Create directly when nothing is selected and no options exist; otherwise opening its chooser and selecting Create requires **two**. These are conditional subpaths, not universally guaranteed actions. The path JSON leaves `pointer_actions: null` because the actual rendered controls, content-dependent conditions, dirty-draft handling, and save/return behavior are not statically certified.
 
-The useful next step is to expose more of the owning resource/task contracts as **structured navigation decisions** so this graph can describe larger play → author → nested create → parent → play sequences with fewer unresolved edges. Check the real browser only at selected checkpoints where source/engine contracts cannot prove visual behavior or persistence. Do not turn these queries into automated browser exhaustions or new GitHub Actions.
+### Nested task lifecycle (source-only)
+
+The same generator now includes `task_lifecycle` source witnesses for the shared Author task stack and resource completion mechanisms: `pushTask`, `completeTask`, dirty-guarded Back and X, owner Save acceptance, typed resource results, and the reference field's parent handoff. Witnesses identify precise source files and lines. A missing source expression is recorded as `unresolved` rather than represented as a passed test.
+
+To query a conditional **create → nested create → Save child → handoff → Save parent → return** sequence without a browser:
+
+```sh
+# Visual novel: Node response/scene -> Character -> portrait Media -> Character -> Node
+node scripts/author-flow/navigation-model.mjs --roundtrip --from narrative.node --chain character,media-image
+
+# Branching RPG: Node -> Location -> Node
+node scripts/author-flow/navigation-model.mjs --roundtrip --from narrative.node --chain location
+```
+
+The `--roundtrip` JSON reports each source-associated reference field, canonical owning editor, conditional owner completion, reverse return order, and open/Save/X actions. It reports a **conditional control-activation subtotal** only when the chain and its shared source contracts can be resolved. This subtotal excludes the author's field edits, parent Save, conditional confirmations, and other UI steps. The exact completed-operation click count remains `null`.
+
+This is a *symbolic source-path derivation*, **not** a simulation of persistence, screen rendering, React state, dirty field values, or a successful Author session. In particular, this does not certify that a saved resource was durable, that the correct child was selected, or that the player actually resumed. Those require a targeted runtime/browser checkpoint. If a requested creation site is absent or ambiguous, the query emits `unresolved`, not an invented longer route.
+
+The useful next step is to expose more of the owning resource/task contracts as structured navigation decisions so the graph can describe more branches without guesswork. Check the real browser only at selected checkpoints where source/engine contracts cannot prove actual visual behavior or persistence. Do not turn these queries into automated browser exhaustions or new GitHub Actions.
 
 ## Deterministic observation protocol
 
