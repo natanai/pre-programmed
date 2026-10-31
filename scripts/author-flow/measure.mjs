@@ -20,7 +20,7 @@ const metric=(steps, state, file, replay, fixture)=>{
     select_changes:steps.filter(step=>step.action.event==="change").length,
     task_depth:state.ui.task_depth,
     form_control_visible:state.ui.visible_controls.some(c=>c.enabled&&["input","textarea","select"].includes(c.kind)),
-    save_control_visible:state.ui.visible_controls.some(c=>c.enabled&&/\\bSAVE\\b/i.test(c.label)),
+    save_control_visible:state.ui.visible_controls.some(c=>c.enabled&&/\bSAVE\b/i.test(c.label)),
     back_control_visible:state.ui.visible_controls.some(c=>c.enabled&&c.label==="[← BACK]"),
     observed_state:state.id
   };
@@ -61,7 +61,7 @@ const data={
   workspace_entries:[...best.values()].sort((a,b)=>a.fixture.localeCompare(b.fixture)||a.workspace.localeCompare(b.workspace))
 };
 const destination="audit/author-flow/access-costs.json";
-const text=JSON.stringify(data,null,2)+"\\n";
+const text=JSON.stringify(data,null,2)+"\n";
 if(process.argv.includes("--check")){
  if(!fs.existsSync(destination)||fs.readFileSync(destination,"utf8")!==text)throw Error("Access costs stale: node scripts/author-flow/measure.mjs");
  console.log("Verified observed access-cost ledger");
