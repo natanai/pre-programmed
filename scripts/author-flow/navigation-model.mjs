@@ -334,6 +334,8 @@ function traceNestedRoundTrip(model,from,chain,readFile) {
     }
     const binding=bindings[0];
     const completion=resourceSaveCompletionContract(model,edge.to,readFile);
+    if(!completion.some(entry=>entry.workspace===binding.to&&entry.status==="conditional-owner-completion-declared"))
+      unknown.push({at:binding.to,kind,reason:"owner-resource-completion-source-unconfirmed"});
     frames.push({
       parent_workspace:cursor,resource_kind:kind,
       reference_site:edge.source,canonical_provider:provider.owner,
@@ -359,6 +361,12 @@ function traceNestedRoundTrip(model,from,chain,readFile) {
     declared_child_task_opens:complete?frames.length:null,
     possible_pointer_actions_for_opening_references:complete?{lower:frames.length,upper:frames.length*2,assumes_each_reference_field_rendered:true}:null,
     possible_child_save_button_activations_if_all_enabled:complete?frames.length:null,
+    conditional_known_control_subtotal:complete?{
+      lower:frames.length*2+1,upper:frames.length*3+1,
+      includes:"nested Create controls, one enabled Save per child, and master X",
+      excludes:["field editing and typing","parent Save","dirty-leave confirmation","any intervening choices or dialogs"],
+      warning:"Only conditional source-declared controls, not a measured path or universal minimum.",
+    }:null,
     exact_total_pointer_actions:null,
     browser_verified:false,persistence_verified:false,parent_draft_verified:false,
     unresolved:unknown,
