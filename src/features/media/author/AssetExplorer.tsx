@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isPremidiAsset } from "../ui/premidiRepository";
 import { AuthorHelp } from "../../../author/ui/AuthorHelp";
 import type { ProjectSnapshot } from "../../../engine/project/model";
 import { configuredAssetStore } from "../ui/assetStore";
@@ -6,7 +7,7 @@ import { isVectorAsset, mediaAssetDimensions, type MediaAssetAuthoringMode, type
 import { buildProjectReferences, missingProjectReferences } from "../../../author/references/projectReferences";
 import type { AuthorTaskRoute } from "../../../author/tasks/types";
 
-type AssetFilter = "all" | "images" | "audio" | "vectors";
+type AssetFilter = "all" | "images" | "audio" | "music" | "vectors";
 type ListedAsset = ReturnType<typeof configuredAssetStore.list>[number];
 
 function dimensionLabel(asset: ListedAsset) {
@@ -19,13 +20,14 @@ function dimensionLabel(asset: ListedAsset) {
 
 function matchesAssetFilter(asset: ListedAsset, filter: AssetFilter) {
   if (filter === "all") return true;
-  if (filter === "audio") return asset.kind === "audio";
+  if (filter === "audio") return asset.kind === "audio" && !isPremidiAsset(asset);
+  if (filter === "music") return isPremidiAsset(asset);
   if (filter === "vectors") return isVectorAsset(asset);
   return asset.kind === "image" && !isVectorAsset(asset);
 }
 
 function assetSearchText(asset: ListedAsset) {
-  const sourceKind = isVectorAsset(asset) ? "vector" : asset.kind;
+  const sourceKind = isPremidiAsset(asset) ? "music" : isVectorAsset(asset) ? "vector" : asset.kind;
   return `${asset.name} ${asset.id} ${asset.mimeType} ${sourceKind} ${asset.contentSource}`.toLowerCase();
 }
 
@@ -45,6 +47,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     all: allAssets.length,
     images: allAssets.filter((asset) => matchesAssetFilter(asset, "images")).length,
     audio: allAssets.filter((asset) => matchesAssetFilter(asset, "audio")).length,
+    music: allAssets.filter((asset) => matchesAssetFilter(asset, "music")).length,
     vectors: allAssets.filter((asset) => matchesAssetFilter(asset, "vectors")).length,
   };
   const projectReferences = buildProjectReferences(snapshot);
@@ -57,11 +60,12 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     { id: "all", label: "ALL" },
     { id: "images", label: "IMAGES" },
     { id: "audio", label: "AUDIO" },
+    { id: "music", label: "MUSIC" },
     { id: "vectors", label: "VECTORS" },
   ];
 
   return <div className="media-asset-explorer" onPointerDown={(event) => event.stopPropagation()}>
-    <input aria-label="Find media assets" placeholder="audio or image" value={query} onChange={(event) => setQuery(event.target.value)} />
+    <input aria-label="Find media assets" placeholder="find an asset" value={query} onChange={(event) => setQuery(event.target.value)} />
     <div className="media-asset-filters" role="group" aria-label="Filter media assets">
       {filters.map((option) => <button
         type="button"
@@ -72,7 +76,7 @@ export function AssetExplorer({ snapshot, onOpenAsset, onNewVector, onOpenRefere
     </div>
     <div className="author-actions media-asset-actions">
       <button type="button" onClick={onNewVector}>[+ VECTOR]</button>
-      <AuthorHelp label="About media files" text="Vectors are saved in the project. To add image or audio files, place them in public/assets/ in the repository; the next build indexes them automatically." />
+      <AuthorHelp label="About media files" text="File Media, including .premidi music, is discovered from public/assets/ at build time or assets/ when the portable app launches. No upload is necessary." />
     </div>
     {missing.length ? <div className="media-asset-warning"><strong>MISSING LINKED ASSETS</strong>{missing.map((reference, index) => <button type="button" key={`${reference.ownerKind}:${reference.ownerId}:${reference.resourceId}:${index}`} onClick={() => reference.route && onOpenReference(reference.route)} disabled={!reference.route}>
       <span>{reference.resourceId}</span><small>{reference.ownerLabel} · {reference.detail}</small>
