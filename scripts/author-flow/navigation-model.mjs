@@ -236,15 +236,20 @@ function findDeclaredRoutePath(model,sourceWorkspace,targetRoute,firstResource=n
     outgoing.get(e.from).push(e);
   }
   for(const list of outgoing.values())list.sort((a,b)=>a.to.localeCompare(b.to)||JSON.stringify(a.source??"").localeCompare(JSON.stringify(b.source??"")));
-  const pending=[{at:start,steps:[]}],seen=new Set([start]);
+  // A via filter is a real graph constraint, not an output decoration.
+  // Track whether the requested resource was actually traversed.
+  const initialVia=!firstResource;
+  const pending=[{at:start,steps:[],viaSatisfied:initialVia}];
+  const seen=new Set([start+"|"+initialVia]);
   while(pending.length){
     const current=pending.shift();
-    if(current.at===end)return {found:true,steps:current.steps,
+    if(current.at===end&&current.viaSatisfied)return {found:true,steps:current.steps,
       declared_task_opens:current.steps.reduce((total,step)=>total+(step.handler_invocations??0),0)};
     for(const step of outgoing.get(current.at)??[]){
-      if(firstResource&&current.at===start&&step.via&&step.via!=="resource:"+firstResource)continue;
-      if(seen.has(step.to))continue;
-      seen.add(step.to);pending.push({at:step.to,steps:[...current.steps,step]});
+      const viaSatisfied=current.viaSatisfied||step.via==="resource:"+firstResource;
+      const key=step.to+"|"+viaSatisfied;
+      if(seen.has(key))continue;
+      seen.add(key);pending.push({at:step.to,steps:[...current.steps,step],viaSatisfied});
     }
   }
   return {found:false,steps:[],declared_task_opens:null};
