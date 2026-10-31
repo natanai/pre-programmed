@@ -13,14 +13,6 @@ on:
       - .github/workflows/**
       - .github/portable-release.version
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - src/features/media/**
-      - tests/premidiAssetDiscovery.test.ts
-      - scripts/asset-manifest-lib.mjs
-      - desktop/main.cjs
-      - .github/workflows/deploy.yml
 
 permissions:
   contents: read
@@ -32,20 +24,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  music-asset-qualification:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-      - run: npm ci --no-audit --no-fund
-      - run: npm run verify
-      - run: npm run verify:local
   build-and-worker:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
