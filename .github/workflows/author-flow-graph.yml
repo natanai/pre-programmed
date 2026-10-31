@@ -44,6 +44,14 @@ jobs:
       - run: npm run audit:author:check
       - run: npm run audit:author:coverage
       - run: npm run audit:author:coverage-check
+      - name: Validate provenance-aware frontier replay ledger when available
+        shell: bash
+        run: |
+          node --check scripts/author-flow/sequence-progress.mjs
+          if [[ -f audit/author-flow/traces/author-audit-desktop-frontier.json && -f audit/author-flow/traces/author-audit-mobile-frontier.json ]]; then
+            node scripts/author-flow/sequence-progress.mjs --source scroll --suite frontier
+            node scripts/author-flow/sequence-progress.mjs --check --source scroll --suite frontier
+          fi
       - run: node --check scripts/author-flow/browser-recorder.js
       - run: node --check scripts/author-flow/query.mjs
       - run: npm run audit:author:query -- --find 'world-character-alias' > /dev/null
@@ -53,6 +61,9 @@ jobs:
         shell: bash
         run: |
           git add audit/author-flow/source-graph.json audit/author-flow/coverage.json
+          if [[ -f audit/author-flow/sequence-progress.json ]]; then
+            git add audit/author-flow/sequence-progress.json
+          fi
           if ! git diff --cached --quiet; then
             git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m 'Record generated Author source graph'
             git push origin "HEAD:$GITHUB_REF_NAME"
@@ -61,7 +72,7 @@ jobs:
         if: github.event_name == 'pull_request'
         shell: bash
         run: |
-          if [ -n "$(git status --porcelain -- audit/author-flow/source-graph.json audit/author-flow/coverage.json)" ]; then
+          if [ -n "$(git status --porcelain -- audit/author-flow/source-graph.json audit/author-flow/coverage.json audit/author-flow/sequence-progress.json)" ]; then
             if [[ "$GITHUB_HEAD_REF" == audit/author-flow-* ]]; then
               echo 'Audit branch graph is stale: run npm run audit:author:extract.'
               exit 1
