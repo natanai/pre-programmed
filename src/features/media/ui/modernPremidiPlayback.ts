@@ -18,8 +18,9 @@ function levelAt(e:PrototypeEvent,peak:number,elapsed:number){
  return peak*sustain;
 }
 export async function playModernPremidi(plan:PrototypePlan):Promise<ModernPreviewSession>{
- const context=await runningProceduralAudioContext();
- if(!context)throw Error("Audio playback is unavailable. Try again after interacting with the game.");
+ const available=await runningProceduralAudioContext();
+ if(!available)throw Error("Audio playback is unavailable. Try again after interacting with the game.");
+ const context: AudioContext=available;
  const master=context.createGain();
  master.gain.value=.85;master.connect(context.destination);
  const offset=context.currentTime+.065;
