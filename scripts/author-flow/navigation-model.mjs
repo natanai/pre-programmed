@@ -202,11 +202,56 @@ function discoverReferenceSites(graph,files,providers) {
   return sites.sort((a,b)=>a.id.localeCompare(b.id));
 }
 
+
+function discoverWorkspaceBindings(files) {
+  const bindings=[];
+  for(const [file,source] of Object.entries(files)){
+    const rx=/\bdefineAuthorWorkspace(?:<[^>]+>)?\s*\(\s*\{\s*id\s*:\s*["']([^"']+)["']/g;
+    let m;
+    while((m=rx.exec(source))){
+      const snippet=source.slice(m.index,m.index+1200);
+      const preamble=snippet.split(/\bcreateDraft\s*[:(]|\bbuildSpec\s*[:(]/)[0];
+      const feature=preamble.match(/\broute\.feature\s*===\s*["']([\w-]+)["']/)?.[1];
+      const workspace=preamble.match(/\broute\.workspace\s*===\s*["']([\w-]+)["']/)?.[1];
+      if(!feature||!workspace)continue;
+      bindings.push({
+        from:"route:"+feature+"."+workspace,to:"workspace:"+m[1],
+        source:{file,line:source.slice(0,m.index).split("\n").length},
+        match_constraints:preamble.includes("route.data")?"additional route-data conditions":"feature and workspace predicates",
+        evidence:"workspace matches() source declaration",pointer_actions:0,handler_invocations:0,
+      });
+    }
+  }
+  return bindings.sort((a,b)=>a.from.localeCompare(b.from)||a.to.localeCompare(b.to)||a.source.file.localeCompare(b.source.file));
+}
+function findDeclaredRoutePath(model,sourceWorkspace,targetRoute) {
+  const start=sourceWorkspace.startsWith("workspace:")?sourceWorkspace:"workspace:"+sourceWorkspace;
+  const end=targetRoute.startsWith("route:")?targetRoute:"route:"+targetRoute;
+  const outgoing=new Map();
+  for(const e of [...model.transitions,...model.contextual_creates,...model.workspace_route_bindings]){
+    if(!outgoing.has(e.from))outgoing.set(e.from,[]);
+    outgoing.get(e.from).push(e);
+  }
+  for(const list of outgoing.values())list.sort((a,b)=>a.to.localeCompare(b.to)||JSON.stringify(a.source??"").localeCompare(JSON.stringify(b.source??"")));
+  const pending=[{at:start,steps:[]}],seen=new Set([start]);
+  while(pending.length){
+    const current=pending.shift();
+    if(current.at===end)return {found:true,steps:current.steps,
+      declared_task_opens:current.steps.reduce((total,step)=>total+(step.handler_invocations??0),0)};
+    for(const step of outgoing.get(current.at)??[]){
+      if(seen.has(step.to))continue;
+      seen.add(step.to);pending.push({at:step.to,steps:[...current.steps,step]});
+    }
+  }
+  return {found:false,steps:[],declared_task_opens:null};
+}
+
 const source=JSON.parse(fs.readFileSync("audit/author-flow/source-graph.json","utf8"));
 const model=buildGraph(source);
 const providerFiles=authorResourceSourceFiles(source);
 model.resource_providers=parseProviders(providerFiles);
 model.reference_sites=discoverReferenceSites(source,providerFiles,model.resource_providers);
+model.workspace_route_bindings=discoverWorkspaceBindings(providerFiles);
 model.contextual_creates=model.reference_sites.filter(s=>s.create_route).map(s=>({
   from:"workspace:"+s.workspace,to:"route:"+s.create_route,via:"resource:"+s.resource_kind,
   source:s.source,site_id:s.id,handler_invocations:1,pointer_actions:null,
@@ -217,7 +262,16 @@ model.counts.contextual_create_declarations=model.contextual_creates.length;
 const args=process.argv.slice(2);
 const value=k=>{const index=args.indexOf(k);return index===-1?null:args[index+1]};
 const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create");
-if(create){
+if(args.includes("--path")){
+  if(!from||!to)throw Error("--path requires --from and --to");
+  const route=findDeclaredRoutePath(model,from,to);
+  process.stdout.write(JSON.stringify({
+    type:"candidate-declared-task-path",from,to,found:route.found,
+    declared_task_opens:route.declared_task_opens,steps:route.steps,
+    observed:false,actual_pointer_actions:null,actual_save_return_verified:false,
+    warning:"A candidate through source declarations, not proof of a rendered, enabled, successful Author workflow. Absent path means unknown, not unreachable."
+  },null,2)+"\\n");
+}else if(create){
   const matches=model.contextual_creates.filter(x=>x.via==="resource:"+create && (!from||x.from==="workspace:"+from));
   process.stdout.write(JSON.stringify({type:"contextual-resource-create-query",from:from??null,resource:create,candidates:matches,
     observed:false,description:"Source-declared navigation only; the field may be hidden and child Save/Back must be verified separately.",
