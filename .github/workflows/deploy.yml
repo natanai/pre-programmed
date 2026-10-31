@@ -7,6 +7,11 @@ on:
       - README.md
       - docs/**
       - tests/**
+      # Audit evidence and build metadata should not deploy the live game.
+      - audit/**
+      - scripts/author-flow/**
+      - .github/workflows/**
+      - .github/portable-release.version
   workflow_dispatch:
 
 permissions:

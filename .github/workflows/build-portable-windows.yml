@@ -1,4 +1,4 @@
-name: Build portable Windows engine
+name: Build Windows ZIP (portable)
 
 on:
   workflow_dispatch:

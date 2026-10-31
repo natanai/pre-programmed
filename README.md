@@ -237,10 +237,10 @@ Author mode can export/import a `.ppgame` project file, allowing authored projec
 
 ## Windows portable build
 
-The **Build portable Windows engine** GitHub Actions workflow is manual-only. To create a versioned Windows package:
+Open [**Build Windows ZIP (portable)**](https://github.com/natanai/pre-programmed/actions/workflows/build-portable-windows.yml) directly to create a versioned Windows package from `main`:
 
 1. Open the repository's **Actions** tab.
-2. Select **Build portable Windows engine**.
+2. Select **Build Windows ZIP (portable)** (the linked workflow).
 3. Choose **Run workflow**.
 4. Enter a semver-like version such as `0.1.0` or `0.1.0-beta.1`.
 5. When the workflow finishes, open the new GitHub Release `v<version>` and download `Pre-Programmed-v<version>-windows-x64.zip` directly from its Assets.
