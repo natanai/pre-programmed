@@ -21,7 +21,7 @@ async function measure(directory){
  return {jsBytes:total("js","bytes"),jsGzipBytes:total("js","gzipBytes"),
   cssBytes:total("css","bytes"),cssGzipBytes:total("css","gzipBytes"),files};
 }
-const [a,b]=process.argv.slice(2).map(resolve);
+const [a,b]=process.argv.slice(2).map(path=>resolve(path));
 if(!a||!b||a===b)throw Error("Pass two distinct compiled dist directories: baseline and candidate");
 const baseline=await measure(a),candidate=await measure(b);
 const delta={jsBytes:candidate.jsBytes-baseline.jsBytes,
