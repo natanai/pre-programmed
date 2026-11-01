@@ -183,7 +183,7 @@ if(compare){
     previous_tasks:previous.tasks.length,current_tasks:lookup.tasks.length,
     changes:changes.sort((a,b)=>a.task_id.localeCompare(b.task_id))},null,2)+"\n");
 }else if(search){
-  const tokens=search.toLowerCase().split(/\\s+/).filter(Boolean);
+  const tokens=search.toLowerCase().split(/\s+/).filter(Boolean);
   const hits=lookup.tasks.map(item=>{
     const haystack=[item.task_id,item.goal,...item.intended_author_work].join(" ").toLowerCase();
     return {item,overlap:tokens.filter(t=>haystack.includes(t)).length};
