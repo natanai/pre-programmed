@@ -45,6 +45,11 @@ const operationSources={
       "src/features/narrative/author/nodeWorkspace.tsx",
       "kind=\"character\"",
       "narrative.node"
+    ],
+    [
+      "src/features/commands/author/commandWorkspace.tsx",
+      "kind: \"character\"",
+      "commands-command"
     ]
   ],
   "image-art": [
@@ -489,8 +494,25 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
       const found=(operationWitnesses[operation]??[]).filter(x=>x.status==="source-witness-found");
       const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
+      // Node INPUT HANDLING links to the real Interaction owner, not an
+      // Author-only input field. Record this as another task-level step.
+      const nodeInputPath=operation==="player-input"&&availableWorkspaces.has("narrative.node")&&
+        readFile("src/features/narrative/author/nodeWorkspace.tsx")?.includes("<NodeInputList")&&
+        readFile("src/features/narrative/author/NodeInputList.tsx")?.includes("+ VALID INPUT")&&
+        readFile("src/features/narrative/author/nodeWorkspace.tsx")?.includes("inputRoute(")&&
+        found.some(x=>x.workspace==="narrative.interaction")?{
+          from:"narrative.node",to:"narrative.interaction",
+          intermediate_controls:["Node INPUT HANDLING","+ VALID INPUT","Canonical Interaction PLAYER ENTERS field"],
+          source:[{file:"src/features/narrative/author/NodeInputList.tsx",component:"+ VALID INPUT"},
+            {file:"src/features/narrative/author/nodeWorkspace.tsx",component:"openInput -> inputRoute"},
+            {file:"src/features/narrative/author/InteractionEditor.tsx",component:"PLAYER ENTERS"}],
+          conditional:true,extra_task_openings:1,exact_clicks:null
+        }:null;
       return {intent:description,operation,source_evidence:found,
-        status:!found.length?"source-witness-unresolved":!inContext.length?"owner-not-reached-by-declared-task-path":"owner-control-declared-in-task-context",
+        status:!found.length?"source-witness-unresolved":
+          !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
+          "owner-control-declared-in-task-context",
+        additional_owner_task:nodeInputPath,
         exact_actions:null,note:"A source control witness does not prove a complete configuration or a visible UI."};
     });
     const knownControls=nestedSourceResolved&&frames.every(f=>f.entry_controls_known)?{
@@ -505,7 +527,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       {category:"runtime-conditions-not-evaluated",description:"Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"}
     ];
     for(const id of missingShared)unresolved.push({category:"shared-task-lifecycle-witness-missing",contract_id:id});
-    for(const op of operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context"))
+    for(const op of operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)))
       unresolved.push({category:"authoring-operation-source-gap",operation:op.operation,reason:op.status});
     const status=!nestedSourceResolved?"missing-source-link":!task.resource_chain.length?"workspace-task-without-nested-route":
       trace.some(x=>x.delegated_paths.length)?"delegated-contextual-route-source-declared":
@@ -516,6 +538,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(conditionalPickerCount)flags.push("resource-chooser-branch");
     if(trace.some(x=>x.entry_source_type==="explicit-resource-task-handler"))flags.push("direct-custom-resource-task-activation-unknown");
     if(trace.some(x=>x.delegated_paths.length))flags.push("nested-rule-editor-decisions");
+    if(operationSteps.some(x=>x.additional_owner_task))flags.push("requires-follow-on-owner-task");
     if(task.author_work.length)flags.push("authoring-controls-not-modeled");
     items.push({
       task_id:task.id,game:task.game,goal:task.goal,
@@ -547,7 +570,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         }))),
         conditional_control_subtotal:knownControls,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
-        operation_controls_without_context:operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context").length,
+        operation_follow_on_task_paths:operationSteps.filter(x=>x.status==="follow-on-owner-task-source-declared").length,
+        operation_controls_without_context:operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)).length,
         verified_end_to_end_actions:null,
         verified_draft_retention:null,
         verified_saves:null,
