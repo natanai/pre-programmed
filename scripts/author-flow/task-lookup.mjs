@@ -31,14 +31,26 @@ function buildLookup(model,definitions){
       const matching=model.reference_sites.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind);
       const operation=step.action;
       const routeKey=provider?.[operation]?.route? "route:"+provider[operation].route:null;
+      // A contextual resource task can also be opened by a literal handler,
+      // without using ReferenceField (e.g. Narrative Interaction -> new Node).
+      // Demand an explicit resourceTask kind; do not treat every route push
+      // as an authoring creation path.
+      const directTasks=operation==="create"&&routeKey&&matching.length===0
+        ? model.transitions.filter(e=>e.from===cursor&&e.to===routeKey
+          && e.route_expression?.match(/\bresourceTask\s*:\s*["']([^"']+)["']/)?.[1]===step.kind)
+        : [];
+      const directTask=directTasks.length===1?directTasks[0]:null;
       const result={step:i+1,operation,resource_kind:step.kind,from:cursor,
         expected_resource_owner:provider?.owner?.file??null,
         source_reference_candidates:matching.map(m=>m.source),
         source_route:routeKey,source_workspace:null,
-        controls:null,contract_status:"unresolved",blockers:[],evidence:matching.map(m=>m.id)};
+        controls:null,contract_status:"unresolved",blockers:[],
+        entry_source_type:directTask?"explicit-resource-task-handler":"canonical-reference-field",
+        evidence:directTask?[directTask.id]:matching.map(m=>m.id),
+        source_direct_handler:directTask?.source??null};
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
-      if(matching.length!==1)result.blockers.push(matching.length===0?"no-reference-field-declared-in-current-workspace":"ambiguous-reference-fields");
+      if(matching.length!==1&&!directTask)result.blockers.push(directTasks.length>1?"ambiguous-resource-task-handlers":matching.length===0?"no-reference-field-or-resource-task-handler-declared-in-current-workspace":"ambiguous-reference-fields");
       if(operation==="create"&&matching.length===1&&matching[0].create_route!==provider?.create.route)
         result.blockers.push("reference-field-not-bound-to-provider-create-route");
       if(operation==="edit" && !provider?.edit.declared)result.blockers.push("canonical-edit-not-declared");
@@ -54,7 +66,12 @@ function buildLookup(model,definitions){
         break;
       }
       result.contract_status="conditional-source-route-declared";
-      if(operation==="create"){
+      if(directTask){
+        // The handler is source-certified but a custom UI's physical activation
+        // count is not; preserve null instead of assuming one click.
+        result.controls=null;
+        result.contract_status="conditional-direct-resource-task-declared";
+      }else if(operation==="create"){
         result.controls={conditional_min:1,conditional_max:2,
           branch:"ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
           guards:["reference field is rendered","provider canCreate","reference selection and option count"]};
@@ -63,9 +80,12 @@ function buildLookup(model,definitions){
         result.controls={conditional_min:1,conditional_max:1,branch:"selected ReferenceField [EDIT]",
           guards:["selected reference exists","provider canEdit","reference field is rendered"]};
       }
-      min+=result.controls.conditional_min;
-      max+=result.controls.conditional_max;
-      frames.push({kind:step.kind,operation,parent:cursor,child:result.source_workspace,save_if_edit_or_create:"one conditional canonical owner Save activation"});
+      if(result.controls){
+        min+=result.controls.conditional_min;
+        max+=result.controls.conditional_max;
+      }
+      frames.push({kind:step.kind,operation,parent:cursor,child:result.source_workspace,
+        entry_controls_known:!!result.controls,save_if_edit_or_create:"one conditional canonical owner Save activation"});
       const nextOwner=ownerOf(result.source_workspace);
       if(previousOwner!==nextOwner)crossFeature++;
       previousOwner=nextOwner;
@@ -81,7 +101,7 @@ function buildLookup(model,definitions){
     }
     if(task.finish?.save_parent){min++;max++;}
     if(task.finish?.return_to_player){min++;max++;}
-    const knownControls=nestedSourceResolved?{
+    const knownControls=nestedSourceResolved&&frames.every(f=>f.entry_controls_known)?{
       conditional_lower:min,conditional_upper:max,
       scope:"reference Create/Edit + child Save + parent Save + master X only",
       exact_total:null,not_a_click_minimum:true
@@ -93,11 +113,13 @@ function buildLookup(model,definitions){
       {category:"runtime-conditions-not-evaluated",description:"Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"}
     ];
     for(const id of missingShared)unresolved.push({category:"shared-task-lifecycle-witness-missing",contract_id:id});
-    const status=!nestedSourceResolved?"missing-source-link":task.resource_chain.length?"contextual-route-source-declared":"workspace-task-without-nested-route";
+    const status=!nestedSourceResolved?"missing-source-link":!task.resource_chain.length?"workspace-task-without-nested-route":
+      trace.some(x=>x.entry_source_type==="explicit-resource-task-handler")?"resource-task-handler-source-declared":"contextual-route-source-declared";
     if(!nestedSourceResolved)flags.push("contextual-task-path-unresolved");
     if(crossFeature)flags.push("cross-owner-authoring");
     if(frames.length>1)flags.push("deep-contextual-nesting");
     if(conditionalPickerCount)flags.push("resource-chooser-branch");
+    if(trace.some(x=>x.entry_source_type==="explicit-resource-task-handler"))flags.push("direct-custom-resource-task-activation-unknown");
     if(task.author_work.length)flags.push("authoring-controls-not-modeled");
     items.push({
       task_id:task.id,game:task.game,goal:task.goal,
