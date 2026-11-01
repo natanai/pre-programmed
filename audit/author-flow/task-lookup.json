@@ -14,16 +14,16 @@
   },
   "summary": {
     "total_tasks": 26,
-    "resolved_nested_resource_routes": 13,
+    "resolved_nested_resource_routes": 14,
     "tasks_without_nested_resource_route": 3,
-    "unresolved_nested_resource_routes": 10,
+    "unresolved_nested_resource_routes": 9,
     "games": [
       {
         "game": "branching-rpg",
         "anticipated_tasks": 14,
-        "resolved_nested_resource_routes": 8,
+        "resolved_nested_resource_routes": 9,
         "tasks_without_nested_resource_route": 1,
-        "unresolved_nested_resource_routes": 5,
+        "unresolved_nested_resource_routes": 4,
         "needs_content_action_model": 14,
         "top_static_gaps": [
           {
@@ -33,19 +33,7 @@
                 "kind": "node",
                 "at": "workspace:narrative.node",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "rpg-create-destination",
-            "missing": [
-              {
-                "kind": "node",
-                "at": "workspace:narrative.interaction",
-                "reason": [
-                  "no-reference-field-declared-in-current-workspace"
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
                 ]
               }
             ]
@@ -57,7 +45,7 @@
                 "kind": "flag",
                 "at": "workspace:narrative.interaction",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -70,7 +58,7 @@
                 "kind": "item",
                 "at": "workspace:narrative.interaction",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace"
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
                 ]
               }
             ]
@@ -82,7 +70,7 @@
                 "kind": "flag",
                 "at": "workspace:narrative.node",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -105,7 +93,7 @@
                 "kind": "text-variable",
                 "at": "workspace:narrative.interaction",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -118,7 +106,7 @@
                 "kind": "flag",
                 "at": "workspace:narrative.interaction",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -131,7 +119,7 @@
                 "kind": "media-image",
                 "at": "workspace:narrative.node",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace"
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
                 ]
               }
             ]
@@ -143,7 +131,7 @@
                 "kind": "flag",
                 "at": "workspace:narrative.node",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -156,7 +144,7 @@
                 "kind": "number-variable",
                 "at": "workspace:narrative.interaction",
                 "reason": [
-                  "no-reference-field-declared-in-current-workspace",
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
                   "route-has-multiple-workspace-matches"
                 ]
               }
@@ -211,9 +199,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/radix/author/workspaces.tsx:176:11"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -299,9 +289,11 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -327,7 +319,7 @@
           "operation": "create",
           "resource_kind": "node",
           "reason": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ]
         },
         {
@@ -398,9 +390,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
-          ]
+          ],
+          "source_direct_handler": null
         },
         {
           "step": 2,
@@ -429,9 +423,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/world/author/entityWorkspaces.tsx:203:15"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -543,9 +539,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/commands/author/commandWorkspace.tsx:454:11"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -616,8 +614,8 @@
         "create destination Node",
         "connect navigation effect"
       ],
-      "source_path_status": "missing-source-link",
-      "declared_path_complete": false,
+      "source_path_status": "resource-task-handler-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -629,18 +627,31 @@
           "source_route": "route:narrative.node",
           "source_workspace": "workspace:narrative.node",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "no-reference-field-declared-in-current-workspace"
+          "contract_status": "conditional-direct-resource-task-declared",
+          "blockers": [],
+          "entry_source_type": "explicit-resource-task-handler",
+          "evidence": [
+            "src/features/narrative/author/interactionWorkspace.tsx:207:45:call"
           ],
-          "evidence": []
+          "source_direct_handler": {
+            "file": "src/features/narrative/author/interactionWorkspace.tsx",
+            "line": 207,
+            "column": 45
+          }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:narrative.node",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
@@ -649,19 +660,10 @@
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "direct-custom-resource-task-activation-unknown",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.interaction",
-          "operation": "create",
-          "resource_kind": "node",
-          "reason": [
-            "no-reference-field-declared-in-current-workspace"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "create destination Node"
@@ -729,9 +731,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -899,9 +903,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -986,10 +992,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -1015,7 +1023,7 @@
           "operation": "create",
           "resource_kind": "flag",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
@@ -1071,9 +1079,11 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -1099,7 +1109,7 @@
           "operation": "create",
           "resource_kind": "item",
           "reason": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ]
         },
         {
@@ -1169,9 +1179,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/inventory/author/workspaces.tsx:128:13"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -1273,9 +1285,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
-          ]
+          ],
+          "source_direct_handler": null
         },
         {
           "step": 2,
@@ -1304,9 +1318,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/world/author/entityWorkspaces.tsx:203:15"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -1418,9 +1434,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/radix/author/startupWorkspace.tsx:48:9"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -1505,10 +1523,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -1534,7 +1554,7 @@
           "operation": "create",
           "resource_kind": "flag",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
@@ -1652,10 +1672,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -1681,7 +1703,7 @@
           "operation": "create",
           "resource_kind": "text-variable",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
@@ -1752,9 +1774,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/commands/author/commandWorkspace.tsx:454:11"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -1856,9 +1880,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
-          ]
+          ],
+          "source_direct_handler": null
         },
         {
           "step": 2,
@@ -1887,9 +1913,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/world/author/entityWorkspaces.tsx:203:15"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -1986,10 +2014,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -2015,7 +2045,7 @@
           "operation": "create",
           "resource_kind": "flag",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
@@ -2086,9 +2116,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/world/author/entityWorkspaces.tsx:203:15"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -2190,9 +2222,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -2282,9 +2316,11 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -2310,7 +2346,7 @@
           "operation": "create",
           "resource_kind": "media-image",
           "reason": [
-            "no-reference-field-declared-in-current-workspace"
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ]
         },
         {
@@ -2380,9 +2416,11 @@
           },
           "contract_status": "conditional-source-route-declared",
           "blockers": [],
+          "entry_source_type": "canonical-reference-field",
           "evidence": [
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
-          ]
+          ],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [
@@ -2468,10 +2506,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -2497,7 +2537,7 @@
           "operation": "create",
           "resource_kind": "flag",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
@@ -2625,10 +2665,12 @@
           "controls": null,
           "contract_status": "unresolved-from-source",
           "blockers": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ],
-          "evidence": []
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
         }
       ],
       "reverse_handoff_order": [],
@@ -2654,7 +2696,7 @@
           "operation": "create",
           "resource_kind": "number-variable",
           "reason": [
-            "no-reference-field-declared-in-current-workspace",
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
             "route-has-multiple-workspace-matches"
           ]
         },
