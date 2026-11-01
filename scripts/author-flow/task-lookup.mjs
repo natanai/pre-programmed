@@ -423,7 +423,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           channel:ref.channel,adapter:ref.adapter,access_decisions:ref.access_decisions,
           contingent:ref.contingent,declaration_chain:ref.declaration_chain,source:ref.source
         })),
-        source_access_decision_range:indirectReferences.length?{
+        source_access_stage_range:indirectReferences.length?{
           min:Math.min(...indirectReferences.map(x=>x.access_decisions.length)),
           max:Math.max(...indirectReferences.map(x=>x.access_decisions.length)),
           metric:"declared decision descriptions, NOT clicks",
@@ -558,9 +558,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         maximum_nested_author_depth_from_start:nestedSourceResolved?frames.length+1:null,
         cross_owner_transitions:crossFeature,
         chooser_branch_points:conditionalPickerCount,
-        source_declared_pre_reference_decisions:trace.some(t=>t.source_access_decision_range)?{
-          lower:trace.reduce((n,t)=>n+(t.source_access_decision_range?.min??0),0),
-          upper:trace.reduce((n,t)=>n+(t.source_access_decision_range?.max??0),0),
+        source_declared_access_stages:trace.some(t=>t.source_access_stage_range)?{
+          lower:trace.reduce((n,t)=>n+(t.source_access_stage_range?.min??0),0),
+          upper:trace.reduce((n,t)=>n+(t.source_access_stage_range?.max??0),0),
           metric:"source-described decisions across nested UI layers, not physical clicks",
           caveat:"Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         }:null,
@@ -643,7 +643,7 @@ if(compare){
     if(before.source_path_status===after.source_path_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
       && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
-      && JSON.stringify(before.measures.source_declared_pre_reference_decisions??null)===JSON.stringify(after.measures.source_declared_pre_reference_decisions??null)
+      && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
       && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
       && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
@@ -653,8 +653,8 @@ if(compare){
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
       operation_witnesses_in_context_before:before.measures?.operation_controls_found_in_context??null,
       operation_witnesses_in_context_after:after.measures?.operation_controls_found_in_context??null,
-      source_decision_stages_before:before.measures?.source_declared_pre_reference_decisions??null,
-      source_decision_stages_after:after.measures?.source_declared_pre_reference_decisions??null,
+      source_access_stages_before:before.measures?.source_declared_access_stages??null,
+      source_access_stages_after:after.measures?.source_declared_access_stages??null,
       delegated_alternatives_before:before.measures?.alternative_delegated_paths??null,
       delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
       owner_transitions_before:before.measures?.cross_owner_transitions??null,
@@ -688,7 +688,7 @@ if(compare){
     nested_resource_tasks:t.measures.declared_resource_tasks,
     cross_owner_transitions:t.measures.cross_owner_transitions,
     alternative_contextual_routes:t.measures.alternative_delegated_paths,
-    source_decision_stages:t.measures.source_declared_pre_reference_decisions,
+    source_access_stages:t.measures.source_declared_access_stages,
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
     exact_clicks:null,
@@ -696,7 +696,7 @@ if(compare){
   // Ordering is descriptive and deterministic; it is not a scalar UX score.
   rows.sort((a,b)=>Number(b.unresolved_route)-Number(a.unresolved_route)
     ||b.unresolved_operations-a.unresolved_operations
-    ||(b.source_decision_stages?.upper??0)-(a.source_decision_stages?.upper??0)
+    ||(b.source_access_stages?.upper??0)-(a.source_access_stages?.upper??0)
     ||b.cross_owner_transitions-a.cross_owner_transitions||a.id.localeCompare(b.id));
   process.stdout.write(JSON.stringify({type:"source-declared-task-complexity",order:"unresolved route, unresolved operations, declared decision stages, owner transitions, then task id; not a UX score",tasks:rows},null,2)+"\n");
 }else if(args.includes("--gaps")){
