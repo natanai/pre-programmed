@@ -19,9 +19,9 @@
     "total_tasks": 26,
     "task_operation_witnesses_found": 57,
     "task_operation_witnesses_unresolved": 2,
-    "resolved_nested_resource_routes": 21,
+    "resolved_nested_resource_routes": 22,
     "tasks_without_nested_resource_route": 3,
-    "unresolved_nested_resource_routes": 2,
+    "unresolved_nested_resource_routes": 1,
     "games": [
       {
         "game": "branching-rpg",
@@ -36,9 +36,9 @@
       {
         "game": "visual-novel",
         "anticipated_tasks": 12,
-        "resolved_nested_resource_routes": 8,
+        "resolved_nested_resource_routes": 9,
         "tasks_without_nested_resource_route": 2,
-        "unresolved_nested_resource_routes": 2,
+        "unresolved_nested_resource_routes": 1,
         "operation_witnesses_in_context": 27,
         "operation_witnesses_unresolved": 2,
         "top_static_gaps": [
@@ -48,18 +48,6 @@
               {
                 "kind": "media-image",
                 "at": "workspace:narrative.node",
-                "reason": [
-                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "vn-rename-reveal-flag",
-            "missing": [
-              {
-                "kind": "flag",
-                "at": "workspace:world-entity",
                 "reason": [
                   "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
                 ]
@@ -5493,8 +5481,8 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -5537,31 +5525,124 @@
           "resource_kind": "flag",
           "from": "workspace:world-entity",
           "expected_resource_owner": "src/features/state/author/manifest.tsx",
-          "source_reference_candidates": [],
+          "source_reference_candidates": [
+            {
+              "file": "src/features/state/author/ruleAdapters.tsx",
+              "line": 73
+            }
+          ],
           "source_route": "route:state.definitions",
           "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
+          "entry_source_type": "delegated-resource-or-rule-control",
+          "evidence": [
+            "delegated:world-entity:flag:condition:flag"
           ],
-          "entry_source_type": "canonical-reference-field",
-          "evidence": [],
           "source_direct_handler": null,
-          "delegated_paths": [],
-          "source_access_decision_range": null
+          "delegated_paths": [
+            {
+              "channel": "condition",
+              "adapter": "flag",
+              "access_decisions": [
+                "Open the appropriate WHEN/condition section",
+                "Choose flag condition type",
+                "Use the canonical flag reference field"
+              ],
+              "contingent": [
+                "response/entry editor is visible",
+                "section is expanded",
+                "adapter type is selected",
+                "resource is a Character, not a Location",
+                "Character has at least one alias",
+                "alias SHOW WHEN is configured",
+                "global scope selected; node-local flags do not require a project resource"
+              ],
+              "declaration_chain": [
+                {
+                  "file": "src/features/world/author/entityWorkspaces.tsx",
+                  "component": "Character alias ConditionEditor"
+                },
+                {
+                  "file": "src/author/outcomes/OutcomeComposer.tsx",
+                  "component": "ConditionEditor"
+                },
+                {
+                  "file": "src/author/ConditionEditor.tsx",
+                  "component": "registered feature-owned condition adapter"
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "component": "flagConditionAdapter ReferenceField"
+                },
+                {
+                  "file": "src/features/state/author/manifest.tsx",
+                  "component": "state feature registry"
+                }
+              ],
+              "source": {
+                "file": "src/features/state/author/ruleAdapters.tsx",
+                "line": 73
+              }
+            }
+          ],
+          "source_access_decision_range": {
+            "min": 3,
+            "max": 3,
+            "metric": "declared decision descriptions, NOT clicks",
+            "alternatives": 1
+          }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        },
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 2,
-        "source_matched_resource_steps": 1,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 1,
+        "source_matched_resource_steps": 2,
+        "maximum_nested_author_depth_from_start": 3,
+        "cross_owner_transitions": 2,
         "chooser_branch_points": 0,
-        "source_declared_pre_reference_decisions": null,
+        "source_declared_pre_reference_decisions": {
+          "lower": 3,
+          "upper": 3,
+          "metric": "source-described decisions across nested UI layers, not physical clicks",
+          "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
+        },
         "alternative_delegated_paths": 0,
-        "conditional_delegated_paths": [],
+        "conditional_delegated_paths": [
+          {
+            "resource": "flag",
+            "channel": "condition",
+            "adapter": "flag",
+            "decision_sequence": [
+              "Open the appropriate WHEN/condition section",
+              "Choose flag condition type",
+              "Use the canonical flag reference field"
+            ],
+            "guards": [
+              "response/entry editor is visible",
+              "section is expanded",
+              "adapter type is selected",
+              "resource is a Character, not a Location",
+              "Character has at least one alias",
+              "alias SHOW WHEN is configured",
+              "global scope selected; node-local flags do not require a project resource"
+            ]
+          }
+        ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
@@ -5571,20 +5652,12 @@
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
         "cross-owner-authoring",
+        "deep-contextual-nesting",
+        "nested-rule-editor-decisions",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:world-entity",
-          "operation": "create",
-          "resource_kind": "flag",
-          "reason": [
-            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "open speaker's canonical Character editor"
