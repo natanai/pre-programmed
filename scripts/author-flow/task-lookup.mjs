@@ -39,6 +39,8 @@ function buildLookup(model,definitions){
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
       if(matching.length!==1)result.blockers.push(matching.length===0?"no-reference-field-declared-in-current-workspace":"ambiguous-reference-fields");
+      if(operation==="create"&&matching.length===1&&matching[0].create_route!==provider?.create.route)
+        result.blockers.push("reference-field-not-bound-to-provider-create-route");
       if(operation==="edit" && !provider?.edit.declared)result.blockers.push("canonical-edit-not-declared");
       if(!["create","edit"].includes(operation))result.blockers.push("unsupported-task-operation");
       const bindings=routeKey?model.workspace_route_bindings.filter(e=>e.from===routeKey):[];
@@ -153,7 +155,42 @@ const lookup=buildLookup(model,goals);
 const args=process.argv.slice(2);
 const opt=key=>{const i=args.indexOf(key);return i<0?null:args[i+1]};
 const task=opt("--task"),game=opt("--game");
-if(task){
+const search=opt("--search"),compare=opt("--compare");
+if(compare){
+  const previous=JSON.parse(fs.readFileSync(compare,"utf8"));
+  if(previous.type!==lookup.type||!Array.isArray(previous.tasks))throw Error("Comparison requires an earlier task-lookup.json");
+  const earlier=new Map(previous.tasks.map(task=>[task.task_id,task]));
+  const current=new Map(lookup.tasks.map(task=>[task.task_id,task]));
+  const changes=[];
+  for(const id of new Set([...earlier.keys(),...current.keys()])){
+    const before=earlier.get(id),after=current.get(id);
+    if(!before||!after){
+      changes.push({task_id:id,type:before?"goal-removed":"goal-added"});
+      continue;
+    }
+    const beforeCost=before.measures.conditional_control_subtotal;
+    const afterCost=after.measures.conditional_control_subtotal;
+    if(before.source_path_status===after.source_path_status
+      && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
+      && JSON.stringify(beforeCost)===JSON.stringify(afterCost))continue;
+    changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
+      route_resolved:!before.declared_path_complete&&after.declared_path_complete,
+      route_became_unresolved:before.declared_path_complete&&!after.declared_path_complete,
+      conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
+      caution:"Comparative source visibility, not proof of a faster or more predictable user experience"});
+  }
+  process.stdout.write(JSON.stringify({type:"author-task-lookup-diff",
+    previous_tasks:previous.tasks.length,current_tasks:lookup.tasks.length,
+    changes:changes.sort((a,b)=>a.task_id.localeCompare(b.task_id))},null,2)+"\n");
+}else if(search){
+  const tokens=search.toLowerCase().split(/\\s+/).filter(Boolean);
+  const hits=lookup.tasks.map(item=>{
+    const haystack=[item.task_id,item.goal,...item.intended_author_work].join(" ").toLowerCase();
+    return {item,overlap:tokens.filter(t=>haystack.includes(t)).length};
+  }).filter(row=>row.overlap>0).sort((a,b)=>b.overlap-a.overlap||a.item.task_id.localeCompare(b.item.task_id));
+  process.stdout.write(JSON.stringify({type:"anticipated-task-search",query:search,
+    matched_tasks:hits.map(row=>row.item)},null,2)+"\n");
+}else if(task){
   const match=lookup.tasks.find(x=>x.task_id===task);
   if(!match)throw Error("Unknown task: "+task);
   process.stdout.write(JSON.stringify(match,null,2)+"\n");
