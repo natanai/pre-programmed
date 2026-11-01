@@ -410,14 +410,19 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         source_reference_candidates:matching.map(m=>m.source),
         source_route:routeKey,source_workspace:null,
         controls:null,contract_status:"unresolved",blockers:[],
-        entry_source_type:directTask?"explicit-resource-task-handler":"canonical-reference-field",
+        entry_source_type:indirectReferences.length?"delegated-resource-or-rule-control":directTask?"explicit-resource-task-handler":"canonical-reference-field",
         evidence:directTask?[directTask.id]:matching.map(m=>m.id),
         source_direct_handler:directTask?.source??null,
         delegated_paths:indirectReferences.map(ref=>({
           channel:ref.channel,adapter:ref.adapter,access_decisions:ref.access_decisions,
           contingent:ref.contingent,declaration_chain:ref.declaration_chain,source:ref.source
         })),
-        source_access_decision_count:indirectReferences.length===1?indirectReferences[0].access_decisions.length:null};
+        source_access_decision_range:indirectReferences.length?{
+          min:Math.min(...indirectReferences.map(x=>x.access_decisions.length)),
+          max:Math.max(...indirectReferences.map(x=>x.access_decisions.length)),
+          metric:"declared decision descriptions, NOT clicks",
+          alternatives:indirectReferences.length
+        }:null};
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
       // Different adapters may lead to the same canonical resource owner.
@@ -529,8 +534,16 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         maximum_nested_author_depth_from_start:nestedSourceResolved?frames.length+1:null,
         cross_owner_transitions:crossFeature,
         chooser_branch_points:conditionalPickerCount,
-        source_declared_pre_reference_decisions:trace.reduce((n,t)=>n+(t.source_access_decision_count??0),0),
+        source_declared_pre_reference_decisions:trace.some(t=>t.source_access_decision_range)?{
+          lower:trace.reduce((n,t)=>n+(t.source_access_decision_range?.min??0),0),
+          upper:trace.reduce((n,t)=>n+(t.source_access_decision_range?.max??0),0),
+          metric:"source-described decisions across nested UI layers, not physical clicks",
+          caveat:"Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
+        }:null,
         alternative_delegated_paths:trace.reduce((n,t)=>n+Math.max(0,t.delegated_paths.length-1),0),
+        conditional_delegated_paths:trace.flatMap(t=>t.delegated_paths.map(p=>({
+          resource:t.resource_kind,channel:p.channel,adapter:p.adapter,decision_sequence:p.access_decisions,guards:p.contingent
+        }))),
         conditional_control_subtotal:knownControls,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_controls_without_context:operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context").length,
@@ -566,7 +579,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       graph:"Routes and source-owner ownership come from the canonical source-derived navigation model",
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
-      focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
+      focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
+      delegated:"Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter."
     },
     summary:{total_tasks:items.length,
       task_operation_witnesses_found:items.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
