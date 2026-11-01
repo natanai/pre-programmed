@@ -392,6 +392,8 @@ function buildLookup(model,definitions,operationWitnesses){
     schema_version:2,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
+      authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
+      operational_evidence:"Source control witnesses prove declarations, not rendered interactions, completed configuration, or Save.",
       task_catalog:"Goals are explicit hypothetical author tasks for two game genres, not observed behavior",
       graph:"Routes and source-owner ownership come from the canonical source-derived navigation model",
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
