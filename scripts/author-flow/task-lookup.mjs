@@ -384,7 +384,8 @@ function buildLookup(model,definitions,operationWitnesses){
       resolved_nested_resource_routes:ts.filter(t=>t.declared_path_complete&&t.measures.declared_resource_tasks>0).length,
       tasks_without_nested_resource_route:withoutResourceChain.length,
       unresolved_nested_resource_routes:unresolved.length,
-      needs_content_action_model:ts.filter(t=>t.intended_author_work.length>0).length,
+      operation_witnesses_in_context:ts.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
+      operation_witnesses_unresolved:ts.reduce((n,t)=>n+t.measures.operation_controls_without_context,0),
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
@@ -432,11 +433,14 @@ if(compare){
     const afterCost=after.measures.conditional_control_subtotal;
     if(before.source_path_status===after.source_path_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
-      && JSON.stringify(beforeCost)===JSON.stringify(afterCost))continue;
+      && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
+      && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
     changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
       route_resolved:!before.declared_path_complete&&after.declared_path_complete,
       route_became_unresolved:before.declared_path_complete&&!after.declared_path_complete,
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
+      operation_witnesses_in_context_before:before.measures?.operation_controls_found_in_context??null,
+      operation_witnesses_in_context_after:after.measures?.operation_controls_found_in_context??null,
       caution:"Comparative source visibility, not proof of a faster or more predictable user experience"});
   }
   process.stdout.write(JSON.stringify({type:"author-task-lookup-diff",
@@ -461,9 +465,11 @@ if(compare){
 }else if(args.includes("--gaps")){
   process.stdout.write(JSON.stringify({
     type:"unresolved-source-route-index",
-    gaps:lookup.tasks.filter(x=>!x.declared_path_complete).map(t=>({
+    gaps:lookup.tasks.filter(x=>!x.declared_path_complete||x.measures.operation_controls_without_context>0).map(t=>({
       task_id:t.task_id,game:t.game,goal:t.goal,
-      first_unresolved:t.unmodeled_or_unresolved.find(x=>x.category==="missing-static-navigation")??null
+      missing_route:t.unmodeled_or_unresolved.find(x=>x.category==="missing-static-navigation")??null,
+      operation_gaps:t.operation_steps.filter(x=>x.status!=="owner-control-declared-in-task-context")
+        .map(x=>({intent:x.intent,operation:x.operation,reason:x.status}))
     }))
   },null,2)+"\n");
 }else if(args.includes("--summary")){
