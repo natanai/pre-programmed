@@ -1,0 +1,2731 @@
+{
+  "schema_version": 1,
+  "type": "source-derived-anticipated-task-lookup",
+  "generated_from": {
+    "tasks": "audit/author-flow/anticipated-tasks.json",
+    "source_navigation": "audit/author-flow/navigation-model.json"
+  },
+  "interpretation": {
+    "task_catalog": "Goals are explicit hypothetical author tasks for two game genres, not observed behavior",
+    "graph": "Routes and source-owner ownership come from the canonical source-derived navigation model",
+    "cost": "Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
+    "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
+    "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
+  },
+  "summary": {
+    "total_tasks": 26,
+    "resolved_nested_resource_routes": 14,
+    "tasks_without_nested_resource_route": 3,
+    "unresolved_nested_resource_routes": 9,
+    "games": [
+      {
+        "game": "branching-rpg",
+        "anticipated_tasks": 14,
+        "resolved_nested_resource_routes": 9,
+        "tasks_without_nested_resource_route": 1,
+        "unresolved_nested_resource_routes": 4,
+        "needs_content_action_model": 14,
+        "top_static_gaps": [
+          {
+            "task_id": "rpg-branch-again",
+            "missing": [
+              {
+                "kind": "node",
+                "at": "workspace:narrative.node",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "rpg-gate-condition",
+            "missing": [
+              {
+                "kind": "flag",
+                "at": "workspace:narrative.interaction",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "rpg-inventory-loot",
+            "missing": [
+              {
+                "kind": "item",
+                "at": "workspace:narrative.interaction",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "rpg-stateful-shortcut",
+            "missing": [
+              {
+                "kind": "flag",
+                "at": "workspace:narrative.node",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "game": "visual-novel",
+        "anticipated_tasks": 12,
+        "resolved_nested_resource_routes": 5,
+        "tasks_without_nested_resource_route": 2,
+        "unresolved_nested_resource_routes": 5,
+        "needs_content_action_model": 12,
+        "top_static_gaps": [
+          {
+            "task_id": "vn-capture-nickname",
+            "missing": [
+              {
+                "kind": "text-variable",
+                "at": "workspace:narrative.interaction",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "vn-choice-branch",
+            "missing": [
+              {
+                "kind": "flag",
+                "at": "workspace:narrative.interaction",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "vn-create-scene-image",
+            "missing": [
+              {
+                "kind": "media-image",
+                "at": "workspace:narrative.node",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "vn-rename-reveal-flag",
+            "missing": [
+              {
+                "kind": "flag",
+                "at": "workspace:narrative.node",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "vn-track-affinity",
+            "missing": [
+              {
+                "kind": "number-variable",
+                "at": "workspace:narrative.interaction",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+                  "route-has-multiple-workspace-matches"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "tasks": [
+    {
+      "task_id": "rpg-add-sequenced-audio",
+      "game": "branching-rpg",
+      "goal": "Create a sound from within the music sequence editor.",
+      "starting_workspace": "radix-sequence",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "radix-sequence",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create synth sound",
+        "assign to sequence"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "synth-sound",
+          "from": "workspace:radix-sequence",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/radix/author/workspaces.tsx",
+              "line": 176,
+              "column": 11
+            }
+          ],
+          "source_route": "route:media.synth-sound",
+          "source_workspace": "workspace:media-synth-sound",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/radix/author/workspaces.tsx:176:11"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-synth-sound",
+          "to": "workspace:radix-sequence",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create synth sound"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign to sequence"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-branch-again",
+      "game": "branching-rpg",
+      "goal": "From an expanding encounter, create another linked destination.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create new Node",
+        "add next valid travel input"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "node",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/narrative/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:narrative.node",
+          "source_workspace": "workspace:narrative.node",
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.node",
+          "operation": "create",
+          "resource_kind": "node",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create new Node"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "add next valid travel input"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-character-encounter",
+      "game": "branching-rpg",
+      "goal": "Create an NPC and portrait while composing the encounter Node.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create NPC",
+        "author portrait",
+        "write encounter"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "character",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 398,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:398:17"
+          ],
+          "source_direct_handler": null
+        },
+        {
+          "step": 2,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:world-entity",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "line": 203,
+              "column": 15
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/world/author/entityWorkspaces.tsx:203:15"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        },
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 2,
+        "source_matched_resource_steps": 2,
+        "maximum_nested_author_depth_from_start": 3,
+        "cross_owner_transitions": 2,
+        "chooser_branch_points": 2,
+        "conditional_control_subtotal": {
+          "conditional_lower": 6,
+          "conditional_upper": 8,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "deep-contextual-nesting",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create NPC"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author portrait"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write encounter"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-command-with-character",
+      "game": "branching-rpg",
+      "goal": "Define a player command targeting an as-yet-uncreated NPC.",
+      "starting_workspace": "commands-command",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "commands-command",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create NPC",
+        "define command match"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "character",
+          "from": "workspace:commands-command",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "line": 454,
+              "column": 11
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/commands/author/commandWorkspace.tsx:454:11"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:commands-command",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create NPC"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define command match"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-create-destination",
+      "game": "branching-rpg",
+      "goal": "Create a destination Node while writing an interaction linking to it.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create destination Node",
+        "connect navigation effect"
+      ],
+      "source_path_status": "resource-task-handler-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "node",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/narrative/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:narrative.node",
+          "source_workspace": "workspace:narrative.node",
+          "controls": null,
+          "contract_status": "conditional-direct-resource-task-declared",
+          "blockers": [],
+          "entry_source_type": "explicit-resource-task-handler",
+          "evidence": [
+            "src/features/narrative/author/interactionWorkspace.tsx:207:45:call"
+          ],
+          "source_direct_handler": {
+            "file": "src/features/narrative/author/interactionWorkspace.tsx",
+            "line": 207,
+            "column": 45
+          }
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:narrative.node",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "direct-custom-resource-task-activation-unknown",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create destination Node"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "connect navigation effect"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-create-new-location",
+      "game": "branching-rpg",
+      "goal": "Create a new Location while authoring the Node that needs it.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "name new Location",
+        "assign it to Node"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "location",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 390,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:390:17"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "name new Location"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign it to Node"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-define-north-input",
+      "game": "branching-rpg",
+      "goal": "Turn a previously unrecognized northward input into a valid Node interaction.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "accept northward input",
+        "author response",
+        "provide next destination"
+      ],
+      "source_path_status": "workspace-task-without-nested-route",
+      "declared_path_complete": true,
+      "route_steps": [],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 0,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": 1,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": {
+          "conditional_lower": 2,
+          "conditional_upper": 2,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "accept northward input"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author response"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "provide next destination"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-edit-known-location",
+      "game": "branching-rpg",
+      "goal": "Edit the selected Location directly from its Node.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "change Location description",
+        "return to Node"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "edit",
+          "resource_kind": "location",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 390,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 1,
+            "branch": "selected ReferenceField [EDIT]",
+            "guards": [
+              "selected reference exists",
+              "provider canEdit",
+              "reference field is rendered"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:390:17"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 4,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "change Location description"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "return to Node"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-gate-condition",
+      "game": "branching-rpg",
+      "goal": "Define a locked gate condition and its two outcomes.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create gate flag",
+        "author blocked and open routes"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "flag",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.interaction",
+          "operation": "create",
+          "resource_kind": "flag",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create gate flag"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author blocked and open routes"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-inventory-loot",
+      "game": "branching-rpg",
+      "goal": "Introduce an inventory Item from the encounter where it is acquired.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create item",
+        "assign item-reward effect"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "item",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/inventory/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:inventory.item",
+          "source_workspace": "workspace:inventory-item",
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.interaction",
+          "operation": "create",
+          "resource_kind": "item",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create item"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign item-reward effect"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-item-icon",
+      "game": "branching-rpg",
+      "goal": "Create a new item image while editing an Inventory Item.",
+      "starting_workspace": "inventory-item",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "inventory-item",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "author item icon",
+        "assign image to item"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:inventory-item",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/inventory/author/workspaces.tsx",
+              "line": 128,
+              "column": 13
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/inventory/author/workspaces.tsx:128:13"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:inventory-item",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author item icon"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign image to item"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-location-with-image",
+      "game": "branching-rpg",
+      "goal": "Create a new Location and image before returning to the Node.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "name Location",
+        "author image",
+        "complete Node scene"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "location",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 390,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:390:17"
+          ],
+          "source_direct_handler": null
+        },
+        {
+          "step": 2,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:world-entity",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "line": 203,
+              "column": 15
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/world/author/entityWorkspaces.tsx:203:15"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        },
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 2,
+        "source_matched_resource_steps": 2,
+        "maximum_nested_author_depth_from_start": 3,
+        "cross_owner_transitions": 2,
+        "chooser_branch_points": 2,
+        "conditional_control_subtotal": {
+          "conditional_lower": 6,
+          "conditional_upper": 8,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "deep-contextual-nesting",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "name Location"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author image"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "complete Node scene"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-seed-sequence",
+      "game": "branching-rpg",
+      "goal": "Create a sequence while editing startup configuration.",
+      "starting_workspace": "radix-startup-settings",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "radix-startup-settings",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "define sequence",
+        "assign startup sequence"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "radix-sequence",
+          "from": "workspace:radix-startup-settings",
+          "expected_resource_owner": "src/features/radix/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/radix/author/startupWorkspace.tsx",
+              "line": 48,
+              "column": 9
+            }
+          ],
+          "source_route": "route:radix.sequence",
+          "source_workspace": "workspace:radix-sequence",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/radix/author/startupWorkspace.tsx:48:9"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:radix-sequence",
+          "to": "workspace:radix-startup-settings",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define sequence"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign startup sequence"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "rpg-stateful-shortcut",
+      "game": "branching-rpg",
+      "goal": "Create a state variable and author a shortcut that opens later.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create shortcut flag",
+        "write state-dependent path"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "flag",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.node",
+          "operation": "create",
+          "resource_kind": "flag",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create shortcut flag"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write state-dependent path"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-author-new-reply",
+      "game": "visual-novel",
+      "goal": "While playing a conversation, define a newly entered player reply and its response.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "register new valid input",
+        "write resulting dialogue"
+      ],
+      "source_path_status": "workspace-task-without-nested-route",
+      "declared_path_complete": true,
+      "route_steps": [],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 0,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": 1,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": {
+          "conditional_lower": 2,
+          "conditional_upper": 2,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "register new valid input"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write resulting dialogue"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-capture-nickname",
+      "game": "visual-novel",
+      "goal": "Ask the player for a nickname, store it, and use it in later dialogue.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "capture player text",
+        "display stored nickname"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "text-variable",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.interaction",
+          "operation": "create",
+          "resource_kind": "text-variable",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "capture player text"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "display stored nickname"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-character-command",
+      "game": "visual-novel",
+      "goal": "Create a command referencing a Character directly from its command editor.",
+      "starting_workspace": "commands-command",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "commands-command",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "define named command",
+        "select newly created Character"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "character",
+          "from": "workspace:commands-command",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "line": 454,
+              "column": 11
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/commands/author/commandWorkspace.tsx:454:11"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:commands-command",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define named command"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "select newly created Character"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-character-portrait",
+      "game": "visual-novel",
+      "goal": "Create a new Character and a portrait without abandoning the dialogue.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "name Character",
+        "author portrait asset",
+        "return to original speaker field"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "character",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 398,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:398:17"
+          ],
+          "source_direct_handler": null
+        },
+        {
+          "step": 2,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:world-entity",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "line": 203,
+              "column": 15
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/world/author/entityWorkspaces.tsx:203:15"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        },
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 2,
+        "source_matched_resource_steps": 2,
+        "maximum_nested_author_depth_from_start": 3,
+        "cross_owner_transitions": 2,
+        "chooser_branch_points": 2,
+        "conditional_control_subtotal": {
+          "conditional_lower": 6,
+          "conditional_upper": 8,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "deep-contextual-nesting",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "name Character"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author portrait asset"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "return to original speaker field"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-choice-branch",
+      "game": "visual-novel",
+      "goal": "Create mutually exclusive dialogue outcomes based on an earlier choice.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "define choice flag",
+        "author both outcomes"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "flag",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.interaction",
+          "operation": "create",
+          "resource_kind": "flag",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define choice flag"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author both outcomes"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-conditional-portrait",
+      "game": "visual-novel",
+      "goal": "While creating a Character, create and attach an image asset.",
+      "starting_workspace": "world-entity",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "world-entity",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "author portrait asset",
+        "select portrait on Character"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:world-entity",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "line": 203,
+              "column": 15
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/world/author/entityWorkspaces.tsx:203:15"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "author portrait asset"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "select portrait on Character"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-create-new-speaker",
+      "game": "visual-novel",
+      "goal": "While editing dialogue, create the Character who says the line.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "name Character",
+        "write speaker narration",
+        "select new speaker in parent"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "character",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 398,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 2,
+            "branch": "ReferenceField opens direct Create if there is no selected value and no options; otherwise opens chooser then Create",
+            "guards": [
+              "reference field is rendered",
+              "provider canCreate",
+              "reference selection and option count"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:398:17"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 1,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 5,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "resource-chooser-branch",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "name Character"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write speaker narration"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "select new speaker in parent"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-create-scene-image",
+      "game": "visual-novel",
+      "goal": "Create scene image Media while composing a narrative Node.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create image resource",
+        "assign background in narrative"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.node",
+          "operation": "create",
+          "resource_kind": "media-image",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create image resource"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "assign background in narrative"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-edit-existing-speaker",
+      "game": "visual-novel",
+      "goal": "Edit the already selected speaker directly from the dialogue.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "revise Character definition",
+        "resume original line"
+      ],
+      "source_path_status": "contextual-route-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "edit",
+          "resource_kind": "character",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 398,
+              "column": 17
+            }
+          ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 1,
+            "branch": "selected ReferenceField [EDIT]",
+            "guards": [
+              "selected reference exists",
+              "provider canEdit",
+              "reference field is rendered"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:398:17"
+          ],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": {
+          "conditional_lower": 4,
+          "conditional_upper": 4,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "revise Character definition"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "resume original line"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-rename-reveal-flag",
+      "game": "visual-novel",
+      "goal": "Introduce a reveal flag while writing the dialogue and conditionally change a speaker alias.",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "create reveal flag",
+        "define conditional alias",
+        "write reveal response"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "flag",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.node",
+          "operation": "create",
+          "resource_kind": "flag",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create reveal flag"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define conditional alias"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write reveal response"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-revisit-dialogue",
+      "game": "visual-novel",
+      "goal": "Revise a completed interaction and immediately return to the running conversation.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "modify response condition",
+        "save edited response",
+        "resume real conversation"
+      ],
+      "source_path_status": "workspace-task-without-nested-route",
+      "declared_path_complete": true,
+      "route_steps": [],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 0,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": 1,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": {
+          "conditional_lower": 2,
+          "conditional_upper": 2,
+          "scope": "reference Create/Edit + child Save + parent Save + master X only",
+          "exact_total": null,
+          "not_a_click_minimum": true
+        },
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "modify response condition"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "save edited response"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "resume real conversation"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-track-affinity",
+      "game": "visual-novel",
+      "goal": "Add a relationship score while writing a conditional dialogue response.",
+      "starting_workspace": "narrative.interaction",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.interaction",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "intended_author_work": [
+        "define relationship score",
+        "write conditional response",
+        "set score effect"
+      ],
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "number-variable",
+          "from": "workspace:narrative.interaction",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
+          "source_route": "route:state.definitions",
+          "source_workspace": null,
+          "controls": null,
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
+          "source_direct_handler": null
+        }
+      ],
+      "reverse_handoff_order": [],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 0,
+        "maximum_nested_author_depth_from_start": null,
+        "cross_owner_transitions": 0,
+        "chooser_branch_points": 0,
+        "conditional_control_subtotal": null,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "contextual-task-path-unresolved",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "missing-static-navigation",
+          "at": "workspace:narrative.interaction",
+          "operation": "create",
+          "resource_kind": "number-variable",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace",
+            "route-has-multiple-workspace-matches"
+          ]
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "define relationship score"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write conditional response"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "set score effect"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    }
+  ]
+}
