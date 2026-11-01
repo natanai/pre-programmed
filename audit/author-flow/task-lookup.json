@@ -1,16 +1,18 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "type": "source-derived-anticipated-task-lookup",
   "generated_from": {
-    "tasks": "audit/author-flow/anticipated-tasks.json",
-    "source_navigation": "audit/author-flow/navigation-model.json"
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "compiler": "scripts/author-flow/task-lookup.mjs"
   },
   "interpretation": {
     "task_catalog": "Goals are explicit hypothetical author tasks for two game genres, not observed behavior",
     "graph": "Routes and source-owner ownership come from the canonical source-derived navigation model",
     "cost": "Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
     "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
-    "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
+    "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
+    "authority": "This is the one authoritative current Author task-evaluation artifact. Definitions and computed results coexist; lower-level AST inventory is only an input.",
+    "operational_evidence": "Each requested operation has a source-backed control witness or explicit unresolved state; an operation witness does not count the steps required to configure it."
   },
   "summary": {
     "total_tasks": 26,
@@ -258,6 +260,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-add-sequenced-audio",
+        "game": "branching-rpg",
+        "goal": "Create a sound from within the music sequence editor.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "radix-sequence",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "synth-sound"
+          }
+        ],
+        "author_work": [
+          "create synth sound",
+          "assign to sequence"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create synth sound",
+            "operation": "synth-definition"
+          },
+          {
+            "description": "assign to sequence",
+            "operation": "sequence-sound-reference"
+          }
+        ]
       }
     },
     {
@@ -343,6 +379,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-branch-again",
+        "game": "branching-rpg",
+        "goal": "From an expanding encounter, create another linked destination.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "node"
+          }
+        ],
+        "author_work": [
+          "create new Node",
+          "add next valid travel input"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create new Node",
+            "operation": "node-narration"
+          },
+          {
+            "description": "add next valid travel input",
+            "operation": "player-input"
+          }
+        ]
       }
     },
     {
@@ -493,6 +563,49 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-character-encounter",
+        "game": "branching-rpg",
+        "goal": "Create an NPC and portrait while composing the encounter Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create NPC",
+          "author portrait",
+          "write encounter"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create NPC",
+            "operation": "character-name"
+          },
+          {
+            "description": "author portrait",
+            "operation": "image-art"
+          },
+          {
+            "description": "write encounter",
+            "operation": "node-narration"
+          }
+        ]
       }
     },
     {
@@ -598,6 +711,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-command-with-character",
+        "game": "branching-rpg",
+        "goal": "Define a player command targeting an as-yet-uncreated NPC.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "commands-command",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "create NPC",
+          "define command match"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create NPC",
+            "operation": "character-name"
+          },
+          {
+            "description": "define command match",
+            "operation": "command-name"
+          }
+        ]
       }
     },
     {
@@ -685,6 +832,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-create-destination",
+        "game": "branching-rpg",
+        "goal": "Create a destination Node while writing an interaction linking to it.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "node"
+          }
+        ],
+        "author_work": [
+          "create destination Node",
+          "connect navigation effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create destination Node",
+            "operation": "node-narration"
+          },
+          {
+            "description": "connect navigation effect",
+            "operation": "response-destination"
+          }
+        ]
       }
     },
     {
@@ -790,6 +971,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-create-new-location",
+        "game": "branching-rpg",
+        "goal": "Create a new Location while authoring the Node that needs it.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "location"
+          }
+        ],
+        "author_work": [
+          "name new Location",
+          "assign it to Node"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name new Location",
+            "operation": "location-name"
+          },
+          {
+            "description": "assign it to Node",
+            "operation": "location-reference"
+          }
+        ]
       }
     },
     {
@@ -857,6 +1072,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-define-north-input",
+        "game": "branching-rpg",
+        "goal": "Turn a previously unrecognized northward input into a valid Node interaction.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "accept northward input",
+          "author response",
+          "provide next destination"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "accept northward input",
+            "operation": "player-input"
+          },
+          {
+            "description": "author response",
+            "operation": "response-text"
+          },
+          {
+            "description": "provide next destination",
+            "operation": "response-destination"
+          }
+        ]
       }
     },
     {
@@ -961,6 +1210,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-edit-known-location",
+        "game": "branching-rpg",
+        "goal": "Edit the selected Location directly from its Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "edit",
+            "kind": "location"
+          }
+        ],
+        "author_work": [
+          "change Location description",
+          "return to Node"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "change Location description",
+            "operation": "location-description"
+          },
+          {
+            "description": "return to Node",
+            "operation": "location-reference"
+          }
+        ]
       }
     },
     {
@@ -1048,6 +1331,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-gate-condition",
+        "game": "branching-rpg",
+        "goal": "Define a locked gate condition and its two outcomes.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create gate flag",
+          "author blocked and open routes"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create gate flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "author blocked and open routes",
+            "operation": "response-condition"
+          }
+        ]
       }
     },
     {
@@ -1133,6 +1450,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-inventory-loot",
+        "game": "branching-rpg",
+        "goal": "Introduce an inventory Item from the encounter where it is acquired.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "item"
+          }
+        ],
+        "author_work": [
+          "create item",
+          "assign item-reward effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create item",
+            "operation": "item-name"
+          },
+          {
+            "description": "assign item-reward effect",
+            "operation": "response-effects"
+          }
+        ]
       }
     },
     {
@@ -1238,6 +1589,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-item-icon",
+        "game": "branching-rpg",
+        "goal": "Create a new item image while editing an Inventory Item.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "inventory-item",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "author item icon",
+          "assign image to item"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "author item icon",
+            "operation": "image-art"
+          },
+          {
+            "description": "assign image to item",
+            "operation": "item-image"
+          }
+        ]
       }
     },
     {
@@ -1388,6 +1773,49 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-location-with-image",
+        "game": "branching-rpg",
+        "goal": "Create a new Location and image before returning to the Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "location"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "name Location",
+          "author image",
+          "complete Node scene"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Location",
+            "operation": "location-name"
+          },
+          {
+            "description": "author image",
+            "operation": "image-art"
+          },
+          {
+            "description": "complete Node scene",
+            "operation": "node-narration"
+          }
+        ]
       }
     },
     {
@@ -1492,6 +1920,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-seed-sequence",
+        "game": "branching-rpg",
+        "goal": "Create a sequence while editing startup configuration.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "radix-startup-settings",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "radix-sequence"
+          }
+        ],
+        "author_work": [
+          "define sequence",
+          "assign startup sequence"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define sequence",
+            "operation": "sequence-definition"
+          },
+          {
+            "description": "assign startup sequence",
+            "operation": "startup-sequence"
+          }
+        ]
       }
     },
     {
@@ -1579,6 +2041,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "rpg-stateful-shortcut",
+        "game": "branching-rpg",
+        "goal": "Create a state variable and author a shortcut that opens later.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create shortcut flag",
+          "write state-dependent path"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create shortcut flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "write state-dependent path",
+            "operation": "node-entry-condition"
+          }
+        ]
       }
     },
     {
@@ -1641,6 +2137,35 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-author-new-reply",
+        "game": "visual-novel",
+        "goal": "While playing a conversation, define a newly entered player reply and its response.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "register new valid input",
+          "write resulting dialogue"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "register new valid input",
+            "operation": "player-input"
+          },
+          {
+            "description": "write resulting dialogue",
+            "operation": "response-text"
+          }
+        ]
       }
     },
     {
@@ -1728,6 +2253,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-capture-nickname",
+        "game": "visual-novel",
+        "goal": "Ask the player for a nickname, store it, and use it in later dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "text-variable"
+          }
+        ],
+        "author_work": [
+          "capture player text",
+          "display stored nickname"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "capture player text",
+            "operation": "input-capture"
+          },
+          {
+            "description": "display stored nickname",
+            "operation": "text-mention"
+          }
+        ]
       }
     },
     {
@@ -1833,6 +2392,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-character-command",
+        "game": "visual-novel",
+        "goal": "Create a command referencing a Character directly from its command editor.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "commands-command",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "define named command",
+          "select newly created Character"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define named command",
+            "operation": "command-name"
+          },
+          {
+            "description": "select newly created Character",
+            "operation": "speaker-reference"
+          }
+        ]
       }
     },
     {
@@ -1983,6 +2576,49 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-character-portrait",
+        "game": "visual-novel",
+        "goal": "Create a new Character and a portrait without abandoning the dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "name Character",
+          "author portrait asset",
+          "return to original speaker field"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Character",
+            "operation": "character-name"
+          },
+          {
+            "description": "author portrait asset",
+            "operation": "image-art"
+          },
+          {
+            "description": "return to original speaker field",
+            "operation": "speaker-reference"
+          }
+        ]
       }
     },
     {
@@ -2070,6 +2706,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-choice-branch",
+        "game": "visual-novel",
+        "goal": "Create mutually exclusive dialogue outcomes based on an earlier choice.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "define choice flag",
+          "author both outcomes"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define choice flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "author both outcomes",
+            "operation": "response-condition"
+          }
+        ]
       }
     },
     {
@@ -2175,6 +2845,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-conditional-portrait",
+        "game": "visual-novel",
+        "goal": "While creating a Character, create and attach an image asset.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "world-entity",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "author portrait asset",
+          "select portrait on Character"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "author portrait asset",
+            "operation": "image-art"
+          },
+          {
+            "description": "select portrait on Character",
+            "operation": "character-portrait"
+          }
+        ]
       }
     },
     {
@@ -2285,6 +2989,45 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-create-new-speaker",
+        "game": "visual-novel",
+        "goal": "While editing dialogue, create the Character who says the line.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "name Character",
+          "write speaker narration",
+          "select new speaker in parent"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Character",
+            "operation": "character-name"
+          },
+          {
+            "description": "write speaker narration",
+            "operation": "response-text"
+          },
+          {
+            "description": "select new speaker in parent",
+            "operation": "speaker-reference"
+          }
+        ]
       }
     },
     {
@@ -2370,6 +3113,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-create-scene-image",
+        "game": "visual-novel",
+        "goal": "Create scene image Media while composing a narrative Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create image resource",
+          "assign background in narrative"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create image resource",
+            "operation": "image-art"
+          },
+          {
+            "description": "assign background in narrative",
+            "operation": "node-scene-media"
+          }
+        ]
       }
     },
     {
@@ -2474,6 +3251,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-edit-existing-speaker",
+        "game": "visual-novel",
+        "goal": "Edit the already selected speaker directly from the dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "edit",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "revise Character definition",
+          "resume original line"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "revise Character definition",
+            "operation": "character-name"
+          },
+          {
+            "description": "resume original line",
+            "operation": "response-text"
+          }
+        ]
       }
     },
     {
@@ -2566,6 +3377,45 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-rename-reveal-flag",
+        "game": "visual-novel",
+        "goal": "Introduce a reveal flag while writing the dialogue and conditionally change a speaker alias.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create reveal flag",
+          "define conditional alias",
+          "write reveal response"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create reveal flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "define conditional alias",
+            "operation": "character-alias"
+          },
+          {
+            "description": "write reveal response",
+            "operation": "response-text"
+          }
+        ]
       }
     },
     {
@@ -2633,6 +3483,40 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-revisit-dialogue",
+        "game": "visual-novel",
+        "goal": "Revise a completed interaction and immediately return to the running conversation.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "modify response condition",
+          "save edited response",
+          "resume real conversation"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "modify response condition",
+            "operation": "response-condition"
+          },
+          {
+            "description": "save edited response",
+            "operation": "canonical-save"
+          },
+          {
+            "description": "resume real conversation",
+            "operation": "return-to-play"
+          }
+        ]
       }
     },
     {
@@ -2725,6 +3609,45 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      },
+      "definition": {
+        "id": "vn-track-affinity",
+        "game": "visual-novel",
+        "goal": "Add a relationship score while writing a conditional dialogue response.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "number-variable"
+          }
+        ],
+        "author_work": [
+          "define relationship score",
+          "write conditional response",
+          "set score effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define relationship score",
+            "operation": "variable-name"
+          },
+          {
+            "description": "write conditional response",
+            "operation": "response-condition"
+          },
+          {
+            "description": "set score effect",
+            "operation": "response-effects"
+          }
+        ]
       }
     }
   ]
