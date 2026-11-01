@@ -53,7 +53,7 @@ For a reproducible comparison, keep the earlier task lookup as a reference snaps
 
 **Relationship-driven visual novel:** author new dialogue while playing, create a speaker or portrait in context, edit selected Characters, manage name reveals, dialogue variables and choice-dependent responses, capture nicknames, and revisit scenes. A major source-model question is whether State resources can be created *from inside* dialogue when their need becomes apparent.
 
-**Continuously expanding RPG:** author a new player input, create the next Node and Location, create an NPC and portrait, introduce an inventory Item, add a locked-gate flag, author a stateful shortcut, and keep expanding the world from the current branch. A major source-model question is how Node, Item and State creation are exposed at the interaction that needs them.
+**Continuously expanding RPG:** author a new player input, create the next Node and Location, create an NPC and portrait, introduce an inventory Item, add a locked-gate flag, author a stateful shortcut, and keep expanding the world from the current branch. The source graph already declares an Interaction → new Node task handler; the lookup recognizes that route without assuming its rendered click count. Item and State creation from encounters remain static-model gaps, as does creating yet another Node directly from the Node editor.
 
 The **shared objective** is predictable contextual nesting: every authorable thing that a menu needs should offer the canonical owning editor; nested work must suspend the parent, return the new resource identity, and resume the original task. Do not create genre-specific editors to satisfy a task.
 
