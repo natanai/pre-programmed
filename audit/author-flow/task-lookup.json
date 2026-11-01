@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "type": "source-derived-anticipated-task-lookup",
   "generated_from": {
     "source_inventory": "audit/author-flow/source-graph.json",
