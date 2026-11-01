@@ -235,6 +235,7 @@ function deriveDelegatedReferenceSites(model, readFile) {
     condition:"src/author/ConditionEditor.tsx",
     effects:"src/author/EffectsEditor.tsx",
     after:"src/features/narrative/author/NarrativeAfterEditor.tsx",
+    world:"src/features/world/author/entityWorkspaces.tsx",
   };
   const fileSource=Object.fromEntries(Object.entries(files).map(([key,path])=>[key,readFile(path)??""]));
   const registered=[
@@ -283,18 +284,17 @@ function deriveDelegatedReferenceSites(model, readFile) {
       for(const field of block.matchAll(fieldRx)){
         const kind=field[1];
         const sourceLocation={file:adapterFile,line:source.slice(0,m.index+field.index).split("\n").length};
-        for(const workspace of ["narrative.interaction","narrative.node"]){
-          const host=workspace==="narrative.interaction"?fileSource.interaction:fileSource.node;
+        for(const workspace of ["narrative.interaction","narrative.node",...(channel==="condition"&&fileSource.world.includes("world-character-alias-rules")&&fileSource.world.includes("<ConditionEditor")?["world-entity"]:[])]){
+          const host=workspace==="narrative.interaction"?fileSource.interaction:workspace==="world-entity"?fileSource.world:fileSource.node;
           if(workspace==="narrative.interaction"&&!hostOkay)continue;
           const outer=channel==="condition"?"<OutcomeConditionEditor":"<OutcomeEffectsEditor";
-          const hasOuter=channel==="effect"&&workspace==="narrative.node"
-            ? host.includes("<EffectsEditor")
-            : host.includes(outer);
+          const hasOuter=workspace==="world-entity"?host.includes("<ConditionEditor"):
+            channel==="effect"&&workspace==="narrative.node"?host.includes("<EffectsEditor"):host.includes(outer);
           if(!hasOuter)continue;
           insert(workspace,kind,{
             channel,adapter:type,source:sourceLocation,
             declaration_chain:[
-              {file:workspace==="narrative.node"?files.node:files.interaction,component:outer},
+              {file:workspace==="world-entity"?files.world:workspace==="narrative.node"?files.node:files.interaction,component:workspace==="world-entity"?"Character alias ConditionEditor":outer},
               {file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"},
               {file:channel==="condition"?files.condition:files.effects,component:"registered feature-owned "+channel+" adapter"},
               {file:adapterFile,component:m[1]+" ReferenceField"},
@@ -304,6 +304,7 @@ function deriveDelegatedReferenceSites(model, readFile) {
               ? ["Open the appropriate WHEN/condition section","Choose "+type+" condition type","Use the canonical "+kind+" reference field"]
               : ["Open the appropriate EFFECTS section","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"],
             contingent:["response/entry editor is visible","section is expanded","adapter type is selected",
+              ...(workspace==="world-entity"?["resource is a Character, not a Location","Character has at least one alias","alias SHOW WHEN is configured"]:[]),
               ...(block.includes('scope === "node"')?["global scope selected; node-local flags do not require a project resource"]:[])],
           });
         }
