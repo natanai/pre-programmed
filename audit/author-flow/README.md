@@ -32,6 +32,26 @@ The generated evaluation includes:
 - Explicit `unmodeled_or_unresolved` entries for inaccessible source bindings, dynamic conditions, omitted steps and behavior not proven by static code.
 - `--compare` reports changed source visibility and witnesses for the same task IDs across revisions.
 
+## Trace delegated authoring decisions
+
+The lookup now follows **source-declared component composition and registered feature-owned rule adapters**, not only direct resource-picker fields. This matters for tasks that create a Flag from a response's WHEN condition, a relationship Variable from a numeric Effect, an Item from a GIVE ITEM Effect, a text Variable from AFTER → CAPTURE INPUT, or another Node through the real destination task. The Character alias WHEN rule similarly uses the canonical State adapter rather than a separate flag editor.
+
+A route with several possible adapters records **every source-declared alternative**, its source lines and the conditional decisions required to expose the reference field. These choices are not all traversed for one task. The `source_declared_access_stages` range is a count of *described stages*, **not a physical click count**. Conditional control totals remain null when a nested adapter's UI steps cannot be reliably counted.
+
+```sh
+# A compact, deterministic comparison of documented complexity dimensions.
+node scripts/author-flow/task-lookup.mjs --complexity
+node scripts/author-flow/task-lookup.mjs --task rpg-inventory-loot
+node scripts/author-flow/task-lookup.mjs --task vn-capture-nickname
+node scripts/author-flow/task-lookup.mjs --task vn-rename-reveal-flag
+```
+
+The complexity query sorts by unresolved route, unresolved requested operation, described decision stages and feature-owner crossings. **It is not a subjective UX ranking or a scalar "clunkiness" score.** `--compare` includes decision-stage changes and owner crossings, so agents can see what changed for the *same imagined task* between source revisions.
+
+A Node's `+ VALID INPUT` opens the canonical Interaction editor; the lookup records that as an **additional owning Author task**, rather than falsely treating the Node as containing a second player-input editor.
+
+The remaining unresolved source route is a direct Node → scene-image assignment. This is an analysis boundary: do not equate a Character portrait, a Location resource or an indirect Media path with an implemented Node background/graphic-novel scene capability unless its real presentation contract supports that use.
+
 ## Internals are not competing current task reports
 
 `source-graph.json` is a large **machine-generated AST inventory**, not an imagined task catalog or source of truth for developer UX conclusions. `scripts/author-flow/navigation-model.mjs` is a pure on-demand compiler and CLI for low-level route questions; it no longer persists a second current navigation JSON. The task-lookup calculator imports that compiler directly.
