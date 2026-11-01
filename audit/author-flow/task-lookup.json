@@ -5260,7 +5260,7 @@
       "definition": {
         "id": "vn-rename-reveal-flag",
         "game": "visual-novel",
-        "goal": "Introduce a reveal flag while writing the dialogue and conditionally change a speaker alias.",
+        "goal": "While editing dialogue, open the existing Character, create a reveal flag in that Character's alias WHEN rule, and return to finish the reveal.",
         "start": {
           "surface": "author-workspace",
           "workspace": "narrative.node",
@@ -5268,14 +5268,18 @@
         },
         "resource_chain": [
           {
+            "action": "edit",
+            "kind": "character"
+          },
+          {
             "action": "create",
             "kind": "flag"
           }
         ],
         "author_work": [
-          "create reveal flag",
-          "define conditional alias",
-          "write reveal response"
+          "open speaker's canonical Character editor",
+          "define conditional display alias using a new flag",
+          "write dialogue after the reveal"
         ],
         "finish": {
           "save_parent": true,
@@ -5283,15 +5287,15 @@
         },
         "requested_operations": [
           {
-            "description": "create reveal flag",
-            "operation": "variable-name"
+            "description": "open speaker's canonical Character editor",
+            "operation": "speaker-reference"
           },
           {
-            "description": "define conditional alias",
+            "description": "define conditional display alias using a new flag",
             "operation": "character-alias"
           },
           {
-            "description": "write reveal response",
+            "description": "write dialogue after the reveal",
             "operation": "response-text"
           }
         ]
