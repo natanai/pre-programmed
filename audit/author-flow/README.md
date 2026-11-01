@@ -2,6 +2,25 @@
 
 This folder is an **audit-only record**. It does not modify Player or Author UI, create an editor, or change persistence.
 
+## Primary workflow: hypothetical tasks answered from the repository
+
+The **task lookup table**, [task-lookup.json](task-lookup.json), is the central development artifact for comparing the authoring experiences we intend to support. The hypothetical author goals are declared in [anticipated-tasks.json](anticipated-tasks.json): a dating visual novel and a continuously branching RPG. The paths and canonical resource owners come from the source-derived [navigation-model.json](navigation-model.json). The table records conditional source-backed control costs, task nesting, source-route gaps, and all unmodeled work. None of these records require manually using Author Mode.
+
+```sh
+npm run audit:author:extract
+node scripts/author-flow/navigation-model.mjs
+node scripts/author-flow/task-lookup.mjs
+node scripts/author-flow/task-lookup.mjs --summary
+node scripts/author-flow/task-lookup.mjs --task vn-character-portrait
+node scripts/author-flow/task-lookup.mjs --task rpg-create-destination
+node scripts/author-flow/task-lookup.mjs --search "nickname"
+node scripts/author-flow/task-lookup.mjs --gaps
+node scripts/author-flow/task-lookup.mjs --check
+node scripts/author-flow/task-lookup.mjs --compare path/to/previous-task-lookup.json
+```
+
+The **lookup is source-traceable, not a subjective usability score**. Its conditional control subtotals exclude text entry, authoring field configuration, player-to-editor entry, confirmations, and all unmodeled actions; end-to-end click counts remain null. Missing source references mean **the current static model cannot trace that contextual route**, not that no other route exists. Use source navigation and capability contracts to resolve gaps, then regenerate and compare identical anticipated tasks. Browser testing is not a prerequisite for this work, and **no GitHub Actions are attached to it**. See [the two reference-game task descriptions](../../docs/authoring-reference-scenarios.md).
+
 ## Why a directed graph?
 
 The interface includes loops, conditional choices, nested task returns, resource-dependent branches, and unbounded project text. There is no finite universal tree of all possible screens. Model observed **states** connected by **interactions** instead.
