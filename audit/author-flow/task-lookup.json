@@ -17,11 +17,11 @@
   },
   "summary": {
     "total_tasks": 26,
-    "task_operation_witnesses_found": 55,
-    "task_operation_witnesses_unresolved": 5,
-    "resolved_nested_resource_routes": 22,
+    "task_operation_witnesses_found": 57,
+    "task_operation_witnesses_unresolved": 2,
+    "resolved_nested_resource_routes": 21,
     "tasks_without_nested_resource_route": 3,
-    "unresolved_nested_resource_routes": 1,
+    "unresolved_nested_resource_routes": 2,
     "games": [
       {
         "game": "branching-rpg",
@@ -30,17 +30,17 @@
         "tasks_without_nested_resource_route": 1,
         "unresolved_nested_resource_routes": 0,
         "operation_witnesses_in_context": 30,
-        "operation_witnesses_unresolved": 1,
+        "operation_witnesses_unresolved": 0,
         "top_static_gaps": []
       },
       {
         "game": "visual-novel",
         "anticipated_tasks": 12,
-        "resolved_nested_resource_routes": 9,
+        "resolved_nested_resource_routes": 8,
         "tasks_without_nested_resource_route": 2,
-        "unresolved_nested_resource_routes": 1,
-        "operation_witnesses_in_context": 25,
-        "operation_witnesses_unresolved": 4,
+        "unresolved_nested_resource_routes": 2,
+        "operation_witnesses_in_context": 27,
+        "operation_witnesses_unresolved": 2,
         "top_static_gaps": [
           {
             "task_id": "vn-create-scene-image",
@@ -48,6 +48,18 @@
               {
                 "kind": "media-image",
                 "at": "workspace:narrative.node",
+                "reason": [
+                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+                ]
+              }
+            ]
+          },
+          {
+            "task_id": "vn-rename-reveal-flag",
+            "missing": [
+              {
+                "kind": "flag",
+                "at": "workspace:world-entity",
                 "reason": [
                   "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
                 ]
@@ -120,6 +132,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -135,6 +148,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -203,6 +217,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -298,6 +313,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -312,7 +328,33 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "follow-on-owner-task-source-declared",
+          "additional_owner_task": {
+            "from": "narrative.node",
+            "to": "narrative.interaction",
+            "intermediate_controls": [
+              "Node INPUT HANDLING",
+              "+ VALID INPUT",
+              "Canonical Interaction PLAYER ENTERS field"
+            ],
+            "source": [
+              {
+                "file": "src/features/narrative/author/NodeInputList.tsx",
+                "component": "+ VALID INPUT"
+              },
+              {
+                "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                "component": "openInput -> inputRoute"
+              },
+              {
+                "file": "src/features/narrative/author/InteractionEditor.tsx",
+                "component": "PLAYER ENTERS"
+              }
+            ],
+            "conditional": true,
+            "extra_task_openings": 1,
+            "exact_clicks": null
+          },
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -418,13 +460,15 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 1,
-        "operation_controls_without_context": 1,
+        "operation_follow_on_task_paths": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
         "nested-rule-editor-decisions",
+        "requires-follow-on-owner-task",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -443,11 +487,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "player-input",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -527,6 +566,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -542,6 +582,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -557,6 +598,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -666,6 +708,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -766,6 +809,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -781,6 +825,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -849,6 +894,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -944,6 +990,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -959,6 +1006,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -1010,6 +1058,7 @@
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -1104,6 +1153,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1119,6 +1169,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -1187,6 +1238,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -1283,6 +1335,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1304,6 +1357,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1319,6 +1373,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -1344,6 +1399,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -1441,6 +1497,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1456,6 +1513,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -1524,6 +1582,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -1618,6 +1677,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1633,6 +1693,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -1882,6 +1943,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -1977,6 +2039,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -1992,6 +2055,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -2357,6 +2421,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -2452,6 +2517,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -2467,6 +2533,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -2535,6 +2602,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -2640,6 +2708,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -2655,6 +2724,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -2670,6 +2740,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -2779,6 +2850,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -2879,6 +2951,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -2894,6 +2967,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -2962,6 +3036,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -3056,6 +3131,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -3071,6 +3147,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -3320,6 +3397,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -3410,6 +3488,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -3431,6 +3510,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -3456,6 +3536,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -3549,6 +3630,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -3564,6 +3646,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -3673,6 +3756,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -3768,6 +3852,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -3786,9 +3871,16 @@
               "workspace": "narrative.node",
               "source_line": 398,
               "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 458,
+              "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -3856,8 +3948,9 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
-        "operation_controls_found_in_context": 1,
-        "operation_controls_without_context": 1,
+        "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -3883,11 +3976,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "speaker-reference",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -3967,6 +4055,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -3982,6 +4071,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4000,9 +4090,16 @@
               "workspace": "narrative.node",
               "source_line": 398,
               "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 458,
+              "status": "source-witness-found"
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -4112,6 +4209,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -4212,6 +4310,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4227,6 +4326,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -4476,6 +4576,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -4571,6 +4672,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4586,6 +4688,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -4654,6 +4757,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -4755,6 +4859,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4776,6 +4881,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4794,9 +4900,16 @@
               "workspace": "narrative.node",
               "source_line": 398,
               "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 458,
+              "status": "source-witness-found"
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -4865,6 +4978,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -4964,6 +5078,7 @@
             }
           ],
           "status": "owner-not-reached-by-declared-task-path",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -4972,6 +5087,7 @@
           "operation": "node-scene-media",
           "source_evidence": [],
           "status": "source-witness-unresolved",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -5012,6 +5128,7 @@
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 0,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 2,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -5125,6 +5242,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -5146,6 +5264,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -5214,6 +5333,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -5250,7 +5370,7 @@
     {
       "task_id": "vn-rename-reveal-flag",
       "game": "visual-novel",
-      "goal": "Introduce a reveal flag while writing the dialogue and conditionally change a speaker alias.",
+      "goal": "While editing dialogue, open the existing Character, create a reveal flag in that Character's alias WHEN rule, and return to finish the reveal.",
       "starting_workspace": "narrative.node",
       "origin_assumption": {
         "surface": "author-workspace",
@@ -5301,28 +5421,41 @@
         ]
       },
       "intended_author_work": [
-        "create reveal flag",
-        "define conditional alias",
-        "write reveal response"
+        "open speaker's canonical Character editor",
+        "define conditional display alias using a new flag",
+        "write dialogue after the reveal"
       ],
       "operation_steps": [
         {
-          "intent": "create reveal flag",
-          "operation": "variable-name",
+          "intent": "open speaker's canonical Character editor",
+          "operation": "speaker-reference",
           "source_evidence": [
             {
-              "file": "src/features/state/author/workspaces.tsx",
-              "workspace": "state-variable",
-              "source_line": 329,
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 413,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 398,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 458,
               "status": "source-witness-found"
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
         {
-          "intent": "define conditional alias",
+          "intent": "define conditional display alias using a new flag",
           "operation": "character-alias",
           "source_evidence": [
             {
@@ -5332,12 +5465,13 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
         {
-          "intent": "write reveal response",
+          "intent": "write dialogue after the reveal",
           "operation": "response-text",
           "source_evidence": [
             {
@@ -5354,277 +5488,114 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "delegated-contextual-route-source-declared",
-      "declared_path_complete": true,
+      "source_path_status": "missing-source-link",
+      "declared_path_complete": false,
       "route_steps": [
         {
           "step": 1,
-          "operation": "create",
-          "resource_kind": "flag",
+          "operation": "edit",
+          "resource_kind": "character",
           "from": "workspace:narrative.node",
-          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "expected_resource_owner": "src/features/world/author/manifest.ts",
           "source_reference_candidates": [
             {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 73
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 149
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 125
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "line": 398,
+              "column": 17
             }
           ],
+          "source_route": "route:world.entity",
+          "source_workspace": "workspace:world-entity",
+          "controls": {
+            "conditional_min": 1,
+            "conditional_max": 1,
+            "branch": "selected ReferenceField [EDIT]",
+            "guards": [
+              "selected reference exists",
+              "provider canEdit",
+              "reference field is rendered"
+            ]
+          },
+          "contract_status": "conditional-source-route-declared",
+          "blockers": [],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [
+            "src/features/narrative/author/nodeWorkspace.tsx:398:17"
+          ],
+          "source_direct_handler": null,
+          "delegated_paths": [],
+          "source_access_decision_range": null
+        },
+        {
+          "step": 2,
+          "operation": "create",
+          "resource_kind": "flag",
+          "from": "workspace:world-entity",
+          "expected_resource_owner": "src/features/state/author/manifest.tsx",
+          "source_reference_candidates": [],
           "source_route": "route:state.definitions",
           "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "conditional-delegated-contextual-route-declared",
-          "blockers": [],
-          "entry_source_type": "delegated-resource-or-rule-control",
-          "evidence": [
-            "delegated:narrative.node:flag:condition:flag",
-            "delegated:narrative.node:flag:effect:clear_flag",
-            "delegated:narrative.node:flag:effect:set_flag"
+          "contract_status": "unresolved-from-source",
+          "blockers": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
           ],
+          "entry_source_type": "canonical-reference-field",
+          "evidence": [],
           "source_direct_handler": null,
-          "delegated_paths": [
-            {
-              "channel": "condition",
-              "adapter": "flag",
-              "access_decisions": [
-                "Open the appropriate WHEN/condition section",
-                "Choose flag condition type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
-                  "component": "<OutcomeConditionEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "ConditionEditor"
-                },
-                {
-                  "file": "src/author/ConditionEditor.tsx",
-                  "component": "registered feature-owned condition adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "flagConditionAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 73
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "clear_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose clear_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "clearFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 149
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "set_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose set_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "setFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 125
-              }
-            }
-          ],
-          "source_access_decision_range": {
-            "min": 3,
-            "max": 4,
-            "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 3
-          }
+          "delegated_paths": [],
+          "source_access_decision_range": null
         }
       ],
-      "reverse_handoff_order": [
-        {
-          "from": "workspace:state-variable",
-          "to": "workspace:narrative.node",
-          "trigger": "accepted child Save with matching resource completion",
-          "automatic": "source-contract-conditional"
-        }
-      ],
+      "reverse_handoff_order": [],
       "measures": {
-        "declared_resource_tasks": 1,
+        "declared_resource_tasks": 2,
         "source_matched_resource_steps": 1,
-        "maximum_nested_author_depth_from_start": 2,
+        "maximum_nested_author_depth_from_start": null,
         "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
-        "source_declared_pre_reference_decisions": {
-          "lower": 3,
-          "upper": 4,
-          "metric": "source-described decisions across nested UI layers, not physical clicks",
-          "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
-        },
-        "alternative_delegated_paths": 2,
-        "conditional_delegated_paths": [
-          {
-            "resource": "flag",
-            "channel": "condition",
-            "adapter": "flag",
-            "decision_sequence": [
-              "Open the appropriate WHEN/condition section",
-              "Choose flag condition type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "clear_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose clear_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "set_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose set_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          }
-        ],
+        "source_declared_pre_reference_decisions": null,
+        "alternative_delegated_paths": 0,
+        "conditional_delegated_paths": [],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 2,
-        "operation_controls_without_context": 1,
+        "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
+        "contextual-task-path-unresolved",
         "cross-owner-authoring",
-        "nested-rule-editor-decisions",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
         {
-          "category": "authored-content-actions-not-modeled",
-          "work": "create reveal flag"
+          "category": "missing-static-navigation",
+          "at": "workspace:world-entity",
+          "operation": "create",
+          "resource_kind": "flag",
+          "reason": [
+            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          ]
         },
         {
           "category": "authored-content-actions-not-modeled",
-          "work": "define conditional alias"
+          "work": "open speaker's canonical Character editor"
         },
         {
           "category": "authored-content-actions-not-modeled",
-          "work": "write reveal response"
+          "work": "define conditional display alias using a new flag"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "write dialogue after the reveal"
         },
         {
           "category": "entry-from-real-player-not-modeled",
@@ -5633,11 +5604,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "character-alias",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -5708,6 +5674,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -5723,6 +5690,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -5738,6 +5706,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -5763,6 +5732,7 @@
           "not_a_click_minimum": true
         },
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
@@ -5866,6 +5836,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -5881,6 +5852,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
@@ -5896,6 +5868,7 @@
             }
           ],
           "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
@@ -6079,6 +6052,7 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 3,
+        "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
