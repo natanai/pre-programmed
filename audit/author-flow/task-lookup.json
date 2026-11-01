@@ -1,19 +1,23 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "type": "source-derived-anticipated-task-lookup",
   "generated_from": {
-    "tasks": "audit/author-flow/anticipated-tasks.json",
-    "source_navigation": "audit/author-flow/navigation-model.json"
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "compiler": "scripts/author-flow/task-lookup.mjs"
   },
   "interpretation": {
     "task_catalog": "Goals are explicit hypothetical author tasks for two game genres, not observed behavior",
     "graph": "Routes and source-owner ownership come from the canonical source-derived navigation model",
     "cost": "Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
     "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
-    "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
+    "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
+    "authority": "This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
+    "operational_evidence": "Source control witnesses prove declarations, not rendered interactions, completed configuration, or Save."
   },
   "summary": {
     "total_tasks": 26,
+    "task_operation_witnesses_found": 49,
+    "task_operation_witnesses_unresolved": 11,
     "resolved_nested_resource_routes": 14,
     "tasks_without_nested_resource_route": 3,
     "unresolved_nested_resource_routes": 9,
@@ -24,7 +28,8 @@
         "resolved_nested_resource_routes": 9,
         "tasks_without_nested_resource_route": 1,
         "unresolved_nested_resource_routes": 4,
-        "needs_content_action_model": 14,
+        "operation_witnesses_in_context": 27,
+        "operation_witnesses_unresolved": 4,
         "top_static_gaps": [
           {
             "task_id": "rpg-branch-again",
@@ -84,7 +89,8 @@
         "resolved_nested_resource_routes": 5,
         "tasks_without_nested_resource_route": 2,
         "unresolved_nested_resource_routes": 5,
-        "needs_content_action_model": 12,
+        "operation_witnesses_in_context": 22,
+        "operation_witnesses_unresolved": 7,
         "top_static_gaps": [
           {
             "task_id": "vn-capture-nickname",
@@ -165,9 +171,75 @@
         "workspace": "radix-sequence",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-add-sequenced-audio",
+        "game": "branching-rpg",
+        "goal": "Create a sound from within the music sequence editor.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "radix-sequence",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "synth-sound"
+          }
+        ],
+        "author_work": [
+          "create synth sound",
+          "assign to sequence"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create synth sound",
+            "operation": "synth-definition"
+          },
+          {
+            "description": "assign to sequence",
+            "operation": "sequence-sound-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "create synth sound",
         "assign to sequence"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create synth sound",
+          "operation": "synth-definition",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/synthSoundWorkspace.tsx",
+              "workspace": "media-synth-sound",
+              "source_line": 129,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign to sequence",
+          "operation": "sequence-sound-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/radix/author/workspaces.tsx",
+              "workspace": "radix-sequence",
+              "source_line": 176,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -227,6 +299,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -270,9 +344,75 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-branch-again",
+        "game": "branching-rpg",
+        "goal": "From an expanding encounter, create another linked destination.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "node"
+          }
+        ],
+        "author_work": [
+          "create new Node",
+          "add next valid travel input"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create new Node",
+            "operation": "node-narration"
+          },
+          {
+            "description": "add next valid travel input",
+            "operation": "player-input"
+          }
+        ]
+      },
       "intended_author_work": [
         "create new Node",
         "add next valid travel input"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create new Node",
+          "operation": "node-narration",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "add next valid travel input",
+          "operation": "player-input",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 282,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -304,6 +444,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -337,6 +479,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "player-input",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -355,10 +502,100 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-character-encounter",
+        "game": "branching-rpg",
+        "goal": "Create an NPC and portrait while composing the encounter Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create NPC",
+          "author portrait",
+          "write encounter"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create NPC",
+            "operation": "character-name"
+          },
+          {
+            "description": "author portrait",
+            "operation": "image-art"
+          },
+          {
+            "description": "write encounter",
+            "operation": "node-narration"
+          }
+        ]
+      },
       "intended_author_work": [
         "create NPC",
         "author portrait",
         "write encounter"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create NPC",
+          "operation": "character-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author portrait",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write encounter",
+          "operation": "node-narration",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -457,6 +694,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -505,9 +744,75 @@
         "workspace": "commands-command",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-command-with-character",
+        "game": "branching-rpg",
+        "goal": "Define a player command targeting an as-yet-uncreated NPC.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "commands-command",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "create NPC",
+          "define command match"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create NPC",
+            "operation": "character-name"
+          },
+          {
+            "description": "define command match",
+            "operation": "command-name"
+          }
+        ]
+      },
       "intended_author_work": [
         "create NPC",
         "define command match"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create NPC",
+          "operation": "character-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "define command match",
+          "operation": "command-name",
+          "source_evidence": [
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 350,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -567,6 +872,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -610,9 +917,75 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-create-destination",
+        "game": "branching-rpg",
+        "goal": "Create a destination Node while writing an interaction linking to it.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "node"
+          }
+        ],
+        "author_work": [
+          "create destination Node",
+          "connect navigation effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create destination Node",
+            "operation": "node-narration"
+          },
+          {
+            "description": "connect navigation effect",
+            "operation": "response-destination"
+          }
+        ]
+      },
       "intended_author_work": [
         "create destination Node",
         "connect navigation effect"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create destination Node",
+          "operation": "node-narration",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "connect navigation effect",
+          "operation": "response-destination",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 454,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "resource-task-handler-source-declared",
       "declared_path_complete": true,
@@ -655,6 +1028,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -697,9 +1072,75 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-create-new-location",
+        "game": "branching-rpg",
+        "goal": "Create a new Location while authoring the Node that needs it.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "location"
+          }
+        ],
+        "author_work": [
+          "name new Location",
+          "assign it to Node"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name new Location",
+            "operation": "location-name"
+          },
+          {
+            "description": "assign it to Node",
+            "operation": "location-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "name new Location",
         "assign it to Node"
+      ],
+      "operation_steps": [
+        {
+          "intent": "name new Location",
+          "operation": "location-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign it to Node",
+          "operation": "location-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 390,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -759,6 +1200,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -802,10 +1245,97 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-define-north-input",
+        "game": "branching-rpg",
+        "goal": "Turn a previously unrecognized northward input into a valid Node interaction.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "accept northward input",
+          "author response",
+          "provide next destination"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "accept northward input",
+            "operation": "player-input"
+          },
+          {
+            "description": "author response",
+            "operation": "response-text"
+          },
+          {
+            "description": "provide next destination",
+            "operation": "response-destination"
+          }
+        ]
+      },
       "intended_author_work": [
         "accept northward input",
         "author response",
         "provide next destination"
+      ],
+      "operation_steps": [
+        {
+          "intent": "accept northward input",
+          "operation": "player-input",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 282,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author response",
+          "operation": "response-text",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 429,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "provide next destination",
+          "operation": "response-destination",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 454,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "workspace-task-without-nested-route",
       "declared_path_complete": true,
@@ -824,6 +1354,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -869,9 +1401,75 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-edit-known-location",
+        "game": "branching-rpg",
+        "goal": "Edit the selected Location directly from its Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "edit",
+            "kind": "location"
+          }
+        ],
+        "author_work": [
+          "change Location description",
+          "return to Node"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "change Location description",
+            "operation": "location-description"
+          },
+          {
+            "description": "return to Node",
+            "operation": "location-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "change Location description",
         "return to Node"
+      ],
+      "operation_steps": [
+        {
+          "intent": "change Location description",
+          "operation": "location-description",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 215,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "return to Node",
+          "operation": "location-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 390,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -931,6 +1529,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -973,9 +1573,75 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-gate-condition",
+        "game": "branching-rpg",
+        "goal": "Define a locked gate condition and its two outcomes.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create gate flag",
+          "author blocked and open routes"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create gate flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "author blocked and open routes",
+            "operation": "response-condition"
+          }
+        ]
+      },
       "intended_author_work": [
         "create gate flag",
         "author blocked and open routes"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create gate flag",
+          "operation": "variable-name",
+          "source_evidence": [
+            {
+              "file": "src/features/state/author/workspaces.tsx",
+              "workspace": "state-variable",
+              "source_line": 329,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author blocked and open routes",
+          "operation": "response-condition",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 451,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -1008,6 +1674,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1042,6 +1710,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "variable-name",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -1060,9 +1733,75 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-inventory-loot",
+        "game": "branching-rpg",
+        "goal": "Introduce an inventory Item from the encounter where it is acquired.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "item"
+          }
+        ],
+        "author_work": [
+          "create item",
+          "assign item-reward effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create item",
+            "operation": "item-name"
+          },
+          {
+            "description": "assign item-reward effect",
+            "operation": "response-effects"
+          }
+        ]
+      },
       "intended_author_work": [
         "create item",
         "assign item-reward effect"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create item",
+          "operation": "item-name",
+          "source_evidence": [
+            {
+              "file": "src/features/inventory/author/workspaces.tsx",
+              "workspace": "inventory-item",
+              "source_line": 116,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign item-reward effect",
+          "operation": "response-effects",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 466,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -1094,6 +1833,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1127,6 +1868,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "item-name",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -1145,9 +1891,75 @@
         "workspace": "inventory-item",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-item-icon",
+        "game": "branching-rpg",
+        "goal": "Create a new item image while editing an Inventory Item.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "inventory-item",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "author item icon",
+          "assign image to item"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "author item icon",
+            "operation": "image-art"
+          },
+          {
+            "description": "assign image to item",
+            "operation": "item-image"
+          }
+        ]
+      },
       "intended_author_work": [
         "author item icon",
         "assign image to item"
+      ],
+      "operation_steps": [
+        {
+          "intent": "author item icon",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign image to item",
+          "operation": "item-image",
+          "source_evidence": [
+            {
+              "file": "src/features/inventory/author/workspaces.tsx",
+              "workspace": "inventory-item",
+              "source_line": 128,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -1207,6 +2019,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1250,10 +2064,100 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-location-with-image",
+        "game": "branching-rpg",
+        "goal": "Create a new Location and image before returning to the Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "location"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "name Location",
+          "author image",
+          "complete Node scene"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Location",
+            "operation": "location-name"
+          },
+          {
+            "description": "author image",
+            "operation": "image-art"
+          },
+          {
+            "description": "complete Node scene",
+            "operation": "node-narration"
+          }
+        ]
+      },
       "intended_author_work": [
         "name Location",
         "author image",
         "complete Node scene"
+      ],
+      "operation_steps": [
+        {
+          "intent": "name Location",
+          "operation": "location-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author image",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "complete Node scene",
+          "operation": "node-narration",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -1352,6 +2256,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1400,9 +2306,75 @@
         "workspace": "radix-startup-settings",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-seed-sequence",
+        "game": "branching-rpg",
+        "goal": "Create a sequence while editing startup configuration.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "radix-startup-settings",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "radix-sequence"
+          }
+        ],
+        "author_work": [
+          "define sequence",
+          "assign startup sequence"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define sequence",
+            "operation": "sequence-definition"
+          },
+          {
+            "description": "assign startup sequence",
+            "operation": "startup-sequence"
+          }
+        ]
+      },
       "intended_author_work": [
         "define sequence",
         "assign startup sequence"
+      ],
+      "operation_steps": [
+        {
+          "intent": "define sequence",
+          "operation": "sequence-definition",
+          "source_evidence": [
+            {
+              "file": "src/features/radix/author/workspaces.tsx",
+              "workspace": "radix-sequence",
+              "source_line": 128,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign startup sequence",
+          "operation": "startup-sequence",
+          "source_evidence": [
+            {
+              "file": "src/features/radix/author/startupWorkspace.tsx",
+              "workspace": "radix-startup-settings",
+              "source_line": 52,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -1462,6 +2434,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1504,9 +2478,75 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "rpg-stateful-shortcut",
+        "game": "branching-rpg",
+        "goal": "Create a state variable and author a shortcut that opens later.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create shortcut flag",
+          "write state-dependent path"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create shortcut flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "write state-dependent path",
+            "operation": "node-entry-condition"
+          }
+        ]
+      },
       "intended_author_work": [
         "create shortcut flag",
         "write state-dependent path"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create shortcut flag",
+          "operation": "variable-name",
+          "source_evidence": [
+            {
+              "file": "src/features/state/author/workspaces.tsx",
+              "workspace": "state-variable",
+              "source_line": 329,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write state-dependent path",
+          "operation": "node-entry-condition",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 151,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -1539,6 +2579,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1573,6 +2615,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "variable-name",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -1591,9 +2638,76 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-author-new-reply",
+        "game": "visual-novel",
+        "goal": "While playing a conversation, define a newly entered player reply and its response.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "register new valid input",
+          "write resulting dialogue"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "register new valid input",
+            "operation": "player-input"
+          },
+          {
+            "description": "write resulting dialogue",
+            "operation": "response-text"
+          }
+        ]
+      },
       "intended_author_work": [
         "register new valid input",
         "write resulting dialogue"
+      ],
+      "operation_steps": [
+        {
+          "intent": "register new valid input",
+          "operation": "player-input",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 282,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write resulting dialogue",
+          "operation": "response-text",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 429,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "workspace-task-without-nested-route",
       "declared_path_complete": true,
@@ -1612,6 +2726,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1653,9 +2769,75 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-capture-nickname",
+        "game": "visual-novel",
+        "goal": "Ask the player for a nickname, store it, and use it in later dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "text-variable"
+          }
+        ],
+        "author_work": [
+          "capture player text",
+          "display stored nickname"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "capture player text",
+            "operation": "input-capture"
+          },
+          {
+            "description": "display stored nickname",
+            "operation": "text-mention"
+          }
+        ]
+      },
       "intended_author_work": [
         "capture player text",
         "display stored nickname"
+      ],
+      "operation_steps": [
+        {
+          "intent": "capture player text",
+          "operation": "input-capture",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 194,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "display stored nickname",
+          "operation": "text-mention",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 4,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -1688,6 +2870,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1740,9 +2924,81 @@
         "workspace": "commands-command",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-character-command",
+        "game": "visual-novel",
+        "goal": "Create a command referencing a Character directly from its command editor.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "commands-command",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "define named command",
+          "select newly created Character"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define named command",
+            "operation": "command-name"
+          },
+          {
+            "description": "select newly created Character",
+            "operation": "speaker-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "define named command",
         "select newly created Character"
+      ],
+      "operation_steps": [
+        {
+          "intent": "define named command",
+          "operation": "command-name",
+          "source_evidence": [
+            {
+              "file": "src/features/commands/author/commandWorkspace.tsx",
+              "workspace": "commands-command",
+              "source_line": 350,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "select newly created Character",
+          "operation": "speaker-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 413,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 398,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -1802,6 +3058,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1827,6 +3085,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "speaker-reference",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -1845,10 +3108,106 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-character-portrait",
+        "game": "visual-novel",
+        "goal": "Create a new Character and a portrait without abandoning the dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          },
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "name Character",
+          "author portrait asset",
+          "return to original speaker field"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Character",
+            "operation": "character-name"
+          },
+          {
+            "description": "author portrait asset",
+            "operation": "image-art"
+          },
+          {
+            "description": "return to original speaker field",
+            "operation": "speaker-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "name Character",
         "author portrait asset",
         "return to original speaker field"
+      ],
+      "operation_steps": [
+        {
+          "intent": "name Character",
+          "operation": "character-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author portrait asset",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "return to original speaker field",
+          "operation": "speaker-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 413,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 398,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -1947,6 +3306,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -1995,9 +3356,75 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-choice-branch",
+        "game": "visual-novel",
+        "goal": "Create mutually exclusive dialogue outcomes based on an earlier choice.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "define choice flag",
+          "author both outcomes"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define choice flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "author both outcomes",
+            "operation": "response-condition"
+          }
+        ]
+      },
       "intended_author_work": [
         "define choice flag",
         "author both outcomes"
+      ],
+      "operation_steps": [
+        {
+          "intent": "define choice flag",
+          "operation": "variable-name",
+          "source_evidence": [
+            {
+              "file": "src/features/state/author/workspaces.tsx",
+              "workspace": "state-variable",
+              "source_line": 329,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "author both outcomes",
+          "operation": "response-condition",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 451,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -2030,6 +3457,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2064,6 +3493,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "variable-name",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -2082,9 +3516,75 @@
         "workspace": "world-entity",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-conditional-portrait",
+        "game": "visual-novel",
+        "goal": "While creating a Character, create and attach an image asset.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "world-entity",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "author portrait asset",
+          "select portrait on Character"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "author portrait asset",
+            "operation": "image-art"
+          },
+          {
+            "description": "select portrait on Character",
+            "operation": "character-portrait"
+          }
+        ]
+      },
       "intended_author_work": [
         "author portrait asset",
         "select portrait on Character"
+      ],
+      "operation_steps": [
+        {
+          "intent": "author portrait asset",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "select portrait on Character",
+          "operation": "character-portrait",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 206,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -2144,6 +3644,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2187,10 +3689,108 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-create-new-speaker",
+        "game": "visual-novel",
+        "goal": "While editing dialogue, create the Character who says the line.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "name Character",
+          "write speaker narration",
+          "select new speaker in parent"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "name Character",
+            "operation": "character-name"
+          },
+          {
+            "description": "write speaker narration",
+            "operation": "response-text"
+          },
+          {
+            "description": "select new speaker in parent",
+            "operation": "speaker-reference"
+          }
+        ]
+      },
       "intended_author_work": [
         "name Character",
         "write speaker narration",
         "select new speaker in parent"
+      ],
+      "operation_steps": [
+        {
+          "intent": "name Character",
+          "operation": "character-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write speaker narration",
+          "operation": "response-text",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 429,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "select new speaker in parent",
+          "operation": "speaker-reference",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 413,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 398,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -2250,6 +3850,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2297,9 +3899,68 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-create-scene-image",
+        "game": "visual-novel",
+        "goal": "Create scene image Media while composing a narrative Node.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create image resource",
+          "assign background in narrative"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create image resource",
+            "operation": "image-art"
+          },
+          {
+            "description": "assign background in narrative",
+            "operation": "node-scene-media"
+          }
+        ]
+      },
       "intended_author_work": [
         "create image resource",
         "assign background in narrative"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create image resource",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "assign background in narrative",
+          "operation": "node-scene-media",
+          "source_evidence": [],
+          "status": "source-witness-unresolved",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -2331,6 +3992,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 0,
+        "operation_controls_without_context": 2,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2364,6 +4027,16 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "image-art",
+          "reason": "owner-not-reached-by-declared-task-path"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "node-scene-media",
+          "reason": "source-witness-unresolved"
         }
       ],
       "provenance": {
@@ -2382,9 +4055,81 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-edit-existing-speaker",
+        "game": "visual-novel",
+        "goal": "Edit the already selected speaker directly from the dialogue.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "edit",
+            "kind": "character"
+          }
+        ],
+        "author_work": [
+          "revise Character definition",
+          "resume original line"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "revise Character definition",
+            "operation": "character-name"
+          },
+          {
+            "description": "resume original line",
+            "operation": "response-text"
+          }
+        ]
+      },
       "intended_author_work": [
         "revise Character definition",
         "resume original line"
+      ],
+      "operation_steps": [
+        {
+          "intent": "revise Character definition",
+          "operation": "character-name",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 124,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "resume original line",
+          "operation": "response-text",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 429,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "contextual-route-source-declared",
       "declared_path_complete": true,
@@ -2444,6 +4189,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2486,10 +4233,102 @@
         "workspace": "narrative.node",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-rename-reveal-flag",
+        "game": "visual-novel",
+        "goal": "Introduce a reveal flag while writing the dialogue and conditionally change a speaker alias.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "flag"
+          }
+        ],
+        "author_work": [
+          "create reveal flag",
+          "define conditional alias",
+          "write reveal response"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create reveal flag",
+            "operation": "variable-name"
+          },
+          {
+            "description": "define conditional alias",
+            "operation": "character-alias"
+          },
+          {
+            "description": "write reveal response",
+            "operation": "response-text"
+          }
+        ]
+      },
       "intended_author_work": [
         "create reveal flag",
         "define conditional alias",
         "write reveal response"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create reveal flag",
+          "operation": "variable-name",
+          "source_evidence": [
+            {
+              "file": "src/features/state/author/workspaces.tsx",
+              "workspace": "state-variable",
+              "source_line": 329,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "define conditional alias",
+          "operation": "character-alias",
+          "source_evidence": [
+            {
+              "file": "src/features/world/author/entityWorkspaces.tsx",
+              "workspace": "world-entity",
+              "source_line": 128,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write reveal response",
+          "operation": "response-text",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 429,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 158,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -2522,6 +4361,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 1,
+        "operation_controls_without_context": 2,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2560,6 +4401,16 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "variable-name",
+          "reason": "owner-not-reached-by-declared-task-path"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "character-alias",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -2578,10 +4429,91 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-revisit-dialogue",
+        "game": "visual-novel",
+        "goal": "Revise a completed interaction and immediately return to the running conversation.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [],
+        "author_work": [
+          "modify response condition",
+          "save edited response",
+          "resume real conversation"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "modify response condition",
+            "operation": "response-condition"
+          },
+          {
+            "description": "save edited response",
+            "operation": "canonical-save"
+          },
+          {
+            "description": "resume real conversation",
+            "operation": "return-to-play"
+          }
+        ]
+      },
       "intended_author_work": [
         "modify response condition",
         "save edited response",
         "resume real conversation"
+      ],
+      "operation_steps": [
+        {
+          "intent": "modify response condition",
+          "operation": "response-condition",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 451,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "save edited response",
+          "operation": "canonical-save",
+          "source_evidence": [
+            {
+              "file": "src/author/ui/workspaceDefinition.tsx",
+              "workspace": null,
+              "source_line": 161,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "resume real conversation",
+          "operation": "return-to-play",
+          "source_evidence": [
+            {
+              "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+              "workspace": null,
+              "source_line": 339,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "workspace-task-without-nested-route",
       "declared_path_complete": true,
@@ -2600,6 +4532,8 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "operation_controls_found_in_context": 3,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2645,10 +4579,96 @@
         "workspace": "narrative.interaction",
         "play_to_editor_entry": "not-modeled-in-static-graph"
       },
+      "definition": {
+        "id": "vn-track-affinity",
+        "game": "visual-novel",
+        "goal": "Add a relationship score while writing a conditional dialogue response.",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.interaction",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "number-variable"
+          }
+        ],
+        "author_work": [
+          "define relationship score",
+          "write conditional response",
+          "set score effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "define relationship score",
+            "operation": "variable-name"
+          },
+          {
+            "description": "write conditional response",
+            "operation": "response-condition"
+          },
+          {
+            "description": "set score effect",
+            "operation": "response-effects"
+          }
+        ]
+      },
       "intended_author_work": [
         "define relationship score",
         "write conditional response",
         "set score effect"
+      ],
+      "operation_steps": [
+        {
+          "intent": "define relationship score",
+          "operation": "variable-name",
+          "source_evidence": [
+            {
+              "file": "src/features/state/author/workspaces.tsx",
+              "workspace": "state-variable",
+              "source_line": 329,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-not-reached-by-declared-task-path",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "write conditional response",
+          "operation": "response-condition",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 451,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "set score effect",
+          "operation": "response-effects",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/InteractionEditor.tsx",
+              "workspace": "narrative.interaction",
+              "source_line": 466,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
       ],
       "source_path_status": "missing-source-link",
       "declared_path_complete": false,
@@ -2681,6 +4701,8 @@
         "cross_owner_transitions": 0,
         "chooser_branch_points": 0,
         "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 2,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
@@ -2719,6 +4741,11 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        },
+        {
+          "category": "authoring-operation-source-gap",
+          "operation": "variable-name",
+          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {

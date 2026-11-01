@@ -9,6 +9,8 @@
  *   node scripts/author-flow/navigation-model.mjs --find character
  */
 import fs from "node:fs";
+import path from "node:path";
+import { pathToFileURL } from "node:url";
 function buildGraph(g){
   const controls=new Map(g.nodes.map(n=>[n.id,n]));
   function routeFrom(expression){
@@ -374,6 +376,7 @@ function traceNestedRoundTrip(model,from,chain,readFile) {
   };
 }
 
+export function buildSourceNavigationModel() {
 const source=JSON.parse(fs.readFileSync("audit/author-flow/source-graph.json","utf8"));
 const model=buildGraph(source);
 const providerFiles=authorResourceSourceFiles(source);
@@ -395,6 +398,11 @@ model.semantics.resource_paths="Path queries trace only declared edges; they do 
 model.task_lifecycle=describeTaskLifecycle(path=>fs.existsSync(path)?fs.readFileSync(path,"utf8"):null);
 model.schema_version=3;
 model.semantics.task_lifecycle="Source-witnessed shared task mechanics and conditional owner completion; never an execution or Save guarantee.";
+return model;
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  const model=buildSourceNavigationModel();
 const args=process.argv.slice(2);
 const value=k=>{const index=args.indexOf(k);return index===-1?null:args[index+1]};
 const from=value("--from"),to=value("--to"),find=value("--find"),create=value("--create"),via=value("--via");
@@ -443,14 +451,8 @@ if(args.includes("--roundtrip")){
     unresolved:model.unresolved.filter(x=>JSON.stringify(x).toLowerCase().includes(needle)).slice(0,100)
   },null,2)+"\n");
 }else{
-  const output="audit/author-flow/navigation-model.json";
-  const generated=JSON.stringify(model,null,2)+"\n";
-  if(args.includes("--check")){
-    if(!fs.existsSync(output)||fs.readFileSync(output,"utf8")!==generated)
-      throw Error("Navigation model is stale. Run node scripts/author-flow/navigation-model.mjs");
-    console.log("Navigation model matches its source declarations");
-  }else{
-    fs.writeFileSync(output,generated);
-    console.log("Navigation model generated:",model.counts);
-  }
+  if(args.includes("--json")) process.stdout.write(JSON.stringify(model,null,2)+"\n");
+  else console.log("Source navigation contracts derived without writing a second audit:",model.counts);
+}
+
 }

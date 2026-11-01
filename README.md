@@ -4,6 +4,10 @@ Pre-Programmed is a browser-based text adventure engine built around one idea: *
 
 Authors create ordinary game content from the running game through Author mode instead of editing source files or database rows by hand. The engine is still in rapid prototyping, so replaceable systems are preferred over compatibility layers that preserve obsolete prototypes.
 
+## Authoring experience development
+
+The **single current source of truth** for evaluating the steps required to make a visual novel or expanding RPG is [Author task lookup](audit/author-flow/task-lookup.json). It contains the anticipated goals, source-derived resource routes, supported operation controls, and unresolved steps in one JSON table. [Query instructions](audit/author-flow/README.md) explain how to regenerate or compare it locally without browser tests or GitHub Actions. Historical audit traces are not competing current UX evaluations.
+
 ## Quick start
 
 Requirements:
