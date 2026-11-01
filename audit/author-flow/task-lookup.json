@@ -14,14 +14,16 @@
   },
   "summary": {
     "total_tasks": 26,
-    "source_route_complete": 16,
-    "missing_source_route": 10,
+    "resolved_nested_resource_routes": 13,
+    "tasks_without_nested_resource_route": 3,
+    "unresolved_nested_resource_routes": 10,
     "games": [
       {
         "game": "branching-rpg",
         "anticipated_tasks": 14,
-        "source_paths_complete": 9,
-        "missing_source_paths": 5,
+        "resolved_nested_resource_routes": 8,
+        "tasks_without_nested_resource_route": 1,
+        "unresolved_nested_resource_routes": 5,
         "needs_content_action_model": 14,
         "top_static_gaps": [
           {
@@ -91,8 +93,9 @@
       {
         "game": "visual-novel",
         "anticipated_tasks": 12,
-        "source_paths_complete": 7,
-        "missing_source_paths": 5,
+        "resolved_nested_resource_routes": 5,
+        "tasks_without_nested_resource_route": 2,
+        "unresolved_nested_resource_routes": 5,
         "needs_content_action_model": 12,
         "top_static_gaps": [
           {
