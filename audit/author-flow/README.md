@@ -36,7 +36,7 @@ The generated evaluation includes:
 
 The lookup now follows **source-declared component composition and registered feature-owned rule adapters**, not only direct resource-picker fields. This matters for tasks that create a Flag from a response's WHEN condition, a relationship Variable from a numeric Effect, an Item from a GIVE ITEM Effect, a text Variable from AFTER → CAPTURE INPUT, or another Node through the real destination task. The Character alias WHEN rule similarly uses the canonical State adapter rather than a separate flag editor.
 
-A route with several possible adapters records **every source-declared alternative**, its source lines and the conditional decisions required to expose the reference field. These choices are not all traversed for one task. The `source_declared_pre_reference_decisions` range is a count of *described stages*, **not a physical click count**. Conditional control totals remain null when a nested adapter's UI steps cannot be reliably counted.
+A route with several possible adapters records **every source-declared alternative**, its source lines and the conditional decisions required to expose the reference field. These choices are not all traversed for one task. The `source_declared_access_stages` range is a count of *described stages*, **not a physical click count**. Conditional control totals remain null when a nested adapter's UI steps cannot be reliably counted.
 
 ```sh
 # A compact, deterministic comparison of documented complexity dimensions.
