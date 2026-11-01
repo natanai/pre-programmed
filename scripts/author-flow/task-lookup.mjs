@@ -5,7 +5,221 @@
  * No test runner, no GitHub Actions, no application runtime.
  */
 import fs from "node:fs";
-function buildLookup(model,definitions){
+import { buildSourceNavigationModel } from "./navigation-model.mjs";
+// Operation keys are authored once with each goal in task-lookup.json.
+// These markers are only source witnesses, not a separate experience audit.
+const operationSources={
+  "player-input": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "PLAYER ENTERS",
+      "narrative.interaction"
+    ]
+  ],
+  "response-text": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "responseText: value.text",
+      "narrative.interaction"
+    ],
+    [
+      "src/features/narrative/author/nodeWorkspace.tsx",
+      "<AuthoredTextEditor",
+      "narrative.node"
+    ]
+  ],
+  "character-name": [
+    [
+      "src/features/world/author/entityWorkspaces.tsx",
+      "id: \"world-entity-name\"",
+      "world-entity"
+    ]
+  ],
+  "speaker-reference": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "kind=\"character\"",
+      "narrative.interaction"
+    ],
+    [
+      "src/features/narrative/author/nodeWorkspace.tsx",
+      "kind=\"character\"",
+      "narrative.node"
+    ]
+  ],
+  "image-art": [
+    [
+      "src/features/media/author/vectorAssetWorkspace.tsx",
+      "paintVectorCell",
+      "media-vector-asset"
+    ]
+  ],
+  "variable-name": [
+    [
+      "src/features/state/author/workspaces.tsx",
+      "label: \"Name\"",
+      "state-variable"
+    ]
+  ],
+  "character-alias": [
+    [
+      "src/features/world/author/entityWorkspaces.tsx",
+      "world-character-alias",
+      "world-entity"
+    ]
+  ],
+  "response-condition": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "title=\"WHEN\"",
+      "narrative.interaction"
+    ]
+  ],
+  "response-effects": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "title=\"EFFECTS\"",
+      "narrative.interaction"
+    ]
+  ],
+  "input-capture": [
+    [
+      "src/features/narrative/author/NarrativeAfterEditor.tsx",
+      "SAVE INPUT TO",
+      "narrative.interaction"
+    ]
+  ],
+  "text-mention": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "ValueMentionField",
+      "narrative.interaction"
+    ]
+  ],
+  "node-scene-media": [],
+  "command-name": [
+    [
+      "src/features/commands/author/commandWorkspace.tsx",
+      "label: \"Name\"",
+      "commands-command"
+    ]
+  ],
+  "character-portrait": [
+    [
+      "src/features/world/author/entityWorkspaces.tsx",
+      "label: \"Portrait\"",
+      "world-entity"
+    ]
+  ],
+  "canonical-save": [
+    [
+      "src/author/ui/workspaceDefinition.tsx",
+      "id: \"author-core-save\"",
+      null
+    ]
+  ],
+  "return-to-play": [
+    [
+      "src/author/workspace/AuthorWorkspaceHost.tsx",
+      "aria-label=\"Close Author tasks and return to play\"",
+      null
+    ]
+  ],
+  "response-destination": [
+    [
+      "src/features/narrative/author/InteractionEditor.tsx",
+      "title=\"AFTER\"",
+      "narrative.interaction"
+    ]
+  ],
+  "node-narration": [
+    [
+      "src/features/narrative/author/nodeWorkspace.tsx",
+      "<AuthoredTextEditor",
+      "narrative.node"
+    ]
+  ],
+  "location-name": [
+    [
+      "src/features/world/author/entityWorkspaces.tsx",
+      "id: \"world-entity-name\"",
+      "world-entity"
+    ]
+  ],
+  "location-description": [
+    [
+      "src/features/world/author/entityWorkspaces.tsx",
+      "label: \"Description\"",
+      "world-entity"
+    ]
+  ],
+  "location-reference": [
+    [
+      "src/features/narrative/author/nodeWorkspace.tsx",
+      "kind=\"location\"",
+      "narrative.node"
+    ]
+  ],
+  "item-name": [
+    [
+      "src/features/inventory/author/workspaces.tsx",
+      "label: \"Name\"",
+      "inventory-item"
+    ]
+  ],
+  "item-image": [
+    [
+      "src/features/inventory/author/workspaces.tsx",
+      "label: \"Image\"",
+      "inventory-item"
+    ]
+  ],
+  "node-entry-condition": [
+    [
+      "src/features/narrative/author/nodeWorkspace.tsx",
+      "<OutcomeConditionEditor",
+      "narrative.node"
+    ]
+  ],
+  "synth-definition": [
+    [
+      "src/features/media/author/synthSoundWorkspace.tsx",
+      "id: \"synth-label\"",
+      "media-synth-sound"
+    ]
+  ],
+  "sequence-sound-reference": [
+    [
+      "src/features/radix/author/workspaces.tsx",
+      "kind: \"synth-sound\"",
+      "radix-sequence"
+    ]
+  ],
+  "sequence-definition": [
+    [
+      "src/features/radix/author/workspaces.tsx",
+      "label: \"LABEL\"",
+      "radix-sequence"
+    ]
+  ],
+  "startup-sequence": [
+    [
+      "src/features/radix/author/startupWorkspace.tsx",
+      "kind: \"radix-sequence\"",
+      "radix-startup-settings"
+    ]
+  ]
+};
+function deriveOperationWitnesses(readFile) {
+  return Object.fromEntries(Object.entries(operationSources).map(([key,variants])=>[key,variants.map(([file,needle,workspace])=>{
+    const contents=readFile(file);
+    const index=contents?.indexOf(needle)??-1;
+    return {file,workspace,source_line:index<0?null:contents.slice(0,index).split("\n").length,
+      status:index<0?"source-witness-unresolved":"source-witness-found"};
+  })]));
+}
+
+function buildLookup(model,definitions,operationWitnesses){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
   const required=[
@@ -101,6 +315,14 @@ function buildLookup(model,definitions){
     }
     if(task.finish?.save_parent){min++;max++;}
     if(task.finish?.return_to_player){min++;max++;}
+    const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
+    const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
+      const found=(operationWitnesses[operation]??[]).filter(x=>x.status==="source-witness-found");
+      const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
+      return {intent:description,operation,source_evidence:found,
+        status:!found.length?"source-witness-unresolved":!inContext.length?"owner-not-reached-by-declared-task-path":"owner-control-declared-in-task-context",
+        exact_actions:null,note:"A source control witness does not prove a complete configuration or a visible UI."};
+    });
     const knownControls=nestedSourceResolved&&frames.every(f=>f.entry_controls_known)?{
       conditional_lower:min,conditional_upper:max,
       scope:"reference Create/Edit + child Save + parent Save + master X only",
@@ -113,6 +335,8 @@ function buildLookup(model,definitions){
       {category:"runtime-conditions-not-evaluated",description:"Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"}
     ];
     for(const id of missingShared)unresolved.push({category:"shared-task-lifecycle-witness-missing",contract_id:id});
+    for(const op of operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context"))
+      unresolved.push({category:"authoring-operation-source-gap",operation:op.operation,reason:op.status});
     const status=!nestedSourceResolved?"missing-source-link":!task.resource_chain.length?"workspace-task-without-nested-route":
       trace.some(x=>x.entry_source_type==="explicit-resource-task-handler")?"resource-task-handler-source-declared":"contextual-route-source-declared";
     if(!nestedSourceResolved)flags.push("contextual-task-path-unresolved");
@@ -125,7 +349,9 @@ function buildLookup(model,definitions){
       task_id:task.id,game:task.game,goal:task.goal,
       starting_workspace:task.start.workspace,
       origin_assumption:task.start,
+      definition:task,
       intended_author_work:task.author_work,
+      operation_steps:operationSteps,
       source_path_status:status,
       declared_path_complete:nestedSourceResolved,
       route_steps:trace,
@@ -138,6 +364,8 @@ function buildLookup(model,definitions){
         cross_owner_transitions:crossFeature,
         chooser_branch_points:conditionalPickerCount,
         conditional_control_subtotal:knownControls,
+        operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
+        operation_controls_without_context:operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context").length,
         verified_end_to_end_actions:null,
         verified_draft_retention:null,
         verified_saves:null,
@@ -160,8 +388,8 @@ function buildLookup(model,definitions){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:1,type:"source-derived-anticipated-task-lookup",
-    generated_from:{tasks:"audit/author-flow/anticipated-tasks.json",source_navigation:"audit/author-flow/navigation-model.json"},
+    schema_version:2,type:"source-derived-anticipated-task-lookup",
+    generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       task_catalog:"Goals are explicit hypothetical author tasks for two game genres, not observed behavior",
       graph:"Routes and source-owner ownership come from the canonical source-derived navigation model",
@@ -170,15 +398,20 @@ function buildLookup(model,definitions){
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
     },
     summary:{total_tasks:items.length,
+      task_operation_witnesses_found:items.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
+      task_operation_witnesses_unresolved:items.reduce((n,t)=>n+t.measures.operation_controls_without_context,0),
       resolved_nested_resource_routes:items.filter(x=>x.declared_path_complete&&x.measures.declared_resource_tasks>0).length,
       tasks_without_nested_resource_route:items.filter(x=>x.measures.declared_resource_tasks===0).length,
       unresolved_nested_resource_routes:items.filter(x=>!x.declared_path_complete).length,games},
     tasks:items
   };
 }
-const model=JSON.parse(fs.readFileSync("audit/author-flow/navigation-model.json","utf8"));
-const goals=JSON.parse(fs.readFileSync("audit/author-flow/anticipated-tasks.json","utf8"));
-const lookup=buildLookup(model,goals);
+const filename="audit/author-flow/task-lookup.json";
+const previous=JSON.parse(fs.readFileSync(filename,"utf8"));
+const goals={schema_version:1,tasks:previous.tasks.map(row=>row.definition)};
+const model=buildSourceNavigationModel();
+const witnesses=deriveOperationWitnesses(file=>fs.existsSync(file)?fs.readFileSync(file,"utf8"):null);
+const lookup=buildLookup(model,goals,witnesses);
 const args=process.argv.slice(2);
 const opt=key=>{const i=args.indexOf(key);return i<0?null:args[i+1]};
 const task=opt("--task"),game=opt("--game");
@@ -236,7 +469,6 @@ if(compare){
 }else if(args.includes("--summary")){
   process.stdout.write(JSON.stringify(lookup.summary,null,2)+"\n");
 }else{
-  const filename="audit/author-flow/task-lookup.json";
   const body=JSON.stringify(lookup,null,2)+"\n";
   if(args.includes("--check")){
     if(!fs.existsSync(filename)||fs.readFileSync(filename,"utf8")!==body)
