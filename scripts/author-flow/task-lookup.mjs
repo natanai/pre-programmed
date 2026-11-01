@@ -219,7 +219,155 @@ function deriveOperationWitnesses(readFile) {
   })]));
 }
 
-function buildLookup(model,definitions,operationWitnesses){
+
+/**
+ * Identify contextual references rendered by canonical nested UI components.
+ * This is source evidence with explicit unexecuted disclosure/adapter steps;
+ * it is not a second editor, resource registry, or guessed runtime click path.
+ */
+function deriveDelegatedReferenceSites(model, readFile) {
+  const known=new Map(model.resource_providers.map(p=>[p.kind,p]));
+  const files={
+    interaction:"src/features/narrative/author/InteractionEditor.tsx",
+    interactionHost:"src/features/narrative/author/interactionWorkspace.tsx",
+    node:"src/features/narrative/author/nodeWorkspace.tsx",
+    outcome:"src/author/outcomes/OutcomeComposer.tsx",
+    condition:"src/author/ConditionEditor.tsx",
+    effects:"src/author/EffectsEditor.tsx",
+    after:"src/features/narrative/author/NarrativeAfterEditor.tsx",
+  };
+  const fileSource=Object.fromEntries(Object.entries(files).map(([key,path])=>[key,readFile(path)??""]));
+  const registered=[
+    ["state","src/features/state/author/manifest.tsx","src/features/state/author/ruleAdapters.tsx"],
+    ["inventory","src/features/inventory/author/manifest.tsx","src/features/inventory/author/ruleAdapters.tsx"]
+  ];
+  const sites=[];
+  const line=(file,needle)=>{
+    const text=readFile(file)??"",i=text.indexOf(needle);
+    return i<0?null:{file,line:text.slice(0,i).split("\n").length};
+  };
+  const insert=(workspace,kind,routeInfo)=>{
+    const provider=known.get(kind);
+    if(!provider?.create.route)return;
+    sites.push({
+      id:"delegated:"+workspace+":"+kind+":"+routeInfo.channel+":"+routeInfo.adapter,
+      workspace,resource_kind:kind,create_route:provider.create.route,
+      source:routeInfo.source,channel:routeInfo.channel,adapter:routeInfo.adapter,
+      declaration_chain:routeInfo.declaration_chain,
+      access_decisions:routeInfo.access_decisions,
+      contingent:routeInfo.contingent,
+      source_contract:"nested-owner-component-or-feature-adapter",
+      physical_pointer_count:null
+    });
+  };
+  const hostOkay=fileSource.interactionHost.includes("<InteractionComposer");
+  const conditionRendering=fileSource.outcome.includes("<ConditionEditor")&&
+    fileSource.condition.includes("conditionAuthorAdapter(condition.type)")&&
+    fileSource.condition.includes("adapter?.render");
+  const effectRendering=fileSource.outcome.includes("<EffectsEditor")&&
+    fileSource.effects.includes("effectAuthorAdapters()")&&
+    fileSource.effects.includes("adapter?.render");
+  for(const [feature,manifestFile,adapterFile] of registered){
+    const manifest=readFile(manifestFile)??"";
+    const source=readFile(adapterFile)??"";
+    const rx=/export const (\w+): (ConditionAuthorAdapter|EffectAuthorAdapter) = \{/g;
+    const matches=[...source.matchAll(rx)];
+    for(let i=0;i<matches.length;i++){
+      const m=matches[i],end=matches[i+1]?.index??source.length;
+      const block=source.slice(m.index,end);
+      if(!manifest.includes(m[1]))continue;
+      const channel=m[2]==="ConditionAuthorAdapter"?"condition":"effect";
+      if(channel==="condition"&&!conditionRendering||channel==="effect"&&!effectRendering)continue;
+      const type=block.match(/\btype:\s*["']([^"']+)["']/)?.[1]??m[1];
+      const fieldRx=/<ReferenceField\s+kind=["']([^"']+)["']/g;
+      for(const field of block.matchAll(fieldRx)){
+        const kind=field[1];
+        const sourceLocation={file:adapterFile,line:source.slice(0,m.index+field.index).split("\n").length};
+        for(const workspace of ["narrative.interaction","narrative.node"]){
+          const host=workspace==="narrative.interaction"?fileSource.interaction:fileSource.node;
+          if(workspace==="narrative.interaction"&&!hostOkay)continue;
+          const outer=channel==="condition"?"<OutcomeConditionEditor":"<OutcomeEffectsEditor";
+          const hasOuter=channel==="effect"&&workspace==="narrative.node"
+            ? host.includes("<EffectsEditor")
+            : host.includes(outer);
+          if(!hasOuter)continue;
+          insert(workspace,kind,{
+            channel,adapter:type,source:sourceLocation,
+            declaration_chain:[
+              {file:workspace==="narrative.node"?files.node:files.interaction,component:outer},
+              {file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"},
+              {file:channel==="condition"?files.condition:files.effects,component:"registered feature-owned "+channel+" adapter"},
+              {file:adapterFile,component:m[1]+" ReferenceField"},
+              {file:manifestFile,component:feature+" feature registry"}
+            ],
+            access_decisions:channel==="condition"
+              ? ["Open the appropriate WHEN/condition section","Choose "+type+" condition type","Use the canonical "+kind+" reference field"]
+              : ["Open the appropriate EFFECTS section","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"],
+            contingent:["response/entry editor is visible","section is expanded","adapter type is selected",
+              ...(block.includes('scope === "node"')?["global scope selected; node-local flags do not require a project resource"]:[])],
+          });
+        }
+      }
+    }
+  }
+  // The capture sequence is built inside the existing NarrativeAfterEditor.
+  // It is not a separately routed resource owner.
+  const after=fileSource.after;
+  if(after.includes("<CaptureFlowEditor")&&after.includes('kind="text-variable"')){
+    for(const workspace of ["narrative.interaction","narrative.node"]){
+      const host=workspace==="narrative.interaction"?fileSource.interaction:fileSource.node;
+      if(workspace==="narrative.interaction"&&!hostOkay)continue;
+      if(!host.includes("<NarrativeAfterEditor"))continue;
+      insert(workspace,"text-variable",{
+        channel:"capture",adapter:"CaptureFlowEditor",source:line(files.after,'kind="text-variable"'),
+        declaration_chain:[{file:workspace==="narrative.node"?files.node:files.interaction,component:"NarrativeAfterEditor"},
+          {file:files.after,component:"CaptureFlowEditor"},{file:files.after,component:'ReferenceField kind="text-variable"'}],
+        access_decisions:["Open AFTER","Choose CAPTURE INPUT","Use SAVE INPUT TO reference"],
+        contingent:["capture flow selected","capture editor displayed"]
+      });
+    }
+  }
+  // Both Interaction and Node opening editors use the same NarrativeAfterEditor
+  // canonical Create New destination action, which invokes the provided
+  // createDestination task callback instead of a ReferenceField.
+  if(fileSource.after.includes('label: "CREATE NEW"')&&
+    fileSource.node.includes("const createDestination")&&
+    fileSource.node.includes('resourceTask: "node"')&&
+    fileSource.node.includes("onCreateDestination={createDestination}")&&
+    fileSource.node.includes("<NarrativeAfterEditor")){
+    insert("narrative.node","node",{
+      channel:"destination",adapter:"NarrativeAfterEditor",source:line(files.node,"const createDestination"),
+      declaration_chain:[{file:files.node,component:"OpeningEditor and createDestination callback"},
+        {file:files.after,component:"NarrativeAfterEditor CREATE NEW"},
+        {file:files.node,component:"canonical node resource task push"}],
+      access_decisions:["Open Node entry response AFTER","Choose CREATE NEW"],
+      contingent:["Node opening editor is displayed"],
+    });
+  }
+  return sites.sort((a,b)=>a.workspace.localeCompare(b.workspace)||a.resource_kind.localeCompare(b.resource_kind)||a.id.localeCompare(b.id));
+}
+
+/** Read the concrete workspace matcher, not merely its shared feature route. */
+function matchWorkspaceForResource(model,route,kind,readFile) {
+  const candidates=model.workspace_route_bindings.filter(b=>b.from===route);
+  if(candidates.length<=1)return candidates;
+  const accepts=b=>{
+    const source=readFile(b.source.file);
+    if(!source)return false;
+    const start=source.split("\n").slice(b.source.line-1).join("\n");
+    const match=start.match(/matches:\s*\(route\)\s*=>[\s\S]{0,390}?(?=,\s*createDraft:)/);
+    if(!match)return false;
+    const predicate=match[0];
+    const inclusion=predicate.match(/\[([^\]]+)\]\.includes\(route\.data\?\.resourceKind/);
+    if(inclusion)return [...inclusion[1].matchAll(/["']([^"']+)["']/g)].some(x=>x[1]===kind);
+    const direct=predicate.match(/route\.data\?\.resourceKind\s*===\s*["']([^"']+)["']/);
+    if(direct)return direct[1]===kind;
+    return !predicate.includes("route.data?.resourceKind")&&candidates.length===1;
+  };
+  return candidates.filter(accepts);
+}
+
+function buildLookup(model,definitions,operationWitnesses,readFile){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
   const required=[
@@ -229,6 +377,7 @@ function buildLookup(model,definitions,operationWitnesses){
   ];
   const missingShared=required.filter(id=>model.task_lifecycle.contracts.find(c=>c.id===id)?.status!=="source-declared");
   const providerByKind=new Map(model.resource_providers.map(p=>[p.kind,p]));
+  const delegated=deriveDelegatedReferenceSites(model,readFile);
   const unique=(a)=>[...new Set(a)];
   const items=[];
   for(const task of definitions.tasks){
@@ -242,8 +391,10 @@ function buildLookup(model,definitions,operationWitnesses){
     const frames=[];
     for(let i=0;i<task.resource_chain.length;i++){
       const step=task.resource_chain[i],provider=providerByKind.get(step.kind);
-      const matching=model.reference_sites.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind);
       const operation=step.action;
+      const directReferences=model.reference_sites.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind);
+      const indirectReferences=operation==="create"?delegated.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind):[];
+      const matching=[...directReferences,...indirectReferences];
       const routeKey=provider?.[operation]?.route? "route:"+provider[operation].route:null;
       // A contextual resource task can also be opened by a literal handler,
       // without using ReferenceField (e.g. Narrative Interaction -> new Node).
@@ -261,15 +412,25 @@ function buildLookup(model,definitions,operationWitnesses){
         controls:null,contract_status:"unresolved",blockers:[],
         entry_source_type:directTask?"explicit-resource-task-handler":"canonical-reference-field",
         evidence:directTask?[directTask.id]:matching.map(m=>m.id),
-        source_direct_handler:directTask?.source??null};
+        source_direct_handler:directTask?.source??null,
+        delegated_paths:indirectReferences.map(ref=>({
+          channel:ref.channel,adapter:ref.adapter,access_decisions:ref.access_decisions,
+          contingent:ref.contingent,declaration_chain:ref.declaration_chain,source:ref.source
+        })),
+        source_access_decision_count:indirectReferences.length===1?indirectReferences[0].access_decisions.length:null};
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
-      if(matching.length!==1&&!directTask)result.blockers.push(directTasks.length>1?"ambiguous-resource-task-handlers":matching.length===0?"no-reference-field-or-resource-task-handler-declared-in-current-workspace":"ambiguous-reference-fields");
+      // Different adapters may lead to the same canonical resource owner.
+      // They are alternative contextual routes, not an ambiguity that blocks creation.
+      const compatible=matching.every(ref=>ref.create_route===provider?.create.route);
+      if(!matching.length&&!directTask)result.blockers.push("no-reference-field-or-resource-task-handler-declared-in-current-workspace");
+      if(matching.length>0&&!compatible)result.blockers.push("reference-fields-disagree-on-canonical-create-route");
+      if(directTasks.length>1&&!directTask&&!matching.length)result.blockers.push("ambiguous-resource-task-handlers");
       if(operation==="create"&&matching.length===1&&matching[0].create_route!==provider?.create.route)
         result.blockers.push("reference-field-not-bound-to-provider-create-route");
       if(operation==="edit" && !provider?.edit.declared)result.blockers.push("canonical-edit-not-declared");
       if(!["create","edit"].includes(operation))result.blockers.push("unsupported-task-operation");
-      const bindings=routeKey?model.workspace_route_bindings.filter(e=>e.from===routeKey):[];
+      const bindings=routeKey?matchWorkspaceForResource(model,routeKey,step.kind,readFile):[];
       if(bindings.length!==1)result.blockers.push(bindings.length===0?"route-to-workspace-unresolved":"route-has-multiple-workspace-matches");
       if(bindings.length===1)result.source_workspace=bindings[0].to;
       if(result.blockers.length){
@@ -280,7 +441,10 @@ function buildLookup(model,definitions,operationWitnesses){
         break;
       }
       result.contract_status="conditional-source-route-declared";
-      if(directTask){
+      if(indirectReferences.length){
+        result.controls=null;
+        result.contract_status="conditional-delegated-contextual-route-declared";
+      }else if(directTask){
         // The handler is source-certified but a custom UI's physical activation
         // count is not; preserve null instead of assuming one click.
         result.controls=null;
@@ -338,12 +502,14 @@ function buildLookup(model,definitions,operationWitnesses){
     for(const op of operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context"))
       unresolved.push({category:"authoring-operation-source-gap",operation:op.operation,reason:op.status});
     const status=!nestedSourceResolved?"missing-source-link":!task.resource_chain.length?"workspace-task-without-nested-route":
+      trace.some(x=>x.delegated_paths.length)?"delegated-contextual-route-source-declared":
       trace.some(x=>x.entry_source_type==="explicit-resource-task-handler")?"resource-task-handler-source-declared":"contextual-route-source-declared";
     if(!nestedSourceResolved)flags.push("contextual-task-path-unresolved");
     if(crossFeature)flags.push("cross-owner-authoring");
     if(frames.length>1)flags.push("deep-contextual-nesting");
     if(conditionalPickerCount)flags.push("resource-chooser-branch");
     if(trace.some(x=>x.entry_source_type==="explicit-resource-task-handler"))flags.push("direct-custom-resource-task-activation-unknown");
+    if(trace.some(x=>x.delegated_paths.length))flags.push("nested-rule-editor-decisions");
     if(task.author_work.length)flags.push("authoring-controls-not-modeled");
     items.push({
       task_id:task.id,game:task.game,goal:task.goal,
@@ -363,6 +529,8 @@ function buildLookup(model,definitions,operationWitnesses){
         maximum_nested_author_depth_from_start:nestedSourceResolved?frames.length+1:null,
         cross_owner_transitions:crossFeature,
         chooser_branch_points:conditionalPickerCount,
+        source_declared_pre_reference_decisions:trace.reduce((n,t)=>n+(t.source_access_decision_count??0),0),
+        alternative_delegated_paths:trace.reduce((n,t)=>n+Math.max(0,t.delegated_paths.length-1),0),
         conditional_control_subtotal:knownControls,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_controls_without_context:operationSteps.filter(x=>x.status!=="owner-control-declared-in-task-context").length,
@@ -414,7 +582,7 @@ const previous=JSON.parse(fs.readFileSync(filename,"utf8"));
 const goals={schema_version:1,tasks:previous.tasks.map(row=>row.definition)};
 const model=buildSourceNavigationModel();
 const witnesses=deriveOperationWitnesses(file=>fs.existsSync(file)?fs.readFileSync(file,"utf8"):null);
-const lookup=buildLookup(model,goals,witnesses);
+const lookup=buildLookup(model,goals,witnesses,file=>fs.existsSync(file)?fs.readFileSync(file,"utf8"):null);
 const args=process.argv.slice(2);
 const opt=key=>{const i=args.indexOf(key);return i<0?null:args[i+1]};
 const task=opt("--task"),game=opt("--game");
