@@ -1,55 +1,60 @@
-# Two reference scenarios for play-while-authoring
+# Author task lookup: play while building
 
-These are **manual, playable product scenarios**, not automated test suites, exhaustive menus, new game templates, feature specifications, or GitHub Actions. They describe what two different authors actually want to make using the **same live Player surface and shared Author task system**. Keep the scenarios small enough to run in a disposable project without introducing special-case mechanics for either genre.
+This document describes **anticipated creative work**, not a manual playtest plan. The two reference games are a relationship-driven visual novel and a continually branching RPG. Both use the same canonical Author resources, state, player terminal, task stack, and save paths.
 
-**Primary quality question:** When an author is doing something in the running game and discovers another resource is needed, can they create or edit that resource *from the current context*, then return to the exact unfinished task without losing their work or the playable context?
+## The source of truth for development questions
 
-Click count is diagnostic, not the goal. A longer path that goes where expected and correctly returns is better than a short one that loses its parent task or forces a tool-index detour. Record discrepancies as ordinary product issues. Do not generate automated browser explorations, action workflows, sprawling evidence fixtures, or new feature-specific tests just to exercise these scenarios.
+- [Anticipated tasks](../audit/author-flow/anticipated-tasks.json) defines explicit hypothetical author goals, the workspace where each starts, nested resources required, and creative editing actions.
+- [Navigation model](../audit/author-flow/navigation-model.json) is generated from the actual Author source declarations, resource owners, reference fields, and shared task lifecycle.
+- [Task lookup](../audit/author-flow/task-lookup.json) joins these two sources into a queryable table: what source-declared route exists, where the next editor is owned, how many task layers are involved, which controls have conditional source-derived counts, and what remains unknown.
+- [Calculator](../scripts/author-flow/task-lookup.mjs) regenerates the lookup deterministically, without a web browser, automated click traversal, game instance, or GitHub Actions.
 
-## Scenario A: A relationship-driven visual novel
+The goals are **intentionally imagined in advance**. The route evidence is not. An absent static edge is reported as `no-reference-field-declared-in-current-workspace`, not as proof the UI cannot accomplish the task through another route. A source-declared edge is not proof of a successful Save or actual rendering.
 
-**Player experience:** A stranger first appears as “Mysterious Voice.” The player converses with them, chooses what to say, gives a preferred nickname, influences a relationship value, and later learns the stranger's name. Portrait/background Media may accompany the dialogue if the current engine supports the desired presentation.
+## Ask a development question
 
-**Build while playing:**
+From the repository root:
 
-1. From an actual running scene, create or edit the text and an accepted player reply in the existing Narrative system. Continue exercising the same real player input.
-2. While authoring a dialogue response, select a speaker who does not exist yet. Enter **Create Character** in the canonical World owner, save, and return to the original speaker selection with the unfinished response preserved.
-3. From that Character or response's actual resource reference, use the existing State-owned task to define a relationship variable or reveal flag; return through each nested parent. The relationship mechanic belongs to State, not a hardcoded dating system.
-4. Author two conditional dialogue outcomes from the existing condition/effect vocabulary. Test them by playing from the actual terminal with distinct recorded state values, not by copying the player view into an Author panel.
-5. Exercise the already-established aliases and input capture flow: display “Mysterious Voice” before a reveal; subsequently show the canonical name; let the player supply a nickname if supported by the existing response/capture/State contracts.
-6. Attach or reference portrait/background/audio Media when available via the canonical Media owner. Record missing visual-novel presentation capabilities as product gaps; do not invent a second graphics or Media pipeline.
-7. Return to play, revisit the conversation, and confirm that earlier choices affect the later text, name, and available replies as authored.
+```sh
+# Refresh only when the engine's source or anticipated tasks have changed
+npm run audit:author:extract
+node scripts/author-flow/navigation-model.mjs
+node scripts/author-flow/task-lookup.mjs
 
-**What this reveals:** nested Character and State creation from Narrative, return-value handoff to the original field, conditional dialogue, authored identity/provenance, persistent relationship state, editing dialogue in place, and visual Media reachability.
+# What does this intended task entail?
+node scripts/author-flow/task-lookup.mjs --task vn-character-portrait
+node scripts/author-flow/task-lookup.mjs --task rpg-create-destination
 
-## Scenario B: A continually expanding branching RPG
+# Discover relevant goals and unresolved declared routes
+node scripts/author-flow/task-lookup.mjs --search "relationship variable"
+node scripts/author-flow/task-lookup.mjs --game branching-rpg
+node scripts/author-flow/task-lookup.mjs --gaps
+node scripts/author-flow/task-lookup.mjs --summary
 
-**Player experience:** Start at a village crossroads. Try a road that has not been authored, meet a stranger, encounter a locked gate, acquire a useful item, then return and see the path react to game state. New destinations can branch again; “infinitely branching” is an architectural aspiration for continuing to expand the graph, not a promise of literally infinite resources at runtime.
+# Compare today's static source-derived authoring paths to a prior snapshot
+node scripts/author-flow/task-lookup.mjs --compare path/to/earlier-task-lookup.json
 
-**Build while playing:**
+# Verify the table still matches the checked-in source model and task catalog
+node scripts/author-flow/task-lookup.mjs --check
+```
 
-1. From the actual terminal in a Node, enter an intended action such as `travel north`. While Author mode is active, make that input valid using the existing Narrative interaction and project Player Language mechanisms, retaining the ordinary player action. Do not hardcode `inspect`/`enter` or make an Author-only input interpreter.
-2. From the response's destination control, create the missing destination **Node** using the canonical Narrative task. If this requires a **Location**, create it through the World owner from the exact referencing field, then return to the still-unfinished destination.
-3. From the destination Node, introduce a new Character or interaction as needed, using its real owner without discarding the parent draft. Follow a Node in play independently of its Edit affordance.
-4. Introduce a locked gate. Author its condition using existing State, and an item needed to pass using Inventory. A missing Item, State variable, or relevant Media asset should be create/editable from the actual requesting resource field, returning to that field after completion.
-5. Set and read state through shared conditions/effects and existing Player Commands, not separate RPG quest logic. Verify one blocked outcome, one successful outcome, and a revisited location that responds to the updated run state.
-6. Add another destination *while playing the new branch*, then return or backtrack using ordinary authored transitions. Existing Nodes and their links should remain editable and navigable without re-discovery in the top-level Tools index.
+For a reproducible comparison, keep the earlier task lookup as a reference snapshot and run against the same anticipated-task definitions. The comparison identifies newly traceable routes, regressions, and changes in known conditional control subtotals. **It does not claim a lower click count proves improved usability.**
 
-**What this reveals:** new input authoring in situ, Node/Location/Item/State/Media cross-resource nesting, canonical saved identity, live player-state continuity, valid conditional choices, link traversal, returning to prior places, and expanding without a genre-specific editor.
+## What each task records
 
-## Shared acceptance criteria (desktop and mobile)
+- **Starting context and goal:** a realistic authoring intention for one of the two games, with the current Author workspace explicitly identified. Getting there from the player terminal is an unknown until the engine exposes a source-queryable entry contract.
+- **Actual resource routes:** each Create or Edit from the current referencing workspace through the canonical owning feature. A completed child transitions back to its suspended parent under the shared task contract.
+- **Navigation structure:** number of nested tasks, feature-owner boundaries, conditional picker branches, and reverse resource-handoff order.
+- **Conditional control subtotals:** reference Create/Edit activation, one enabled Save per child, one parent Save, and master X. These are **partial source-based counts only**. Data entry, field configuration, disabled states, confirmations, player entry, and actual browser presentation remain unknown. Exact end-to-end costs are always null.
+- **Unknowns:** every required operation that is not modeled, ambiguous owner binding, missing declared contextual reference, or behavior that static source cannot establish.
+- **Developer-facing friction indicators:** evidence that a task crosses owners, nests several resources, encounters a conditional chooser, or requires an unmodeled contextual route. They are observations about the graph, not a subjective score.
 
-For **each step in each scenario**, when the referenced control actually exists in the engine:
+## The two game families
 
-- A clicked action opens the owner/task it describes; missing or mislabeled capabilities are documented as gaps, not assumed to work.
-- Existing selection, follow, and player actions remain available while Author mode adds editing.
-- A missing dependent resource can be created in its own canonical editor from the place that needs it.
-- Saving a child makes its stable reference available to the requesting field and returns to the correct parent; canceling returns without committing that child.
-- The suspended parent retains its draft, scroll/context, and selected field across multiple nested levels. Back stays within tasks; the master X returns to the real running player surface.
-- Completed content is persisted through the owning feature's normal save path and behaves as authored when played.
-- Mobile and desktop use the same feature owner, tasks, actions and save semantics; layout may vary.
-- An obstacle is logged with the actual starting screen, chosen control, observed destination and what was lost or inaccessible, not an imagined count of possible workflows.
+**Relationship-driven visual novel:** author new dialogue while playing, create a speaker or portrait in context, edit selected Characters, manage name reveals, dialogue variables and choice-dependent responses, capture nicknames, and revisit scenes. A major source-model question is whether State resources can be created *from inside* dialogue when their need becomes apparent.
 
-**Scope discipline:** Use a tiny disposable project or authored test scene; stop at the first blocking product defect, repair the canonical implementation, and resume the same scenario. Prefer a reproducible manual reproduction plus one focused regression check if essential. Do **not** add GitHub Actions, duplicate player systems, test-only Author panels, specialized dating/RPG modes, or expanding click-tree enumerations as a substitute for working on the game.
+**Continuously expanding RPG:** author a new player input, create the next Node and Location, create an NPC and portrait, introduce an inventory Item, add a locked-gate flag, author a stateful shortcut, and keep expanding the world from the current branch. A major source-model question is how Node, Item and State creation are exposed at the interaction that needs them.
 
-Canonical design references: [Author resource ownership](author-resource-ownership.md), [Author UI grammar](author-ui-grammar.md), and [feature boundaries](feature-boundaries.md).
+The **shared objective** is predictable contextual nesting: every authorable thing that a menu needs should offer the canonical owning editor; nested work must suspend the parent, return the new resource identity, and resume the original task. Do not create genre-specific editors to satisfy a task.
+
+When a lookup reports an unknown, the next development action is to investigate the **code and owning capability contract**, not to create another browser test or demand the user manually exercise the screen. The user may report actual problems encountered during normal play, which can then be reconciled with this model.
