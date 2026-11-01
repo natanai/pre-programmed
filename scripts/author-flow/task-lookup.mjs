@@ -595,7 +595,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:2,type:"source-derived-anticipated-task-lookup",
+    schema_version:3,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -643,6 +643,9 @@ if(compare){
     if(before.source_path_status===after.source_path_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
       && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
+      && JSON.stringify(before.measures.source_declared_pre_reference_decisions??null)===JSON.stringify(after.measures.source_declared_pre_reference_decisions??null)
+      && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
+      && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
       && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
     changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
       route_resolved:!before.declared_path_complete&&after.declared_path_complete,
@@ -650,6 +653,12 @@ if(compare){
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
       operation_witnesses_in_context_before:before.measures?.operation_controls_found_in_context??null,
       operation_witnesses_in_context_after:after.measures?.operation_controls_found_in_context??null,
+      source_decision_stages_before:before.measures?.source_declared_pre_reference_decisions??null,
+      source_decision_stages_after:after.measures?.source_declared_pre_reference_decisions??null,
+      delegated_alternatives_before:before.measures?.alternative_delegated_paths??null,
+      delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
+      owner_transitions_before:before.measures?.cross_owner_transitions??null,
+      owner_transitions_after:after.measures?.cross_owner_transitions??null,
       caution:"Comparative source visibility, not proof of a faster or more predictable user experience"});
   }
   process.stdout.write(JSON.stringify({type:"author-task-lookup-diff",
@@ -671,6 +680,25 @@ if(compare){
   const tasks=lookup.tasks.filter(x=>x.game===game);
   if(!tasks.length)throw Error("Unknown game: "+game);
   process.stdout.write(JSON.stringify({game,summary:lookup.summary.games.find(x=>x.game===game),tasks},null,2)+"\n");
+ }else if(args.includes("--complexity")){
+  const rows=lookup.tasks.map(t=>({
+    id:t.task_id,game:t.game,goal:t.goal,
+    unresolved_route:!t.declared_path_complete,
+    unresolved_operations:t.measures.operation_controls_without_context,
+    nested_resource_tasks:t.measures.declared_resource_tasks,
+    cross_owner_transitions:t.measures.cross_owner_transitions,
+    alternative_contextual_routes:t.measures.alternative_delegated_paths,
+    source_decision_stages:t.measures.source_declared_pre_reference_decisions,
+    additional_owner_tasks:t.measures.operation_follow_on_task_paths,
+    known_control_subtotal:t.measures.conditional_control_subtotal,
+    exact_clicks:null,
+  }));
+  // Ordering is descriptive and deterministic; it is not a scalar UX score.
+  rows.sort((a,b)=>Number(b.unresolved_route)-Number(a.unresolved_route)
+    ||b.unresolved_operations-a.unresolved_operations
+    ||(b.source_decision_stages?.upper??0)-(a.source_decision_stages?.upper??0)
+    ||b.cross_owner_transitions-a.cross_owner_transitions||a.id.localeCompare(b.id));
+  process.stdout.write(JSON.stringify({type:"source-declared-task-complexity",order:"unresolved route, unresolved operations, declared decision stages, owner transitions, then task id; not a UX score",tasks:rows},null,2)+"\n");
 }else if(args.includes("--gaps")){
   process.stdout.write(JSON.stringify({
     type:"unresolved-source-route-index",
