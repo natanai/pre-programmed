@@ -129,8 +129,11 @@ function buildLookup(model,definitions){
   const games=unique(items.map(t=>t.game)).sort().map(game=>{
     const ts=items.filter(t=>t.game===game);
     const unresolved=ts.filter(t=>!t.declared_path_complete);
-    return {game,anticipated_tasks:ts.length,source_paths_complete:ts.length-unresolved.length,
-      missing_source_paths:unresolved.length,
+    const withoutResourceChain=ts.filter(t=>t.measures.declared_resource_tasks===0);
+    return {game,anticipated_tasks:ts.length,
+      resolved_nested_resource_routes:ts.filter(t=>t.declared_path_complete&&t.measures.declared_resource_tasks>0).length,
+      tasks_without_nested_resource_route:withoutResourceChain.length,
+      unresolved_nested_resource_routes:unresolved.length,
       needs_content_action_model:ts.filter(t=>t.intended_author_work.length>0).length,
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
@@ -144,8 +147,10 @@ function buildLookup(model,definitions){
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective"
     },
-    summary:{total_tasks:items.length,source_route_complete:items.filter(x=>x.declared_path_complete).length,
-      missing_source_route:items.filter(x=>!x.declared_path_complete).length,games},
+    summary:{total_tasks:items.length,
+      resolved_nested_resource_routes:items.filter(x=>x.declared_path_complete&&x.measures.declared_resource_tasks>0).length,
+      tasks_without_nested_resource_route:items.filter(x=>x.measures.declared_resource_tasks===0).length,
+      unresolved_nested_resource_routes:items.filter(x=>!x.declared_path_complete).length,games},
     tasks:items
   };
 }
