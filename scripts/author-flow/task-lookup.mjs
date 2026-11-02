@@ -103,6 +103,13 @@ const operationSources={
     ]
   ],
   "node-scene-media": [],
+  "response-art-trigger": [
+    ["src/features/narrative/author/InteractionEditor.tsx",'title="EFFECTS"',"narrative.interaction"],
+    ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.interaction"],
+    ["src/features/narrative/runtime.ts",'executeEffects(snapshot, state, outcome.effects,',"narrative.interaction"],
+    ["src/features/media/effectRuntime.ts",'type: "art", assetId: effect.assetId',"narrative.interaction"],
+    ["src/features/media/ui/effectPresentation.ts",'case "art":',"narrative.interaction"]
+  ],
   "node-entry-art": [
     ["src/features/narrative/author/nodeWorkspace.tsx",'id: "node-entry-effects"',"narrative.node"],
     ["src/features/narrative/nodeEntryRuntime.ts",'executeEffects(snapshot, state, node.entryEffects ?? [],',"narrative.node"],
@@ -472,7 +479,8 @@ function sourceGatedControlActivationRange(task, trace, readFile) {
  * end-to-end click count or alternate Author implementations.
  */
 function describeNarrativeOperationControlPath(task, operationDefinition, previousOperations, readFile) {
-  const operation=operationDefinition.operation;
+  const originalOperation=operationDefinition.operation;
+  const operation=originalOperation==="response-art-trigger"?"response-effects":originalOperation;
   const workspace=task.start.workspace;
   if(!["narrative.interaction","narrative.node"].includes(workspace))return null;
   const paths={
@@ -779,7 +787,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
       // The ON ENTER art operation depends on the entire Node -> Media effect
       // execution and presentation chain, not just finding one matching label.
-      const allRequiredFound=operation==="node-entry-art"?
+      const allRequiredFound=["node-entry-art","response-art-trigger"].includes(operation)?
         expectedWitnesses.length===5&&found.length===5:found.length>0;
       const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
       // Node INPUT HANDLING links to the real Interaction owner, not an
@@ -796,7 +804,15 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
             {file:"src/features/narrative/author/InteractionEditor.tsx",component:"PLAYER ENTERS"}],
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
+      const trigger=operation==="response-art-trigger"&&allRequiredFound?{
+        moment:"when selected Interaction outcome executes its effects",
+        condition:"the outcome must be selected by its WHEN rule or interaction selection policy",
+        presentation:"inline or overlay according to the selected asset's default presentation",
+        limitations:["not individually timed to a word or frame of narrated text","appearance effect does not itself define a persistent background or dismissal time"],
+        source_evidence:found
+      }:null;
       return {intent:description,operation,source_evidence:found,authoring_control_path:authoringControlPath,
+        appearance_trigger:trigger,
         status:!allRequiredFound?"source-witness-unresolved":
           !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
           "owner-control-declared-in-task-context",
@@ -908,7 +924,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       control_activations:"Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
       authoring_operations:"Individual response authoring operations trace concrete control and panel transitions, with non-additive conditional activation bounds; typing and full configuration remain outside source-only counts.",
       delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
-      scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
+      scene_media:"Visual-novel image timing is evaluated for two concrete triggers: Node entry and the selected Interaction outcome. Media owns the art effect and asset presentation. No persistent-background goal is assumed."
     },
     summary:{total_tasks:items.length,
       authored_operations_with_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_source_control_sequence,0),
