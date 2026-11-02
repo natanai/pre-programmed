@@ -412,7 +412,12 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       const step=task.resource_chain[i],provider=providerByKind.get(step.kind);
       const operation=step.action;
       const directReferences=model.reference_sites.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind);
-      const indirectReferences=operation==="create"?delegated.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind):[];
+      const candidateDelegated=operation==="create"?delegated.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind):[];
+      // Intent is authored in the ONE task definition, not derived from all
+      // potentially unrelated condition/effect adapters for this resource.
+      const indirectReferences=step.via?candidateDelegated.filter(ref=>
+        ref.channel===step.via.channel&&ref.adapter===step.via.adapter):candidateDelegated;
+      const unselectedDelegated=candidateDelegated.filter(ref=>!indirectReferences.includes(ref));
       const matching=[...directReferences,...indirectReferences];
       const routeKey=provider?.[operation]?.route? "route:"+provider[operation].route:null;
       // A contextual resource task can also be opened by a literal handler,
@@ -432,6 +437,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         entry_source_type:indirectReferences.length?"delegated-resource-or-rule-control":directTask?"explicit-resource-task-handler":"canonical-reference-field",
         evidence:directTask?[directTask.id]:matching.map(m=>m.id),
         source_direct_handler:directTask?.source??null,
+        selected_delegated_intent:step.via??null,
+        available_delegated_adapters:candidateDelegated.map(ref=>({channel:ref.channel,adapter:ref.adapter})),
+        unselected_delegated_adapters:unselectedDelegated.map(ref=>({channel:ref.channel,adapter:ref.adapter})),
         delegated_paths:indirectReferences.map(ref=>({
           channel:ref.channel,adapter:ref.adapter,access_decisions:ref.access_decisions,
           contingent:ref.contingent,declaration_chain:ref.declaration_chain,source:ref.source
@@ -442,6 +450,10 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           metric:"declared decision descriptions, NOT clicks",
           alternatives:indirectReferences.length
         }:null};
+      if(step.via && indirectReferences.length!==1)
+        result.blockers.push(indirectReferences.length?"intended-delegated-adapter-ambiguous":"intended-delegated-adapter-not-source-declared");
+      if(!step.via && candidateDelegated.length>1)
+        result.blockers.push("task-intent-needs-specific-delegated-adapter");
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
       // Different adapters may lead to the same canonical resource owner.
@@ -559,6 +571,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(conditionalPickerCount)flags.push("resource-chooser-branch");
     if(trace.some(x=>x.entry_source_type==="explicit-resource-task-handler"))flags.push("direct-custom-resource-task-activation-unknown");
     if(trace.some(x=>x.delegated_paths.length))flags.push("nested-rule-editor-decisions");
+    if(trace.some(x=>x.unselected_delegated_adapters.length))flags.push("alternate-adapters-exist-but-not-on-intended-path");
     if(operationSteps.some(x=>x.additional_owner_task))flags.push("requires-follow-on-owner-task");
     if(task.author_work.length)flags.push("authoring-controls-not-modeled");
     items.push({
@@ -586,7 +599,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           metric:"source-described decisions across nested UI layers, not physical clicks",
           caveat:"Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         }:null,
-        alternative_delegated_paths:trace.reduce((n,t)=>n+Math.max(0,t.delegated_paths.length-1),0),
+        alternative_delegated_paths:trace.reduce((n,t)=>n+t.unselected_delegated_adapters.length,0),
+        chosen_delegated_adapters:trace.flatMap(t=>t.delegated_paths.map(p=>({resource:t.resource_kind,channel:p.channel,adapter:p.adapter}))),
         conditional_delegated_paths:trace.flatMap(t=>t.delegated_paths.map(p=>({
           resource:t.resource_kind,channel:p.channel,adapter:p.adapter,decision_sequence:p.access_decisions,guards:p.contingent
         }))),
@@ -627,7 +641,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
-      delegated:"Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter.",
+      delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
       scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
     },
     summary:{total_tasks:items.length,
