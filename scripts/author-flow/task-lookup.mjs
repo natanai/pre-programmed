@@ -102,7 +102,13 @@ const operationSources={
       "narrative.interaction"
     ]
   ],
-  "node-scene-media": [],
+  "response-art-trigger": [
+    ["src/features/narrative/author/InteractionEditor.tsx",'title="EFFECTS"',"narrative.interaction"],
+    ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.interaction"],
+    ["src/features/narrative/runtime.ts",'executeEffects(snapshot, state, outcome.effects,',"narrative.interaction"],
+    ["src/features/media/effectRuntime.ts",'type: "art", assetId: effect.assetId',"narrative.interaction"],
+    ["src/features/media/ui/effectPresentation.ts",'case "art":',"narrative.interaction"]
+  ],
   "node-entry-art": [
     ["src/features/narrative/author/nodeWorkspace.tsx",'id: "node-entry-effects"',"narrative.node"],
     ["src/features/narrative/nodeEntryRuntime.ts",'executeEffects(snapshot, state, node.entryEffects ?? [],',"narrative.node"],
@@ -472,7 +478,8 @@ function sourceGatedControlActivationRange(task, trace, readFile) {
  * end-to-end click count or alternate Author implementations.
  */
 function describeNarrativeOperationControlPath(task, operationDefinition, previousOperations, readFile) {
-  const operation=operationDefinition.operation;
+  const originalOperation=operationDefinition.operation;
+  const operation=originalOperation==="response-art-trigger"?"response-effects":originalOperation;
   const workspace=task.start.workspace;
   if(!["narrative.interaction","narrative.node"].includes(workspace))return null;
   const paths={
@@ -641,6 +648,121 @@ function describeNarrativeOperationControlPath(task, operationDefinition, previo
     full_task_actions:null};
 }
 
+
+/**
+ * Inspect fields rendered by the already-selected registered adapter.
+ * The adapter remains the only owner of defaults, values and mutations.
+ * We extract declarations rather than adding parallel editing metadata.
+ */
+function deriveSelectedAdapterFields(step, readFile) {
+  const selected=step.delegated_paths?.length===1?step.delegated_paths[0]:null;
+  if(!selected||step.blockers?.length)return null;
+  const sourceFile=selected.source?.file;
+  if(!sourceFile)return null;
+  if(!sourceFile.endsWith("/ruleAdapters.tsx"))return {
+    status:"delegated-flow-not-rule-adapter",adapter:selected.adapter,channel:selected.channel,
+    source_file:sourceFile,fields:[],field_controls_declared:0,
+    note:"A shared Narrative flow or destination task, not a feature RuleAdapter with JSX fields.",
+    exact_configuration_clicks:null,observed_runtime:false
+  };
+  const source=readFile(sourceFile)??"";
+  const declarations=[...source.matchAll(/export const (\w+): (?:ConditionAuthorAdapter|EffectAuthorAdapter) = \{/g)];
+  const selectedDeclaration=declarations.find((m,i)=>{
+    const end=declarations[i+1]?.index??source.length;
+    return m.index<=source.split("\n").slice(0,selected.source.line).join("\n").length &&
+      source.slice(m.index,end).match(/\btype:\s*["']([^"']+)["']/)?.[1]===selected.adapter;
+  })??declarations.find((m,i)=>{
+    const end=declarations[i+1]?.index??source.length;
+    return source.slice(m.index,end).match(/\btype:\s*["']([^"']+)["']/)?.[1]===selected.adapter;
+  });
+  if(!selectedDeclaration)return {
+    status:"adapter-definition-not-found",channel:selected.channel,adapter:selected.adapter,fields:[],
+    source_file:sourceFile,observed_runtime:false
+  };
+  const index=declarations.indexOf(selectedDeclaration);
+  const block=source.slice(selectedDeclaration.index,declarations[index+1]?.index??source.length);
+  const blockSourceLine=source.slice(0,selectedDeclaration.index).split("\n").length;
+  const at=(matchIndex)=>({file:sourceFile,line:blockSourceLine+block.slice(0,matchIndex).split("\n").length-1});
+  const fields=[];
+  for(const match of block.matchAll(/<ReferenceField\b[\s\S]*?\/>/g)){
+    const kind=match[0].match(/\bkind=["']([^"']+)["']/)?.[1]??"computed";
+    fields.push({control:"canonical-resource-reference",resource_kind:kind,
+      source:at(match.index),selected_or_created_in_owning_editor:true,
+      conditional_activation_count:null});
+  }
+  for(const match of block.matchAll(/<input\b[\s\S]*?\/>/g)){
+    const text=match[0];
+    fields.push({control:"value-input",
+      input_type:text.match(/\btype=["']([^"']+)["']/)?.[1]??"context-dependent",
+      label:text.match(/aria-label=["']([^"']+)["']/)?.[1]??
+        text.match(/placeholder=["']([^"']+)["']/)?.[1]??null,
+      bound_value:text.match(/\bvalue=\{([^}]+)\}/)?.[1]??null,
+      source:at(match.index),typed_changes_counted:false,conditional_activation_count:null});
+  }
+  for(const match of block.matchAll(/<select\b/g)){
+    const segment=block.slice(match.index,match.index+220);
+    fields.push({control:"choice-selector",
+      bound_value:segment.match(/\bvalue=\{([^}]+)\}/)?.[1]??null,
+      label:segment.match(/aria-label=["']([^"']+)["']/)?.[1]??null,
+      source:at(match.index),selection_required_only_if_nondefault:true,
+      conditional_activation_count:null});
+  }
+  for(const match of block.matchAll(/<ComparisonSelect\b/g))
+    fields.push({control:"comparison-operator",
+      source:at(match.index),selection_required_only_if_nondefault:true,
+      conditional_activation_count:null});
+  for(const [token,control] of [["flagScopeControl(","scope-global-or-node"],["localFlagKeyField(","node-local-flag-key"]]){
+    const i=block.indexOf(token);
+    if(i>=0)fields.push({control,source:at(i),
+      branch_condition:control==="scope-global-or-node"?"node-local flags bypass global project resource reference":"only shown when Node-local scope chosen",
+      conditional_activation_count:null});
+  }
+  const creation=block.match(/create:\s*(?:\([^)]*\)|\([^)]*\)\s*=>)\s*=>\s*\(\{([\s\S]{0,450}?)\}\)/)
+    ??block.match(/create:\s*\(\)\s*=>\s*\(\{([\s\S]{0,450}?)\}\)/);
+  const defaults={};
+  if(creation)for(const m of creation[1].matchAll(/\b([a-zA-Z]\w*):\s*("[^"]*"|'[^']*'|true|false|-?\d+(?:\.\d+)?)/g))
+    defaults[m[1]]=m[2];
+  const ownerFieldMarkers={
+    flag:[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial-boolean"',"Initial true/false"]],
+    "number-variable":[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial"',"Initial value"]],
+    "text-variable":[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial"',"Initial value"]],
+    item:[["src/features/inventory/author/workspaces.tsx",'id: "inventory-item-name"',"Name"],
+      ["src/features/inventory/author/workspaces.tsx",'id: "inventory-item-starting"',"Starting quantity"]],
+    "media-image":[["src/features/media/author/vectorAssetWorkspace.tsx",'id: "vector-name"',"Name"],
+      ["src/features/media/author/vectorAssetWorkspace.tsx",'id: "vector-presentation"',"Default inline/overlay presentation"]]
+  };
+  const ownerFields=(ownerFieldMarkers[step.resource_kind]??[]).map(([file,needle,label])=>{
+    const text=readFile(file)??"",i=text.indexOf(needle);
+    return {label,source:i<0?null:{file,line:text.slice(0,i).split("\n").length},
+      control:"canonical-owner-editor-field",configuration_clicks:null};
+  });
+  const configurationUnknown=ownerFields.some(x=>!x.source);
+  for(const field of fields){
+    const binding=field.bound_value?.match(/(?:effect|condition)\.([a-zA-Z]\w*)/)?.[1]??null;
+    field.source_default_literal=binding&&Object.hasOwn(defaults,binding)?defaults[binding]:null;
+    field.nondefault_edit_required="depends-on-author-intent";
+  }
+  fields.sort((a,b)=>a.source.line-b.source.line||a.control.localeCompare(b.control));
+  return {
+    status:"source-declared-adapter-fields",
+    channel:selected.channel,adapter:selected.adapter,
+    owner_feature:sourceFile.split("/")[2],
+    source_file:sourceFile,
+    source_default_literals:defaults,
+    fields,field_controls_declared:fields.length,
+    canonical_owner_fields:ownerFields,
+    canonical_owner_field_witnesses_complete:!configurationUnknown,
+    unresolved_configuration_actions:[
+      "typing field values","choosing non-default options","changing scope-dependent controls",
+      "validation and Save acceptance","resource editor's own required field edits"
+    ],
+    exact_configuration_clicks:null,observed_runtime:false
+  };
+}
+
 function buildLookup(model,definitions,operationWitnesses,readFile){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
@@ -770,6 +892,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     }
     if(task.finish?.save_parent){min++;max++;}
     if(task.finish?.return_to_player){min++;max++;}
+    for(const tracedStep of trace)
+      tracedStep.field_configuration=deriveSelectedAdapterFields(tracedStep,readFile);
     const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
     const previousOperations=[];
     const operationSteps=(task.requested_operations??[]).map(({description,operation,...operationOptions})=>{
@@ -779,7 +903,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
       // The ON ENTER art operation depends on the entire Node -> Media effect
       // execution and presentation chain, not just finding one matching label.
-      const allRequiredFound=operation==="node-entry-art"?
+      const allRequiredFound=["node-entry-art","response-art-trigger"].includes(operation)?
         expectedWitnesses.length===5&&found.length===5:found.length>0;
       const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
       // Node INPUT HANDLING links to the real Interaction owner, not an
@@ -796,7 +920,20 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
             {file:"src/features/narrative/author/InteractionEditor.tsx",component:"PLAYER ENTERS"}],
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
+      const trigger=allRequiredFound&&["response-art-trigger","node-entry-art"].includes(operation)?{
+        moment:operation==="response-art-trigger"?
+          "when the selected Interaction outcome executes its effects":
+          "when the player enters the Node and its entry effects execute",
+        condition:operation==="response-art-trigger"?
+          "the outcome must be selected by its WHEN rule or interaction selection policy":
+          "the player must enter the Node",
+        presentation:"inline or overlay according to the image asset's default presentation",
+        limitations:["not individually timed to a word or frame of narrated text",
+          "appearance effect does not define a persistent background or its own dismissal time"],
+        source_evidence:found
+      }:null;
       return {intent:description,operation,source_evidence:found,authoring_control_path:authoringControlPath,
+        appearance_trigger:trigger,
         status:!allRequiredFound?"source-witness-unresolved":
           !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
           "owner-control-declared-in-task-context",
@@ -865,6 +1002,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         }))),
         conditional_control_subtotal:knownControls,
         source_guarded_control_activations:sourceGatedControls,
+        source_declared_adapter_field_controls:trace.reduce((n,x)=>n+(x.field_configuration?.field_controls_declared??0),0),
+        adapter_field_configuration_complete:trace.every(x=>!x.delegated_paths.length||
+          ["source-declared-adapter-fields","delegated-flow-not-rule-adapter"].includes(x.field_configuration?.status)),
         authored_operations_with_source_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-declared").length,
         authored_operations_with_incomplete_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete").length,
         authored_operations_without_a_control_sequence:operationSteps.filter(x=>!x.authoring_control_path).length,
@@ -895,7 +1035,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:6,type:"source-derived-anticipated-task-lookup",
+    schema_version:7,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -907,10 +1047,13 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
       control_activations:"Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
       authoring_operations:"Individual response authoring operations trace concrete control and panel transitions, with non-additive conditional activation bounds; typing and full configuration remain outside source-only counts.",
+      field_configuration:"Configuration controls are extracted from registered adapter JSX and create() default literals. Their presence is not a completed edit and their click counts remain unknown.",
       delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
-      scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
+      scene_media:"Visual-novel image timing is evaluated for two concrete triggers: Node entry and the selected Interaction outcome. Media owns the art effect and asset presentation. No persistent-background goal is assumed."
     },
     summary:{total_tasks:items.length,
+      selected_rule_adapter_field_controls:items.reduce((n,t)=>n+t.measures.source_declared_adapter_field_controls,0),
+      tasks_with_selected_adapter_fields:items.filter(t=>t.measures.source_declared_adapter_field_controls>0).length,
       authored_operations_with_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_source_control_sequence,0),
       authored_operations_with_incomplete_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_incomplete_control_sequence,0),
       authored_operations_outside_focused_control_scope:items.reduce((n,t)=>n+t.measures.authored_operations_without_a_control_sequence,0),
@@ -957,6 +1100,11 @@ if(compare){
       && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
       && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
+      && before.measures.source_declared_adapter_field_controls===after.measures.source_declared_adapter_field_controls
+      && JSON.stringify(before.route_steps.map(x=>x.field_configuration?.source_default_literals??null))===
+         JSON.stringify(after.route_steps.map(x=>x.field_configuration?.source_default_literals??null))
+      && JSON.stringify(before.operation_steps?.map(x=>x.appearance_trigger?.moment??null))===
+         JSON.stringify(after.operation_steps?.map(x=>x.appearance_trigger?.moment??null))
       && JSON.stringify(before.operation_steps?.map(x=>[
           x.status,x.authoring_control_path?.status??null,
           x.authoring_control_path?.conditional_navigation_activations??null,
@@ -982,6 +1130,10 @@ if(compare){
       delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
       owner_transitions_before:before.measures?.cross_owner_transitions??null,
       owner_transitions_after:after.measures?.cross_owner_transitions??null,
+      configuration_fields_before:before.measures?.source_declared_adapter_field_controls??null,
+      configuration_fields_after:after.measures?.source_declared_adapter_field_controls??null,
+      image_triggers_before:before.operation_steps?.map(x=>x.appearance_trigger?.moment??null).filter(Boolean)??[],
+      image_triggers_after:after.operation_steps?.map(x=>x.appearance_trigger?.moment??null).filter(Boolean)??[],
       source_guarded_controls_before:before.measures?.source_guarded_control_activations?{
         lower:before.measures.source_guarded_control_activations.lower,upper:before.measures.source_guarded_control_activations.upper}:null,
       source_guarded_controls_after:after.measures?.source_guarded_control_activations?{
@@ -1008,6 +1160,7 @@ if(compare){
     resource_tasks:selected.route_steps.map(step=>({
       action:step.operation,resource:step.resource_kind,owner:step.source_workspace,
       adapter:step.selected_delegated_intent??null,source_status:step.contract_status,
+      field_configuration:step.field_configuration??null,
       unresolved:step.blockers
     })),
     requested_operations:selected.operation_steps.map(step=>({
@@ -1015,6 +1168,7 @@ if(compare){
       controls:step.authoring_control_path?.steps??null,
       conditional_navigation_activations:step.authoring_control_path?.conditional_navigation_activations??null,
       source_sequence_status:step.authoring_control_path?.status??"not-yet-modeled",
+      appearance_trigger:step.appearance_trigger??null,
       unresolved:step.authoring_control_path?.unresolved??[]
     })),
     restrictions:{
@@ -1044,6 +1198,7 @@ if(compare){
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
     authoring_control_sequences:t.measures.authored_operations_with_source_control_sequence,
+    adapter_configuration_field_controls:t.measures.source_declared_adapter_field_controls,
     incomplete_authoring_control_sequences:t.measures.authored_operations_with_incomplete_control_sequence,
     source_guarded_control_activations:t.measures.source_guarded_control_activations?{
       lower:t.measures.source_guarded_control_activations.lower,
