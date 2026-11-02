@@ -253,7 +253,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "node"
+            "kind": "node",
+            "via": {
+              "channel": "destination",
+              "adapter": "NarrativeAfterEditor"
+            }
           }
         ],
         "author_work": [
@@ -1624,7 +1628,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -1987,7 +1995,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "item"
+            "kind": "item",
+            "via": {
+              "channel": "effect",
+              "adapter": "give_item"
+            }
           }
         ],
         "author_work": [
@@ -3083,7 +3095,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -3584,7 +3600,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "text-variable"
+            "kind": "text-variable",
+            "via": {
+              "channel": "capture",
+              "adapter": "CaptureFlowEditor"
+            }
           }
         ],
         "author_work": [
@@ -4267,7 +4287,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -5038,7 +5062,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "media-image"
+            "kind": "media-image",
+            "via": {
+              "channel": "effect",
+              "adapter": "art"
+            }
           }
         ],
         "author_work": [
@@ -5460,7 +5488,11 @@
           },
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -5945,7 +5977,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "media-image"
+            "kind": "media-image",
+            "via": {
+              "channel": "effect",
+              "adapter": "art"
+            }
           }
         ],
         "author_work": [
@@ -6202,7 +6238,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "number-variable"
+            "kind": "number-variable",
+            "via": {
+              "channel": "effect",
+              "adapter": "increment"
+            }
           }
         ],
         "author_work": [
