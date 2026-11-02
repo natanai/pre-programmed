@@ -21,6 +21,8 @@
  },
  "summary": {
   "total_tasks": 27,
+  "selected_rule_adapter_field_controls": 22,
+  "tasks_with_selected_adapter_fields": 8,
   "authored_operations_with_control_sequences": 26,
   "authored_operations_with_incomplete_control_sequences": 0,
   "authored_operations_outside_focused_control_scope": 38,
@@ -52,9 +54,7 @@
     "operation_witnesses_unresolved": 0,
     "top_static_gaps": []
    }
-  ],
-  "selected_rule_adapter_field_controls": 22,
-  "tasks_with_selected_adapter_fields": 8
+  ]
  },
  "tasks": [
   {
@@ -211,6 +211,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -219,9 +221,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -529,11 +529,14 @@
       "alternatives": 1
      },
      "field_configuration": {
-      "status": "adapter-definition-not-found",
-      "channel": "destination",
+      "status": "delegated-flow-not-rule-adapter",
       "adapter": "NarrativeAfterEditor",
-      "fields": [],
+      "channel": "destination",
       "source_file": "src/features/narrative/author/nodeWorkspace.tsx",
+      "fields": [],
+      "field_controls_declared": 0,
+      "note": "A shared Narrative flow or destination task, not a feature RuleAdapter with JSX fields.",
+      "exact_configuration_clicks": null,
       "observed_runtime": false
      }
     }
@@ -582,6 +585,8 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 0,
@@ -590,9 +595,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": false
+    "verified_saves": null
    },
    "friction_indicators": [
     "nested-rule-editor-decisions",
@@ -881,6 +884,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -889,9 +894,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -1082,6 +1085,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -1090,9 +1095,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -1375,6 +1378,8 @@
     "conditional_delegated_paths": [],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 0,
@@ -1383,9 +1388,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "direct-custom-resource-task-activation-unknown",
@@ -1570,6 +1573,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -1578,9 +1583,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -1926,6 +1929,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 3,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 0,
@@ -1934,9 +1939,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "authoring-controls-not-modeled"
@@ -2124,6 +2127,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -2132,9 +2137,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -2768,6 +2771,8 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "source_declared_adapter_field_controls": 4,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -2776,9 +2781,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 4,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -3394,6 +3397,8 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "source_declared_adapter_field_controls": 2,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -3402,9 +3407,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 2,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -3591,6 +3594,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -3599,9 +3604,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -3890,6 +3893,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -3898,9 +3903,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -4091,6 +4094,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -4099,9 +4104,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "resource-chooser-branch",
@@ -4497,6 +4500,8 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 4,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -4505,9 +4510,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 4,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -4732,6 +4735,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 0,
@@ -4740,9 +4745,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "authoring-controls-not-modeled"
@@ -5073,11 +5076,14 @@
       "alternatives": 1
      },
      "field_configuration": {
-      "status": "adapter-definition-not-found",
-      "channel": "capture",
+      "status": "delegated-flow-not-rule-adapter",
       "adapter": "CaptureFlowEditor",
-      "fields": [],
+      "channel": "capture",
       "source_file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+      "fields": [],
+      "field_controls_declared": 0,
+      "note": "A shared Narrative flow or destination task, not a feature RuleAdapter with JSX fields.",
+      "exact_configuration_clicks": null,
       "observed_runtime": false
      }
     }
@@ -5128,6 +5134,8 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 0,
@@ -5136,9 +5144,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": false
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -5336,6 +5342,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -5344,9 +5352,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -5616,6 +5622,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 3,
@@ -5624,9 +5632,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -6266,6 +6272,8 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "source_declared_adapter_field_controls": 4,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -6274,9 +6282,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 4,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -6467,6 +6473,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -6475,9 +6483,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -6735,6 +6741,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -6743,9 +6751,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -6972,6 +6978,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -6980,9 +6988,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -7457,6 +7463,8 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 4,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -7465,9 +7473,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 4,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -7730,6 +7736,8 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "source_declared_adapter_field_controls": 0,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 1,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -7738,9 +7746,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 0,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "authoring-controls-not-modeled"
@@ -8200,6 +8206,8 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "source_declared_adapter_field_controls": 1,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 0,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 2,
@@ -8208,9 +8216,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 1,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
@@ -9560,6 +9566,8 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "source_declared_adapter_field_controls": 2,
+    "adapter_field_configuration_complete": true,
     "authored_operations_with_source_control_sequence": 2,
     "authored_operations_with_incomplete_control_sequence": 0,
     "authored_operations_without_a_control_sequence": 1,
@@ -9568,9 +9576,7 @@
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
     "verified_draft_retention": null,
-    "verified_saves": null,
-    "source_declared_adapter_field_controls": 2,
-    "adapter_field_configuration_complete": true
+    "verified_saves": null
    },
    "friction_indicators": [
     "cross-owner-authoring",
