@@ -386,6 +386,84 @@ function matchWorkspaceForResource(model,route,kind,readFile) {
   return candidates.filter(accepts);
 }
 
+
+/** Count only concretely evidenced controls on one intentionally chosen route. */
+function sourceGatedControlActivationRange(task, trace, readFile) {
+  if (trace.length!==1 || trace[0].blockers.length || trace[0].delegated_paths.length!==1 ||
+      task.resource_chain[0]?.action!=="create") return null;
+  const selected=trace[0].delegated_paths[0];
+  const start=task.start.workspace;
+  const effect=selected.channel==="effect";
+  const condition=selected.channel==="condition";
+  if (!(effect||condition))return null;
+  const interaction=start==="narrative.interaction";
+  const node=start==="narrative.node"&&effect;
+  if(!interaction&&!node)return null;
+  const locations={
+    inline:"src/author/ui/AuthorInlineDisclosure.tsx",
+    renderer:"src/author/ui/AuthorWorkspaceRenderer.tsx",
+    interaction:"src/features/narrative/author/InteractionEditor.tsx",
+    node:"src/features/narrative/author/nodeWorkspace.tsx",
+    outcome:"src/author/outcomes/OutcomeComposer.tsx",
+    conditions:"src/author/ConditionEditor.tsx",
+    effects:"src/author/EffectsEditor.tsx",
+    reference:"src/author/resources/ReferenceField.tsx",
+    save:"src/author/ui/workspaceDefinition.tsx",
+    exit:"src/author/workspace/AuthorWorkspaceHost.tsx",
+  };
+  const see=(key,needle)=>{
+    const file=locations[key],source=readFile(file)??"",position=source.indexOf(needle);
+    return position<0?null:{file,line:source.slice(0,position).split("\n").length};
+  };
+  const guardRefs=[
+    see("inline","defaultOpen = false"),
+    see("inline","<details className={classes} open={defaultOpen}>"),
+    see("reference","onClick={openOrCreate}"),
+    see("reference","if (!value && !options.length && canCreate)"),
+    see("save",'id: "author-core-save"'),
+    see("exit",'aria-label="Close Author tasks and return to play"'),
+    interaction?see("interaction",effect?'title="EFFECTS"':'title="WHEN"'):see("node",'id: "node-entry-effects"'),
+    interaction?see("outcome","return <AuthorInlineDisclosure"):see("renderer",'return <AuthorInlineDisclosure'),
+    effect?see("effects",'onClick={() => setScreen("choose")}'):see("conditions",'<select aria-label="Condition type"'),
+    effect?see("effects",'onClick={() => addEffect(adapter)}'):see("conditions","onChange={selectType}"),
+  ];
+  if(guardRefs.some(value=>!value))return null;
+  const steps=[];
+  const add=(label,min,max,evidence,guard)=>steps.push({action:label,minimum:min,maximum:max,evidence,condition:guard});
+  if(interaction){
+    const selection=see("interaction",'onClick={() => onOpenResponse(outcome.id)}');
+    const open=see("interaction",'screen.type === "response" && selectedOutcome');
+    if(!selection||!open)return null;
+    add("open response from interaction overview",0,1,[selection,open],
+      "Only required when the relevant response is not already open; entry via outcomeId may open it directly");
+  }
+  add("expand "+(effect?"EFFECTS":"WHEN"),1,1,guardRefs.filter(Boolean).slice(0,2).concat(guardRefs[6],guardRefs[7]),
+    "Starting with this disclosure closed; changing prior UI state may remove this activation");
+  if(effect){
+    add("choose Add Effect",1,1,[guardRefs[8]],"Creating a new effect from the list view");
+    add("select "+selected.adapter+" effect",1,1,[guardRefs[9],selected.source],
+      "The registered adapter is available in the category chooser");
+  }else{
+    add("select "+selected.adapter+" condition",1,1,[guardRefs[8],guardRefs[9],selected.source],
+      "Selecting a condition from the type dropdown; not already of this type");
+  }
+  add("open canonical reference Create",1,2,[guardRefs[2],guardRefs[3],selected.source],
+    "Direct when no selected value and no catalog options; chooser plus Create otherwise");
+  add("save new resource",1,1,[guardRefs[4]],"Child owner validation accepts the Save");
+  if(task.finish?.save_parent)add("save parent draft",1,1,[guardRefs[4]],"Parent is dirty and valid to save");
+  if(task.finish?.return_to_player)add("master X to running player",1,1,[guardRefs[5]],"No dirty-leave confirmation is required");
+  return {
+    kind:"source-guarded-conditional-control-activations",
+    source_checked:true,
+    lower:steps.reduce((n,x)=>n+x.minimum,0),
+    upper:steps.reduce((n,x)=>n+x.maximum,0),
+    steps,
+    start_assumption:"Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+    excludes:["opening Author Mode from real play","typing/configuring authored fields","additional screens in the canonical child editor","Save failures or confirmation prompts","unmodeled hover/focus/presentation changes"],
+    exact_end_to_end_actions:null,
+  };
+}
+
 function buildLookup(model,definitions,operationWitnesses,readFile){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
@@ -545,6 +623,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         additional_owner_task:nodeInputPath,
         exact_actions:null,note:"A source control witness does not prove a complete configuration or a visible UI."};
     });
+    const sourceGatedControls=sourceGatedControlActivationRange(task,trace,readFile);
     const knownControls=nestedSourceResolved&&frames.every(f=>f.entry_controls_known)?{
       conditional_lower:min,conditional_upper:max,
       scope:"reference Create/Edit + child Save + parent Save + master X only",
@@ -605,6 +684,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           resource:t.resource_kind,channel:p.channel,adapter:p.adapter,decision_sequence:p.access_decisions,guards:p.contingent
         }))),
         conditional_control_subtotal:knownControls,
+        source_guarded_control_activations:sourceGatedControls,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_follow_on_task_paths:operationSteps.filter(x=>x.status==="follow-on-owner-task-source-declared").length,
         operation_controls_without_context:operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)).length,
@@ -641,6 +721,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
+      control_activations:"Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
       delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
       scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
     },
