@@ -104,7 +104,9 @@ const operationSources={
   "node-scene-media": [],
   "node-entry-art": [
     ["src/features/narrative/author/nodeWorkspace.tsx",'id: "node-entry-effects"',"narrative.node"],
+    ["src/features/narrative/nodeEntryRuntime.ts",'executeEffects(snapshot, state, node.entryEffects ?? [],',"narrative.node"],
     ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.node"],
+    ["src/features/media/effectRuntime.ts",'type: "art", assetId: effect.assetId',"narrative.node"],
     ["src/features/media/ui/effectPresentation.ts",'case "art":',"narrative.node"]
   ],
   "command-name": [
@@ -503,7 +505,12 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(task.finish?.return_to_player){min++;max++;}
     const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
     const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
-      const found=(operationWitnesses[operation]??[]).filter(x=>x.status==="source-witness-found");
+      const expectedWitnesses=operationWitnesses[operation]??[];
+      const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
+      // The ON ENTER art operation depends on the entire Node -> Media effect
+      // execution and presentation chain, not just finding one matching label.
+      const allRequiredFound=operation==="node-entry-art"?
+        expectedWitnesses.length===5&&found.length===5:found.length>0;
       const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
       // Node INPUT HANDLING links to the real Interaction owner, not an
       // Author-only input field. Record this as another task-level step.
@@ -520,7 +527,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
       return {intent:description,operation,source_evidence:found,
-        status:!found.length?"source-witness-unresolved":
+        status:!allRequiredFound?"source-witness-unresolved":
           !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
           "owner-control-declared-in-task-context",
         additional_owner_task:nodeInputPath,
