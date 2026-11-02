@@ -89,6 +89,26 @@ node scripts/author-flow/task-lookup.mjs --compare path/to/older-task-lookup.jso
 
 These counts are **partial, conditional source estimates**, not measured task-completion clicks or usability scores. They exclude entering Author Mode from the player terminal, typing or otherwise configuring authored fields, other screens inside the owning resource editor, Save rejection, and leave confirmation. A previously opened disclosure can also change the count. For tasks without an entirely source-supported single-adapter path, the metric remains `null`.
 
+## Trace the work inside a response
+
+The single lookup now includes `tasks[].operation_steps[].authoring_control_path`, derived from the real Narrative `InteractionEditor`, `NarrativeAfterEditor`, `ConditionEditor`, `EffectsEditor`, Node input controls and their shared disclosure components. This records the actual **sequence of declared controls** for anticipated actions rather than stopping once a resource editor is reachable.
+
+The traced operations include: entering a valid player phrase; opening or adding a response; editing its narration; opening WHEN and choosing a condition; opening EFFECTS, adding an effect and selecting its owner adapter; opening AFTER and choosing CAPTURE INPUT; linking an existing Node or creating a new destination; and creating a valid input through a Node's canonical Interaction task.
+
+```sh
+node scripts/author-flow/task-lookup.mjs --task vn-author-new-reply
+node scripts/author-flow/task-lookup.mjs --task vn-choice-branch
+node scripts/author-flow/task-lookup.mjs --task vn-capture-nickname
+node scripts/author-flow/task-lookup.mjs --task rpg-define-north-input
+node scripts/author-flow/task-lookup.mjs --task rpg-create-destination
+```
+
+One crucial distinction: `[+ ADD RESPONSE]` creates a draft **and opens it automatically**, so the new response does not require a second "open response" step. A route with a known `outcomeId` may already open a response, whereas selecting an existing response from its overview needs another activation.
+
+Each operation's `conditional_navigation_activations` is a **local, non-additive estimate**, with source file/line evidence and explicit preconditions. Text typing, editing amounts or conditions, choosing an item from a dynamic list, Save success, and returning to play remain outside these operation-level numbers. Do **not sum** the operation ranges with each other or with nested-resource ranges: the same disclosure, response selection or canonical resource picker may appear in both representations. The overall end-to-end cost stays unknown.
+
+An unspecified destination is not silently treated as an existing Node. The RPG northward-input example explicitly chooses `destination_choice: "existing"` in its task definition; the new-Node example uses its existing canonical Node creation task. The existing-destination chooser is dynamic, so the whole operation's bound remains null.
+
 ## Internals are not competing current task reports
 
 `source-graph.json` is a large **machine-generated AST inventory**, not an imagined task catalog or source of truth for developer UX conclusions. `scripts/author-flow/navigation-model.mjs` is a pure on-demand compiler and CLI for low-level route questions; it no longer persists a second current navigation JSON. The task-lookup calculator imports that compiler directly.
