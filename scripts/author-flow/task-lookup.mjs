@@ -711,7 +711,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:4,type:"source-derived-anticipated-task-lookup",
+    schema_version:5,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -761,6 +761,8 @@ if(compare){
     const beforeCost=before.measures.conditional_control_subtotal;
     const afterCost=after.measures.conditional_control_subtotal;
     if(before.source_path_status===after.source_path_status
+      && JSON.stringify(before.measures.source_guarded_control_activations&&[before.measures.source_guarded_control_activations.lower,before.measures.source_guarded_control_activations.upper])===
+        JSON.stringify(after.measures.source_guarded_control_activations&&[after.measures.source_guarded_control_activations.lower,after.measures.source_guarded_control_activations.upper])
       && before.goal_source_status===after.goal_source_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
       && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
@@ -782,6 +784,10 @@ if(compare){
       delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
       owner_transitions_before:before.measures?.cross_owner_transitions??null,
       owner_transitions_after:after.measures?.cross_owner_transitions??null,
+      source_guarded_controls_before:before.measures?.source_guarded_control_activations?{
+        lower:before.measures.source_guarded_control_activations.lower,upper:before.measures.source_guarded_control_activations.upper}:null,
+      source_guarded_controls_after:after.measures?.source_guarded_control_activations?{
+        lower:after.measures.source_guarded_control_activations.lower,upper:after.measures.source_guarded_control_activations.upper}:null,
       caution:"Comparative source visibility, not proof of a faster or more predictable user experience"});
   }
   process.stdout.write(JSON.stringify({type:"author-task-lookup-diff",
@@ -815,6 +821,10 @@ if(compare){
     source_access_stages:t.measures.source_declared_access_stages,
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
+    source_guarded_control_activations:t.measures.source_guarded_control_activations?{
+      lower:t.measures.source_guarded_control_activations.lower,
+      upper:t.measures.source_guarded_control_activations.upper
+    }:null,
     exact_clicks:null,
   }));
   // Ordering is descriptive and deterministic; it is not a scalar UX score.
