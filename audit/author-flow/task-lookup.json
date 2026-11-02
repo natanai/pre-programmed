@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "type": "source-derived-anticipated-task-lookup",
   "generated_from": {
     "source_inventory": "audit/author-flow/source-graph.json",
@@ -13,15 +13,18 @@
     "cost": "Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
     "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
     "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
-    "delegated": "Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter."
+    "delegated": "Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter.",
+    "scene_media": "Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
   },
   "summary": {
-    "total_tasks": 26,
-    "task_operation_witnesses_found": 57,
-    "task_operation_witnesses_unresolved": 2,
-    "resolved_nested_resource_routes": 22,
+    "total_tasks": 27,
+    "tasks_with_source_declared_control_paths": 26,
+    "tasks_with_unresolved_requested_work": 1,
+    "task_operation_witnesses_found": 60,
+    "task_operation_witnesses_unresolved": 1,
+    "resolved_nested_resource_routes": 24,
     "tasks_without_nested_resource_route": 3,
-    "unresolved_nested_resource_routes": 1,
+    "unresolved_nested_resource_routes": 0,
     "games": [
       {
         "game": "branching-rpg",
@@ -35,26 +38,13 @@
       },
       {
         "game": "visual-novel",
-        "anticipated_tasks": 12,
-        "resolved_nested_resource_routes": 9,
+        "anticipated_tasks": 13,
+        "resolved_nested_resource_routes": 11,
         "tasks_without_nested_resource_route": 2,
-        "unresolved_nested_resource_routes": 1,
-        "operation_witnesses_in_context": 27,
-        "operation_witnesses_unresolved": 2,
-        "top_static_gaps": [
-          {
-            "task_id": "vn-create-scene-image",
-            "missing": [
-              {
-                "kind": "media-image",
-                "at": "workspace:narrative.node",
-                "reason": [
-                  "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
-                ]
-              }
-            ]
-          }
-        ]
+        "unresolved_nested_resource_routes": 0,
+        "operation_witnesses_in_context": 30,
+        "operation_witnesses_unresolved": 1,
+        "top_static_gaps": []
       }
     ]
   },
@@ -142,6 +132,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -348,6 +339,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -592,6 +584,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -819,6 +812,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -1000,6 +994,7 @@
         }
       ],
       "source_path_status": "resource-task-handler-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -1163,6 +1158,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -1367,6 +1363,7 @@
         }
       ],
       "source_path_status": "workspace-task-without-nested-route",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [],
       "reverse_handoff_order": [],
@@ -1507,6 +1504,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -1687,6 +1685,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -2049,6 +2048,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -2527,6 +2527,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -2734,6 +2735,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -2961,6 +2963,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -3141,6 +3144,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -3504,6 +3508,7 @@
         }
       ],
       "source_path_status": "workspace-task-without-nested-route",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [],
       "reverse_handoff_order": [],
@@ -3640,6 +3645,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -3874,6 +3880,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -4093,6 +4100,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -4320,6 +4328,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -4682,6 +4691,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -4903,6 +4913,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -5008,7 +5019,7 @@
     {
       "task_id": "vn-create-scene-image",
       "game": "visual-novel",
-      "goal": "Create scene image Media while composing a narrative Node.",
+      "goal": "Create a persistent scene background that stays visible during visual-novel dialogue, authored from the Node where it is needed.",
       "starting_workspace": "narrative.node",
       "origin_assumption": {
         "surface": "author-workspace",
@@ -5018,7 +5029,7 @@
       "definition": {
         "id": "vn-create-scene-image",
         "game": "visual-novel",
-        "goal": "Create scene image Media while composing a narrative Node.",
+        "goal": "Create a persistent scene background that stays visible during visual-novel dialogue, authored from the Node where it is needed.",
         "start": {
           "surface": "author-workspace",
           "workspace": "narrative.node",
@@ -5032,7 +5043,7 @@
         ],
         "author_work": [
           "create image resource",
-          "assign background in narrative"
+          "assign persistent scene background in narrative"
         ],
         "finish": {
           "save_parent": true,
@@ -5044,14 +5055,14 @@
             "operation": "image-art"
           },
           {
-            "description": "assign background in narrative",
+            "description": "assign persistent scene background in narrative",
             "operation": "node-scene-media"
           }
         ]
       },
       "intended_author_work": [
         "create image resource",
-        "assign background in narrative"
+        "assign persistent scene background in narrative"
       ],
       "operation_steps": [
         {
@@ -5065,13 +5076,13 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
           "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         },
         {
-          "intent": "assign background in narrative",
+          "intent": "assign persistent scene background in narrative",
           "operation": "node-scene-media",
           "source_evidence": [],
           "status": "source-witness-unresolved",
@@ -5080,8 +5091,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-operation-source-unresolved",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -5089,60 +5101,131 @@
           "resource_kind": "media-image",
           "from": "workspace:narrative.node",
           "expected_resource_owner": "src/features/media/author/manifest.tsx",
-          "source_reference_candidates": [],
+          "source_reference_candidates": [
+            {
+              "file": "src/features/media/author/ruleAdapters.tsx",
+              "line": 63
+            }
+          ],
           "source_route": "route:media.vector-asset",
           "source_workspace": "workspace:media-vector-asset",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
+          "entry_source_type": "delegated-resource-or-rule-control",
+          "evidence": [
+            "delegated:narrative.node:media-image:effect:art"
           ],
-          "entry_source_type": "canonical-reference-field",
-          "evidence": [],
           "source_direct_handler": null,
-          "delegated_paths": [],
-          "source_access_stage_range": null
+          "delegated_paths": [
+            {
+              "channel": "effect",
+              "adapter": "art",
+              "access_decisions": [
+                "Open Node ON ENTER",
+                "Choose Add Effect",
+                "Choose art effect type",
+                "Use the canonical media-image reference field"
+              ],
+              "contingent": [
+                "response/entry editor is visible",
+                "section is expanded",
+                "adapter type is selected",
+                "Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"
+              ],
+              "declaration_chain": [
+                {
+                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                  "component": "<OutcomeEffectsEditor"
+                },
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "component": "registered feature-owned effect adapter"
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "component": "artEffectAdapter ReferenceField"
+                },
+                {
+                  "file": "src/features/media/author/manifest.tsx",
+                  "component": "media feature registry"
+                }
+              ],
+              "source": {
+                "file": "src/features/media/author/ruleAdapters.tsx",
+                "line": 63
+              }
+            }
+          ],
+          "source_access_stage_range": {
+            "min": 4,
+            "max": 4,
+            "metric": "declared decision descriptions, NOT clicks",
+            "alternatives": 1
+          }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
-        "source_declared_access_stages": null,
+        "source_declared_access_stages": {
+          "lower": 4,
+          "upper": 4,
+          "metric": "source-described decisions across nested UI layers, not physical clicks",
+          "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
+        },
         "alternative_delegated_paths": 0,
-        "conditional_delegated_paths": [],
+        "conditional_delegated_paths": [
+          {
+            "resource": "media-image",
+            "channel": "effect",
+            "adapter": "art",
+            "decision_sequence": [
+              "Open Node ON ENTER",
+              "Choose Add Effect",
+              "Choose art effect type",
+              "Use the canonical media-image reference field"
+            ],
+            "guards": [
+              "response/entry editor is visible",
+              "section is expanded",
+              "adapter type is selected",
+              "Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"
+            ]
+          }
+        ],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 0,
+        "operation_controls_found_in_context": 1,
         "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 2,
+        "operation_controls_without_context": 1,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
+        "nested-rule-editor-decisions",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.node",
-          "operation": "create",
-          "resource_kind": "media-image",
-          "reason": [
-            "no-reference-field-or-resource-task-handler-declared-in-current-workspace"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "create image resource"
         },
         {
           "category": "authored-content-actions-not-modeled",
-          "work": "assign background in narrative"
+          "work": "assign persistent scene background in narrative"
         },
         {
           "category": "entry-from-real-player-not-modeled",
@@ -5151,11 +5234,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "image-art",
-          "reason": "owner-not-reached-by-declared-task-path"
         },
         {
           "category": "authoring-operation-source-gap",
@@ -5258,6 +5336,7 @@
         }
       ],
       "source_path_status": "contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -5482,6 +5561,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -5785,6 +5865,7 @@
         }
       ],
       "source_path_status": "workspace-task-without-nested-route",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [],
       "reverse_handoff_order": [],
@@ -5826,6 +5907,263 @@
         {
           "category": "authored-content-actions-not-modeled",
           "work": "resume real conversation"
+        },
+        {
+          "category": "entry-from-real-player-not-modeled",
+          "description": "The start is a declared Author workspace; player-to-workspace route and toggle actions are not counted"
+        },
+        {
+          "category": "runtime-conditions-not-evaluated",
+          "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
+        }
+      ],
+      "provenance": {
+        "model": "audit/author-flow/navigation-model.json",
+        "goal_source": "audit/author-flow/anticipated-tasks.json",
+        "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-show-entry-art",
+      "game": "visual-novel",
+      "goal": "From a Narrative Node, create an image and show it when the player enters using the existing Media art effect (inline or overlay).",
+      "starting_workspace": "narrative.node",
+      "origin_assumption": {
+        "surface": "author-workspace",
+        "workspace": "narrative.node",
+        "play_to_editor_entry": "not-modeled-in-static-graph"
+      },
+      "definition": {
+        "id": "vn-show-entry-art",
+        "game": "visual-novel",
+        "goal": "From a Narrative Node, create an image and show it when the player enters using the existing Media art effect (inline or overlay).",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create image in canonical Media editor",
+          "configure ON ENTER Show Sprite/Art effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create image in canonical Media editor",
+            "operation": "image-art"
+          },
+          {
+            "description": "configure ON ENTER Show Sprite/Art effect",
+            "operation": "node-entry-art"
+          }
+        ]
+      },
+      "intended_author_work": [
+        "create image in canonical Media editor",
+        "configure ON ENTER Show Sprite/Art effect"
+      ],
+      "operation_steps": [
+        {
+          "intent": "create image in canonical Media editor",
+          "operation": "image-art",
+          "source_evidence": [
+            {
+              "file": "src/features/media/author/vectorAssetWorkspace.tsx",
+              "workspace": "media-vector-asset",
+              "source_line": 14,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        },
+        {
+          "intent": "configure ON ENTER Show Sprite/Art effect",
+          "operation": "node-entry-art",
+          "source_evidence": [
+            {
+              "file": "src/features/narrative/author/nodeWorkspace.tsx",
+              "workspace": "narrative.node",
+              "source_line": 479,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/narrative/nodeEntryRuntime.ts",
+              "workspace": "narrative.node",
+              "source_line": 31,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/media/author/ruleAdapters.tsx",
+              "workspace": "narrative.node",
+              "source_line": 50,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/media/effectRuntime.ts",
+              "workspace": "narrative.node",
+              "source_line": 15,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/media/ui/effectPresentation.ts",
+              "workspace": "narrative.node",
+              "source_line": 45,
+              "status": "source-witness-found"
+            }
+          ],
+          "status": "owner-control-declared-in-task-context",
+          "additional_owner_task": null,
+          "exact_actions": null,
+          "note": "A source control witness does not prove a complete configuration or a visible UI."
+        }
+      ],
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
+      "route_steps": [
+        {
+          "step": 1,
+          "operation": "create",
+          "resource_kind": "media-image",
+          "from": "workspace:narrative.node",
+          "expected_resource_owner": "src/features/media/author/manifest.tsx",
+          "source_reference_candidates": [
+            {
+              "file": "src/features/media/author/ruleAdapters.tsx",
+              "line": 63
+            }
+          ],
+          "source_route": "route:media.vector-asset",
+          "source_workspace": "workspace:media-vector-asset",
+          "controls": null,
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
+          "entry_source_type": "delegated-resource-or-rule-control",
+          "evidence": [
+            "delegated:narrative.node:media-image:effect:art"
+          ],
+          "source_direct_handler": null,
+          "delegated_paths": [
+            {
+              "channel": "effect",
+              "adapter": "art",
+              "access_decisions": [
+                "Open Node ON ENTER",
+                "Choose Add Effect",
+                "Choose art effect type",
+                "Use the canonical media-image reference field"
+              ],
+              "contingent": [
+                "response/entry editor is visible",
+                "section is expanded",
+                "adapter type is selected",
+                "Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"
+              ],
+              "declaration_chain": [
+                {
+                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                  "component": "<OutcomeEffectsEditor"
+                },
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "component": "registered feature-owned effect adapter"
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "component": "artEffectAdapter ReferenceField"
+                },
+                {
+                  "file": "src/features/media/author/manifest.tsx",
+                  "component": "media feature registry"
+                }
+              ],
+              "source": {
+                "file": "src/features/media/author/ruleAdapters.tsx",
+                "line": 63
+              }
+            }
+          ],
+          "source_access_stage_range": {
+            "min": 4,
+            "max": 4,
+            "metric": "declared decision descriptions, NOT clicks",
+            "alternatives": 1
+          }
+        }
+      ],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:media-vector-asset",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
+      "measures": {
+        "declared_resource_tasks": 1,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
+        "chooser_branch_points": 0,
+        "source_declared_access_stages": {
+          "lower": 4,
+          "upper": 4,
+          "metric": "source-described decisions across nested UI layers, not physical clicks",
+          "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
+        },
+        "alternative_delegated_paths": 0,
+        "conditional_delegated_paths": [
+          {
+            "resource": "media-image",
+            "channel": "effect",
+            "adapter": "art",
+            "decision_sequence": [
+              "Open Node ON ENTER",
+              "Choose Add Effect",
+              "Choose art effect type",
+              "Use the canonical media-image reference field"
+            ],
+            "guards": [
+              "response/entry editor is visible",
+              "section is expanded",
+              "adapter type is selected",
+              "Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"
+            ]
+          }
+        ],
+        "conditional_control_subtotal": null,
+        "operation_controls_found_in_context": 2,
+        "operation_follow_on_task_paths": 0,
+        "operation_controls_without_context": 0,
+        "verified_end_to_end_actions": null,
+        "verified_draft_retention": null,
+        "verified_saves": null
+      },
+      "friction_indicators": [
+        "cross-owner-authoring",
+        "nested-rule-editor-decisions",
+        "authoring-controls-not-modeled"
+      ],
+      "unmodeled_or_unresolved": [
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "create image in canonical Media editor"
+        },
+        {
+          "category": "authored-content-actions-not-modeled",
+          "work": "configure ON ENTER Show Sprite/Art effect"
         },
         {
           "category": "entry-from-real-player-not-modeled",
@@ -5947,6 +6285,7 @@
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {

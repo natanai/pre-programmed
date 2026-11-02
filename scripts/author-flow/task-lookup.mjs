@@ -102,6 +102,13 @@ const operationSources={
     ]
   ],
   "node-scene-media": [],
+  "node-entry-art": [
+    ["src/features/narrative/author/nodeWorkspace.tsx",'id: "node-entry-effects"',"narrative.node"],
+    ["src/features/narrative/nodeEntryRuntime.ts",'executeEffects(snapshot, state, node.entryEffects ?? [],',"narrative.node"],
+    ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.node"],
+    ["src/features/media/effectRuntime.ts",'type: "art", assetId: effect.assetId',"narrative.node"],
+    ["src/features/media/ui/effectPresentation.ts",'case "art":',"narrative.node"]
+  ],
   "command-name": [
     [
       "src/features/commands/author/commandWorkspace.tsx",
@@ -245,7 +252,8 @@ function deriveDelegatedReferenceSites(model, readFile) {
   const fileSource=Object.fromEntries(Object.entries(files).map(([key,path])=>[key,readFile(path)??""]));
   const registered=[
     ["state","src/features/state/author/manifest.tsx","src/features/state/author/ruleAdapters.tsx"],
-    ["inventory","src/features/inventory/author/manifest.tsx","src/features/inventory/author/ruleAdapters.tsx"]
+    ["inventory","src/features/inventory/author/manifest.tsx","src/features/inventory/author/ruleAdapters.tsx"],
+    ["media","src/features/media/author/manifest.tsx","src/features/media/author/ruleAdapters.tsx"]
   ];
   const sites=[];
   const line=(file,needle)=>{
@@ -296,19 +304,24 @@ function deriveDelegatedReferenceSites(model, readFile) {
           const hasOuter=workspace==="world-entity"?host.includes("<ConditionEditor"):
             channel==="effect"&&workspace==="narrative.node"?host.includes("<EffectsEditor"):host.includes(outer);
           if(!hasOuter)continue;
+          if(workspace==="narrative.node"&&feature==="media"&&type==="art"&&
+            !host.includes('id: "node-entry-effects"'))continue;
+          const nodeEntryMedia=workspace==="narrative.node"&&feature==="media"&&channel==="effect";
           insert(workspace,kind,{
             channel,adapter:type,source:sourceLocation,
             declaration_chain:[
               {file:workspace==="world-entity"?files.world:workspace==="narrative.node"?files.node:files.interaction,component:workspace==="world-entity"?"Character alias ConditionEditor":outer},
-              {file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"},
+              ...(nodeEntryMedia?[]:[{file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"}]),
               {file:channel==="condition"?files.condition:files.effects,component:"registered feature-owned "+channel+" adapter"},
               {file:adapterFile,component:m[1]+" ReferenceField"},
               {file:manifestFile,component:feature+" feature registry"}
             ],
             access_decisions:channel==="condition"
               ? ["Open the appropriate WHEN/condition section","Choose "+type+" condition type","Use the canonical "+kind+" reference field"]
+              : nodeEntryMedia?["Open Node ON ENTER","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"]
               : ["Open the appropriate EFFECTS section","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"],
             contingent:["response/entry editor is visible","section is expanded","adapter type is selected",
+              ...(nodeEntryMedia?["Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"]:[]),
               ...(workspace==="world-entity"?["resource is a Character, not a Location","Character has at least one alias","alias SHOW WHEN is configured"]:[]),
               ...(block.includes('scope === "node"')?["global scope selected; node-local flags do not require a project resource"]:[])],
           });
@@ -492,7 +505,12 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(task.finish?.return_to_player){min++;max++;}
     const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
     const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
-      const found=(operationWitnesses[operation]??[]).filter(x=>x.status==="source-witness-found");
+      const expectedWitnesses=operationWitnesses[operation]??[];
+      const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
+      // The ON ENTER art operation depends on the entire Node -> Media effect
+      // execution and presentation chain, not just finding one matching label.
+      const allRequiredFound=operation==="node-entry-art"?
+        expectedWitnesses.length===5&&found.length===5:found.length>0;
       const inContext=found.filter(x=>x.workspace===null||availableWorkspaces.has(x.workspace));
       // Node INPUT HANDLING links to the real Interaction owner, not an
       // Author-only input field. Record this as another task-level step.
@@ -509,7 +527,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
       return {intent:description,operation,source_evidence:found,
-        status:!found.length?"source-witness-unresolved":
+        status:!allRequiredFound?"source-witness-unresolved":
           !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
           "owner-control-declared-in-task-context",
         additional_owner_task:nodeInputPath,
@@ -529,6 +547,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     for(const id of missingShared)unresolved.push({category:"shared-task-lifecycle-witness-missing",contract_id:id});
     for(const op of operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)))
       unresolved.push({category:"authoring-operation-source-gap",operation:op.operation,reason:op.status});
+    const unresolvedRequestedOperations=operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status));
+    const goalSourceStatus=!nestedSourceResolved?"resource-route-source-unresolved":
+      unresolvedRequestedOperations.length?"requested-operation-source-unresolved":"requested-control-paths-source-declared";
     const status=!nestedSourceResolved?"missing-source-link":!task.resource_chain.length?"workspace-task-without-nested-route":
       trace.some(x=>x.delegated_paths.length)?"delegated-contextual-route-source-declared":
       trace.some(x=>x.entry_source_type==="explicit-resource-task-handler")?"resource-task-handler-source-declared":"contextual-route-source-declared";
@@ -548,6 +569,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       intended_author_work:task.author_work,
       operation_steps:operationSteps,
       source_path_status:status,
+      goal_source_status:goalSourceStatus,
       declared_path_complete:nestedSourceResolved,
       route_steps:trace,
       reverse_handoff_order:nestedSourceResolved?[...frames].reverse().map(f=>({from:f.child,to:f.parent,
@@ -595,7 +617,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:3,type:"source-derived-anticipated-task-lookup",
+    schema_version:4,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -605,9 +627,12 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
-      delegated:"Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter."
+      delegated:"Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter.",
+      scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
     },
     summary:{total_tasks:items.length,
+      tasks_with_source_declared_control_paths:items.filter(x=>x.goal_source_status==="requested-control-paths-source-declared").length,
+      tasks_with_unresolved_requested_work:items.filter(x=>x.goal_source_status!=="requested-control-paths-source-declared").length,
       task_operation_witnesses_found:items.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
       task_operation_witnesses_unresolved:items.reduce((n,t)=>n+t.measures.operation_controls_without_context,0),
       resolved_nested_resource_routes:items.filter(x=>x.declared_path_complete&&x.measures.declared_resource_tasks>0).length,
@@ -641,6 +666,7 @@ if(compare){
     const beforeCost=before.measures.conditional_control_subtotal;
     const afterCost=after.measures.conditional_control_subtotal;
     if(before.source_path_status===after.source_path_status
+      && before.goal_source_status===after.goal_source_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
       && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
       && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
@@ -648,6 +674,8 @@ if(compare){
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
       && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
     changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
+      goal_source_status_before:before.goal_source_status??null,
+      goal_source_status_after:after.goal_source_status??null,
       route_resolved:!before.declared_path_complete&&after.declared_path_complete,
       route_became_unresolved:before.declared_path_complete&&!after.declared_path_complete,
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
@@ -684,6 +712,7 @@ if(compare){
   const rows=lookup.tasks.map(t=>({
     id:t.task_id,game:t.game,goal:t.goal,
     unresolved_route:!t.declared_path_complete,
+    goal_source_status:t.goal_source_status,
     unresolved_operations:t.measures.operation_controls_without_context,
     nested_resource_tasks:t.measures.declared_resource_tasks,
     cross_owner_transitions:t.measures.cross_owner_transitions,
