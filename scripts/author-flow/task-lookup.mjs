@@ -1050,7 +1050,7 @@ if(compare){
 }else if(args.includes("--summary")){
   process.stdout.write(JSON.stringify(lookup.summary,null,2)+"\n");
 }else{
-  const body=JSON.stringify(lookup,null,2)+"\n";
+  const body=JSON.stringify(lookup,null,1)+"\n";
   if(args.includes("--check")){
     if(!fs.existsSync(filename)||fs.readFileSync(filename,"utf8")!==body)
       throw Error("Task lookup out of date. Run node scripts/author-flow/task-lookup.mjs");
