@@ -1692,6 +1692,7 @@
         ],
         "author_work": [
           "create gate flag",
+          "add another response to cover the alternate outcome",
           "author blocked and open routes"
         ],
         "finish": {
@@ -1702,6 +1703,10 @@
           {
             "description": "create gate flag",
             "operation": "variable-name"
+          },
+          {
+            "description": "add another response to cover the alternate outcome",
+            "operation": "add-response"
           },
           {
             "description": "author blocked and open routes",
@@ -4302,6 +4307,7 @@
         ],
         "author_work": [
           "define choice flag",
+          "add another response to cover the alternate outcome",
           "author both outcomes"
         ],
         "finish": {
@@ -4312,6 +4318,10 @@
           {
             "description": "define choice flag",
             "operation": "variable-name"
+          },
+          {
+            "description": "add another response to cover the alternate outcome",
+            "operation": "add-response"
           },
           {
             "description": "author both outcomes",
