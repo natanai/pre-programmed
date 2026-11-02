@@ -97,11 +97,13 @@ The traced operations include: entering a valid player phrase; opening or adding
 
 ```sh
 node scripts/author-flow/task-lookup.mjs --task vn-author-new-reply
-node scripts/author-flow/task-lookup.mjs --task vn-choice-branch
-node scripts/author-flow/task-lookup.mjs --task vn-capture-nickname
-node scripts/author-flow/task-lookup.mjs --task rpg-define-north-input
+node scripts/author-flow/task-lookup.mjs --steps vn-choice-branch
+node scripts/author-flow/task-lookup.mjs --steps vn-capture-nickname
+node scripts/author-flow/task-lookup.mjs --steps rpg-define-north-input
 node scripts/author-flow/task-lookup.mjs --task rpg-create-destination
 ```
+
+The `--steps` view is a concise projection of the **same lookup JSON**, not a separate report. It lists the intended resource tasks, each requested operation, concrete control labels with source file/line evidence, conditional ranges, and explicitly unknown steps.
 
 One crucial distinction: `[+ ADD RESPONSE]` creates a draft **and opens it automatically**, so the new response does not require a second "open response" step. A route with a known `outcomeId` may already open a response, whereas selecting an existing response from its overview needs another activation.
 
