@@ -50,7 +50,22 @@ The complexity query sorts by unresolved route, unresolved requested operation, 
 
 A Node's `+ VALID INPUT` opens the canonical Interaction editor; the lookup records that as an **additional owning Author task**, rather than falsely treating the Node as containing a second player-input editor.
 
-The remaining unresolved source route is a direct Node → scene-image assignment. This is an analysis boundary: do not equate a Character portrait, a Location resource or an indirect Media path with an implemented Node background/graphic-novel scene capability unless its real presentation contract supports that use.
+### Scene images: existing art effects vs persistent backgrounds
+
+The Node's existing **ON ENTER** section can author an `art` effect through the canonical Media-owned `show sprite/art` adapter. That adapter's `media-image` reference opens the real Media vector editor in a nested task. Node-entry effects execute when the player enters the Node; the Media effect presenter shows the selected asset as **inline artwork** or an **overlay** according to the asset's existing presentation setting.
+
+The lookup now deliberately keeps two different imagined visual-novel tasks:
+
+- `vn-show-entry-art`: create artwork from the Node and present it on entry. Source-declared navigation, execution and presentation contracts are available.
+- `vn-create-scene-image`: create a **persistent background layer** that remains behind dialogue. Its Media creation route is available, but a matching Node/background presentation control is **not source-declared**. Do not count the entry-art workaround as fulfilling this task.
+
+This difference is now the remaining unaccounted anticipated goal, not an invented missing Media resource route. `--gaps` reports missing **requested operations** even when a resource creation route itself is fully traced. Source controls alone do not prove that a browser Save or player presentation worked.
+
+```sh
+node scripts/author-flow/task-lookup.mjs --task vn-show-entry-art
+node scripts/author-flow/task-lookup.mjs --task vn-create-scene-image
+node scripts/author-flow/task-lookup.mjs --gaps
+```
 
 ## Internals are not competing current task reports
 
