@@ -6355,9 +6355,9 @@
    }
   },
   {
-   "task_id": "vn-create-scene-image",
+   "task_id": "vn-show-response-art",
    "game": "visual-novel",
-   "goal": "Create a persistent scene background that stays visible during visual-novel dialogue, authored from the Node where it is needed.",
+   "goal": "Show an image at the moment a chosen dialogue response is triggered, using the canonical response art effect; no persistent scene background is required.",
    "starting_workspace": "narrative.node",
    "origin_assumption": {
     "surface": "author-workspace",
@@ -6365,12 +6365,12 @@
     "play_to_editor_entry": "not-modeled-in-static-graph"
    },
    "definition": {
-    "id": "vn-create-scene-image",
+    "id": "vn-show-response-art",
     "game": "visual-novel",
-    "goal": "Create a persistent scene background that stays visible during visual-novel dialogue, authored from the Node where it is needed.",
+    "goal": "Show an image at the moment a chosen dialogue response is triggered, using the canonical response art effect; no persistent scene background is required.",
     "start": {
      "surface": "author-workspace",
-     "workspace": "narrative.node",
+     "workspace": "narrative.interaction",
      "play_to_editor_entry": "not-modeled-in-static-graph"
     },
     "resource_chain": [
@@ -6384,8 +6384,8 @@
      }
     ],
     "author_work": [
-     "create image resource",
-     "assign persistent scene background in narrative"
+     "create or choose the image asset",
+     "configure the selected response to emit a show sprite/art effect"
     ],
     "finish": {
      "save_parent": true,
@@ -6393,12 +6393,12 @@
     },
     "requested_operations": [
      {
-      "description": "create image resource",
+      "description": "create or choose the image asset",
       "operation": "image-art"
      },
      {
-      "description": "assign persistent scene background in narrative",
-      "operation": "node-scene-media"
+      "description": "configure the selected response to emit a show sprite/art effect",
+      "operation": "response-art-trigger"
      }
     ]
    },
