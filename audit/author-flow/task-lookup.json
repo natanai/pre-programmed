@@ -18,10 +18,10 @@
   },
   "summary": {
     "total_tasks": 27,
-    "tasks_with_source_declared_control_paths": 25,
-    "tasks_with_unresolved_requested_work": 2,
+    "tasks_with_source_declared_control_paths": 26,
+    "tasks_with_unresolved_requested_work": 1,
     "task_operation_witnesses_found": 60,
-    "task_operation_witnesses_unresolved": 2,
+    "task_operation_witnesses_unresolved": 1,
     "resolved_nested_resource_routes": 24,
     "tasks_without_nested_resource_route": 3,
     "unresolved_nested_resource_routes": 0,
@@ -33,7 +33,7 @@
         "tasks_without_nested_resource_route": 1,
         "unresolved_nested_resource_routes": 0,
         "operation_witnesses_in_context": 30,
-        "operation_witnesses_unresolved": 1,
+        "operation_witnesses_unresolved": 0,
         "top_static_gaps": []
       },
       {
@@ -307,14 +307,39 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
-          "additional_owner_task": null,
+          "status": "follow-on-owner-task-source-declared",
+          "additional_owner_task": {
+            "from": "narrative.node",
+            "to": "narrative.interaction",
+            "intermediate_controls": [
+              "Node INPUT HANDLING",
+              "+ VALID INPUT",
+              "Canonical Interaction PLAYER ENTERS field"
+            ],
+            "source": [
+              {
+                "file": "src/features/narrative/author/NodeInputList.tsx",
+                "component": "+ VALID INPUT"
+              },
+              {
+                "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                "component": "openInput -> inputRoute"
+              },
+              {
+                "file": "src/features/narrative/author/InteractionEditor.tsx",
+                "component": "PLAYER ENTERS"
+              }
+            ],
+            "conditional": true,
+            "extra_task_openings": 1,
+            "exact_clicks": null
+          },
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
-      "goal_source_status": "requested-operation-source-unresolved",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -415,14 +440,15 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 1,
-        "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_follow_on_task_paths": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
         "nested-rule-editor-decisions",
+        "requires-follow-on-owner-task",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -441,11 +467,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "player-input",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
