@@ -915,11 +915,16 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
             {file:"src/features/narrative/author/InteractionEditor.tsx",component:"PLAYER ENTERS"}],
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
-      const trigger=operation==="response-art-trigger"&&allRequiredFound?{
-        moment:"when selected Interaction outcome executes its effects",
-        condition:"the outcome must be selected by its WHEN rule or interaction selection policy",
-        presentation:"inline or overlay according to the selected asset's default presentation",
-        limitations:["not individually timed to a word or frame of narrated text","appearance effect does not itself define a persistent background or dismissal time"],
+      const trigger=allRequiredFound&&["response-art-trigger","node-entry-art"].includes(operation)?{
+        moment:operation==="response-art-trigger"?
+          "when the selected Interaction outcome executes its effects":
+          "when the player enters the Node and its entry effects execute",
+        condition:operation==="response-art-trigger"?
+          "the outcome must be selected by its WHEN rule or interaction selection policy":
+          "the player must enter the Node",
+        presentation:"inline or overlay according to the image asset's default presentation",
+        limitations:["not individually timed to a word or frame of narrated text",
+          "appearance effect does not define a persistent background or its own dismissal time"],
         source_evidence:found
       }:null;
       return {intent:description,operation,source_evidence:found,authoring_control_path:authoringControlPath,
