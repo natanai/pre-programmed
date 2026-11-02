@@ -50,22 +50,21 @@ The complexity query sorts by unresolved route, unresolved requested operation, 
 
 A Node's `+ VALID INPUT` opens the canonical Interaction editor; the lookup records that as an **additional owning Author task**, rather than falsely treating the Node as containing a second player-input editor.
 
-### Scene images: existing art effects vs persistent backgrounds
+### Controlling when image assets appear
 
-The Node's existing **ON ENTER** section can author an `art` effect through the canonical Media-owned `show sprite/art` adapter. That adapter's `media-image` reference opens the real Media vector editor in a nested task. Node-entry effects execute when the player enters the Node; the Media effect presenter shows the selected asset as **inline artwork** or an **overlay** according to the asset's existing presentation setting.
+For the visual-novel reference game, the author wants to **choose when art appears**, not maintain a persistent background. The canonical Media `show sprite/art` effect already has two source-declared trigger locations:
 
-The lookup now deliberately keeps two different imagined visual-novel tasks:
+- `vn-show-entry-art`: Node → ON ENTER → Show Sprite/Art. The effect fires when the player enters that Node.
+- `vn-show-response-art`: Interaction response → EFFECTS → Show Sprite/Art. The effect fires when that response is selected and executes, after any WHEN selection check.
 
-- `vn-show-entry-art`: create artwork from the Node and present it on entry. Source-declared navigation, execution and presentation contracts are available.
-- `vn-create-scene-image`: create a **persistent background layer** that remains behind dialogue. Its Media creation route is available, but a matching Node/background presentation control is **not source-declared**. Do not count the entry-art workaround as fulfilling this task.
-
-This difference is now the remaining unaccounted anticipated goal, not an invented missing Media resource route. `--gaps` reports missing **requested operations** even when a resource creation route itself is fully traced. Source controls alone do not prove that a browser Save or player presentation worked.
+Both use the same canonical Media-owned `media-image` reference and its existing asset editor. The resulting art is displayed **inline or as an overlay** according to the Media asset's presentation setting. This is a property of the asset, not a separate effect-timing setting. Current source evidence does **not** establish per-word/per-frame timing or a specific authored dismissal duration; do not claim those controls exist.
 
 ```sh
-node scripts/author-flow/task-lookup.mjs --task vn-show-entry-art
-node scripts/author-flow/task-lookup.mjs --task vn-create-scene-image
-node scripts/author-flow/task-lookup.mjs --gaps
+node scripts/author-flow/task-lookup.mjs --steps vn-show-entry-art
+node scripts/author-flow/task-lookup.mjs --steps vn-show-response-art
 ```
+
+The single lookup records the trigger and the source chain reaching the player presenter. It does not claim that the image was visually observed in a browser.
 
 ## Intended adapter and control-count evidence
 
@@ -76,7 +75,7 @@ Examples in the one task lookup:
 - `rpg-inventory-loot` chooses `effect:give_item`, not `condition:has_item` or `effect:remove_item`.
 - `vn-track-affinity` chooses `effect:increment`, not `effect:decrement`.
 - `vn-choice-branch` and `rpg-gate-condition` choose `condition:flag`.
-- `vn-show-entry-art` chooses Media's `effect:art`. This does **not** fulfill `vn-create-scene-image`, which requires a persistent background layer absent from the current presentation contract.
+- `vn-show-entry-art` and `vn-show-response-art` both choose Media's `effect:art`, but from different real authoring triggers (Node entry versus selected dialogue outcome).
 
 For six single-resource condition/effect workflows, `measures.source_guarded_control_activations` now records the **individual code-witnessed controls** and a conditional activation range. The estimate follows the source-level disclosure, effect/type chooser, canonical ReferenceField's direct-create or chooser path, enabled child Save, enabled parent Save, and master X. When an Interaction response might already be open, its opening control contributes zero to one activation. When the resource catalog is nonempty, ReferenceField may need an additional chooser selection.
 
@@ -110,6 +109,20 @@ One crucial distinction: `[+ ADD RESPONSE]` creates a draft **and opens it autom
 Each operation's `conditional_navigation_activations` is a **local, non-additive estimate**, with source file/line evidence and explicit preconditions. Text typing, editing amounts or conditions, choosing an item from a dynamic list, Save success, and returning to play remain outside these operation-level numbers. Do **not sum** the operation ranges with each other or with nested-resource ranges: the same disclosure, response selection or canonical resource picker may appear in both representations. The overall end-to-end cost stays unknown.
 
 An unspecified destination is not silently treated as an existing Node. The RPG northward-input example explicitly chooses `destination_choice: "existing"` in its task definition; the new-Node example uses its existing canonical Node creation task. The existing-destination chooser is dynamic, so the whole operation's bound remains null.
+
+## Field-level configuration evidence
+
+For registered condition/effect adapters, the lookup now extracts the actual JSX controls and literal `create()` defaults from the **owning feature** into `route_steps[].field_configuration`. It also references relevant fields in the canonical State, Inventory or Media owner editor. This is part of the **same JSON**, not another audit or duplicate schema.
+
+Examples: Give Item provides a canonical Item reference and a quantity field defaulting to `1`; Increment provides a number-variable reference and an amount defaulting to `1`; a Flag condition defaults to global scope and a true check, with Node-local scope as a conditional alternate. The media art effect selects an asset; its inline/overlay presentation choice lives with that asset's Media definition.
+
+The lookup distinguishes **a declared control**, **its source default**, **whether a non-default change might be needed**, and **unmeasured typed/configured input**. It does not turn every field into one assumed click. If the task has not specified a value or non-default choice, that amount of work remains unknown.
+
+```sh
+node scripts/author-flow/task-lookup.mjs --steps rpg-inventory-loot
+node scripts/author-flow/task-lookup.mjs --steps vn-track-affinity
+node scripts/author-flow/task-lookup.mjs --steps vn-show-response-art
+```
 
 ## Internals are not competing current task reports
 
