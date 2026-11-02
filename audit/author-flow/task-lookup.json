@@ -18,107 +18,33 @@
   },
   "summary": {
     "total_tasks": 27,
-    "tasks_with_source_declared_control_paths": 19,
-    "tasks_with_unresolved_requested_work": 8,
-    "task_operation_witnesses_found": 56,
-    "task_operation_witnesses_unresolved": 6,
-    "resolved_nested_resource_routes": 18,
+    "tasks_with_source_declared_control_paths": 26,
+    "tasks_with_unresolved_requested_work": 1,
+    "task_operation_witnesses_found": 60,
+    "task_operation_witnesses_unresolved": 1,
+    "resolved_nested_resource_routes": 24,
     "tasks_without_nested_resource_route": 3,
-    "unresolved_nested_resource_routes": 6,
+    "unresolved_nested_resource_routes": 0,
     "games": [
       {
         "game": "branching-rpg",
         "anticipated_tasks": 14,
-        "resolved_nested_resource_routes": 11,
+        "resolved_nested_resource_routes": 13,
         "tasks_without_nested_resource_route": 1,
-        "unresolved_nested_resource_routes": 2,
-        "operation_witnesses_in_context": 28,
-        "operation_witnesses_unresolved": 3,
-        "top_static_gaps": [
-          {
-            "task_id": "rpg-gate-condition",
-            "missing": [
-              {
-                "kind": "flag",
-                "at": "workspace:narrative.interaction",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "rpg-stateful-shortcut",
-            "missing": [
-              {
-                "kind": "flag",
-                "at": "workspace:narrative.node",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          }
-        ]
+        "unresolved_nested_resource_routes": 0,
+        "operation_witnesses_in_context": 30,
+        "operation_witnesses_unresolved": 0,
+        "top_static_gaps": []
       },
       {
         "game": "visual-novel",
         "anticipated_tasks": 13,
-        "resolved_nested_resource_routes": 7,
+        "resolved_nested_resource_routes": 11,
         "tasks_without_nested_resource_route": 2,
-        "unresolved_nested_resource_routes": 4,
-        "operation_witnesses_in_context": 28,
-        "operation_witnesses_unresolved": 3,
-        "top_static_gaps": [
-          {
-            "task_id": "vn-capture-nickname",
-            "missing": [
-              {
-                "kind": "text-variable",
-                "at": "workspace:narrative.interaction",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "vn-choice-branch",
-            "missing": [
-              {
-                "kind": "flag",
-                "at": "workspace:narrative.interaction",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "vn-rename-reveal-flag",
-            "missing": [
-              {
-                "kind": "flag",
-                "at": "workspace:world-entity",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          },
-          {
-            "task_id": "vn-track-affinity",
-            "missing": [
-              {
-                "kind": "number-variable",
-                "at": "workspace:narrative.interaction",
-                "reason": [
-                  "route-to-workspace-unresolved"
-                ]
-              }
-            ]
-          }
-        ]
+        "unresolved_nested_resource_routes": 0,
+        "operation_witnesses_in_context": 30,
+        "operation_witnesses_unresolved": 1,
+        "top_static_gaps": []
       }
     ]
   },
@@ -389,14 +315,39 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
-          "additional_owner_task": null,
+          "status": "follow-on-owner-task-source-declared",
+          "additional_owner_task": {
+            "from": "narrative.node",
+            "to": "narrative.interaction",
+            "intermediate_controls": [
+              "Node INPUT HANDLING",
+              "+ VALID INPUT",
+              "Canonical Interaction PLAYER ENTERS field"
+            ],
+            "source": [
+              {
+                "file": "src/features/narrative/author/NodeInputList.tsx",
+                "component": "+ VALID INPUT"
+              },
+              {
+                "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                "component": "openInput -> inputRoute"
+              },
+              {
+                "file": "src/features/narrative/author/InteractionEditor.tsx",
+                "component": "PLAYER ENTERS"
+              }
+            ],
+            "conditional": true,
+            "extra_task_openings": 1,
+            "exact_clicks": null
+          },
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
       "source_path_status": "delegated-contextual-route-source-declared",
-      "goal_source_status": "requested-operation-source-unresolved",
+      "goal_source_status": "requested-control-paths-source-declared",
       "declared_path_complete": true,
       "route_steps": [
         {
@@ -515,14 +466,15 @@
         ],
         "conditional_control_subtotal": null,
         "operation_controls_found_in_context": 1,
-        "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_follow_on_task_paths": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
         "nested-rule-editor-decisions",
+        "requires-follow-on-owner-task",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -541,11 +493,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "player-input",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -1769,7 +1716,7 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
           "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
@@ -1791,9 +1738,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -1808,12 +1755,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:narrative.interaction:flag:condition:flag"
@@ -1898,12 +1843,19 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
@@ -1938,29 +1890,20 @@
           }
         ],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 1,
+        "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
         "nested-rule-editor-decisions",
         "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.interaction",
-          "operation": "create",
-          "resource_kind": "flag",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "create gate flag"
@@ -1976,11 +1919,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "variable-name",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -2976,7 +2914,7 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
           "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
@@ -2998,9 +2936,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -3015,12 +2953,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:narrative.node:flag:condition:flag"
@@ -3105,12 +3041,19 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
@@ -3145,29 +3088,20 @@
           }
         ],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 1,
+        "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
         "nested-rule-editor-decisions",
         "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.node",
-          "operation": "create",
-          "resource_kind": "flag",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "create shortcut flag"
@@ -3183,11 +3117,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "variable-name",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -3421,9 +3350,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -3438,12 +3367,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:narrative.interaction:text-variable:capture:CaptureFlowEditor"
@@ -3501,12 +3428,19 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
@@ -3547,20 +3481,11 @@
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
         "nested-rule-editor-decisions",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.interaction",
-          "operation": "create",
-          "resource_kind": "text-variable",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "capture player text"
@@ -4119,7 +4044,7 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
           "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
@@ -4141,9 +4066,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -4158,12 +4083,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:narrative.interaction:flag:condition:flag"
@@ -4248,12 +4171,19 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
@@ -4288,29 +4218,20 @@
           }
         ],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 1,
+        "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
         "nested-rule-editor-decisions",
         "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.interaction",
-          "operation": "create",
-          "resource_kind": "flag",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "define choice flag"
@@ -4326,11 +4247,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "variable-name",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
@@ -5329,9 +5245,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -5384,12 +5300,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:world-entity:flag:condition:flag"
@@ -5460,12 +5374,25 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:world-entity",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        },
+        {
+          "from": "workspace:world-entity",
+          "to": "workspace:narrative.node",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 2,
-        "source_matched_resource_steps": 1,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 1,
+        "source_matched_resource_steps": 2,
+        "maximum_nested_author_depth_from_start": 3,
+        "cross_owner_transitions": 2,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
@@ -5511,21 +5438,12 @@
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
         "cross-owner-authoring",
+        "deep-contextual-nesting",
         "nested-rule-editor-decisions",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:world-entity",
-          "operation": "create",
-          "resource_kind": "flag",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "open speaker's canonical Character editor"
@@ -6061,7 +5979,7 @@
               "status": "source-witness-found"
             }
           ],
-          "status": "owner-not-reached-by-declared-task-path",
+          "status": "owner-control-declared-in-task-context",
           "additional_owner_task": null,
           "exact_actions": null,
           "note": "A source control witness does not prove a complete configuration or a visible UI."
@@ -6099,9 +6017,9 @@
           "note": "A source control witness does not prove a complete configuration or a visible UI."
         }
       ],
-      "source_path_status": "missing-source-link",
-      "goal_source_status": "resource-route-source-unresolved",
-      "declared_path_complete": false,
+      "source_path_status": "delegated-contextual-route-source-declared",
+      "goal_source_status": "requested-control-paths-source-declared",
+      "declared_path_complete": true,
       "route_steps": [
         {
           "step": 1,
@@ -6116,12 +6034,10 @@
             }
           ],
           "source_route": "route:state.definitions",
-          "source_workspace": null,
+          "source_workspace": "workspace:state-variable",
           "controls": null,
-          "contract_status": "unresolved-from-source",
-          "blockers": [
-            "route-to-workspace-unresolved"
-          ],
+          "contract_status": "conditional-delegated-contextual-route-declared",
+          "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
             "delegated:narrative.interaction:number-variable:effect:increment"
@@ -6198,12 +6114,19 @@
           }
         }
       ],
-      "reverse_handoff_order": [],
+      "reverse_handoff_order": [
+        {
+          "from": "workspace:state-variable",
+          "to": "workspace:narrative.interaction",
+          "trigger": "accepted child Save with matching resource completion",
+          "automatic": "source-contract-conditional"
+        }
+      ],
       "measures": {
         "declared_resource_tasks": 1,
-        "source_matched_resource_steps": 0,
-        "maximum_nested_author_depth_from_start": null,
-        "cross_owner_transitions": 0,
+        "source_matched_resource_steps": 1,
+        "maximum_nested_author_depth_from_start": 2,
+        "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 4,
@@ -6238,29 +6161,20 @@
           }
         ],
         "conditional_control_subtotal": null,
-        "operation_controls_found_in_context": 2,
+        "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
-        "operation_controls_without_context": 1,
+        "operation_controls_without_context": 0,
         "verified_end_to_end_actions": null,
         "verified_draft_retention": null,
         "verified_saves": null
       },
       "friction_indicators": [
-        "contextual-task-path-unresolved",
+        "cross-owner-authoring",
         "nested-rule-editor-decisions",
         "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
-        {
-          "category": "missing-static-navigation",
-          "at": "workspace:narrative.interaction",
-          "operation": "create",
-          "resource_kind": "number-variable",
-          "reason": [
-            "route-to-workspace-unresolved"
-          ]
-        },
         {
           "category": "authored-content-actions-not-modeled",
           "work": "define relationship score"
@@ -6280,11 +6194,6 @@
         {
           "category": "runtime-conditions-not-evaluated",
           "description": "Visibility, chooser contents, disabled controls, dirty draft guards, persistence and exact return context are unverified"
-        },
-        {
-          "category": "authoring-operation-source-gap",
-          "operation": "variable-name",
-          "reason": "owner-not-reached-by-declared-task-path"
         }
       ],
       "provenance": {
