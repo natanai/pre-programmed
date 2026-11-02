@@ -577,7 +577,7 @@ function describeNarrativeOperationControlPath(task, operationDefinition, previo
     ],"Changing quantity, variable value and other adapter fields is outside the static activation count.");
   }else if(operation==="input-capture"&&interaction){
     disclosed("AFTER");
-    step("choose CAPTURE INPUT",1,1,[
+    step("choose CAPTURE INPUT",0,1,[
       ["after",'label: "CAPTURE INPUT"'],
       ["after",'if (value === "capture")'],
       ["after","createCaptureInputFlow("]
