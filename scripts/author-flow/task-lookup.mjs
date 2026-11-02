@@ -932,7 +932,7 @@ const witnesses=deriveOperationWitnesses(file=>fs.existsSync(file)?fs.readFileSy
 const lookup=buildLookup(model,goals,witnesses,file=>fs.existsSync(file)?fs.readFileSync(file,"utf8"):null);
 const args=process.argv.slice(2);
 const opt=key=>{const i=args.indexOf(key);return i<0?null:args[i+1]};
-const task=opt("--task"),game=opt("--game");
+const task=opt("--task"),game=opt("--game"),stepsQuery=opt("--steps");
 const search=opt("--search"),compare=opt("--compare");
 if(compare){
   const previous=JSON.parse(fs.readFileSync(compare,"utf8"));
@@ -999,6 +999,30 @@ if(compare){
   }).filter(row=>row.overlap>0).sort((a,b)=>b.overlap-a.overlap||a.item.task_id.localeCompare(b.item.task_id));
   process.stdout.write(JSON.stringify({type:"anticipated-task-search",query:search,
     matched_tasks:hits.map(row=>row.item)},null,2)+"\n");
+}else if(stepsQuery){
+  const selected=lookup.tasks.find(x=>x.task_id===stepsQuery);
+  if(!selected)throw Error("Unknown task: "+stepsQuery);
+  process.stdout.write(JSON.stringify({
+    type:"author-task-source-step-query",task_id:selected.task_id,game:selected.game,
+    goal:selected.goal,source_goal_status:selected.goal_source_status,
+    resource_tasks:selected.route_steps.map(step=>({
+      action:step.operation,resource:step.resource_kind,owner:step.source_workspace,
+      adapter:step.selected_delegated_intent??null,source_status:step.contract_status,
+      unresolved:step.blockers
+    })),
+    requested_operations:selected.operation_steps.map(step=>({
+      operation:step.operation,intent:step.intent,source_status:step.status,
+      controls:step.authoring_control_path?.steps??null,
+      conditional_navigation_activations:step.authoring_control_path?.conditional_navigation_activations??null,
+      source_sequence_status:step.authoring_control_path?.status??"not-yet-modeled",
+      unresolved:step.authoring_control_path?.unresolved??[]
+    })),
+    restrictions:{
+      additive:false,
+      exact_end_to_end_clicks:null,
+      notes:"The steps are source-derived and independently conditional; shared screens and nested-resource paths must not be summed. Typing, parameter editing and successful Saves are not counted."
+    }
+  },null,2)+"\n");
 }else if(task){
   const match=lookup.tasks.find(x=>x.task_id===task);
   if(!match)throw Error("Unknown task: "+task);
