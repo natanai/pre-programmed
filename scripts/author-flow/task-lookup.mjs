@@ -386,6 +386,84 @@ function matchWorkspaceForResource(model,route,kind,readFile) {
   return candidates.filter(accepts);
 }
 
+
+/** Count only concretely evidenced controls on one intentionally chosen route. */
+function sourceGatedControlActivationRange(task, trace, readFile) {
+  if (trace.length!==1 || trace[0].blockers.length || trace[0].delegated_paths.length!==1 ||
+      task.resource_chain[0]?.action!=="create") return null;
+  const selected=trace[0].delegated_paths[0];
+  const start=task.start.workspace;
+  const effect=selected.channel==="effect";
+  const condition=selected.channel==="condition";
+  if (!(effect||condition))return null;
+  const interaction=start==="narrative.interaction";
+  const node=start==="narrative.node"&&effect;
+  if(!interaction&&!node)return null;
+  const locations={
+    inline:"src/author/ui/AuthorInlineDisclosure.tsx",
+    renderer:"src/author/ui/AuthorWorkspaceRenderer.tsx",
+    interaction:"src/features/narrative/author/InteractionEditor.tsx",
+    node:"src/features/narrative/author/nodeWorkspace.tsx",
+    outcome:"src/author/outcomes/OutcomeComposer.tsx",
+    conditions:"src/author/ConditionEditor.tsx",
+    effects:"src/author/EffectsEditor.tsx",
+    reference:"src/author/resources/ReferenceField.tsx",
+    save:"src/author/ui/workspaceDefinition.tsx",
+    exit:"src/author/workspace/AuthorWorkspaceHost.tsx",
+  };
+  const see=(key,needle)=>{
+    const file=locations[key],source=readFile(file)??"",position=source.indexOf(needle);
+    return position<0?null:{file,line:source.slice(0,position).split("\n").length};
+  };
+  const guardRefs=[
+    see("inline","defaultOpen = false"),
+    see("inline","<details className={classes} open={defaultOpen}>"),
+    see("reference","onClick={openOrCreate}"),
+    see("reference","if (!value && !options.length && canCreate)"),
+    see("save",'id: "author-core-save"'),
+    see("exit",'aria-label="Close Author tasks and return to play"'),
+    interaction?see("interaction",effect?'title="EFFECTS"':'title="WHEN"'):see("node",'id: "node-entry-effects"'),
+    interaction?see("outcome","return <AuthorInlineDisclosure"):see("renderer",'return <AuthorInlineDisclosure'),
+    effect?see("effects",'onClick={() => setScreen("choose")}'):see("conditions",'<select aria-label="Condition type"'),
+    effect?see("effects",'onClick={() => addEffect(adapter)}'):see("conditions","onChange={selectType}"),
+  ];
+  if(guardRefs.some(value=>!value))return null;
+  const steps=[];
+  const add=(label,min,max,evidence,guard)=>steps.push({action:label,minimum:min,maximum:max,evidence,condition:guard});
+  if(interaction){
+    const selection=see("interaction",'onClick={() => onOpenResponse(outcome.id)}');
+    const open=see("interaction",'screen.type === "response" && selectedOutcome');
+    if(!selection||!open)return null;
+    add("open response from interaction overview",0,1,[selection,open],
+      "Only required when the relevant response is not already open; entry via outcomeId may open it directly");
+  }
+  add("expand "+(effect?"EFFECTS":"WHEN"),1,1,guardRefs.filter(Boolean).slice(0,2).concat(guardRefs[6],guardRefs[7]),
+    "Starting with this disclosure closed; changing prior UI state may remove this activation");
+  if(effect){
+    add("choose Add Effect",1,1,[guardRefs[8]],"Creating a new effect from the list view");
+    add("select "+selected.adapter+" effect",1,1,[guardRefs[9],selected.source],
+      "The registered adapter is available in the category chooser");
+  }else{
+    add("select "+selected.adapter+" condition",1,1,[guardRefs[8],guardRefs[9],selected.source],
+      "Selecting a condition from the type dropdown; not already of this type");
+  }
+  add("open canonical reference Create",1,2,[guardRefs[2],guardRefs[3],selected.source],
+    "Direct when no selected value and no catalog options; chooser plus Create otherwise");
+  add("save new resource",1,1,[guardRefs[4]],"Child owner validation accepts the Save");
+  if(task.finish?.save_parent)add("save parent draft",1,1,[guardRefs[4]],"Parent is dirty and valid to save");
+  if(task.finish?.return_to_player)add("master X to running player",1,1,[guardRefs[5]],"No dirty-leave confirmation is required");
+  return {
+    kind:"source-guarded-conditional-control-activations",
+    source_checked:true,
+    lower:steps.reduce((n,x)=>n+x.minimum,0),
+    upper:steps.reduce((n,x)=>n+x.maximum,0),
+    steps,
+    start_assumption:"Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+    excludes:["opening Author Mode from real play","typing/configuring authored fields","additional screens in the canonical child editor","Save failures or confirmation prompts","unmodeled hover/focus/presentation changes"],
+    exact_end_to_end_actions:null,
+  };
+}
+
 function buildLookup(model,definitions,operationWitnesses,readFile){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
@@ -412,7 +490,12 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       const step=task.resource_chain[i],provider=providerByKind.get(step.kind);
       const operation=step.action;
       const directReferences=model.reference_sites.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind);
-      const indirectReferences=operation==="create"?delegated.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind):[];
+      const candidateDelegated=operation==="create"?delegated.filter(s=>"workspace:"+s.workspace===cursor&&s.resource_kind===step.kind):[];
+      // Intent is authored in the ONE task definition, not derived from all
+      // potentially unrelated condition/effect adapters for this resource.
+      const indirectReferences=step.via?candidateDelegated.filter(ref=>
+        ref.channel===step.via.channel&&ref.adapter===step.via.adapter):candidateDelegated;
+      const unselectedDelegated=candidateDelegated.filter(ref=>!indirectReferences.includes(ref));
       const matching=[...directReferences,...indirectReferences];
       const routeKey=provider?.[operation]?.route? "route:"+provider[operation].route:null;
       // A contextual resource task can also be opened by a literal handler,
@@ -432,6 +515,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         entry_source_type:indirectReferences.length?"delegated-resource-or-rule-control":directTask?"explicit-resource-task-handler":"canonical-reference-field",
         evidence:directTask?[directTask.id]:matching.map(m=>m.id),
         source_direct_handler:directTask?.source??null,
+        selected_delegated_intent:step.via??null,
+        available_delegated_adapters:candidateDelegated.map(ref=>({channel:ref.channel,adapter:ref.adapter})),
+        unselected_delegated_adapters:unselectedDelegated.map(ref=>({channel:ref.channel,adapter:ref.adapter})),
         delegated_paths:indirectReferences.map(ref=>({
           channel:ref.channel,adapter:ref.adapter,access_decisions:ref.access_decisions,
           contingent:ref.contingent,declaration_chain:ref.declaration_chain,source:ref.source
@@ -442,6 +528,10 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           metric:"declared decision descriptions, NOT clicks",
           alternatives:indirectReferences.length
         }:null};
+      if(step.via && indirectReferences.length!==1)
+        result.blockers.push(indirectReferences.length?"intended-delegated-adapter-ambiguous":"intended-delegated-adapter-not-source-declared");
+      if(!step.via && candidateDelegated.length>1)
+        result.blockers.push("task-intent-needs-specific-delegated-adapter");
       if(!provider)result.blockers.push("resource-kind-not-in-canonical-provider-registry");
       if(!routeKey)result.blockers.push("canonical-"+operation+"-route-not-resolved");
       // Different adapters may lead to the same canonical resource owner.
@@ -533,6 +623,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         additional_owner_task:nodeInputPath,
         exact_actions:null,note:"A source control witness does not prove a complete configuration or a visible UI."};
     });
+    const sourceGatedControls=sourceGatedControlActivationRange(task,trace,readFile);
     const knownControls=nestedSourceResolved&&frames.every(f=>f.entry_controls_known)?{
       conditional_lower:min,conditional_upper:max,
       scope:"reference Create/Edit + child Save + parent Save + master X only",
@@ -559,6 +650,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(conditionalPickerCount)flags.push("resource-chooser-branch");
     if(trace.some(x=>x.entry_source_type==="explicit-resource-task-handler"))flags.push("direct-custom-resource-task-activation-unknown");
     if(trace.some(x=>x.delegated_paths.length))flags.push("nested-rule-editor-decisions");
+    if(trace.some(x=>x.unselected_delegated_adapters.length))flags.push("alternate-adapters-exist-but-not-on-intended-path");
     if(operationSteps.some(x=>x.additional_owner_task))flags.push("requires-follow-on-owner-task");
     if(task.author_work.length)flags.push("authoring-controls-not-modeled");
     items.push({
@@ -586,11 +678,13 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
           metric:"source-described decisions across nested UI layers, not physical clicks",
           caveat:"Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         }:null,
-        alternative_delegated_paths:trace.reduce((n,t)=>n+Math.max(0,t.delegated_paths.length-1),0),
+        alternative_delegated_paths:trace.reduce((n,t)=>n+t.unselected_delegated_adapters.length,0),
+        chosen_delegated_adapters:trace.flatMap(t=>t.delegated_paths.map(p=>({resource:t.resource_kind,channel:p.channel,adapter:p.adapter}))),
         conditional_delegated_paths:trace.flatMap(t=>t.delegated_paths.map(p=>({
           resource:t.resource_kind,channel:p.channel,adapter:p.adapter,decision_sequence:p.access_decisions,guards:p.contingent
         }))),
         conditional_control_subtotal:knownControls,
+        source_guarded_control_activations:sourceGatedControls,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_follow_on_task_paths:operationSteps.filter(x=>x.status==="follow-on-owner-task-source-declared").length,
         operation_controls_without_context:operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)).length,
@@ -617,7 +711,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:4,type:"source-derived-anticipated-task-lookup",
+    schema_version:5,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -627,7 +721,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       cost:"Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
-      delegated:"Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter.",
+      control_activations:"Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
+      delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
       scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
     },
     summary:{total_tasks:items.length,
@@ -666,6 +761,8 @@ if(compare){
     const beforeCost=before.measures.conditional_control_subtotal;
     const afterCost=after.measures.conditional_control_subtotal;
     if(before.source_path_status===after.source_path_status
+      && JSON.stringify(before.measures.source_guarded_control_activations&&[before.measures.source_guarded_control_activations.lower,before.measures.source_guarded_control_activations.upper])===
+        JSON.stringify(after.measures.source_guarded_control_activations&&[after.measures.source_guarded_control_activations.lower,after.measures.source_guarded_control_activations.upper])
       && before.goal_source_status===after.goal_source_status
       && before.measures.source_matched_resource_steps===after.measures.source_matched_resource_steps
       && JSON.stringify(beforeCost)===JSON.stringify(afterCost)
@@ -687,6 +784,10 @@ if(compare){
       delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
       owner_transitions_before:before.measures?.cross_owner_transitions??null,
       owner_transitions_after:after.measures?.cross_owner_transitions??null,
+      source_guarded_controls_before:before.measures?.source_guarded_control_activations?{
+        lower:before.measures.source_guarded_control_activations.lower,upper:before.measures.source_guarded_control_activations.upper}:null,
+      source_guarded_controls_after:after.measures?.source_guarded_control_activations?{
+        lower:after.measures.source_guarded_control_activations.lower,upper:after.measures.source_guarded_control_activations.upper}:null,
       caution:"Comparative source visibility, not proof of a faster or more predictable user experience"});
   }
   process.stdout.write(JSON.stringify({type:"author-task-lookup-diff",
@@ -720,6 +821,10 @@ if(compare){
     source_access_stages:t.measures.source_declared_access_stages,
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
+    source_guarded_control_activations:t.measures.source_guarded_control_activations?{
+      lower:t.measures.source_guarded_control_activations.lower,
+      upper:t.measures.source_guarded_control_activations.upper
+    }:null,
     exact_clicks:null,
   }));
   // Ordering is descriptive and deterministic; it is not a scalar UX score.

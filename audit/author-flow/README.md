@@ -67,6 +67,28 @@ node scripts/author-flow/task-lookup.mjs --task vn-create-scene-image
 node scripts/author-flow/task-lookup.mjs --gaps
 ```
 
+## Intended adapter and control-count evidence
+
+When a hypothetical task depends on a resource that is referenced by **multiple** conditions or effects, the task definition's `resource_chain[].via` names the particular existing owner adapter it intends to use (`channel` plus `adapter`). The calculator requires that exact source-declared adapter; it never silently picks an unrelated alternative. All other eligible adapters are listed as **unselected alternatives**, so they do not inflate the length of the intended route.
+
+Examples in the one task lookup:
+
+- `rpg-inventory-loot` chooses `effect:give_item`, not `condition:has_item` or `effect:remove_item`.
+- `vn-track-affinity` chooses `effect:increment`, not `effect:decrement`.
+- `vn-choice-branch` and `rpg-gate-condition` choose `condition:flag`.
+- `vn-show-entry-art` chooses Media's `effect:art`. This does **not** fulfill `vn-create-scene-image`, which requires a persistent background layer absent from the current presentation contract.
+
+For six single-resource condition/effect workflows, `measures.source_guarded_control_activations` now records the **individual code-witnessed controls** and a conditional activation range. The estimate follows the source-level disclosure, effect/type chooser, canonical ReferenceField's direct-create or chooser path, enabled child Save, enabled parent Save, and master X. When an Interaction response might already be open, its opening control contributes zero to one activation. When the resource catalog is nonempty, ReferenceField may need an additional chooser selection.
+
+```sh
+node scripts/author-flow/task-lookup.mjs --task rpg-inventory-loot
+node scripts/author-flow/task-lookup.mjs --task vn-track-affinity
+node scripts/author-flow/task-lookup.mjs --complexity
+node scripts/author-flow/task-lookup.mjs --compare path/to/older-task-lookup.json
+```
+
+These counts are **partial, conditional source estimates**, not measured task-completion clicks or usability scores. They exclude entering Author Mode from the player terminal, typing or otherwise configuring authored fields, other screens inside the owning resource editor, Save rejection, and leave confirmation. A previously opened disclosure can also change the count. For tasks without an entirely source-supported single-adapter path, the metric remains `null`.
+
 ## Internals are not competing current task reports
 
 `source-graph.json` is a large **machine-generated AST inventory**, not an imagined task catalog or source of truth for developer UX conclusions. `scripts/author-flow/navigation-model.mjs` is a pure on-demand compiler and CLI for low-level route questions; it no longer persists a second current navigation JSON. The task-lookup calculator imports that compiler directly.

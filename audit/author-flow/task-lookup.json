@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 5,
   "type": "source-derived-anticipated-task-lookup",
   "generated_from": {
     "source_inventory": "audit/author-flow/source-graph.json",
@@ -13,7 +13,8 @@
     "cost": "Only source-declared controls are counted. Conditional subtotals are NOT end-to-end costs, actual required clicks, subjective UX scores, or global minima.",
     "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
     "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
-    "delegated": "Rules and flows are composed from canonical Condition/Effects/NarrativeAfter components and feature-adapter registrations. Source-described decision stages are not physical clicks and depend on conditions and chosen adapter.",
+    "control_activations": "Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
+    "delegated": "Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
     "scene_media": "Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
   },
   "summary": {
@@ -167,6 +168,9 @@
             "src/features/radix/author/workspaces.tsx:176:11"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -187,6 +191,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -195,6 +200,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -253,7 +259,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "node"
+            "kind": "node",
+            "via": {
+              "channel": "destination",
+              "adapter": "NarrativeAfterEditor"
+            }
           }
         ],
         "author_work": [
@@ -364,6 +374,17 @@
             "delegated:narrative.node:node:destination:NarrativeAfterEditor"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "destination",
+            "adapter": "NarrativeAfterEditor"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "destination",
+              "adapter": "NarrativeAfterEditor"
+            }
+          ],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [
             {
               "channel": "destination",
@@ -424,6 +445,13 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "node",
+            "channel": "destination",
+            "adapter": "NarrativeAfterEditor"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "node",
@@ -439,6 +467,7 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 1,
         "operation_follow_on_task_paths": 1,
         "operation_controls_without_context": 0,
@@ -619,6 +648,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         },
@@ -654,6 +686,9 @@
             "src/features/world/author/entityWorkspaces.tsx:203:15"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -680,6 +715,7 @@
         "chooser_branch_points": 2,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 6,
@@ -688,6 +724,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -847,6 +884,9 @@
             "src/features/commands/author/commandWorkspace.tsx:454:11"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -867,6 +907,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -875,6 +916,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1018,6 +1060,9 @@
             "line": 207,
             "column": 45
           },
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -1038,8 +1083,10 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1193,6 +1240,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -1213,6 +1263,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -1221,6 +1272,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1375,6 +1427,7 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 2,
@@ -1383,6 +1436,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1539,6 +1593,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -1559,6 +1616,7 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -1567,6 +1625,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1624,7 +1683,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -1698,14 +1761,6 @@
             {
               "file": "src/features/state/author/ruleAdapters.tsx",
               "line": 73
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 149
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 125
             }
           ],
           "source_route": "route:state.definitions",
@@ -1715,11 +1770,37 @@
           "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
-            "delegated:narrative.interaction:flag:condition:flag",
-            "delegated:narrative.interaction:flag:effect:clear_flag",
-            "delegated:narrative.interaction:flag:effect:set_flag"
+            "delegated:narrative.interaction:flag:condition:flag"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "condition",
+            "adapter": "flag"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
+          "unselected_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
           "delegated_paths": [
             {
               "channel": "condition",
@@ -1761,97 +1842,13 @@
                 "file": "src/features/state/author/ruleAdapters.tsx",
                 "line": 73
               }
-            },
-            {
-              "channel": "effect",
-              "adapter": "clear_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose clear_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "clearFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 149
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "set_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose set_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "setFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 125
-              }
             }
           ],
           "source_access_stage_range": {
             "min": 3,
-            "max": 4,
+            "max": 3,
             "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 3
+            "alternatives": 1
           }
         }
       ],
@@ -1871,11 +1868,18 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
-          "upper": 4,
+          "upper": 3,
           "metric": "source-described decisions across nested UI layers, not physical clicks",
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 2,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "flag",
+            "channel": "condition",
+            "adapter": "flag"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "flag",
@@ -1892,43 +1896,142 @@
               "adapter type is selected",
               "global scope selected; node-local flags do not require a project resource"
             ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "clear_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose clear_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "set_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose set_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 6,
+          "upper": 8,
+          "steps": [
+            {
+              "action": "open response from interaction overview",
+              "minimum": 0,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 290
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 232
+                }
+              ],
+              "condition": "Only required when the relevant response is not already open; entry via outcomeId may open it directly"
+            },
+            {
+              "action": "expand WHEN",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 451
+                },
+                {
+                  "file": "src/author/outcomes/OutcomeComposer.tsx",
+                  "line": 16
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "select flag condition",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ConditionEditor.tsx",
+                  "line": 25
+                },
+                {
+                  "file": "src/author/ConditionEditor.tsx",
+                  "line": 25
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 73
+                }
+              ],
+              "condition": "Selecting a condition from the type dropdown; not already of this type"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 73
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -1939,6 +2042,7 @@
       "friction_indicators": [
         "cross-owner-authoring",
         "nested-rule-editor-decisions",
+        "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -1987,7 +2091,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "item"
+            "kind": "item",
+            "via": {
+              "channel": "effect",
+              "adapter": "give_item"
+            }
           }
         ],
         "author_work": [
@@ -2060,23 +2168,7 @@
           "source_reference_candidates": [
             {
               "file": "src/features/inventory/author/ruleAdapters.tsx",
-              "line": 21
-            },
-            {
-              "file": "src/features/inventory/author/ruleAdapters.tsx",
-              "line": 33
-            },
-            {
-              "file": "src/features/inventory/author/ruleAdapters.tsx",
               "line": 46
-            },
-            {
-              "file": "src/features/inventory/author/ruleAdapters.tsx",
-              "line": 60
-            },
-            {
-              "file": "src/features/inventory/author/ruleAdapters.tsx",
-              "line": 76
             }
           ],
           "source_route": "route:inventory.item",
@@ -2086,94 +2178,54 @@
           "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
-            "delegated:narrative.interaction:item:condition:has_item",
-            "delegated:narrative.interaction:item:condition:lacks_item",
-            "delegated:narrative.interaction:item:effect:give_item",
-            "delegated:narrative.interaction:item:effect:remove_item",
-            "delegated:narrative.interaction:item:effect:set_item_state"
+            "delegated:narrative.interaction:item:effect:give_item"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "effect",
+            "adapter": "give_item"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "has_item"
+            },
+            {
+              "channel": "condition",
+              "adapter": "lacks_item"
+            },
+            {
+              "channel": "effect",
+              "adapter": "give_item"
+            },
+            {
+              "channel": "effect",
+              "adapter": "remove_item"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_item_state"
+            }
+          ],
+          "unselected_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "has_item"
+            },
+            {
+              "channel": "condition",
+              "adapter": "lacks_item"
+            },
+            {
+              "channel": "effect",
+              "adapter": "remove_item"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_item_state"
+            }
+          ],
           "delegated_paths": [
-            {
-              "channel": "condition",
-              "adapter": "has_item",
-              "access_decisions": [
-                "Open the appropriate WHEN/condition section",
-                "Choose has_item condition type",
-                "Use the canonical item reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeConditionEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "ConditionEditor"
-                },
-                {
-                  "file": "src/author/ConditionEditor.tsx",
-                  "component": "registered feature-owned condition adapter"
-                },
-                {
-                  "file": "src/features/inventory/author/ruleAdapters.tsx",
-                  "component": "hasItemConditionAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/inventory/author/manifest.tsx",
-                  "component": "inventory feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/inventory/author/ruleAdapters.tsx",
-                "line": 21
-              }
-            },
-            {
-              "channel": "condition",
-              "adapter": "lacks_item",
-              "access_decisions": [
-                "Open the appropriate WHEN/condition section",
-                "Choose lacks_item condition type",
-                "Use the canonical item reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeConditionEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "ConditionEditor"
-                },
-                {
-                  "file": "src/author/ConditionEditor.tsx",
-                  "component": "registered feature-owned condition adapter"
-                },
-                {
-                  "file": "src/features/inventory/author/ruleAdapters.tsx",
-                  "component": "lacksItemConditionAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/inventory/author/manifest.tsx",
-                  "component": "inventory feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/inventory/author/ruleAdapters.tsx",
-                "line": 33
-              }
-            },
             {
               "channel": "effect",
               "adapter": "give_item",
@@ -2214,95 +2266,13 @@
                 "file": "src/features/inventory/author/ruleAdapters.tsx",
                 "line": 46
               }
-            },
-            {
-              "channel": "effect",
-              "adapter": "remove_item",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose remove_item effect type",
-                "Use the canonical item reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/inventory/author/ruleAdapters.tsx",
-                  "component": "removeItemEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/inventory/author/manifest.tsx",
-                  "component": "inventory feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/inventory/author/ruleAdapters.tsx",
-                "line": 60
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "set_item_state",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose set_item_state effect type",
-                "Use the canonical item reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/inventory/author/ruleAdapters.tsx",
-                  "component": "setItemStateEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/inventory/author/manifest.tsx",
-                  "component": "inventory feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/inventory/author/ruleAdapters.tsx",
-                "line": 76
-              }
             }
           ],
           "source_access_stage_range": {
-            "min": 3,
+            "min": 4,
             "max": 4,
             "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 5
+            "alternatives": 1
           }
         }
       ],
@@ -2321,43 +2291,20 @@
         "cross_owner_transitions": 1,
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
-          "lower": 3,
+          "lower": 4,
           "upper": 4,
           "metric": "source-described decisions across nested UI layers, not physical clicks",
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 4,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "item",
+            "channel": "effect",
+            "adapter": "give_item"
+          }
+        ],
         "conditional_delegated_paths": [
-          {
-            "resource": "item",
-            "channel": "condition",
-            "adapter": "has_item",
-            "decision_sequence": [
-              "Open the appropriate WHEN/condition section",
-              "Choose has_item condition type",
-              "Use the canonical item reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected"
-            ]
-          },
-          {
-            "resource": "item",
-            "channel": "condition",
-            "adapter": "lacks_item",
-            "decision_sequence": [
-              "Open the appropriate WHEN/condition section",
-              "Choose lacks_item condition type",
-              "Use the canonical item reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected"
-            ]
-          },
           {
             "resource": "item",
             "channel": "effect",
@@ -2373,41 +2320,150 @@
               "section is expanded",
               "adapter type is selected"
             ]
-          },
-          {
-            "resource": "item",
-            "channel": "effect",
-            "adapter": "remove_item",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose remove_item effect type",
-              "Use the canonical item reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected"
-            ]
-          },
-          {
-            "resource": "item",
-            "channel": "effect",
-            "adapter": "set_item_state",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose set_item_state effect type",
-              "Use the canonical item reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected"
-            ]
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 7,
+          "upper": 9,
+          "steps": [
+            {
+              "action": "open response from interaction overview",
+              "minimum": 0,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 290
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 232
+                }
+              ],
+              "condition": "Only required when the relevant response is not already open; entry via outcomeId may open it directly"
+            },
+            {
+              "action": "expand EFFECTS",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 466
+                },
+                {
+                  "file": "src/author/outcomes/OutcomeComposer.tsx",
+                  "line": 16
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "choose Add Effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 114
+                }
+              ],
+              "condition": "Creating a new effect from the list view"
+            },
+            {
+              "action": "select give_item effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 71
+                },
+                {
+                  "file": "src/features/inventory/author/ruleAdapters.tsx",
+                  "line": 46
+                }
+              ],
+              "condition": "The registered adapter is available in the category chooser"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/inventory/author/ruleAdapters.tsx",
+                  "line": 46
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -2418,6 +2474,7 @@
       "friction_indicators": [
         "cross-owner-authoring",
         "nested-rule-editor-decisions",
+        "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -2562,6 +2619,9 @@
             "src/features/inventory/author/workspaces.tsx:128:13"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -2582,6 +2642,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -2590,6 +2651,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -2770,6 +2832,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:390:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         },
@@ -2805,6 +2870,9 @@
             "src/features/world/author/entityWorkspaces.tsx:203:15"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -2831,6 +2899,7 @@
         "chooser_branch_points": 2,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 6,
@@ -2839,6 +2908,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -2998,6 +3068,9 @@
             "src/features/radix/author/startupWorkspace.tsx:48:9"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -3018,6 +3091,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -3026,6 +3100,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -3083,7 +3158,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -3157,14 +3236,6 @@
             {
               "file": "src/features/state/author/ruleAdapters.tsx",
               "line": 73
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 149
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 125
             }
           ],
           "source_route": "route:state.definitions",
@@ -3174,11 +3245,37 @@
           "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
-            "delegated:narrative.node:flag:condition:flag",
-            "delegated:narrative.node:flag:effect:clear_flag",
-            "delegated:narrative.node:flag:effect:set_flag"
+            "delegated:narrative.node:flag:condition:flag"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "condition",
+            "adapter": "flag"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
+          "unselected_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
           "delegated_paths": [
             {
               "channel": "condition",
@@ -3220,97 +3317,13 @@
                 "file": "src/features/state/author/ruleAdapters.tsx",
                 "line": 73
               }
-            },
-            {
-              "channel": "effect",
-              "adapter": "clear_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose clear_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "clearFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 149
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "set_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose set_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "setFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 125
-              }
             }
           ],
           "source_access_stage_range": {
             "min": 3,
-            "max": 4,
+            "max": 3,
             "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 3
+            "alternatives": 1
           }
         }
       ],
@@ -3330,11 +3343,18 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
-          "upper": 4,
+          "upper": 3,
           "metric": "source-described decisions across nested UI layers, not physical clicks",
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 2,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "flag",
+            "channel": "condition",
+            "adapter": "flag"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "flag",
@@ -3351,43 +3371,10 @@
               "adapter type is selected",
               "global scope selected; node-local flags do not require a project resource"
             ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "clear_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose clear_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "set_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose set_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -3398,6 +3385,7 @@
       "friction_indicators": [
         "cross-owner-authoring",
         "nested-rule-editor-decisions",
+        "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -3520,6 +3508,7 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 2,
@@ -3528,6 +3517,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -3584,7 +3574,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "text-variable"
+            "kind": "text-variable",
+            "via": {
+              "channel": "capture",
+              "adapter": "CaptureFlowEditor"
+            }
           }
         ],
         "author_work": [
@@ -3670,6 +3664,17 @@
             "delegated:narrative.interaction:text-variable:capture:CaptureFlowEditor"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "capture",
+            "adapter": "CaptureFlowEditor"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "capture",
+              "adapter": "CaptureFlowEditor"
+            }
+          ],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [
             {
               "channel": "capture",
@@ -3732,6 +3737,13 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "text-variable",
+            "channel": "capture",
+            "adapter": "CaptureFlowEditor"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "text-variable",
@@ -3749,6 +3761,7 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -3915,6 +3928,9 @@
             "src/features/commands/author/commandWorkspace.tsx:454:11"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -3935,6 +3951,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -3943,6 +3960,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -4135,6 +4153,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         },
@@ -4170,6 +4191,9 @@
             "src/features/world/author/entityWorkspaces.tsx:203:15"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -4196,6 +4220,7 @@
         "chooser_branch_points": 2,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 6,
@@ -4204,6 +4229,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -4267,7 +4293,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -4341,14 +4371,6 @@
             {
               "file": "src/features/state/author/ruleAdapters.tsx",
               "line": 73
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 149
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 125
             }
           ],
           "source_route": "route:state.definitions",
@@ -4358,11 +4380,37 @@
           "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
-            "delegated:narrative.interaction:flag:condition:flag",
-            "delegated:narrative.interaction:flag:effect:clear_flag",
-            "delegated:narrative.interaction:flag:effect:set_flag"
+            "delegated:narrative.interaction:flag:condition:flag"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "condition",
+            "adapter": "flag"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
+          "unselected_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "clear_flag"
+            },
+            {
+              "channel": "effect",
+              "adapter": "set_flag"
+            }
+          ],
           "delegated_paths": [
             {
               "channel": "condition",
@@ -4404,97 +4452,13 @@
                 "file": "src/features/state/author/ruleAdapters.tsx",
                 "line": 73
               }
-            },
-            {
-              "channel": "effect",
-              "adapter": "clear_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose clear_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "clearFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 149
-              }
-            },
-            {
-              "channel": "effect",
-              "adapter": "set_flag",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose set_flag effect type",
-                "Use the canonical flag reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected",
-                "global scope selected; node-local flags do not require a project resource"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "setFlagEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 125
-              }
             }
           ],
           "source_access_stage_range": {
             "min": 3,
-            "max": 4,
+            "max": 3,
             "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 3
+            "alternatives": 1
           }
         }
       ],
@@ -4514,11 +4478,18 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": {
           "lower": 3,
-          "upper": 4,
+          "upper": 3,
           "metric": "source-described decisions across nested UI layers, not physical clicks",
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 2,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "flag",
+            "channel": "condition",
+            "adapter": "flag"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "flag",
@@ -4535,43 +4506,142 @@
               "adapter type is selected",
               "global scope selected; node-local flags do not require a project resource"
             ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "clear_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose clear_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
-          },
-          {
-            "resource": "flag",
-            "channel": "effect",
-            "adapter": "set_flag",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose set_flag effect type",
-              "Use the canonical flag reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected",
-              "global scope selected; node-local flags do not require a project resource"
-            ]
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 6,
+          "upper": 8,
+          "steps": [
+            {
+              "action": "open response from interaction overview",
+              "minimum": 0,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 290
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 232
+                }
+              ],
+              "condition": "Only required when the relevant response is not already open; entry via outcomeId may open it directly"
+            },
+            {
+              "action": "expand WHEN",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 451
+                },
+                {
+                  "file": "src/author/outcomes/OutcomeComposer.tsx",
+                  "line": 16
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "select flag condition",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ConditionEditor.tsx",
+                  "line": 25
+                },
+                {
+                  "file": "src/author/ConditionEditor.tsx",
+                  "line": 25
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 73
+                }
+              ],
+              "condition": "Selecting a condition from the type dropdown; not already of this type"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 73
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -4582,6 +4652,7 @@
       "friction_indicators": [
         "cross-owner-authoring",
         "nested-rule-editor-decisions",
+        "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
@@ -4726,6 +4797,9 @@
             "src/features/world/author/entityWorkspaces.tsx:203:15"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -4746,6 +4820,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -4754,6 +4829,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -4948,6 +5024,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -4968,6 +5047,7 @@
         "chooser_branch_points": 1,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -4976,6 +5056,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -5038,7 +5119,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "media-image"
+            "kind": "media-image",
+            "via": {
+              "channel": "effect",
+              "adapter": "art"
+            }
           }
         ],
         "author_work": [
@@ -5117,6 +5202,17 @@
             "delegated:narrative.node:media-image:effect:art"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "effect",
+            "adapter": "art"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "art"
+            }
+          ],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [
             {
               "channel": "effect",
@@ -5186,6 +5282,13 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "media-image",
+            "channel": "effect",
+            "adapter": "art"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "media-image",
@@ -5206,6 +5309,131 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 7,
+          "upper": 8,
+          "steps": [
+            {
+              "action": "expand EFFECTS",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                  "line": 479
+                },
+                {
+                  "file": "src/author/ui/AuthorWorkspaceRenderer.tsx",
+                  "line": 115
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "choose Add Effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 114
+                }
+              ],
+              "condition": "Creating a new effect from the list view"
+            },
+            {
+              "action": "select art effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 71
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "line": 63
+                }
+              ],
+              "condition": "The registered adapter is available in the category chooser"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "line": 63
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 1,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 1,
@@ -5371,6 +5599,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         }
@@ -5391,6 +5622,7 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 4,
@@ -5399,6 +5631,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -5460,7 +5693,11 @@
           },
           {
             "action": "create",
-            "kind": "flag"
+            "kind": "flag",
+            "via": {
+              "channel": "condition",
+              "adapter": "flag"
+            }
           }
         ],
         "author_work": [
@@ -5596,6 +5833,9 @@
             "src/features/narrative/author/nodeWorkspace.tsx:398:17"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": null,
+          "available_delegated_adapters": [],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [],
           "source_access_stage_range": null
         },
@@ -5621,6 +5861,17 @@
             "delegated:world-entity:flag:condition:flag"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "condition",
+            "adapter": "flag"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "condition",
+              "adapter": "flag"
+            }
+          ],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [
             {
               "channel": "condition",
@@ -5702,6 +5953,13 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "flag",
+            "channel": "condition",
+            "adapter": "flag"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "flag",
@@ -5724,6 +5982,7 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -5877,6 +6136,7 @@
         "chooser_branch_points": 0,
         "source_declared_access_stages": null,
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [],
         "conditional_delegated_paths": [],
         "conditional_control_subtotal": {
           "conditional_lower": 2,
@@ -5885,6 +6145,7 @@
           "exact_total": null,
           "not_a_click_minimum": true
         },
+        "source_guarded_control_activations": null,
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -5945,7 +6206,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "media-image"
+            "kind": "media-image",
+            "via": {
+              "channel": "effect",
+              "adapter": "art"
+            }
           }
         ],
         "author_work": [
@@ -6055,6 +6320,17 @@
             "delegated:narrative.node:media-image:effect:art"
           ],
           "source_direct_handler": null,
+          "selected_delegated_intent": {
+            "channel": "effect",
+            "adapter": "art"
+          },
+          "available_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "art"
+            }
+          ],
+          "unselected_delegated_adapters": [],
           "delegated_paths": [
             {
               "channel": "effect",
@@ -6124,6 +6400,13 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 0,
+        "chosen_delegated_adapters": [
+          {
+            "resource": "media-image",
+            "channel": "effect",
+            "adapter": "art"
+          }
+        ],
         "conditional_delegated_paths": [
           {
             "resource": "media-image",
@@ -6144,6 +6427,131 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 7,
+          "upper": 8,
+          "steps": [
+            {
+              "action": "expand EFFECTS",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/nodeWorkspace.tsx",
+                  "line": 479
+                },
+                {
+                  "file": "src/author/ui/AuthorWorkspaceRenderer.tsx",
+                  "line": 115
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "choose Add Effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 114
+                }
+              ],
+              "condition": "Creating a new effect from the list view"
+            },
+            {
+              "action": "select art effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 71
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "line": 63
+                }
+              ],
+              "condition": "The registered adapter is available in the category chooser"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/media/author/ruleAdapters.tsx",
+                  "line": 63
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 2,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -6202,7 +6610,11 @@
         "resource_chain": [
           {
             "action": "create",
-            "kind": "number-variable"
+            "kind": "number-variable",
+            "via": {
+              "channel": "effect",
+              "adapter": "increment"
+            }
           }
         ],
         "author_work": [
@@ -6297,10 +6709,6 @@
           "source_reference_candidates": [
             {
               "file": "src/features/state/author/ruleAdapters.tsx",
-              "line": 232
-            },
-            {
-              "file": "src/features/state/author/ruleAdapters.tsx",
               "line": 218
             }
           ],
@@ -6311,52 +6719,30 @@
           "blockers": [],
           "entry_source_type": "delegated-resource-or-rule-control",
           "evidence": [
-            "delegated:narrative.interaction:number-variable:effect:decrement",
             "delegated:narrative.interaction:number-variable:effect:increment"
           ],
           "source_direct_handler": null,
-          "delegated_paths": [
+          "selected_delegated_intent": {
+            "channel": "effect",
+            "adapter": "increment"
+          },
+          "available_delegated_adapters": [
             {
               "channel": "effect",
-              "adapter": "decrement",
-              "access_decisions": [
-                "Open the appropriate EFFECTS section",
-                "Choose Add Effect",
-                "Choose decrement effect type",
-                "Use the canonical number-variable reference field"
-              ],
-              "contingent": [
-                "response/entry editor is visible",
-                "section is expanded",
-                "adapter type is selected"
-              ],
-              "declaration_chain": [
-                {
-                  "file": "src/features/narrative/author/InteractionEditor.tsx",
-                  "component": "<OutcomeEffectsEditor"
-                },
-                {
-                  "file": "src/author/outcomes/OutcomeComposer.tsx",
-                  "component": "EffectsEditor"
-                },
-                {
-                  "file": "src/author/EffectsEditor.tsx",
-                  "component": "registered feature-owned effect adapter"
-                },
-                {
-                  "file": "src/features/state/author/ruleAdapters.tsx",
-                  "component": "decrementEffectAdapter ReferenceField"
-                },
-                {
-                  "file": "src/features/state/author/manifest.tsx",
-                  "component": "state feature registry"
-                }
-              ],
-              "source": {
-                "file": "src/features/state/author/ruleAdapters.tsx",
-                "line": 232
-              }
+              "adapter": "decrement"
             },
+            {
+              "channel": "effect",
+              "adapter": "increment"
+            }
+          ],
+          "unselected_delegated_adapters": [
+            {
+              "channel": "effect",
+              "adapter": "decrement"
+            }
+          ],
+          "delegated_paths": [
             {
               "channel": "effect",
               "adapter": "increment",
@@ -6403,7 +6789,7 @@
             "min": 4,
             "max": 4,
             "metric": "declared decision descriptions, NOT clicks",
-            "alternatives": 2
+            "alternatives": 1
           }
         }
       ],
@@ -6428,23 +6814,14 @@
           "caveat": "Some steps are contingent; only the selected alternative is traversed, and entry-to-workspace steps are excluded."
         },
         "alternative_delegated_paths": 1,
-        "conditional_delegated_paths": [
+        "chosen_delegated_adapters": [
           {
             "resource": "number-variable",
             "channel": "effect",
-            "adapter": "decrement",
-            "decision_sequence": [
-              "Open the appropriate EFFECTS section",
-              "Choose Add Effect",
-              "Choose decrement effect type",
-              "Use the canonical number-variable reference field"
-            ],
-            "guards": [
-              "response/entry editor is visible",
-              "section is expanded",
-              "adapter type is selected"
-            ]
-          },
+            "adapter": "increment"
+          }
+        ],
+        "conditional_delegated_paths": [
           {
             "resource": "number-variable",
             "channel": "effect",
@@ -6463,6 +6840,147 @@
           }
         ],
         "conditional_control_subtotal": null,
+        "source_guarded_control_activations": {
+          "kind": "source-guarded-conditional-control-activations",
+          "source_checked": true,
+          "lower": 7,
+          "upper": 9,
+          "steps": [
+            {
+              "action": "open response from interaction overview",
+              "minimum": 0,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 290
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 232
+                }
+              ],
+              "condition": "Only required when the relevant response is not already open; entry via outcomeId may open it directly"
+            },
+            {
+              "action": "expand EFFECTS",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 8
+                },
+                {
+                  "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+                  "line": 18
+                },
+                {
+                  "file": "src/features/narrative/author/InteractionEditor.tsx",
+                  "line": 466
+                },
+                {
+                  "file": "src/author/outcomes/OutcomeComposer.tsx",
+                  "line": 16
+                }
+              ],
+              "condition": "Starting with this disclosure closed; changing prior UI state may remove this activation"
+            },
+            {
+              "action": "choose Add Effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 114
+                }
+              ],
+              "condition": "Creating a new effect from the list view"
+            },
+            {
+              "action": "select increment effect",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/EffectsEditor.tsx",
+                  "line": 71
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 218
+                }
+              ],
+              "condition": "The registered adapter is available in the category chooser"
+            },
+            {
+              "action": "open canonical reference Create",
+              "minimum": 1,
+              "maximum": 2,
+              "evidence": [
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 104
+                },
+                {
+                  "file": "src/author/resources/ReferenceField.tsx",
+                  "line": 90
+                },
+                {
+                  "file": "src/features/state/author/ruleAdapters.tsx",
+                  "line": 218
+                }
+              ],
+              "condition": "Direct when no selected value and no catalog options; chooser plus Create otherwise"
+            },
+            {
+              "action": "save new resource",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Child owner validation accepts the Save"
+            },
+            {
+              "action": "save parent draft",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/ui/workspaceDefinition.tsx",
+                  "line": 161
+                }
+              ],
+              "condition": "Parent is dirty and valid to save"
+            },
+            {
+              "action": "master X to running player",
+              "minimum": 1,
+              "maximum": 1,
+              "evidence": [
+                {
+                  "file": "src/author/workspace/AuthorWorkspaceHost.tsx",
+                  "line": 339
+                }
+              ],
+              "condition": "No dirty-leave confirmation is required"
+            }
+          ],
+          "start_assumption": "Named Author workspace, inside the intended response when already open; section initially collapsed; editing text and asset creation are not costed.",
+          "excludes": [
+            "opening Author Mode from real play",
+            "typing/configuring authored fields",
+            "additional screens in the canonical child editor",
+            "Save failures or confirmation prompts",
+            "unmodeled hover/focus/presentation changes"
+          ],
+          "exact_end_to_end_actions": null
+        },
         "operation_controls_found_in_context": 3,
         "operation_follow_on_task_paths": 0,
         "operation_controls_without_context": 0,
@@ -6473,6 +6991,7 @@
       "friction_indicators": [
         "cross-owner-authoring",
         "nested-rule-editor-decisions",
+        "alternate-adapters-exist-but-not-on-intended-path",
         "authoring-controls-not-modeled"
       ],
       "unmodeled_or_unresolved": [
