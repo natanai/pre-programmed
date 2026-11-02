@@ -5999,9 +5999,21 @@
               "status": "source-witness-found"
             },
             {
+              "file": "src/features/narrative/nodeEntryRuntime.ts",
+              "workspace": "narrative.node",
+              "source_line": 31,
+              "status": "source-witness-found"
+            },
+            {
               "file": "src/features/media/author/ruleAdapters.tsx",
               "workspace": "narrative.node",
               "source_line": 50,
+              "status": "source-witness-found"
+            },
+            {
+              "file": "src/features/media/effectRuntime.ts",
+              "workspace": "narrative.node",
+              "source_line": 15,
               "status": "source-witness-found"
             },
             {
