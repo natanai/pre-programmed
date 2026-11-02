@@ -25,11 +25,11 @@
   "authored_operations_outside_focused_control_scope": 39,
   "tasks_with_source_declared_control_paths": 26,
   "tasks_with_unresolved_requested_work": 1,
+  "task_operation_witnesses_found": 62,
+  "task_operation_witnesses_unresolved": 1,
   "resolved_nested_resource_routes": 24,
   "tasks_without_nested_resource_route": 3,
   "unresolved_nested_resource_routes": 0,
-  "task_operation_witnesses_found": 62,
-  "task_operation_witnesses_unresolved": 1,
   "games": [
    {
     "game": "branching-rpg",
@@ -4582,7 +4582,7 @@
        {
         "name": "choose CAPTURE INPUT",
         "control_activations": {
-         "lower": 1,
+         "lower": 0,
          "upper": 1
         },
         "evidence": [
@@ -4626,7 +4626,7 @@
       ],
       "unresolved": [],
       "conditional_navigation_activations": {
-       "lower": 1,
+       "lower": 0,
        "upper": 3
       },
       "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
