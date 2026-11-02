@@ -660,6 +660,12 @@ function deriveSelectedAdapterFields(step, readFile) {
   if(!selected||step.blockers?.length)return null;
   const sourceFile=selected.source?.file;
   if(!sourceFile)return null;
+  if(!sourceFile.endsWith("/ruleAdapters.tsx"))return {
+    status:"delegated-flow-not-rule-adapter",adapter:selected.adapter,channel:selected.channel,
+    source_file:sourceFile,fields:[],field_controls_declared:0,
+    note:"A shared Narrative flow or destination task, not a feature RuleAdapter with JSX fields.",
+    exact_configuration_clicks:null,observed_runtime:false
+  };
   const source=readFile(sourceFile)??"";
   const declarations=[...source.matchAll(/export const (\w+): (?:ConditionAuthorAdapter|EffectAuthorAdapter) = \{/g)];
   const selectedDeclaration=declarations.find((m,i)=>{
@@ -999,7 +1005,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         source_guarded_control_activations:sourceGatedControls,
         source_declared_adapter_field_controls:trace.reduce((n,x)=>n+(x.field_configuration?.field_controls_declared??0),0),
         adapter_field_configuration_complete:trace.every(x=>!x.delegated_paths.length||
-          x.field_configuration?.status==="source-declared-adapter-fields"),
+          ["source-declared-adapter-fields","delegated-flow-not-rule-adapter"].includes(x.field_configuration?.status)),
         authored_operations_with_source_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-declared").length,
         authored_operations_with_incomplete_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete").length,
         authored_operations_without_a_control_sequence:operationSteps.filter(x=>!x.authoring_control_path).length,
