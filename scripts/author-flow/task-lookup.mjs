@@ -1101,6 +1101,11 @@ if(compare){
       && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
       && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
+      && before.measures.source_declared_adapter_field_controls===after.measures.source_declared_adapter_field_controls
+      && JSON.stringify(before.route_steps.map(x=>x.field_configuration?.source_default_literals??null))===
+         JSON.stringify(after.route_steps.map(x=>x.field_configuration?.source_default_literals??null))
+      && JSON.stringify(before.operation_steps?.map(x=>x.appearance_trigger?.moment??null))===
+         JSON.stringify(after.operation_steps?.map(x=>x.appearance_trigger?.moment??null))
       && JSON.stringify(before.operation_steps?.map(x=>[
           x.status,x.authoring_control_path?.status??null,
           x.authoring_control_path?.conditional_navigation_activations??null,
@@ -1126,6 +1131,10 @@ if(compare){
       delegated_alternatives_after:after.measures?.alternative_delegated_paths??null,
       owner_transitions_before:before.measures?.cross_owner_transitions??null,
       owner_transitions_after:after.measures?.cross_owner_transitions??null,
+      configuration_fields_before:before.measures?.source_declared_adapter_field_controls??null,
+      configuration_fields_after:after.measures?.source_declared_adapter_field_controls??null,
+      image_triggers_before:before.operation_steps?.map(x=>x.appearance_trigger?.moment??null).filter(Boolean)??[],
+      image_triggers_after:after.operation_steps?.map(x=>x.appearance_trigger?.moment??null).filter(Boolean)??[],
       source_guarded_controls_before:before.measures?.source_guarded_control_activations?{
         lower:before.measures.source_guarded_control_activations.lower,upper:before.measures.source_guarded_control_activations.upper}:null,
       source_guarded_controls_after:after.measures?.source_guarded_control_activations?{
@@ -1160,6 +1169,7 @@ if(compare){
       controls:step.authoring_control_path?.steps??null,
       conditional_navigation_activations:step.authoring_control_path?.conditional_navigation_activations??null,
       source_sequence_status:step.authoring_control_path?.status??"not-yet-modeled",
+      appearance_trigger:step.appearance_trigger??null,
       unresolved:step.authoring_control_path?.unresolved??[]
     })),
     restrictions:{
