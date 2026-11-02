@@ -1322,7 +1322,7 @@
       "definition": {
         "id": "rpg-define-north-input",
         "game": "branching-rpg",
-        "goal": "Turn a previously unrecognized northward input into a valid Node interaction.",
+        "goal": "While authoring a new northward input, write its response and link to an existing destination Node.",
         "start": {
           "surface": "author-workspace",
           "workspace": "narrative.interaction",
@@ -1349,7 +1349,8 @@
           },
           {
             "description": "provide next destination",
-            "operation": "response-destination"
+            "operation": "response-destination",
+            "destination_choice": "existing"
           }
         ]
       },
