@@ -5018,7 +5018,7 @@
       "definition": {
         "id": "vn-create-scene-image",
         "game": "visual-novel",
-        "goal": "Create scene image Media while composing a narrative Node.",
+        "goal": "Create a persistent scene background that stays visible during visual-novel dialogue, authored from the Node where it is needed.",
         "start": {
           "surface": "author-workspace",
           "workspace": "narrative.node",
@@ -5032,7 +5032,7 @@
         ],
         "author_work": [
           "create image resource",
-          "assign background in narrative"
+          "assign persistent scene background in narrative"
         ],
         "finish": {
           "save_parent": true,
@@ -5044,7 +5044,7 @@
             "operation": "image-art"
           },
           {
-            "description": "assign background in narrative",
+            "description": "assign persistent scene background in narrative",
             "operation": "node-scene-media"
           }
         ]
@@ -6162,6 +6162,45 @@
         "model": "audit/author-flow/navigation-model.json",
         "goal_source": "audit/author-flow/anticipated-tasks.json",
         "runtime_executed": false
+      }
+    },
+    {
+      "task_id": "vn-show-entry-art",
+      "game": "visual-novel",
+      "goal": "From a Narrative Node, create an image and show it when the player enters using the existing Media art effect (inline or overlay).",
+      "definition": {
+        "id": "vn-show-entry-art",
+        "game": "visual-novel",
+        "goal": "From a Narrative Node, create an image and show it when the player enters using the existing Media art effect (inline or overlay).",
+        "start": {
+          "surface": "author-workspace",
+          "workspace": "narrative.node",
+          "play_to_editor_entry": "not-modeled-in-static-graph"
+        },
+        "resource_chain": [
+          {
+            "action": "create",
+            "kind": "media-image"
+          }
+        ],
+        "author_work": [
+          "create image in canonical Media editor",
+          "configure ON ENTER Show Sprite/Art effect"
+        ],
+        "finish": {
+          "save_parent": true,
+          "return_to_player": true
+        },
+        "requested_operations": [
+          {
+            "description": "create image in canonical Media editor",
+            "operation": "image-art"
+          },
+          {
+            "description": "configure ON ENTER Show Sprite/Art effect",
+            "operation": "node-entry-art"
+          }
+        ]
       }
     }
   ]
