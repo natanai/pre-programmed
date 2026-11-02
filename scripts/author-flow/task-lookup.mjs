@@ -102,7 +102,6 @@ const operationSources={
       "narrative.interaction"
     ]
   ],
-  "node-scene-media": [],
   "response-art-trigger": [
     ["src/features/narrative/author/InteractionEditor.tsx",'title="EFFECTS"',"narrative.interaction"],
     ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.interaction"],
