@@ -102,6 +102,11 @@ const operationSources={
     ]
   ],
   "node-scene-media": [],
+  "node-entry-art": [
+    ["src/features/narrative/author/nodeWorkspace.tsx",'id: "node-entry-effects"',"narrative.node"],
+    ["src/features/media/author/ruleAdapters.tsx",'label: "show sprite/art"',"narrative.node"],
+    ["src/features/media/ui/effectPresentation.ts",'case "art":',"narrative.node"]
+  ],
   "command-name": [
     [
       "src/features/commands/author/commandWorkspace.tsx",
@@ -245,7 +250,8 @@ function deriveDelegatedReferenceSites(model, readFile) {
   const fileSource=Object.fromEntries(Object.entries(files).map(([key,path])=>[key,readFile(path)??""]));
   const registered=[
     ["state","src/features/state/author/manifest.tsx","src/features/state/author/ruleAdapters.tsx"],
-    ["inventory","src/features/inventory/author/manifest.tsx","src/features/inventory/author/ruleAdapters.tsx"]
+    ["inventory","src/features/inventory/author/manifest.tsx","src/features/inventory/author/ruleAdapters.tsx"],
+    ["media","src/features/media/author/manifest.tsx","src/features/media/author/ruleAdapters.tsx"]
   ];
   const sites=[];
   const line=(file,needle)=>{
@@ -296,19 +302,24 @@ function deriveDelegatedReferenceSites(model, readFile) {
           const hasOuter=workspace==="world-entity"?host.includes("<ConditionEditor"):
             channel==="effect"&&workspace==="narrative.node"?host.includes("<EffectsEditor"):host.includes(outer);
           if(!hasOuter)continue;
+          if(workspace==="narrative.node"&&feature==="media"&&type==="art"&&
+            !host.includes('id: "node-entry-effects"'))continue;
+          const nodeEntryMedia=workspace==="narrative.node"&&feature==="media"&&channel==="effect";
           insert(workspace,kind,{
             channel,adapter:type,source:sourceLocation,
             declaration_chain:[
               {file:workspace==="world-entity"?files.world:workspace==="narrative.node"?files.node:files.interaction,component:workspace==="world-entity"?"Character alias ConditionEditor":outer},
-              {file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"},
+              ...(nodeEntryMedia?[]:[{file:files.outcome,component:channel==="condition"?"ConditionEditor":"EffectsEditor"}]),
               {file:channel==="condition"?files.condition:files.effects,component:"registered feature-owned "+channel+" adapter"},
               {file:adapterFile,component:m[1]+" ReferenceField"},
               {file:manifestFile,component:feature+" feature registry"}
             ],
             access_decisions:channel==="condition"
               ? ["Open the appropriate WHEN/condition section","Choose "+type+" condition type","Use the canonical "+kind+" reference field"]
+              : nodeEntryMedia?["Open Node ON ENTER","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"]
               : ["Open the appropriate EFFECTS section","Choose Add Effect","Choose "+type+" effect type","Use the canonical "+kind+" reference field"],
             contingent:["response/entry editor is visible","section is expanded","adapter type is selected",
+              ...(nodeEntryMedia?["Node entry effects execute on arrival; image presentation is inline or overlay, not a persistent background layer"]:[]),
               ...(workspace==="world-entity"?["resource is a Character, not a Location","Character has at least one alias","alias SHOW WHEN is configured"]:[]),
               ...(block.includes('scope === "node"')?["global scope selected; node-local flags do not require a project resource"]:[])],
           });
