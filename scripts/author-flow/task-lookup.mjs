@@ -470,7 +470,8 @@ function sourceGatedControlActivationRange(task, trace, readFile) {
  * editor. These are independent operation-level traces, not an additive
  * end-to-end click count or alternate Author implementations.
  */
-function describeNarrativeOperationControlPath(task, operation, previousOperations, readFile) {
+function describeNarrativeOperationControlPath(task, operationDefinition, previousOperations, readFile) {
+  const operation=operationDefinition.operation;
   const workspace=task.start.workspace;
   if(!["narrative.interaction","narrative.node"].includes(workspace))return null;
   const paths={
@@ -587,7 +588,17 @@ function describeNarrativeOperationControlPath(task, operation, previousOperatio
     ],"The text-variable resource Create/Edit lives in the canonical ReferenceField and is costed separately.");
   }else if(operation==="response-destination"&&interaction){
     disclosed("AFTER");
-    const create=task.resource_chain.some(s=>s.action==="create"&&s.kind==="node");
+    const nodeCreated=task.resource_chain.some(s=>s.action==="create"&&s.kind==="node");
+    const selectedChoice=operationDefinition.destination_choice??(nodeCreated?"create":null);
+    if(!["create","existing"].includes(selectedChoice)){
+      unresolved.push({step:"choose destination",missing:[{
+        reason:"Task must explicitly select a new or existing Node; no route is inferred from unspecified intention"
+      }]});
+      return {status:"source-control-sequence-incomplete",workspace,steps,unresolved,
+        conditional_navigation_activations:null,full_task_actions:null,
+        scope:"Do not infer destination intent or sum operation and resource navigation controls."};
+    }
+    const create=selectedChoice==="create";
     const choice=create?"CREATE NEW":"LINK EXISTING";
     step("choose "+choice+" destination branch",1,1,[
       ["after",'label: "'+choice+'"'],
@@ -604,11 +615,12 @@ function describeNarrativeOperationControlPath(task, operation, previousOperatio
       ["mentions","export function ValueMentionField"],
       ["mentions","onValueChange(stored);"]
     ],"Mention selection and typing are data editing, not measured button activations.");
-  }else if(operation==="node-narration"&&workspace==="narrative.node"){
-    step("edit Node opening narration",0,0,[
+  }else if(operation==="node-narration"&&(workspace==="narrative.node"||
+    task.resource_chain.some(s=>s.action==="create"&&s.kind==="node"))){
+    step("edit Node opening narration in canonical Node editor",0,0,[
       ["node","<AuthoredTextEditor"],
       ["node","narrationText: value.text"]
-    ],"Opening selection, text entry and performance controls are not counted.");
+    ],"For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted.");
   }else if(operation==="node-entry-condition"&&workspace==="narrative.node"){
     step("configure Node opening WHEN condition",0,1,[
       ["node","<OutcomeConditionEditor"],
@@ -759,8 +771,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(task.finish?.return_to_player){min++;max++;}
     const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
     const previousOperations=[];
-    const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
-      const authoringControlPath=describeNarrativeOperationControlPath(task,operation,previousOperations,readFile);
+    const operationSteps=(task.requested_operations??[]).map(({description,operation,...operationOptions})=>{
+      const authoringControlPath=describeNarrativeOperationControlPath(task,{operation,...operationOptions},previousOperations,readFile);
       previousOperations.push(operation);
       const expectedWitnesses=operationWitnesses[operation]??[];
       const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
@@ -854,6 +866,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         source_guarded_control_activations:sourceGatedControls,
         authored_operations_with_source_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-declared").length,
         authored_operations_with_incomplete_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete").length,
+        authored_operations_without_a_control_sequence:operationSteps.filter(x=>!x.authoring_control_path).length,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_follow_on_task_paths:operationSteps.filter(x=>x.status==="follow-on-owner-task-source-declared").length,
         operation_controls_without_context:operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)).length,
@@ -863,7 +876,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       },
       friction_indicators:unique(flags),
       unmodeled_or_unresolved:unresolved,
-      provenance:{model:"audit/author-flow/navigation-model.json",goal_source:"audit/author-flow/anticipated-tasks.json",runtime_executed:false}
+      provenance:{current_lookup:"audit/author-flow/task-lookup.json",source_inventory:"audit/author-flow/source-graph.json",
+        source_compiler:"scripts/author-flow/navigation-model.mjs",runtime_executed:false}
     });
   }
   items.sort((a,b)=>a.task_id.localeCompare(b.task_id));
@@ -898,6 +912,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     summary:{total_tasks:items.length,
       authored_operations_with_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_source_control_sequence,0),
       authored_operations_with_incomplete_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_incomplete_control_sequence,0),
+      authored_operations_outside_focused_control_scope:items.reduce((n,t)=>n+t.measures.authored_operations_without_a_control_sequence,0),
       tasks_with_source_declared_control_paths:items.filter(x=>x.goal_source_status==="requested-control-paths-source-declared").length,
       tasks_with_unresolved_requested_work:items.filter(x=>x.goal_source_status!=="requested-control-paths-source-declared").length,
       task_operation_witnesses_found:items.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
@@ -941,7 +956,15 @@ if(compare){
       && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
       && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
-      && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
+      && JSON.stringify(before.operation_steps?.map(x=>[
+          x.status,x.authoring_control_path?.status??null,
+          x.authoring_control_path?.conditional_navigation_activations??null,
+          x.authoring_control_path?.steps?.map(s=>s.name)??[]
+        ])??[])===JSON.stringify(after.operation_steps?.map(x=>[
+          x.status,x.authoring_control_path?.status??null,
+          x.authoring_control_path?.conditional_navigation_activations??null,
+          x.authoring_control_path?.steps?.map(s=>s.name)??[]
+        ])??[]))continue;
     changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
       goal_source_status_before:before.goal_source_status??null,
       goal_source_status_after:after.goal_source_status??null,
@@ -950,6 +973,8 @@ if(compare){
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
       operation_witnesses_in_context_before:before.measures?.operation_controls_found_in_context??null,
       operation_witnesses_in_context_after:after.measures?.operation_controls_found_in_context??null,
+      narrative_control_sequences_before:before.measures?.authored_operations_with_source_control_sequence??null,
+      narrative_control_sequences_after:after.measures?.authored_operations_with_source_control_sequence??null,
       source_access_stages_before:before.measures?.source_declared_access_stages??null,
       source_access_stages_after:after.measures?.source_declared_access_stages??null,
       delegated_alternatives_before:before.measures?.alternative_delegated_paths??null,
@@ -993,6 +1018,8 @@ if(compare){
     source_access_stages:t.measures.source_declared_access_stages,
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
+    authoring_control_sequences:t.measures.authored_operations_with_source_control_sequence,
+    incomplete_authoring_control_sequences:t.measures.authored_operations_with_incomplete_control_sequence,
     source_guarded_control_activations:t.measures.source_guarded_control_activations?{
       lower:t.measures.source_guarded_control_activations.lower,
       upper:t.measures.source_guarded_control_activations.upper
@@ -1008,11 +1035,15 @@ if(compare){
 }else if(args.includes("--gaps")){
   process.stdout.write(JSON.stringify({
     type:"unresolved-source-route-index",
-    gaps:lookup.tasks.filter(x=>!x.declared_path_complete||x.measures.operation_controls_without_context>0).map(t=>({
+    gaps:lookup.tasks.filter(x=>!x.declared_path_complete||x.measures.operation_controls_without_context>0||
+      x.measures.authored_operations_with_incomplete_control_sequence>0).map(t=>({
       task_id:t.task_id,game:t.game,goal:t.goal,
       missing_route:t.unmodeled_or_unresolved.find(x=>x.category==="missing-static-navigation")??null,
-      operation_gaps:t.operation_steps.filter(x=>x.status!=="owner-control-declared-in-task-context")
-        .map(x=>({intent:x.intent,operation:x.operation,reason:x.status}))
+      operation_gaps:t.operation_steps.filter(x=>!["owner-control-declared-in-task-context",
+        "follow-on-owner-task-source-declared"].includes(x.status))
+        .map(x=>({intent:x.intent,operation:x.operation,reason:x.status})),
+      control_path_gaps:t.operation_steps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete")
+        .map(x=>({operation:x.operation,missing:x.authoring_control_path.unresolved}))
     }))
   },null,2)+"\n");
 }else if(args.includes("--summary")){
