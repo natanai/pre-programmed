@@ -1,5 +1,5 @@
 {
- "schema_version": 5,
+ "schema_version": 6,
  "type": "source-derived-anticipated-task-lookup",
  "generated_from": {
   "source_inventory": "audit/author-flow/source-graph.json",
@@ -14,18 +14,22 @@
   "unknown": "Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
   "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
   "control_activations": "Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
+  "authoring_operations": "Individual response authoring operations trace concrete control and panel transitions, with non-additive conditional activation bounds; typing and full configuration remain outside source-only counts.",
   "delegated": "Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
   "scene_media": "Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
  },
  "summary": {
   "total_tasks": 27,
+  "authored_operations_with_control_sequences": 25,
+  "authored_operations_with_incomplete_control_sequences": 0,
+  "authored_operations_outside_focused_control_scope": 39,
   "tasks_with_source_declared_control_paths": 26,
   "tasks_with_unresolved_requested_work": 1,
-  "task_operation_witnesses_found": 60,
-  "task_operation_witnesses_unresolved": 1,
   "resolved_nested_resource_routes": 24,
   "tasks_without_nested_resource_route": 3,
   "unresolved_nested_resource_routes": 0,
+  "task_operation_witnesses_found": 62,
+  "task_operation_witnesses_unresolved": 1,
   "games": [
    {
     "game": "branching-rpg",
@@ -33,7 +37,7 @@
     "resolved_nested_resource_routes": 13,
     "tasks_without_nested_resource_route": 1,
     "unresolved_nested_resource_routes": 0,
-    "operation_witnesses_in_context": 30,
+    "operation_witnesses_in_context": 31,
     "operation_witnesses_unresolved": 0,
     "top_static_gaps": []
    },
@@ -43,7 +47,7 @@
     "resolved_nested_resource_routes": 11,
     "tasks_without_nested_resource_route": 2,
     "unresolved_nested_resource_routes": 0,
-    "operation_witnesses_in_context": 30,
+    "operation_witnesses_in_context": 31,
     "operation_witnesses_unresolved": 1,
     "top_static_gaps": []
    }
@@ -110,6 +114,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -126,6 +131,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -201,6 +207,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -232,8 +241,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -301,6 +311,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit Node opening narration in canonical Node editor",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -317,6 +359,64 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "open canonical Interaction task from Node valid inputs",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 340
+         },
+         {
+          "file": "src/features/narrative/author/NodeInputList.tsx",
+          "line": 76
+         },
+         {
+          "file": "src/features/narrative/author/NodeInputList.tsx",
+          "line": 77
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 67
+         }
+        ],
+        "condition": "Assumes Node INPUT HANDLING is already visible; entering the Node section may require more work."
+       },
+       {
+        "name": "edit PLAYER ENTERS in real Interaction editor",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 282
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 283
+         }
+        ],
+        "condition": "Parent draft preservation, focus and typed wording remain unverified."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 1,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "follow-on-owner-task-source-declared",
      "additional_owner_task": {
       "from": "narrative.node",
@@ -468,6 +568,9 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 0,
     "operation_controls_found_in_context": 1,
     "operation_follow_on_task_paths": 1,
     "operation_controls_without_context": 0,
@@ -499,8 +602,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -574,6 +678,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -590,6 +695,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -606,6 +712,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit Node opening narration in canonical Node editor",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -725,6 +863,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -761,8 +902,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -826,6 +968,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -842,6 +985,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -917,6 +1061,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -948,8 +1095,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -1013,6 +1161,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "edit Node opening narration in canonical Node editor",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1029,6 +1209,90 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand AFTER disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 454
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose CREATE NEW destination branch",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 314
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 406
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 302
+         }
+        ],
+        "condition": "Canonical Node child task handles destination creation and the return reference."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 1,
+       "upper": 3
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1087,6 +1351,9 @@
     "conditional_delegated_paths": [],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 0,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -1117,8 +1384,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -1182,6 +1450,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1198,6 +1467,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1273,6 +1543,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -1304,15 +1577,16 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
   {
    "task_id": "rpg-define-north-input",
    "game": "branching-rpg",
-   "goal": "Turn a previously unrecognized northward input into a valid Node interaction.",
+   "goal": "While authoring a new northward input, write its response and link to an existing destination Node.",
    "starting_workspace": "narrative.interaction",
    "origin_assumption": {
     "surface": "author-workspace",
@@ -1371,6 +1645,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "edit PLAYER ENTERS in overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 282
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 283
+         }
+        ],
+        "condition": "Control is on overview; typing, focus and input wording are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1393,6 +1699,60 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "edit authored response text",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 420
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 429
+         }
+        ],
+        "condition": "The text editor is declared; text entry and choosing narration versus dialogue are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1409,6 +1769,105 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand AFTER disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 454
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose LINK EXISTING destination branch",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 317
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 406
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 307
+         }
+        ],
+        "condition": "Assumes linking to an existing Node; if destination was not specified by the goal, this branch remains hypothetical."
+       },
+       {
+        "name": "select existing Node destination",
+        "control_activations": {
+         "lower": 0,
+         "upper": null
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 322
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 87
+         }
+        ],
+        "condition": "The existing-destination chooser is dynamic; its search and selection activation count is not established."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": null,
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1438,6 +1897,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 3,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 0,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -1471,8 +1933,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -1536,6 +1999,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1552,6 +2016,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1627,6 +2092,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -1657,8 +2125,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -1717,6 +2186,7 @@
    },
    "intended_author_work": [
     "create gate flag",
+    "add another response to cover the alternate outcome",
     "author blocked and open routes"
    ],
    "operation_steps": [
@@ -1731,6 +2201,59 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
+     "status": "owner-control-declared-in-task-context",
+     "additional_owner_task": null,
+     "exact_actions": null,
+     "note": "A source control witness does not prove a complete configuration or a visible UI."
+    },
+    {
+     "intent": "add another response to cover the alternate outcome",
+     "operation": "add-response",
+     "source_evidence": [
+      {
+       "file": "src/features/narrative/author/InteractionEditor.tsx",
+       "workspace": "narrative.interaction",
+       "source_line": 299,
+       "status": "source-witness-found"
+      }
+     ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "add response and open its editor",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 299
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 150
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 154
+         }
+        ],
+        "condition": "Creates a new draft outcome; do not charge a second 'open response' activation."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 1,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -1747,6 +2270,86 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "expand WHEN disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 451
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose Condition type",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         }
+        ],
+        "condition": "Zero if the intended condition type was already selected."
+       },
+       {
+        "name": "configure selected condition value",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 28
+         }
+        ],
+        "condition": "Source declares the canonical adapter; choosing values or creating its referenced resource is separately uncounted here."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 2
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2038,7 +2641,10 @@
      ],
      "exact_end_to_end_actions": null
     },
-    "operation_controls_found_in_context": 2,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
+    "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
@@ -2058,6 +2664,10 @@
     },
     {
      "category": "authored-content-actions-not-modeled",
+     "work": "add another response to cover the alternate outcome"
+    },
+    {
+     "category": "authored-content-actions-not-modeled",
      "work": "author blocked and open routes"
     },
     {
@@ -2070,8 +2680,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -2139,6 +2750,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2155,6 +2767,118 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand EFFECTS disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 466
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "open add-effect chooser",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 51
+         },
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 114
+         }
+        ],
+        "condition": "Assumes a new effect is needed; editing an existing effect is a different path."
+       },
+       {
+        "name": "choose effect type and open its canonical adapter",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 71
+         },
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 40
+         }
+        ],
+        "condition": "Specific effect type comes from the task's resource_chain[].via, if supplied."
+       },
+       {
+        "name": "configure effect adapter",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 90
+         }
+        ],
+        "condition": "Changing quantity, variable value and other adapter fields is outside the static activation count."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 2,
+       "upper": 4
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2470,6 +3194,9 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -2502,8 +3229,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -2567,6 +3295,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2583,6 +3312,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2658,6 +3388,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -2689,8 +3422,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -2764,6 +3498,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2780,6 +3515,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2796,6 +3532,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit Node opening narration in canonical Node editor",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -2915,6 +3683,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -2951,8 +3722,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -3016,6 +3788,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3032,6 +3805,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3107,6 +3881,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -3137,8 +3914,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -3206,6 +3984,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3222,6 +4001,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "configure Node opening WHEN condition",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 151
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         }
+        ],
+        "condition": "Opening the conditional section may be necessary; other edits and selection remain uncounted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3381,6 +4192,9 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -3413,8 +4227,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -3473,6 +4288,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "edit PLAYER ENTERS in overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 282
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 283
+         }
+        ],
+        "condition": "Control is on overview; typing, focus and input wording are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3495,6 +4342,60 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "edit authored response text",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 420
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 429
+         }
+        ],
+        "condition": "The text editor is declared; text entry and choosing narration versus dialogue are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3524,6 +4425,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 0,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -3553,8 +4457,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -3622,6 +4527,112 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand AFTER disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 454
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose CAPTURE INPUT",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 447
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 370
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 372
+         }
+        ],
+        "condition": "If a capture flow is already configured, this activation may not be necessary."
+       },
+       {
+        "name": "configure captured-input flow and storage field",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 145
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 194
+         },
+         {
+          "file": "src/features/narrative/author/NarrativeAfterEditor.tsx",
+          "line": 196
+         }
+        ],
+        "condition": "The text-variable resource Create/Edit lives in the canonical ReferenceField and is costed separately."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 1,
+       "upper": 3
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3638,6 +4649,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "edit text with a referenced value",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/ValueMentionField.tsx",
+          "line": 81
+         },
+         {
+          "file": "src/author/ValueMentionField.tsx",
+          "line": 173
+         }
+        ],
+        "condition": "Mention selection and typing are data editing, not measured button activations."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3768,6 +4811,9 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 0,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -3799,8 +4845,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -3864,6 +4911,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3892,6 +4940,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -3967,6 +5016,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -3998,8 +5050,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -4073,6 +5126,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4089,6 +5143,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4117,6 +5172,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4236,6 +5292,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 3,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -4272,8 +5331,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -4332,6 +5392,7 @@
    },
    "intended_author_work": [
     "define choice flag",
+    "add another response to cover the alternate outcome",
     "author both outcomes"
    ],
    "operation_steps": [
@@ -4346,6 +5407,59 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
+     "status": "owner-control-declared-in-task-context",
+     "additional_owner_task": null,
+     "exact_actions": null,
+     "note": "A source control witness does not prove a complete configuration or a visible UI."
+    },
+    {
+     "intent": "add another response to cover the alternate outcome",
+     "operation": "add-response",
+     "source_evidence": [
+      {
+       "file": "src/features/narrative/author/InteractionEditor.tsx",
+       "workspace": "narrative.interaction",
+       "source_line": 299,
+       "status": "source-witness-found"
+      }
+     ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "add response and open its editor",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 299
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 150
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 154
+         }
+        ],
+        "condition": "Creates a new draft outcome; do not charge a second 'open response' activation."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 1,
+       "upper": 1
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4362,6 +5476,86 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "expand WHEN disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 451
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose Condition type",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         }
+        ],
+        "condition": "Zero if the intended condition type was already selected."
+       },
+       {
+        "name": "configure selected condition value",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 28
+         }
+        ],
+        "condition": "Source declares the canonical adapter; choosing values or creating its referenced resource is separately uncounted here."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 2
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4653,7 +5847,10 @@
      ],
      "exact_end_to_end_actions": null
     },
-    "operation_controls_found_in_context": 2,
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
+    "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
     "verified_end_to_end_actions": null,
@@ -4673,6 +5870,10 @@
     },
     {
      "category": "authored-content-actions-not-modeled",
+     "work": "add another response to cover the alternate outcome"
+    },
+    {
+     "category": "authored-content-actions-not-modeled",
      "work": "author both outcomes"
     },
     {
@@ -4685,8 +5886,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -4750,6 +5952,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4766,6 +5969,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4841,6 +6045,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -4872,8 +6079,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -4943,6 +6151,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4965,6 +6174,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit authored response text",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "The text editor is declared; text entry and choosing narration versus dialogue are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -4993,6 +6234,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5068,6 +6310,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -5103,8 +6348,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -5172,6 +6418,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5181,6 +6428,7 @@
      "intent": "assign persistent scene background in narrative",
      "operation": "node-scene-media",
      "source_evidence": [],
+     "authoring_control_path": null,
      "status": "source-witness-unresolved",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5445,6 +6693,9 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 1,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 1,
@@ -5481,8 +6732,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -5546,6 +6798,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5568,6 +6821,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit authored response text",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "The text editor is declared; text entry and choosing narration versus dialogue are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5643,6 +6928,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -5673,8 +6961,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -5764,6 +7053,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5780,6 +7070,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5802,6 +7093,38 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.node",
+      "steps": [
+       {
+        "name": "edit authored response text",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 158
+         },
+         {
+          "file": "src/features/narrative/author/nodeWorkspace.tsx",
+          "line": 165
+         }
+        ],
+        "condition": "The text editor is declared; text entry and choosing narration versus dialogue are not counted."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 0
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -5994,6 +7317,9 @@
     ],
     "conditional_control_subtotal": null,
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -6030,8 +7356,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -6096,6 +7423,108 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand WHEN disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 451
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose Condition type",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         }
+        ],
+        "condition": "Zero if the intended condition type was already selected."
+       },
+       {
+        "name": "configure selected condition value",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 28
+         }
+        ],
+        "condition": "Source declares the canonical adapter; choosing values or creating its referenced resource is separately uncounted here."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 3
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6112,6 +7541,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6128,6 +7558,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6157,6 +7588,9 @@
      "not_a_click_minimum": true
     },
     "source_guarded_control_activations": null,
+    "authored_operations_with_source_control_sequence": 1,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -6190,8 +7624,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -6259,6 +7694,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6299,6 +7735,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6563,6 +8000,9 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "authored_operations_with_source_control_sequence": 0,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 2,
     "operation_controls_found_in_context": 2,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -6594,8 +8034,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   },
@@ -6669,6 +8110,7 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": null,
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6685,6 +8127,108 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand WHEN disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 451
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "choose Condition type",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 25
+         }
+        ],
+        "condition": "Zero if the intended condition type was already selected."
+       },
+       {
+        "name": "configure selected condition value",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 39
+         },
+         {
+          "file": "src/author/ConditionEditor.tsx",
+          "line": 28
+         }
+        ],
+        "condition": "Source declares the canonical adapter; choosing values or creating its referenced resource is separately uncounted here."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 0,
+       "upper": 3
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6701,6 +8245,118 @@
        "status": "source-witness-found"
       }
      ],
+     "authoring_control_path": {
+      "status": "source-control-sequence-declared",
+      "workspace": "narrative.interaction",
+      "steps": [
+       {
+        "name": "open intended response from overview",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 290
+         },
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 232
+         },
+         {
+          "file": "src/features/narrative/author/interactionWorkspace.tsx",
+          "line": 59
+         }
+        ],
+        "condition": "If response was already selected by the parent task or route outcomeId, zero; from overview, one."
+       },
+       {
+        "name": "expand EFFECTS disclosure",
+        "control_activations": {
+         "lower": 0,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/features/narrative/author/InteractionEditor.tsx",
+          "line": 466
+         },
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 16
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 8
+         },
+         {
+          "file": "src/author/ui/AuthorInlineDisclosure.tsx",
+          "line": 18
+         }
+        ],
+        "condition": "Disclosure is closed by default but may already be open; expansion is never assumed necessary."
+       },
+       {
+        "name": "open add-effect chooser",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/outcomes/OutcomeComposer.tsx",
+          "line": 51
+         },
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 114
+         }
+        ],
+        "condition": "Assumes a new effect is needed; editing an existing effect is a different path."
+       },
+       {
+        "name": "choose effect type and open its canonical adapter",
+        "control_activations": {
+         "lower": 1,
+         "upper": 1
+        },
+        "evidence": [
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 71
+         },
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 40
+         }
+        ],
+        "condition": "Specific effect type comes from the task's resource_chain[].via, if supplied."
+       },
+       {
+        "name": "configure effect adapter",
+        "control_activations": {
+         "lower": 0,
+         "upper": 0
+        },
+        "evidence": [
+         {
+          "file": "src/author/EffectsEditor.tsx",
+          "line": 90
+         }
+        ],
+        "condition": "Changing quantity, variable value and other adapter fields is outside the static activation count."
+       }
+      ],
+      "unresolved": [],
+      "conditional_navigation_activations": {
+       "lower": 2,
+       "upper": 4
+      },
+      "scope": "Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+      "typed_or_configured_values_counted": false,
+      "full_task_actions": null
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
@@ -6992,6 +8648,9 @@
      ],
      "exact_end_to_end_actions": null
     },
+    "authored_operations_with_source_control_sequence": 2,
+    "authored_operations_with_incomplete_control_sequence": 0,
+    "authored_operations_without_a_control_sequence": 1,
     "operation_controls_found_in_context": 3,
     "operation_follow_on_task_paths": 0,
     "operation_controls_without_context": 0,
@@ -7028,8 +8687,9 @@
     }
    ],
    "provenance": {
-    "model": "audit/author-flow/navigation-model.json",
-    "goal_source": "audit/author-flow/anticipated-tasks.json",
+    "current_lookup": "audit/author-flow/task-lookup.json",
+    "source_inventory": "audit/author-flow/source-graph.json",
+    "source_compiler": "scripts/author-flow/navigation-model.mjs",
     "runtime_executed": false
    }
   }
