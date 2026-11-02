@@ -9,6 +9,7 @@ import { buildSourceNavigationModel } from "./navigation-model.mjs";
 // Operation keys are authored once with each goal in task-lookup.json.
 // These markers are only source witnesses, not a separate experience audit.
 const operationSources={
+  "add-response":[["src/features/narrative/author/InteractionEditor.tsx","onClick={onAddResponse}","narrative.interaction"]],
   "player-input": [
     [
       "src/features/narrative/author/InteractionEditor.tsx",
@@ -464,6 +465,182 @@ function sourceGatedControlActivationRange(task, trace, readFile) {
   };
 }
 
+
+/**
+ * Source-derived control sequences for authoring *within* the real Narrative
+ * editor. These are independent operation-level traces, not an additive
+ * end-to-end click count or alternate Author implementations.
+ */
+function describeNarrativeOperationControlPath(task, operationDefinition, previousOperations, readFile) {
+  const operation=operationDefinition.operation;
+  const workspace=task.start.workspace;
+  if(!["narrative.interaction","narrative.node"].includes(workspace))return null;
+  const paths={
+    interaction:"src/features/narrative/author/InteractionEditor.tsx",
+    interactionHost:"src/features/narrative/author/interactionWorkspace.tsx",
+    node:"src/features/narrative/author/nodeWorkspace.tsx",
+    nodeInputs:"src/features/narrative/author/NodeInputList.tsx",
+    disclosure:"src/author/ui/AuthorInlineDisclosure.tsx",
+    outcome:"src/author/outcomes/OutcomeComposer.tsx",
+    condition:"src/author/ConditionEditor.tsx",
+    effects:"src/author/EffectsEditor.tsx",
+    after:"src/features/narrative/author/NarrativeAfterEditor.tsx",
+    mentions:"src/author/ValueMentionField.tsx"
+  };
+  const evidence=(key,needle)=>{
+    const file=paths[key],text=readFile(file)??"",idx=text.indexOf(needle);
+    return idx<0?null:{file,line:text.slice(0,idx).split("\n").length};
+  };
+  const supported=new Set(["add-response","player-input","response-text","response-condition",
+    "response-effects","response-destination","input-capture","text-mention","node-narration","node-entry-condition"]);
+  if(!supported.has(operation))return null;
+  const steps=[],unresolved=[];
+  const step=(name,lower,upper,checks,when)=>{
+    const found=checks.map(([key,needle])=>evidence(key,needle));
+    if(found.some(x=>!x)){
+      unresolved.push({step:name,missing:checks.filter((x,i)=>!found[i]).map(([key,needle])=>({file:paths[key],source_expression:needle}))});
+      return;
+    }
+    steps.push({name,control_activations:{lower,upper},evidence:found,
+      condition:when});
+  };
+  const interaction=workspace==="narrative.interaction";
+  const needsResponse=["response-text","response-condition","response-effects","response-destination","input-capture"];
+  const hasCreatedResponse=previousOperations.includes("add-response");
+  const onResponse=interaction&&needsResponse.includes(operation);
+  if(onResponse&&!hasCreatedResponse)step("open intended response from overview",0,1,[
+    ["interaction",'onClick={() => onOpenResponse(outcome.id)}'],
+    ["interaction",'screen.type === "response" && selectedOutcome'],
+    ["interactionHost",'requestedOutcomeId = route.data?.outcomeId']
+  ],"If response was already selected by the parent task or route outcomeId, zero; from overview, one.");
+  const disclosed=(title)=>step("expand "+title+" disclosure",0,1,[
+    ["interaction",'title="'+title+'"'],
+    ["outcome","return <AuthorInlineDisclosure"],
+    ["disclosure","defaultOpen = false"],
+    ["disclosure","<details className={classes} open={defaultOpen}>"]
+  ],"Disclosure is closed by default but may already be open; expansion is never assumed necessary.");
+  if(operation==="add-response"&&interaction){
+    step("add response and open its editor",1,1,[
+      ["interaction",'onClick={onAddResponse}'],
+      ["interaction","const addResponseDraft = () => {"],
+      ["interaction",'setScreen({ type: "response", outcomeId: outcome.id });']
+    ],"Creates a new draft outcome; do not charge a second 'open response' activation.");
+  }else if(operation==="player-input"){
+    if(interaction)step("edit PLAYER ENTERS in overview",0,0,[
+      ["interaction","PLAYER ENTERS"],
+      ["interaction","onValueChange={onWording}"]
+    ],"Control is on overview; typing, focus and input wording are not counted.");
+    else{
+      step("open canonical Interaction task from Node valid inputs",1,1,[
+        ["node","<NodeInputList"],
+        ["nodeInputs","onClick={() => onOpenInput()}"],
+        ["nodeInputs","+ VALID INPUT"],
+        ["node","inputRoute("]
+      ],"Assumes Node INPUT HANDLING is already visible; entering the Node section may require more work.");
+      step("edit PLAYER ENTERS in real Interaction editor",0,0,[
+        ["interaction","PLAYER ENTERS"],
+        ["interaction","onValueChange={onWording}"]
+      ],"Parent draft preservation, focus and typed wording remain unverified.");
+    }
+  }else if(operation==="response-text"){
+    const key=interaction?"interaction":"node";
+    step("edit authored response text",0,0,interaction?[
+      ["interaction","<AuthoredTextEditor"],
+      ["interaction","responseText: value.text"]
+    ]:[
+      ["node","<AuthoredTextEditor"],
+      ["node","narrationText: value.text"]
+    ],"The text editor is declared; text entry and choosing narration versus dialogue are not counted.");
+  }else if(operation==="response-condition"&&interaction){
+    disclosed("WHEN");
+    step("choose Condition type",0,1,[
+      ["outcome","<ConditionEditor condition={condition}"],
+      ["condition",'aria-label="Condition type"'],
+      ["condition","onChange={selectType}"]
+    ],"Zero if the intended condition type was already selected.");
+    step("configure selected condition value",0,0,[
+      ["outcome","onChange={onChange}"],
+      ["condition","adapter?.render"]
+    ],"Source declares the canonical adapter; choosing values or creating its referenced resource is separately uncounted here.");
+  }else if(operation==="response-effects"&&interaction){
+    disclosed("EFFECTS");
+    step("open add-effect chooser",1,1,[
+      ["outcome","<EffectsEditor effects={effects}"],
+      ["effects",'onClick={() => setScreen("choose")}']
+    ],"Assumes a new effect is needed; editing an existing effect is a different path.");
+    step("choose effect type and open its canonical adapter",1,1,[
+      ["effects",'onClick={() => addEffect(adapter)}'],
+      ["effects",'setScreen("edit");']
+    ],"Specific effect type comes from the task's resource_chain[].via, if supplied.");
+    step("configure effect adapter",0,0,[
+      ["effects","adapter?.render({ effect:"]
+    ],"Changing quantity, variable value and other adapter fields is outside the static activation count.");
+  }else if(operation==="input-capture"&&interaction){
+    disclosed("AFTER");
+    step("choose CAPTURE INPUT",0,1,[
+      ["after",'label: "CAPTURE INPUT"'],
+      ["after",'if (value === "capture")'],
+      ["after","createCaptureInputFlow("]
+    ],"If a capture flow is already configured, this activation may not be necessary.");
+    step("configure captured-input flow and storage field",0,0,[
+      ["after","function CaptureFlowEditor("],
+      ["after","SAVE INPUT TO"],
+      ["after",'kind="text-variable"']
+    ],"The text-variable resource Create/Edit lives in the canonical ReferenceField and is costed separately.");
+  }else if(operation==="response-destination"&&interaction){
+    disclosed("AFTER");
+    const nodeCreated=task.resource_chain.some(s=>s.action==="create"&&s.kind==="node");
+    const selectedChoice=operationDefinition.destination_choice??(nodeCreated?"create":null);
+    if(!["create","existing"].includes(selectedChoice)){
+      unresolved.push({step:"choose destination",missing:[{
+        reason:"Task must explicitly select a new or existing Node; no route is inferred from unspecified intention"
+      }]});
+      return {status:"source-control-sequence-incomplete",workspace,steps,unresolved,
+        conditional_navigation_activations:null,full_task_actions:null,
+        scope:"Do not infer destination intent or sum operation and resource navigation controls."};
+    }
+    const create=selectedChoice==="create";
+    const choice=create?"CREATE NEW":"LINK EXISTING";
+    step("choose "+choice+" destination branch",1,1,[
+      ["after",'label: "'+choice+'"'],
+      ["after",'onChange: choose'],
+      ["after",create?'if (value === "create")':'setChoosingExisting(true);']
+    ],create?"Canonical Node child task handles destination creation and the return reference.":
+      "Assumes linking to an existing Node; if destination was not specified by the goal, this branch remains hypothetical.");
+    if(!create)step("select existing Node destination",0,null,[
+      ["after","<DestinationEditor"],
+      ["after","chooseTarget("]
+    ],"The existing-destination chooser is dynamic; its search and selection activation count is not established.");
+  }else if(operation==="text-mention"){
+    step("edit text with a referenced value",0,0,[
+      ["mentions","export function ValueMentionField"],
+      ["mentions","onValueChange(stored);"]
+    ],"Mention selection and typing are data editing, not measured button activations.");
+  }else if(operation==="node-narration"&&(workspace==="narrative.node"||
+    task.resource_chain.some(s=>s.action==="create"&&s.kind==="node"))){
+    step("edit Node opening narration in canonical Node editor",0,0,[
+      ["node","<AuthoredTextEditor"],
+      ["node","narrationText: value.text"]
+    ],"For an Interaction starting point, reach this editor through the declared created Node task; opening selection, typing and performance controls are uncounted.");
+  }else if(operation==="node-entry-condition"&&workspace==="narrative.node"){
+    step("configure Node opening WHEN condition",0,1,[
+      ["node","<OutcomeConditionEditor"],
+      ["condition",'aria-label="Condition type"']
+    ],"Opening the conditional section may be necessary; other edits and selection remain uncounted.");
+  }
+  if(!steps.length&&!unresolved.length)return null;
+  const boundable=steps.every(x=>x.control_activations.upper!==null);
+  return {status:unresolved.length?"source-control-sequence-incomplete":"source-control-sequence-declared",
+    workspace,steps,unresolved,
+    conditional_navigation_activations:boundable&&!unresolved.length?{
+      lower:steps.reduce((n,s)=>n+s.control_activations.lower,0),
+      upper:steps.reduce((n,s)=>n+s.control_activations.upper,0)
+    }:null,
+    scope:"Only independently witnessed controls for this requested operation. NOT additive with nested-resource costs or other operation sequences.",
+    typed_or_configured_values_counted:false,
+    full_task_actions:null};
+}
+
 function buildLookup(model,definitions,operationWitnesses,readFile){
   if(model.schema_version<3)throw Error("Require navigation model schema 3");
   if(definitions.schema_version!==1)throw Error("Unsupported anticipated-task schema");
@@ -594,7 +771,10 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     if(task.finish?.save_parent){min++;max++;}
     if(task.finish?.return_to_player){min++;max++;}
     const availableWorkspaces=new Set([task.start.workspace,...frames.map(f=>f.child.replace(/^workspace:/,""))]);
-    const operationSteps=(task.requested_operations??[]).map(({description,operation})=>{
+    const previousOperations=[];
+    const operationSteps=(task.requested_operations??[]).map(({description,operation,...operationOptions})=>{
+      const authoringControlPath=describeNarrativeOperationControlPath(task,{operation,...operationOptions},previousOperations,readFile);
+      previousOperations.push(operation);
       const expectedWitnesses=operationWitnesses[operation]??[];
       const found=expectedWitnesses.filter(x=>x.status==="source-witness-found");
       // The ON ENTER art operation depends on the entire Node -> Media effect
@@ -616,7 +796,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
             {file:"src/features/narrative/author/InteractionEditor.tsx",component:"PLAYER ENTERS"}],
           conditional:true,extra_task_openings:1,exact_clicks:null
         }:null;
-      return {intent:description,operation,source_evidence:found,
+      return {intent:description,operation,source_evidence:found,authoring_control_path:authoringControlPath,
         status:!allRequiredFound?"source-witness-unresolved":
           !inContext.length?(nodeInputPath?"follow-on-owner-task-source-declared":"owner-not-reached-by-declared-task-path"):
           "owner-control-declared-in-task-context",
@@ -685,6 +865,9 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
         }))),
         conditional_control_subtotal:knownControls,
         source_guarded_control_activations:sourceGatedControls,
+        authored_operations_with_source_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-declared").length,
+        authored_operations_with_incomplete_control_sequence:operationSteps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete").length,
+        authored_operations_without_a_control_sequence:operationSteps.filter(x=>!x.authoring_control_path).length,
         operation_controls_found_in_context:operationSteps.filter(x=>x.status==="owner-control-declared-in-task-context").length,
         operation_follow_on_task_paths:operationSteps.filter(x=>x.status==="follow-on-owner-task-source-declared").length,
         operation_controls_without_context:operationSteps.filter(x=>!["owner-control-declared-in-task-context","follow-on-owner-task-source-declared"].includes(x.status)).length,
@@ -694,7 +877,8 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       },
       friction_indicators:unique(flags),
       unmodeled_or_unresolved:unresolved,
-      provenance:{model:"audit/author-flow/navigation-model.json",goal_source:"audit/author-flow/anticipated-tasks.json",runtime_executed:false}
+      provenance:{current_lookup:"audit/author-flow/task-lookup.json",source_inventory:"audit/author-flow/source-graph.json",
+        source_compiler:"scripts/author-flow/navigation-model.mjs",runtime_executed:false}
     });
   }
   items.sort((a,b)=>a.task_id.localeCompare(b.task_id));
@@ -711,7 +895,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       top_static_gaps:unresolved.map(t=>({task_id:t.task_id,missing:t.route_steps.filter(s=>s.blockers.length).map(s=>({kind:s.resource_kind,at:s.from,reason:s.blockers}))}))};
   });
   return {
-    schema_version:5,type:"source-derived-anticipated-task-lookup",
+    schema_version:6,type:"source-derived-anticipated-task-lookup",
     generated_from:{source_inventory:"audit/author-flow/source-graph.json",compiler:"scripts/author-flow/task-lookup.mjs"},
     interpretation:{
       authority:"This is the single authoritative current Author task-evaluation artifact. Both imagined goals and source-derived results live together.",
@@ -722,10 +906,14 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
       unknown:"Absence of a captured static reference is not proof that the task is impossible, and unknown steps are not assigned artificial costs",
       focus:"Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
       control_activations:"Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
+      authoring_operations:"Individual response authoring operations trace concrete control and panel transitions, with non-additive conditional activation bounds; typing and full configuration remain outside source-only counts.",
       delegated:"Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
       scene_media:"Media art effects produce inline/overlay player presentation on Node entry, not a defined persistent background scene layer; these remain separate anticipated authoring goals."
     },
     summary:{total_tasks:items.length,
+      authored_operations_with_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_source_control_sequence,0),
+      authored_operations_with_incomplete_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_incomplete_control_sequence,0),
+      authored_operations_outside_focused_control_scope:items.reduce((n,t)=>n+t.measures.authored_operations_without_a_control_sequence,0),
       tasks_with_source_declared_control_paths:items.filter(x=>x.goal_source_status==="requested-control-paths-source-declared").length,
       tasks_with_unresolved_requested_work:items.filter(x=>x.goal_source_status!=="requested-control-paths-source-declared").length,
       task_operation_witnesses_found:items.reduce((n,t)=>n+t.measures.operation_controls_found_in_context,0),
@@ -744,7 +932,7 @@ const witnesses=deriveOperationWitnesses(file=>fs.existsSync(file)?fs.readFileSy
 const lookup=buildLookup(model,goals,witnesses,file=>fs.existsSync(file)?fs.readFileSync(file,"utf8"):null);
 const args=process.argv.slice(2);
 const opt=key=>{const i=args.indexOf(key);return i<0?null:args[i+1]};
-const task=opt("--task"),game=opt("--game");
+const task=opt("--task"),game=opt("--game"),stepsQuery=opt("--steps");
 const search=opt("--search"),compare=opt("--compare");
 if(compare){
   const previous=JSON.parse(fs.readFileSync(compare,"utf8"));
@@ -769,7 +957,15 @@ if(compare){
       && JSON.stringify(before.measures.source_declared_access_stages??null)===JSON.stringify(after.measures.source_declared_access_stages??null)
       && before.measures.alternative_delegated_paths===after.measures.alternative_delegated_paths
       && before.measures.cross_owner_transitions===after.measures.cross_owner_transitions
-      && JSON.stringify(before.operation_steps?.map(x=>x.status)??[])===JSON.stringify(after.operation_steps?.map(x=>x.status)??[]))continue;
+      && JSON.stringify(before.operation_steps?.map(x=>[
+          x.status,x.authoring_control_path?.status??null,
+          x.authoring_control_path?.conditional_navigation_activations??null,
+          x.authoring_control_path?.steps?.map(s=>s.name)??[]
+        ])??[])===JSON.stringify(after.operation_steps?.map(x=>[
+          x.status,x.authoring_control_path?.status??null,
+          x.authoring_control_path?.conditional_navigation_activations??null,
+          x.authoring_control_path?.steps?.map(s=>s.name)??[]
+        ])??[]))continue;
     changes.push({task_id:id,before:before.source_path_status,after:after.source_path_status,
       goal_source_status_before:before.goal_source_status??null,
       goal_source_status_after:after.goal_source_status??null,
@@ -778,6 +974,8 @@ if(compare){
       conditional_controls_before:beforeCost,conditional_controls_after:afterCost,
       operation_witnesses_in_context_before:before.measures?.operation_controls_found_in_context??null,
       operation_witnesses_in_context_after:after.measures?.operation_controls_found_in_context??null,
+      narrative_control_sequences_before:before.measures?.authored_operations_with_source_control_sequence??null,
+      narrative_control_sequences_after:after.measures?.authored_operations_with_source_control_sequence??null,
       source_access_stages_before:before.measures?.source_declared_access_stages??null,
       source_access_stages_after:after.measures?.source_declared_access_stages??null,
       delegated_alternatives_before:before.measures?.alternative_delegated_paths??null,
@@ -801,6 +999,30 @@ if(compare){
   }).filter(row=>row.overlap>0).sort((a,b)=>b.overlap-a.overlap||a.item.task_id.localeCompare(b.item.task_id));
   process.stdout.write(JSON.stringify({type:"anticipated-task-search",query:search,
     matched_tasks:hits.map(row=>row.item)},null,2)+"\n");
+}else if(stepsQuery){
+  const selected=lookup.tasks.find(x=>x.task_id===stepsQuery);
+  if(!selected)throw Error("Unknown task: "+stepsQuery);
+  process.stdout.write(JSON.stringify({
+    type:"author-task-source-step-query",task_id:selected.task_id,game:selected.game,
+    goal:selected.goal,source_goal_status:selected.goal_source_status,
+    resource_tasks:selected.route_steps.map(step=>({
+      action:step.operation,resource:step.resource_kind,owner:step.source_workspace,
+      adapter:step.selected_delegated_intent??null,source_status:step.contract_status,
+      unresolved:step.blockers
+    })),
+    requested_operations:selected.operation_steps.map(step=>({
+      operation:step.operation,intent:step.intent,source_status:step.status,
+      controls:step.authoring_control_path?.steps??null,
+      conditional_navigation_activations:step.authoring_control_path?.conditional_navigation_activations??null,
+      source_sequence_status:step.authoring_control_path?.status??"not-yet-modeled",
+      unresolved:step.authoring_control_path?.unresolved??[]
+    })),
+    restrictions:{
+      additive:false,
+      exact_end_to_end_clicks:null,
+      notes:"The steps are source-derived and independently conditional; shared screens and nested-resource paths must not be summed. Typing, parameter editing and successful Saves are not counted."
+    }
+  },null,2)+"\n");
 }else if(task){
   const match=lookup.tasks.find(x=>x.task_id===task);
   if(!match)throw Error("Unknown task: "+task);
@@ -821,6 +1043,8 @@ if(compare){
     source_access_stages:t.measures.source_declared_access_stages,
     additional_owner_tasks:t.measures.operation_follow_on_task_paths,
     known_control_subtotal:t.measures.conditional_control_subtotal,
+    authoring_control_sequences:t.measures.authored_operations_with_source_control_sequence,
+    incomplete_authoring_control_sequences:t.measures.authored_operations_with_incomplete_control_sequence,
     source_guarded_control_activations:t.measures.source_guarded_control_activations?{
       lower:t.measures.source_guarded_control_activations.lower,
       upper:t.measures.source_guarded_control_activations.upper
@@ -836,17 +1060,21 @@ if(compare){
 }else if(args.includes("--gaps")){
   process.stdout.write(JSON.stringify({
     type:"unresolved-source-route-index",
-    gaps:lookup.tasks.filter(x=>!x.declared_path_complete||x.measures.operation_controls_without_context>0).map(t=>({
+    gaps:lookup.tasks.filter(x=>!x.declared_path_complete||x.measures.operation_controls_without_context>0||
+      x.measures.authored_operations_with_incomplete_control_sequence>0).map(t=>({
       task_id:t.task_id,game:t.game,goal:t.goal,
       missing_route:t.unmodeled_or_unresolved.find(x=>x.category==="missing-static-navigation")??null,
-      operation_gaps:t.operation_steps.filter(x=>x.status!=="owner-control-declared-in-task-context")
-        .map(x=>({intent:x.intent,operation:x.operation,reason:x.status}))
+      operation_gaps:t.operation_steps.filter(x=>!["owner-control-declared-in-task-context",
+        "follow-on-owner-task-source-declared"].includes(x.status))
+        .map(x=>({intent:x.intent,operation:x.operation,reason:x.status})),
+      control_path_gaps:t.operation_steps.filter(x=>x.authoring_control_path?.status==="source-control-sequence-incomplete")
+        .map(x=>({operation:x.operation,missing:x.authoring_control_path.unresolved}))
     }))
   },null,2)+"\n");
 }else if(args.includes("--summary")){
   process.stdout.write(JSON.stringify(lookup.summary,null,2)+"\n");
 }else{
-  const body=JSON.stringify(lookup,null,2)+"\n";
+  const body=JSON.stringify(lookup,null,1)+"\n";
   if(args.includes("--check")){
     if(!fs.existsSync(filename)||fs.readFileSync(filename,"utf8")!==body)
       throw Error("Task lookup out of date. Run node scripts/author-flow/task-lookup.mjs");
