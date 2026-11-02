@@ -15,9 +15,9 @@
   "focus": "Find misplaced/absent contextual routes and unexplained switches; context preservation is a separate contract, not a click minimization objective",
   "control_activations": "Conditional ranges count only controls whose handlers are independently witnessed in the shared editor code for one intended adapter; not a measured full click path.",
   "authoring_operations": "Individual response authoring operations trace concrete control and panel transitions, with non-additive conditional activation bounds; typing and full configuration remain outside source-only counts.",
+  "field_configuration": "Configuration controls are extracted from registered adapter JSX and create() default literals. Their presence is not a completed edit and their click counts remain unknown.",
   "delegated": "Each task chooses its intended registered feature adapter using definition.resource_chain[].via. The lookup counts only that declared path; other adapters are available alternatives, not steps to perform. Source-described stages are not physical clicks.",
-  "scene_media": "Visual-novel image timing is evaluated for Node entry and selected dialogue outcomes. Media owns the art effect and asset presentation; persistent backgrounds are not an anticipated requirement.",
-  "field_configuration": "Configuration controls are extracted from registered adapter JSX and create() default literals. Their presence is not a completed edit and their click counts remain unknown."
+  "scene_media": "Visual-novel image timing is evaluated for Node entry and selected dialogue outcomes. Media owns the art effect and asset presentation; persistent backgrounds are not an anticipated requirement."
  },
  "summary": {
   "total_tasks": 27,
@@ -7886,6 +7886,47 @@
       }
      ],
      "authoring_control_path": null,
+     "appearance_trigger": {
+      "moment": "when the player enters the Node and its entry effects execute",
+      "condition": "the player must enter the Node",
+      "presentation": "inline or overlay according to the image asset's default presentation",
+      "limitations": [
+       "not individually timed to a word or frame of narrated text",
+       "appearance effect does not define a persistent background or its own dismissal time"
+      ],
+      "source_evidence": [
+       {
+        "file": "src/features/narrative/author/nodeWorkspace.tsx",
+        "workspace": "narrative.node",
+        "source_line": 479,
+        "status": "source-witness-found"
+       },
+       {
+        "file": "src/features/narrative/nodeEntryRuntime.ts",
+        "workspace": "narrative.node",
+        "source_line": 31,
+        "status": "source-witness-found"
+       },
+       {
+        "file": "src/features/media/author/ruleAdapters.tsx",
+        "workspace": "narrative.node",
+        "source_line": 50,
+        "status": "source-witness-found"
+       },
+       {
+        "file": "src/features/media/effectRuntime.ts",
+        "workspace": "narrative.node",
+        "source_line": 15,
+        "status": "source-witness-found"
+       },
+       {
+        "file": "src/features/media/ui/effectPresentation.ts",
+        "workspace": "narrative.node",
+        "source_line": 45,
+        "status": "source-witness-found"
+       }
+      ]
+     },
      "status": "owner-control-declared-in-task-context",
      "additional_owner_task": null,
      "exact_actions": null,
