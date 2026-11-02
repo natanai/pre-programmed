@@ -717,6 +717,29 @@ function deriveSelectedAdapterFields(step, readFile) {
   const defaults={};
   if(creation)for(const m of creation[1].matchAll(/\b([a-zA-Z]\w*):\s*("[^"]*"|'[^']*'|true|false|-?\d+(?:\.\d+)?)/g))
     defaults[m[1]]=m[2];
+  const ownerFieldMarkers={
+    flag:[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial-boolean"',"Initial true/false"]],
+    "number-variable":[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial"',"Initial value"]],
+    "text-variable":[["src/features/state/author/workspaces.tsx",'id: "state-variable-label"',"Name"],
+      ["src/features/state/author/workspaces.tsx",'id: "state-variable-initial"',"Initial value"]],
+    item:[["src/features/inventory/author/workspaces.tsx",'id: "inventory-item-name"',"Name"],
+      ["src/features/inventory/author/workspaces.tsx",'id: "inventory-item-starting"',"Starting quantity"]],
+    "media-image":[["src/features/media/author/vectorAssetWorkspace.tsx",'id: "vector-name"',"Name"],
+      ["src/features/media/author/vectorAssetWorkspace.tsx",'id: "vector-presentation"',"Default inline/overlay presentation"]]
+  };
+  const ownerFields=(ownerFieldMarkers[step.resource_kind]??[]).map(([file,needle,label])=>{
+    const text=readFile(file)??"",i=text.indexOf(needle);
+    return {label,source:i<0?null:{file,line:text.slice(0,i).split("\n").length},
+      control:"canonical-owner-editor-field",configuration_clicks:null};
+  });
+  const configurationUnknown=ownerFields.some(x=>!x.source);
+  for(const field of fields){
+    const binding=field.bound_value?.match(/(?:effect|condition)\.([a-zA-Z]\w*)/)?.[1]??null;
+    field.source_default_literal=binding&&Object.hasOwn(defaults,binding)?defaults[binding]:null;
+    field.nondefault_edit_required="depends-on-author-intent";
+  }
   fields.sort((a,b)=>a.source.line-b.source.line||a.control.localeCompare(b.control));
   return {
     status:"source-declared-adapter-fields",
@@ -725,6 +748,8 @@ function deriveSelectedAdapterFields(step, readFile) {
     source_file:sourceFile,
     source_default_literals:defaults,
     fields,field_controls_declared:fields.length,
+    canonical_owner_fields:ownerFields,
+    canonical_owner_field_witnesses_complete:!configurationUnknown,
     unresolved_configuration_actions:[
       "typing field values","choosing non-default options","changing scope-dependent controls",
       "validation and Save acceptance","resource editor's own required field edits"
@@ -1018,6 +1043,7 @@ function buildLookup(model,definitions,operationWitnesses,readFile){
     },
     summary:{total_tasks:items.length,
       selected_rule_adapter_field_controls:items.reduce((n,t)=>n+t.measures.source_declared_adapter_field_controls,0),
+      tasks_with_selected_adapter_fields:items.filter(t=>t.measures.source_declared_adapter_field_controls>0).length,
       authored_operations_with_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_source_control_sequence,0),
       authored_operations_with_incomplete_control_sequences:items.reduce((n,t)=>n+t.measures.authored_operations_with_incomplete_control_sequence,0),
       authored_operations_outside_focused_control_scope:items.reduce((n,t)=>n+t.measures.authored_operations_without_a_control_sequence,0),
