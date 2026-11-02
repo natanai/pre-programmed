@@ -9,6 +9,7 @@ import { buildSourceNavigationModel } from "./navigation-model.mjs";
 // Operation keys are authored once with each goal in task-lookup.json.
 // These markers are only source witnesses, not a separate experience audit.
 const operationSources={
+  "add-response":[["src/features/narrative/author/InteractionEditor.tsx","onClick={onAddResponse}","narrative.interaction"]],
   "player-input": [
     [
       "src/features/narrative/author/InteractionEditor.tsx",
