@@ -142,11 +142,18 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
   const inlineCues: TextCue[] = [];
   let cueSequence = 0;
   let index = 0;
+  // Authored cue positions refer to raw prose. Inline slash commands may
+  // disappear from player-facing text, so retain the raw-to-visible offsets.
+  const visibleAtRaw: number[] = [0];
+  const advance = (next: number) => {
+    for (let at = index + 1; at <= next; at += 1) visibleAtRaw[at] = output.length;
+    index = next;
+  };
 
   while (index < rawText.length) {
     if (rawText.startsWith("//", index)) {
       output.push("/");
-      index += 2;
+      advance(index + 2);
       continue;
     }
 
@@ -159,14 +166,14 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
         rawStart: index,
         ...(isSpeed ? { value: Number(longScopeMatch[2]) } : {}),
       });
-      index += longScopeMatch[0].length;
+      advance(index + longScopeMatch[0].length);
       continue;
     }
 
     const scopeMatch = rawText.slice(index).match(/^\/([lfshwbi])\{/);
     if (scopeMatch) {
       scopes.push({ code: scopeMatch[1] as ScopeCode, outputStart: output.length, rawStart: index });
-      index += 3;
+      advance(index + 3);
       continue;
     }
 
@@ -182,14 +189,14 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
           value,
         ));
       }
-      index = inlineCommand.rawEnd;
+      advance(inlineCommand.rawEnd);
       continue;
     }
 
     if (rawText[index] === "}" && scopes.length) {
       const scope = scopes.pop()!;
       inlineCues.push(...scopeCues(scope, output.length, performance.charactersPerSecond, cueSequence++));
-      index += 1;
+      advance(index + 1);
       continue;
     }
 
@@ -202,14 +209,14 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
         const length = 2 + digits.length;
         const pauseMs = digits ? Math.max(0, Math.min(9999, Number(digits))) : DEFAULT_PAUSE_MS;
         inlineCues.push(generatedCue(`inline:p:${index}:${cueSequence++}`, "pause", output.length, output.length, pauseMs));
-        index += length;
-        if (rawText[index] === " " && output.at(-1) === " ") index += 1;
+        advance(index + length);
+        if (rawText[index] === " " && output.at(-1) === " ") advance(index + 1);
         continue;
       }
     }
 
     output.push(rawText[index]);
-    index += 1;
+    advance(index + 1);
   }
 
   while (scopes.length) {
@@ -217,11 +224,18 @@ export function compileTextNotation(rawText: string, performance: TextPerformanc
     inlineCues.push(...scopeCues(scope, output.length, performance.charactersPerSecond, cueSequence++));
   }
 
+  const mappedCues = (performance.cues ?? []).map((cue) => {
+    const start = Math.max(0, Math.min(rawText.length, Math.trunc(cue.start)));
+    const end = Math.max(start, Math.min(rawText.length, Math.trunc(cue.end)));
+    return { ...cue, start: visibleAtRaw[start] ?? output.length, end: visibleAtRaw[end] ?? output.length };
+  });
   return {
     text: output.join(""),
     performance: {
       charactersPerSecond: performance.charactersPerSecond,
-      cues: inlineCues,
+      // Never discard author-configured image/audio/text cues during inline
+      // notation compilation. Their IDs, types and values remain unchanged.
+      cues: [...mappedCues, ...inlineCues],
     },
   };
 }
