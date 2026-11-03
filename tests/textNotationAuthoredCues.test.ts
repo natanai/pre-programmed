@@ -20,7 +20,7 @@ describe("authored text performance cues", () => {
       charactersPerSecond: 18,
       cues: [{ id: "author-audio", type: "audio", start, end: start + 3, value: "audio.sfx" }],
     });
-    expect(compiled.text).toBe("A shining egg  appears");
+    expect(compiled.text).toBe("A shining egg appears");
     const authored = compiled.performance.cues.find(cue => cue.id === "author-audio");
     expect(authored?.start).toBe(compiled.text.indexOf("appears"));
     expect(authored?.end).toBe(compiled.text.indexOf("appears") + 3);
